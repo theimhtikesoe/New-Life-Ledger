@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 /**
  * OverdueNotificationBell Component
@@ -8,6 +8,19 @@ import { useState, useMemo } from "react";
  */
 export default function OverdueNotificationBell({ customers = [] }) {
   const [showModal, setShowModal] = useState(false);
+
+  // Load modal state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem("overdueModalOpen");
+    if (savedState === "true") {
+      setShowModal(true);
+    }
+  }, []);
+
+  // Persist modal state to localStorage
+  useEffect(() => {
+    localStorage.setItem("overdueModalOpen", showModal ? "true" : "false");
+  }, [showModal]);
 
   // Calculate overdue debts (15+ days old)
   const overdueDebts = useMemo(() => {
@@ -21,40 +34,50 @@ export default function OverdueNotificationBell({ customers = [] }) {
     customers.forEach((customer) => {
       if (!customer.ledgers || customer.ledgers.length === 0) return;
 
-      // Find the most recent CREDIT (debt) transaction
+      // Find ALL CREDIT (debt) transactions that are older than 15 days
       const creditTransactions = customer.ledgers.filter((l) => l.type === "CREDIT");
 
       if (creditTransactions.length === 0) return;
 
-      // Sort by date descending to get the most recent
-      const sortedCredits = creditTransactions.sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      );
+      // For each credit transaction, check if it's older than 15 days
+      creditTransactions.forEach((credit) => {
+        const creditDate = new Date(credit.date);
+        creditDate.setHours(0, 0, 0, 0);
 
-      const mostRecentCredit = sortedCredits[0];
-      const creditDate = new Date(mostRecentCredit.date);
-      creditDate.setHours(0, 0, 0, 0);
+        // Check if this credit is older than 15 days AND customer has outstanding balance
+        if (creditDate <= fifteenDaysAgo && customer.current_balance > 0) {
+          const daysOverdue = Math.floor(
+            (today - creditDate) / (1000 * 60 * 60 * 24)
+          );
 
-      // Check if the most recent credit is older than 15 days
-      if (creditDate <= fifteenDaysAgo && customer.current_balance > 0) {
-        const daysOverdue = Math.floor(
-          (today - creditDate) / (1000 * 60 * 60 * 24)
-        );
+          overdue.push({
+            customerId: customer.id,
+            customerName: customer.name,
+            customerPhone: customer.phone,
+            balance: customer.current_balance,
+            lastCreditDate: creditDate,
+            daysOverdue,
+            totalDebt: customer.current_balance,
+          });
+        }
+      });
+    });
 
-        overdue.push({
-          customerId: customer.id,
-          customerName: customer.name,
-          customerPhone: customer.phone,
-          balance: customer.current_balance,
-          lastCreditDate: creditDate,
-          daysOverdue,
-          totalDebt: customer.current_balance,
-        });
+    // Remove duplicates (same customer might have multiple old credits)
+    const uniqueOverdue = {};
+    overdue.forEach((debt) => {
+      if (!uniqueOverdue[debt.customerId]) {
+        uniqueOverdue[debt.customerId] = debt;
+      } else {
+        // Keep the one with the oldest date
+        if (debt.lastCreditDate < uniqueOverdue[debt.customerId].lastCreditDate) {
+          uniqueOverdue[debt.customerId] = debt;
+        }
       }
     });
 
-    // Sort by days overdue (descending)
-    return overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
+    // Convert to array and sort by days overdue (descending - most overdue first)
+    return Object.values(uniqueOverdue).sort((a, b) => b.daysOverdue - a.daysOverdue);
   }, [customers]);
 
   const formatMoney = (value) => {
@@ -104,7 +127,7 @@ export default function OverdueNotificationBell({ customers = [] }) {
                     ⚠️ အကြွေး သတိပေးချက်
                   </h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    ၁၅ ရက်ကျော်နေတဲ့ အကြွေးများ
+                    ၁၅ ရက်ကျော်နေတဲ့ အကြွေးများ ({overdueDebts.length} ယောက်)
                   </p>
                 </div>
                 <button
@@ -121,7 +144,7 @@ export default function OverdueNotificationBell({ customers = [] }) {
               <div className="space-y-3">
                 {overdueDebts.map((debt, index) => (
                   <div
-                    key={debt.customerId}
+                    key={`${debt.customerId}-${debt.lastCreditDate}`}
                     className="rounded-lg border border-rose-200 bg-rose-50/50 p-4 hover:bg-rose-50 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-4">
