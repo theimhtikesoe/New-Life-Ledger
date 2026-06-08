@@ -134,25 +134,55 @@ export default function Dashboard() {
       const wb = XLSX.utils.book_new();
 
       allCustomersForKPI.forEach((customer) => {
-        // Prepare data for this customer
-        const transactions = (customer.ledgers || []).sort((a, b) => new Date(a.date) - new Date(b.date));
+        // Prepare transactions and calculate running balance
+        const sortedTransactions = (customer.ledgers || []).sort((a, b) => new Date(a.date) - new Date(b.date));
         
-        const data = transactions.map((t) => ({
-          "ရက်စွဲ (Date)": formatDate(t.date),
-          "အမျိုးအစား (Type)": t.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ",
-          "ပမာဏ (Amount)": t.amount,
-          "မှတ်ချက် (Note)": t.note || "-",
-        }));
+        let currentRunningBalance = 0;
+        const rows = sortedTransactions.map((t) => {
+          if (t.type === "CREDIT") {
+            currentRunningBalance += t.amount;
+          } else {
+            currentRunningBalance -= t.amount;
+          }
+          
+          return {
+            "ရက်စွဲ (Date)": formatDate(t.date),
+            "အမျိုးအစား (Type)": t.type === "CREDIT" ? "အကြွေးတိုး (+)" : "ငွေချေ (-)",
+            "ပမာဏ (Amount)": t.amount,
+            "အကြွေးလက်ကျန် (Balance)": currentRunningBalance,
+            "မှတ်ချက် (Note)": t.note || "-",
+          };
+        });
 
-        // Add a summary row if needed or just the transactions
-        const ws = XLSX.utils.json_to_sheet(data);
+        // Create worksheet starting with some summary info
+        const wsData = [
+          ["Customer Name:", customer.name],
+          ["Phone:", customer.phone || "-"],
+          ["Current Total Balance:", customer.current_balance],
+          [], // Empty row
+          ["ရက်စွဲ (Date)", "အမျိုးအစား (Type)", "ပမာဏ (Amount)", "အကြွေးလက်ကျန် (Balance)", "မှတ်ချက် (Note)"]
+        ];
+
+        // Add transaction rows
+        rows.forEach(row => {
+          wsData.push([
+            row["ရက်စွဲ (Date)"],
+            row["အမျိုးအစား (Type)"],
+            row["ပမာဏ (Amount)"],
+            row["အကြွေးလက်ကျန် (Balance)"],
+            row["မှတ်ချက် (Note)"]
+          ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
 
         // Set column widths
         const wscols = [
           { wch: 25 }, // Date
-          { wch: 15 }, // Type
+          { wch: 20 }, // Type
           { wch: 15 }, // Amount
-          { wch: 30 }, // Note
+          { wch: 20 }, // Balance
+          { wch: 35 }, // Note
         ];
         ws["!cols"] = wscols;
 
