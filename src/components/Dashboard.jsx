@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import * as XLSX from "xlsx";
 // import KPISummaryDashboard from "./KPISummaryDashboard";
 import TransactionFilter from "./TransactionFilter";
 import OverdueNotificationBell from "./OverdueNotificationBell";
@@ -122,6 +123,62 @@ export default function Dashboard() {
   const hideAlert = useCallback(() => {
     setAlert(null);
   }, []);
+
+  const handleExportExcel = useCallback(() => {
+    if (!allCustomersForKPI || allCustomersForKPI.length === 0) {
+      showAlert("Export လုပ်ရန် data မရှိသေးပါ။", "error");
+      return;
+    }
+
+    try {
+      const wb = XLSX.utils.book_new();
+
+      allCustomersForKPI.forEach((customer) => {
+        // Prepare data for this customer
+        const transactions = (customer.ledgers || []).sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        const data = transactions.map((t) => ({
+          "ရက်စွဲ (Date)": formatDate(t.date),
+          "အမျိုးအစား (Type)": t.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ",
+          "ပမာဏ (Amount)": t.amount,
+          "မှတ်ချက် (Note)": t.note || "-",
+        }));
+
+        // Add a summary row if needed or just the transactions
+        const ws = XLSX.utils.json_to_sheet(data);
+
+        // Set column widths
+        const wscols = [
+          { wch: 25 }, // Date
+          { wch: 15 }, // Type
+          { wch: 15 }, // Amount
+          { wch: 30 }, // Note
+        ];
+        ws["!cols"] = wscols;
+
+        // Sheet name must be unique and max 31 chars
+        let sheetName = customer.name.replace(/[\\/?*[\]]/g, "").substring(0, 31);
+        if (!sheetName) sheetName = `Customer-${customer.id.substring(0, 8)}`;
+        
+        // Ensure unique sheet names
+        let finalSheetName = sheetName;
+        let counter = 1;
+        while (wb.SheetNames.includes(finalSheetName)) {
+          finalSheetName = `${sheetName.substring(0, 28)}-${counter}`;
+          counter++;
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, finalSheetName);
+      });
+
+      const fileName = `New-Life-Ledger-Full-Export-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      showAlert("Excel export အောင်မြင်စွာ ထွက်လာပါပြီ။", "success");
+    } catch (error) {
+      console.error("Export error:", error);
+      showAlert("Excel export လုပ်ရာတွင် အမှားအယွင်းရှိခဲ့ပါသည်။", "error");
+    }
+  }, [allCustomersForKPI, showAlert]);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -857,6 +914,13 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-3">
               <OverdueNotificationBell customers={allCustomersForKPI} />
+              <button
+                onClick={handleExportExcel}
+                className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                title="Excel ထုတ်ရန်"
+              >
+                📊 Export Excel
+              </button>
               <button
                 onClick={() => setShowRecycleBin(true)}
                 className="flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
