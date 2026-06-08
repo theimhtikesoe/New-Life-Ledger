@@ -160,17 +160,25 @@ export default function Dashboard() {
           ["Phone:", customer.phone || "-"],
           ["Current Total Balance:", customer.current_balance],
           [], // Empty row
-          ["ရက်စွဲ (Date)", "အမျိုးအစား (Type)", "ပမာဏ (Amount)", "အကြွေးလက်ကျန် (Balance)", "မှတ်ချက် (Note)"]
+          ["ရက်စွဲ (Date)", "အမျိုးအစား (Type)", "ငွေပေးချေမှု (Payment)", "ပမာဏ (Amount)", "အကြွေးလက်ကျန် (Balance)", "မှတ်ချက် (Note)"]
         ];
 
         // Add transaction rows
-        rows.forEach(row => {
+        sortedTransactions.forEach((t, index) => {
+          // Re-calculate running balance for the final output array
+          let rb = 0;
+          for(let i=0; i<=index; i++) {
+            if(sortedTransactions[i].type === "CREDIT") rb += sortedTransactions[i].amount;
+            else rb -= sortedTransactions[i].amount;
+          }
+
           wsData.push([
-            row["ရက်စွဲ (Date)"],
-            row["အမျိုးအစား (Type)"],
-            row["ပမာဏ (Amount)"],
-            row["အကြွေးလက်ကျန် (Balance)"],
-            row["မှတ်ချက် (Note)"]
+            formatDate(t.date),
+            t.type === "CREDIT" ? "အကြွေးတိုး (+)" : "ငွေချေ (-)",
+            t.paymentType || "-",
+            t.amount,
+            rb,
+            t.note || "-"
           ]);
         });
 
@@ -180,6 +188,7 @@ export default function Dashboard() {
         const wscols = [
           { wch: 25 }, // Date
           { wch: 20 }, // Type
+          { wch: 20 }, // Payment Type
           { wch: 15 }, // Amount
           { wch: 20 }, // Balance
           { wch: 35 }, // Note
