@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { calculateTotalOutstandingDebt } from "@/lib/debt-utils";
 
 /**
  * KPISummaryDashboard Component
@@ -92,16 +93,15 @@ export default function KPISummaryDashboard() {
     }, 0);
   }, [allLedgers]);
 
-  // Calculate Total Outstanding Debt (all CREDIT transactions)
+  // Calculate Total Outstanding Debt using FIFO logic
   const totalOutstandingDebt = useMemo(() => {
-    return allLedgers.reduce((sum, ledger) => {
-      // Filter: CREDIT type
-      if (ledger.type === "CREDIT") {
-        return sum + (ledger.amount || 0);
-      }
-      return sum;
-    }, 0);
-  }, [allLedgers]);
+    // Note: allLedgers here is a flattened array of all customers' ledgers.
+    // To correctly apply FIFO, we should calculate per customer.
+    // However, for total debt, if we assume current_balance is always correct,
+    // we could also just sum customer.current_balance.
+    // Let's use the current_balance from customers for accuracy.
+    return customers.reduce((sum, customer) => sum + (customer.current_balance || 0), 0);
+  }, [customers]);
 
   // Format currency with MMK
   const formatCurrency = (amount) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { getOldestUnpaidCreditDate } from "@/lib/debt-utils";
 
 /**
  * OverdueNotificationBell Component
@@ -35,32 +36,11 @@ export default function OverdueNotificationBell({ customers = [] }) {
       // Skip if no balance or no ledgers
       if (customer.current_balance <= 0 || !customer.ledgers || customer.ledgers.length === 0) return;
 
-      // Sort ledgers by date ascending to process chronologically
-      const sortedLedgers = [...customer.ledgers].sort((a, b) => new Date(a.date) - new Date(b.date));
-      
-      // FIFO logic to find which credits are still unpaid
-      let unpaidCredits = [];
-      sortedLedgers.forEach(l => {
-        if (l.type === "CREDIT") {
-          unpaidCredits.push({ date: new Date(l.date), amount: l.amount });
-        } else if (l.type === "DEBIT") {
-          let repayment = l.amount;
-          while (repayment > 0 && unpaidCredits.length > 0) {
-            if (unpaidCredits[0].amount <= repayment) {
-              repayment -= unpaidCredits[0].amount;
-              unpaidCredits.shift();
-            } else {
-              unpaidCredits[0].amount -= repayment;
-              repayment = 0;
-            }
-          }
-        }
-      });
+      // Use FIFO logic to find the oldest unpaid credit date
+      const oldestUnpaidDate = getOldestUnpaidCreditDate(customer.ledgers);
 
-      // If there are still unpaid credits, the oldest one determines the overdue status
-      if (unpaidCredits.length > 0) {
-        const oldestUnpaid = unpaidCredits[0];
-        const creditDate = new Date(oldestUnpaid.date);
+      if (oldestUnpaidDate) {
+        const creditDate = new Date(oldestUnpaidDate);
         creditDate.setHours(0, 0, 0, 0);
 
         if (creditDate <= fifteenDaysAgo) {
