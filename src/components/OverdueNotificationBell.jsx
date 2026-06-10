@@ -32,24 +32,40 @@ export default function OverdueNotificationBell({ customers = [] }) {
     const overdue = [];
 
     customers.forEach((customer) => {
-      if (!customer.ledgers || customer.ledgers.length === 0) return;
+      // Skip if no balance or no ledgers
+      if (customer.current_balance <= 0 || !customer.ledgers || customer.ledgers.length === 0) return;
 
-      // Find ALL CREDIT (debt) transactions that are older than 15 days
-      const creditTransactions = customer.ledgers.filter((l) => l.type === "CREDIT");
+      // Sort ledgers by date ascending to process chronologically
+      const sortedLedgers = [...customer.ledgers].sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      // FIFO logic to find which credits are still unpaid
+      let unpaidCredits = [];
+      sortedLedgers.forEach(l => {
+        if (l.type === "CREDIT") {
+          unpaidCredits.push({ date: new Date(l.date), amount: l.amount });
+        } else if (l.type === "DEBIT") {
+          let repayment = l.amount;
+          while (repayment > 0 && unpaidCredits.length > 0) {
+            if (unpaidCredits[0].amount <= repayment) {
+              repayment -= unpaidCredits[0].amount;
+              unpaidCredits.shift();
+            } else {
+              unpaidCredits[0].amount -= repayment;
+              repayment = 0;
+            }
+          }
+        }
+      });
 
-      if (creditTransactions.length === 0) return;
-
-      // For each credit transaction, check if it's older than 15 days
-      creditTransactions.forEach((credit) => {
-        const creditDate = new Date(credit.date);
+      // If there are still unpaid credits, the oldest one determines the overdue status
+      if (unpaidCredits.length > 0) {
+        const oldestUnpaid = unpaidCredits[0];
+        const creditDate = new Date(oldestUnpaid.date);
         creditDate.setHours(0, 0, 0, 0);
 
-        // Check if this credit is older than 15 days AND customer has outstanding balance
-        if (creditDate <= fifteenDaysAgo && customer.current_balance > 0) {
-          const daysOverdue = Math.floor(
-            (today - creditDate) / (1000 * 60 * 60 * 24)
-          );
-
+        if (creditDate <= fifteenDaysAgo) {
+          const daysOverdue = Math.floor((today - creditDate) / (1000 * 60 * 60 * 24));
+          
           overdue.push({
             customerId: customer.id,
             customerName: customer.name,
@@ -60,24 +76,11 @@ export default function OverdueNotificationBell({ customers = [] }) {
             totalDebt: customer.current_balance,
           });
         }
-      });
-    });
-
-    // Remove duplicates (same customer might have multiple old credits)
-    const uniqueOverdue = {};
-    overdue.forEach((debt) => {
-      if (!uniqueOverdue[debt.customerId]) {
-        uniqueOverdue[debt.customerId] = debt;
-      } else {
-        // Keep the one with the oldest date
-        if (debt.lastCreditDate < uniqueOverdue[debt.customerId].lastCreditDate) {
-          uniqueOverdue[debt.customerId] = debt;
-        }
       }
     });
 
-    // Convert to array and sort by days overdue (descending - most overdue first)
-    return Object.values(uniqueOverdue).sort((a, b) => b.daysOverdue - a.daysOverdue);
+    // Sort by days overdue (descending - most overdue first)
+    return overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
   }, [customers]);
 
   const formatMoney = (value) => {
