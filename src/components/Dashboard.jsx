@@ -22,9 +22,11 @@ function formatDate(value) {
 }
 
 async function api(path, options) {
+  const { signal, ...restOptions } = options || {};
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json" },
-    ...options,
+    signal,
+    ...restOptions,
   });
   const text = await response.text();
   let body = {};
@@ -219,13 +221,13 @@ export default function Dashboard() {
     }
   }, [allCustomersForKPI, showAlert]);
 
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(async (signal) => {
     setLoading(true);
     try {
       const [customerRows, kpayRows, allCustomersRows] = await Promise.all([
-        api(`/api/customers${search ? `?q=${encodeURIComponent(search)}` : ""}`),
-        api("/api/unverified-kpay?status=PENDING"),
-        api("/api/customers"), // Fetch all customers for KPI
+        api(`/api/customers${search ? `?q=${encodeURIComponent(search)}` : ""}`, { signal }),
+        api("/api/unverified-kpay?status=PENDING", { signal }),
+        api("/api/customers", { signal }), // Fetch all customers for KPI
       ]);
       setCustomers(customerRows);
       setPendingKpay(kpayRows);
@@ -241,6 +243,7 @@ export default function Dashboard() {
       }
       setAllLedgers(allLedgersData);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       setMessage(error.message);
       showAlert(error.message, "error");
     } finally {
@@ -268,10 +271,14 @@ export default function Dashboard() {
 
   // Trigger search when search input changes
   useEffect(() => {
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      loadDashboard();
+      loadDashboard(controller.signal);
     }, 300); // Debounce search by 300ms
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [search, loadDashboard]);
 
   const loadCustomer = useCallback(async (id = selectedCustomerId) => {
@@ -294,10 +301,13 @@ export default function Dashboard() {
   }, [selectedCustomerId, showAlert]);
 
   useEffect(() => {
-    loadDashboard().catch((error) => {
+    const controller = new AbortController();
+    loadDashboard(controller.signal).catch((error) => {
+      if (error.name === 'AbortError') return;
       setMessage(error.message);
       showAlert(error.message, "error");
     });
+    return () => controller.abort();
   }, [loadDashboard, showAlert]);
 
   useEffect(() => {
