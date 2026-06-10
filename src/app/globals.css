@@ -49,6 +49,7 @@ input,
 select,
 textarea {
   font: inherit;
+  font-size: 16px;
 }
 
 /* Smooth transitions for customer list */
