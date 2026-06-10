@@ -115,6 +115,23 @@ export default function Dashboard() {
   const [allLedgers, setAllLedgers] = useState([]);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
 
+  // Auto-scroll and auto-hide list when a customer is selected
+  useEffect(() => {
+    if (selectedCustomerId) {
+      // Hide the customer list to make view clearer
+      setShowCustomerList(false);
+      
+      // Use a small timeout to ensure the DOM has updated and the details section is rendered
+      const timer = setTimeout(() => {
+        const element = document.getElementById("customer-details-section");
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedCustomerId]);
+
 
   // Show alert notification
   const showAlert = useCallback((msg, type = "success") => {
@@ -965,8 +982,17 @@ export default function Dashboard() {
               <OverdueNotificationBell 
                 customers={allCustomersForKPI} 
                 onSelectCustomer={(id) => {
-                  setSelectedCustomerId(id);
-                  setSearch(""); // Clear search to make sure the customer is visible if needed
+                  // If clicking the same customer, we still want to trigger the scroll effect
+                  if (selectedCustomerId === id) {
+                    setShowCustomerList(false);
+                    const element = document.getElementById("customer-details-section");
+                    if (element) {
+                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  } else {
+                    setSelectedCustomerId(id);
+                  }
+                  setSearch(""); // Clear search
                 }} 
               />
               <button
@@ -1224,8 +1250,8 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : selectedCustomer ? (
-              <>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div id="customer-details-section">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between pt-4">
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
                     <p className="mt-1 text-sm text-slate-700">
@@ -1428,7 +1454,7 @@ export default function Dashboard() {
                     </table>
                   </div>
                 </div>
-              </>
+              </div>
             ) : (
               <div className="flex min-h-[420px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white/50">
                 <div className="text-center">
