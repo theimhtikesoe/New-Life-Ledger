@@ -13,12 +13,14 @@ export async function GET(request) {
     const showDeleted = searchParams.get("deleted") === "true";
 
     // Optimized: Select only necessary fields to reduce data transfer
+    // Better search for Burmese: prioritize startsWith, then fallback to contains
     const customers = await prisma.customer.findMany({
       where: {
         AND: [
           q
             ? {
                 OR: [
+                  { name: { startsWith: q, mode: "insensitive" } },
                   { name: { contains: q, mode: "insensitive" } },
                   { phone: { contains: q, mode: "insensitive" } },
                   { routeTag: { contains: q, mode: "insensitive" } },
@@ -33,8 +35,23 @@ export async function GET(request) {
       include: {
         ledgers: true,
       },
-      orderBy: { name: "asc" },
+      orderBy: [
+        {
+          name: "asc",
+        },
+      ],
     });
+
+    // Post-process to sort startsWith matches first for better UX
+    if (q) {
+      customers.sort((a, b) => {
+        const aStarts = a.name.toLowerCase().startsWith(q.toLowerCase());
+        const bStarts = b.name.toLowerCase().startsWith(q.toLowerCase());
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
 
     return NextResponse.json({ data: customers });
   } catch (error) {
