@@ -52,6 +52,20 @@ textarea {
   font-size: 16px !important;
 }
 
+/* More aggressive fix for mobile zoom on focus */
+@media screen and (max-width: 768px) {
+  input, 
+  textarea, 
+  select,
+  input[type="text"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="search"],
+  .text-sm {
+    font-size: 16px !important;
+  }
+}
+
 /* Smooth transitions for customer list */
 .customer-list-container {
   transition: all 0.3s ease-out;
