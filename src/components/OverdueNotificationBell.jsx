@@ -7,7 +7,7 @@ import { getOldestUnpaidCreditDate } from "@/lib/debt-utils";
  * OverdueNotificationBell Component
  * ၁၅ ရက်ကျော်နေတဲ့ အကြွေးတွေကို သတိပေးတဲ့ component
  */
-export default function OverdueNotificationBell({ customers = [] }) {
+export default function OverdueNotificationBell({ customers = [], onSelectCustomer }) {
   const [showModal, setShowModal] = useState(false);
 
   // Load modal state from localStorage on mount
@@ -128,7 +128,15 @@ export default function OverdueNotificationBell({ customers = [] }) {
                 {overdueDebts.map((debt, index) => (
                   <div
                     key={`${debt.customerId}-${debt.lastCreditDate}`}
-                    className="rounded-lg border border-rose-200 bg-rose-50/50 p-4 hover:bg-rose-50 transition-colors"
+                    onClick={() => {
+                      if (onSelectCustomer) {
+                        onSelectCustomer(debt.customerId);
+                        setShowModal(false);
+                      }
+                    }}
+                    className={`rounded-lg border border-rose-200 bg-rose-50/50 p-4 transition-colors ${
+                      onSelectCustomer ? "cursor-pointer hover:bg-rose-100 hover:border-rose-300" : ""
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
