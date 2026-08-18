@@ -47,6 +47,20 @@ export default function DataManagementPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [cronSecret, setCronSecret] = useState("");
+
+  const handleManualReportTest = async () => {
+    if (!cronSecret.trim()) return;
+    if (!window.confirm("အရင်နေ့ Daily Summary ကို PDF + image အဖြစ် Telegram private chat နှင့် group နှစ်ခုလုံးသို့ အခုချက်ချင်းပို့မည်။ ဆက်လုပ်မလား?")) return;
+    setLoading(true); setError(""); setMessage("");
+    try {
+      const response = await fetch("/api/cron/daily-report", { method: "POST", headers: { Authorization: `Bearer ${cronSecret.trim()}` } });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Telegram report test မအောင်မြင်ပါ။");
+      setCronSecret("");
+      setMessage(`Telegram test report အောင်မြင်ပါပြီ။ ${body.date} စာရင်းကို private chat နှင့် group နှစ်ခုလုံးသို့ ပို့ပြီးပါပြီ။`);
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
 
   const handleBackupExport = async () => {
     setLoading(true); setError(""); setMessage("");
@@ -82,6 +96,16 @@ export default function DataManagementPage() {
         <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Data အားလုံး Export</h2><p className="mt-2 text-sm text-slate-600">Customers၊ Transactions၊ Activity History ကို restore ပြန်လုပ်နိုင်သော official Excel format ဖြင့် download လုပ်ပါ။</p><button type="button" onClick={handleBackupExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "Backup Excel Download"}</button></div>
           <div className="rounded-xl border border-blue-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Restore</h2><p className="mt-2 text-sm text-slate-600">ဒီ website က ထုတ်ထားသော `New-Life-Ledger-Backup-*.xlsx` ဖိုင်ကိုသာ ပြန်တင်ပါ။ အရင်ဆုံး preview စစ်ပြီးမှ confirm restore လုပ်ရပါမယ်။</p><input type="file" accept=".xlsx,.xls" onChange={(e) => { setFile(e.target.files?.[0] || null); setPreview(null); setResult(null); setError(""); }} className="mt-4 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm" /><button type="button" onClick={handlePreview} disabled={!file || loading} className="mt-3 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400">Preview Restore</button></div>
+        </section>
+
+        <section className="rounded-xl border border-violet-200 bg-violet-50 p-5">
+          <h2 className="text-lg font-semibold text-violet-900">Telegram Report Test</h2>
+          <p className="mt-2 text-sm text-violet-800">အခုချက်ချင်း အရင်နေ့စာရင်းကို PDF + summary image အဖြစ် Telegram private chat နှင့် group နှစ်ခုလုံးသို့ စမ်းပို့ရန် အသုံးပြုပါ။ Secret ကို browser ထဲမသိမ်းဘဲ ဒီတစ်ကြိမ်အတွက်သာ အသုံးပြုပါမယ်။</p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <input type="password" value={cronSecret} onChange={(e) => setCronSecret(e.target.value)} placeholder="CRON_SECRET ကို ထည့်ပါ" autoComplete="off" className="min-w-0 flex-1 rounded-lg border border-violet-300 bg-white px-3 py-3 text-sm" />
+            <button type="button" onClick={handleManualReportTest} disabled={!cronSecret.trim() || loading} className="rounded-lg bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-700 disabled:bg-slate-400">Send Test Report</button>
+          </div>
+          <p className="mt-2 text-xs text-violet-700">မအောင်မြင်ပါက CRON_SECRET မှန်/မမှန်နှင့် Vercel Production environment ထဲ ထည့်ထား/မထား စစ်ပါ။</p>
         </section>
 
         {preview && <section className="rounded-xl border border-amber-200 bg-amber-50 p-5"><h2 className="text-lg font-semibold text-amber-900">Restore Preview</h2><p className="mt-2 text-sm text-amber-800">အောက်ပါ record များကိုသာ ထည့်မည်။ ရှိပြီးသား record များကို Update/Delete မလုပ်ပါ။</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Customer ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.customers}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Transaction ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.transactions}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Audit ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.auditLogs}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Skip လုပ်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willSkip.customers + preview.willSkip.transactions + preview.willSkip.auditLogs}</p></div></div><button type="button" onClick={handleConfirm} disabled={loading} className="mt-5 rounded-lg bg-amber-600 px-4 py-3 font-semibold text-white hover:bg-amber-700 disabled:bg-slate-400">Confirm Restore</button></section>}
