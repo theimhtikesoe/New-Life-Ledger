@@ -111,6 +111,8 @@ export default function Dashboard() {
   const [alert, setAlert] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredLedgers, setFilteredLedgers] = useState([]);
+  const [transactionPagination, setTransactionPagination] = useState({ offset: 0, limit: 50, total: 0, hasMore: false });
+  const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [allLedgers, setAllLedgers] = useState([]);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
@@ -306,8 +308,12 @@ export default function Dashboard() {
 
     setLoadingCustomer(true);
     try {
-      const customer = await api(`/api/customers/${id}`);
-      setSelectedCustomer(customer);
+      const [customer, transactionPage] = await Promise.all([
+        api(`/api/customers/${id}?includeLedgers=false`),
+        api(`/api/customers/${id}/transactions?limit=50&offset=0`),
+      ]);
+      setSelectedCustomer({ ...customer, ledgers: transactionPage.items || [] });
+      setTransactionPagination(transactionPage.pagination || { offset: 0, limit: 50, total: 0, hasMore: false });
       setSelectedCustomerId(customer.id);
     } catch (error) {
       setMessage(error.message);
@@ -316,6 +322,21 @@ export default function Dashboard() {
       setLoadingCustomer(false);
     }
   }, [selectedCustomerId, showAlert]);
+
+  const loadMoreTransactions = useCallback(async () => {
+    if (!selectedCustomerId || loadingMoreTransactions || !transactionPagination.hasMore) return;
+    setLoadingMoreTransactions(true);
+    try {
+      const offset = selectedCustomer?.ledgers?.length || transactionPagination.offset;
+      const page = await api(`/api/customers/${selectedCustomerId}/transactions?limit=${transactionPagination.limit}&offset=${offset}`);
+      setSelectedCustomer((prev) => prev ? { ...prev, ledgers: [...(prev.ledgers || []), ...(page.items || [])] } : prev);
+      setTransactionPagination(page.pagination || transactionPagination);
+    } catch (error) {
+      showAlert(error.message, "error");
+    } finally {
+      setLoadingMoreTransactions(false);
+    }
+  }, [selectedCustomerId, selectedCustomer, transactionPagination, loadingMoreTransactions, showAlert]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1452,6 +1473,19 @@ export default function Dashboard() {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                  <div className="mt-3 flex flex-col items-center gap-2 text-sm text-slate-600">
+                    <span>{selectedCustomer.ledgers?.length || 0} / {transactionPagination.total} transactions loaded</span>
+                    {transactionPagination.hasMore && (
+                      <button
+                        type="button"
+                        onClick={loadMoreTransactions}
+                        disabled={loadingMoreTransactions}
+                        className="rounded-md border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {loadingMoreTransactions ? "Loading..." : "နောက်ထပ် ၅၀ ခုကြည့်ရန်"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
