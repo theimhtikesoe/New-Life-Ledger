@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { getActorName, writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,17 @@ export async function POST(request) {
           note: `Matched KPay${kpayName ? `: ${kpayName}` : ""}`,
           date: kpay.createdAt,
         },
+      });
+
+      await writeAuditLog({
+        db: tx,
+        actorName: getActorName(request),
+        action: "PAYMENT",
+        entityType: "KPayMatch",
+        entityId: ledger.id,
+        entityLabel: kpayName || customer.name,
+        summary: `${customer.name} နှင့် KPay ${amount.toLocaleString()} Ks တွဲချိတ်`,
+        metadata: { customerId, unverifiedKpayId, amount, kpayName },
       });
 
       const matched = await tx.unverifiedKpay.delete({

@@ -63,6 +63,23 @@ export async function ensureDatabase() {
       `.catch(() => [{ count: 0 }]);
 
       if (tableCheck[0]?.count > 0) {
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "AuditLog" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "actorName" TEXT NOT NULL,
+            "action" TEXT NOT NULL,
+            "entityType" TEXT NOT NULL,
+            "entityId" TEXT,
+            "entityLabel" TEXT,
+            "summary" TEXT NOT NULL,
+            "metadata" JSONB,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_idx" ON "AuditLog"("createdAt")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_actorName_idx" ON "AuditLog"("actorName")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_entityType_idx" ON "AuditLog"("entityType")`);
         setupComplete = true;
         return;
       }
@@ -159,6 +176,23 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_date_idx" ON "Ledger"("date")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "UnverifiedKpay_status_idx" ON "UnverifiedKpay"("status")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "UnverifiedKpay_kpayName_idx" ON "UnverifiedKpay"("kpayName")`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "AuditLog" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "actorName" TEXT NOT NULL,
+          "action" TEXT NOT NULL,
+          "entityType" TEXT NOT NULL,
+          "entityId" TEXT,
+          "entityLabel" TEXT,
+          "summary" TEXT NOT NULL,
+          "metadata" JSONB,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_idx" ON "AuditLog"("createdAt")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_actorName_idx" ON "AuditLog"("actorName")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_entityType_idx" ON "AuditLog"("entityType")`);
       
       // Mark setup as complete
       setupComplete = true;
