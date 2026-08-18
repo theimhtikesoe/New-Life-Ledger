@@ -8,6 +8,69 @@ function balanceDelta(type, amount) {
   return type === "CREDIT" ? amount : -amount;
 }
 
+export async function GET(request, { params }) {
+  try {
+    await ensureDatabase();
+
+    const customerId = params.id;
+    const { searchParams } = new URL(request.url);
+    const requestedLimit = Number(searchParams.get("limit") || 50);
+    const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : 50, 1), 100);
+    const requestedOffset = Number(searchParams.get("offset") || 0);
+    const offset = Math.max(Number.isFinite(requestedOffset) ? Math.floor(requestedOffset) : 0, 0);
+    const type = searchParams.get("type");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+
+    const date = {};
+    if (startDate) date.gte = new Date(`${startDate}T00:00:00.000Z`);
+    if (endDate) date.lt = new Date(`${endDate}T00:00:00.000Z`);
+
+    const where = {
+      customerId,
+      ...(type === "CREDIT" || type === "DEBIT" ? { type } : {}),
+      ...(Object.keys(date).length ? { date } : {}),
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.ledger.findMany({
+        where,
+        select: {
+          id: true,
+          date: true,
+          type: true,
+          saleType: true,
+          itemSize: true,
+          cartons: true,
+          rate: true,
+          deductions: true,
+          amount: true,
+          note: true,
+          paymentType: true,
+        },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+        skip: offset,
+        take: limit,
+      }),
+      prisma.ledger.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: {
+        items,
+        pagination: {
+          offset,
+          limit,
+          total,
+          hasMore: offset + items.length < total,
+        },
+      },
+    });
+  } catch (error) {
+    return NextResponse.json(databaseErrorResponse(error), { status: 500 });
+  }
+}
+
 export async function POST(request, { params }) {
   try {
     await ensureDatabase();

@@ -4,12 +4,13 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request, { params }) {
+export async function GET(request, { params }) {
   try {
     await ensureDatabase();
 
-    const id = params.id;
-
+        const id = params.id;
+    const { searchParams } = new URL(request.url);
+    const includeLedgers = searchParams.get("includeLedgers") !== "false";
     const customer = await prisma.customer.findUnique({
       where: { id },
       select: {
@@ -27,24 +28,29 @@ export async function GET(_request, { params }) {
           },
           orderBy: { kpayName: "asc" },
         },
-        // Optimized: Limit ledger history to recent 50 entries for faster loading
-        ledgers: {
-          select: {
-            id: true,
-            date: true,
-            type: true,
-            saleType: true,
-            itemSize: true,
-            cartons: true,
-            rate: true,
-            deductions: true,
-            amount: true,
-            note: true,
-            paymentType: true,
-          },
-          orderBy: { date: "desc" },
-          take: 50,
-        },
+        // Keep the legacy response shape by default; the dashboard can opt out
+        // and load history through the paginated transactions endpoint.
+        ...(includeLedgers
+          ? {
+              ledgers: {
+                select: {
+                  id: true,
+                  date: true,
+                  type: true,
+                  saleType: true,
+                  itemSize: true,
+                  cartons: true,
+                  rate: true,
+                  deductions: true,
+                  amount: true,
+                  note: true,
+                  paymentType: true,
+                },
+                orderBy: [{ date: "desc" }, { id: "desc" }],
+                take: 50,
+              },
+            }
+          : {}),
       },
     });
 
