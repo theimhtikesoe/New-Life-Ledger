@@ -48,6 +48,23 @@ model Ledger {
   @@index([date])
 }
 
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorName  String
+  action     String
+  entityType String
+  entityId   String?
+  entityLabel String?
+  summary    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorName])
+  @@index([action])
+  @@index([entityType])
+}
+
 model UnverifiedKpay {
   id                  String    @id @default(uuid()) @db.Uuid
   raw_text            String

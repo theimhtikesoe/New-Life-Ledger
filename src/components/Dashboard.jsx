@@ -23,8 +23,12 @@ function formatDate(value) {
 
 async function api(path, options) {
   const { signal, ...restOptions } = options || {};
+  const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") : "";
   const response = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(actorName ? { "x-actor-name": actorName } : {}),
+    },
     signal,
     ...restOptions,
   });
@@ -1042,7 +1046,7 @@ export default function Dashboard() {
 
         {/* Compact Summary Box */}
         <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {/* Total Balance */}
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm hover:shadow-md transition-shadow">
               <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">စုစုပေါင်း အကြွေး</p>
@@ -1066,6 +1070,24 @@ export default function Dashboard() {
               <p className="mt-2 text-2xl font-bold text-emerald-700">{todayTransactions}</p>
               <p className="mt-1 text-xs text-emerald-500">Today&apos;s Paid Transactions</p>
             </button>
+
+            <a
+              href="/daily-summary"
+              className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm transition-all hover:border-violet-300 hover:shadow-md"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
+              <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary</p>
+              <p className="mt-1 text-xs text-violet-600">အသေးစိတ်ကြည့်ရန် →</p>
+            </a>
+
+            <a
+              href="/activity"
+              className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm transition-all hover:border-amber-300 hover:shadow-md"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-amber-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p>
+              <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
+              <p className="mt-1 text-xs text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
+            </a>
           </div>
         </section>
 

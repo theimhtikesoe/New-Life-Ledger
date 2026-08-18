@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { getActorName, writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +96,16 @@ export async function POST(request) {
       }
 
       return newCustomer;
+    });
+
+    await writeAuditLog({
+      actorName: getActorName(request),
+      action: "CREATE",
+      entityType: "Customer",
+      entityId: customer.id,
+      entityLabel: customer.name,
+      summary: `Customer အသစ်ထည့်: ${customer.name}`,
+      metadata: { phone: customer.phone, routeTag: customer.routeTag, openingBalance: currentBalance },
     });
 
     return NextResponse.json({ data: customer }, { status: 201 });

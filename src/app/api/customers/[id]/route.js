@@ -1,14 +1,29 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { getActorName, writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
+
+const ledgerSelect = {
+  id: true,
+  date: true,
+  type: true,
+  saleType: true,
+  itemSize: true,
+  cartons: true,
+  rate: true,
+  deductions: true,
+  amount: true,
+  note: true,
+  paymentType: true,
+};
 
 export async function GET(request, { params }) {
   try {
     await ensureDatabase();
 
-        const id = params.id;
+    const id = params.id;
     const { searchParams } = new URL(request.url);
     const includeLedgers = searchParams.get("includeLedgers") !== "false";
     const customer = await prisma.customer.findUnique({
@@ -22,30 +37,13 @@ export async function GET(request, { params }) {
         createdAt: true,
         deletedAt: true,
         kpayAliases: {
-          select: {
-            id: true,
-            kpayName: true,
-          },
+          select: { id: true, kpayName: true },
           orderBy: { kpayName: "asc" },
         },
-        // Keep the legacy response shape by default; the dashboard can opt out
-        // and load history through the paginated transactions endpoint.
         ...(includeLedgers
           ? {
               ledgers: {
-                select: {
-                  id: true,
-                  date: true,
-                  type: true,
-                  saleType: true,
-                  itemSize: true,
-                  cartons: true,
-                  rate: true,
-                  deductions: true,
-                  amount: true,
-                  note: true,
-                  paymentType: true,
-                },
+                select: ledgerSelect,
                 orderBy: [{ date: "desc" }, { id: "desc" }],
                 take: 50,
               },
@@ -70,7 +68,6 @@ export async function PATCH(request, { params }) {
 
     const id = params.id;
     const body = await request.json();
-
     const data = {};
     if (body.name !== undefined) data.name = body.name.trim();
     if (body.phone !== undefined) data.phone = body.phone?.trim() || null;
@@ -89,30 +86,25 @@ export async function PATCH(request, { params }) {
         createdAt: true,
         deletedAt: true,
         kpayAliases: {
-          select: {
-            id: true,
-            kpayName: true,
-          },
+          select: { id: true, kpayName: true },
           orderBy: { kpayName: "asc" },
         },
         ledgers: {
-          select: {
-            id: true,
-            date: true,
-            type: true,
-            saleType: true,
-            itemSize: true,
-            cartons: true,
-            rate: true,
-            deductions: true,
-            amount: true,
-            note: true,
-            paymentType: true,
-          },
-          orderBy: { date: "desc" },
+          select: ledgerSelect,
+          orderBy: [{ date: "desc" }, { id: "desc" }],
           take: 50,
         },
       },
+    });
+
+    await writeAuditLog({
+      actorName: getActorName(request),
+      action: body.restore === true ? "RESTORE" : "UPDATE",
+      entityType: "Customer",
+      entityId: customer.id,
+      entityLabel: customer.name,
+      summary: body.restore === true ? `Customer ပြန်ယူ: ${customer.name}` : `Customer ပြင်ဆင်: ${customer.name}`,
+      metadata: { changedFields: Object.keys(data), restore: body.restore === true },
     });
 
     return NextResponse.json({ data: customer });
@@ -146,6 +138,16 @@ export async function DELETE(request, { params }) {
         select: { id: true, name: true, deletedAt: true },
       });
     }
+
+    await writeAuditLog({
+      actorName: getActorName(request),
+      action: permanent ? "PERMANENT_DELETE" : "DELETE",
+      entityType: "Customer",
+      entityId: customer.id,
+      entityLabel: customer.name,
+      summary: permanent ? `Customer အပြီးဖျက်: ${customer.name}` : `Customer ဖျက်/Recycle Bin သို့ရွှေ့: ${customer.name}`,
+      metadata: { permanent },
+    });
 
     return NextResponse.json({ data: customer });
   } catch (error) {

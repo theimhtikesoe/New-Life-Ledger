@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { getActorName, writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -129,6 +130,25 @@ export async function POST(request, { params }) {
           amount: true,
           note: true,
           paymentType: true,
+        },
+      });
+
+      await writeAuditLog({
+        db: tx,
+        actorName: getActorName(request),
+        action: type === "DEBIT" ? "PAYMENT" : "DEBT_INCREASE",
+        entityType: "Ledger",
+        entityId: ledger.id,
+        entityLabel: customer.name,
+        summary: type === "DEBIT"
+          ? `${customer.name} ထံမှ ငွေချေ ${amount.toLocaleString()} Ks`
+          : `${customer.name} အကြွေးတိုး ${amount.toLocaleString()} Ks`,
+        metadata: {
+          customerId,
+          type,
+          amount,
+          paymentType: ledger.paymentType,
+          note: ledger.note,
         },
       });
 

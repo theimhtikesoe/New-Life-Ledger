@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { getActorName, writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export async function DELETE(request, { params }) {
       // 1. Get the transaction to know its amount and type
       const ledger = await tx.ledger.findUnique({
         where: { id: transactionId },
+        include: { customer: { select: { name: true } } },
       });
 
       if (!ledger) {
@@ -37,7 +39,26 @@ export async function DELETE(request, { params }) {
         },
       });
 
-      // 3. Delete the transaction
+      await writeAuditLog({
+        db: tx,
+        actorName: getActorName(request),
+        action: "DELETE",
+        entityType: "Ledger",
+        entityId: ledger.id,
+        entityLabel: ledger.customer.name,
+        summary: `${ledger.customer.name} ၏ ${ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"} ${ledger.amount.toLocaleString()} Ks ကို ဖျက်`,
+        metadata: {
+          customerId: ledger.customerId,
+          type: ledger.type,
+          amount: ledger.amount,
+          paymentType: ledger.paymentType,
+          note: ledger.note,
+          date: ledger.date.toISOString(),
+          balanceAfter: customer.current_balance,
+        },
+      });
+
+      // Keep the original delete behavior; the audit snapshot is written first.
       await tx.ledger.delete({
         where: { id: transactionId },
       });
