@@ -391,3 +391,12 @@ A local Next.js production build passed after the split-panel implementation. A 
 The Telegram group caption now uses Telegram HTML formatting. It presents `NEW LIFE LEDGER` and `DAILY BUSINESS REPORT` as headings, separates `REPORT DATE` from `TIME RANGE`, and uses bold values with colored status markers for ငွေချေ, အကြွေးတိုး, Transactions, and Activity. The time range is explicitly shown as `00:00–23:59 (Myanmar Time)` so it cannot be confused with the delivery time.
 
 The media upload helper now sends `parse_mode=HTML` for captions so the bold and code formatting is rendered by Telegram. The local Next.js production build passed. This is a caption-only presentation change and does not modify any database records or report calculations.
+
+
+## 23. Confirmed Automatic Daily Schedule
+
+**Date:** 2026-08-19
+
+The manual test is separate from the scheduled automation. `vercel.json` schedules `/api/cron/daily-report` with `30 1 * * *`, which is 01:30 UTC and therefore 08:00 Myanmar Standard Time (UTC+06:30) every day. The endpoint is protected by `CRON_SECRET` and sends only to `TELEGRAM_GROUP_CHAT_ID`.
+
+At each scheduled run, `getPreviousMyanmarDayRange()` calculates the previous Myanmar calendar day from `00:00` up to, but not including, the next `00:00`. The report caption explicitly displays the report date and `00:00–23:59 (Myanmar Time)`. The scheduled output uses the approved format: color-coded caption, Daily Summary image, Activity History image, and a two-page PDF. The most recent caption-format production deployment completed successfully; the next scheduled run is the final real-world automation confirmation.
