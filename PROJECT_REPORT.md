@@ -427,3 +427,31 @@ References:
 2. https://www.forbusiness.viber.com/en/messaging-partners/partner/etrade-myanmar-co — official eTradeMyanmar partner profile.
 3. https://vmgmyanmar.com/business/vibersms — VMG Myanmar Viber SMS/API page.
 4. https://www.forbusiness.viber.com/en/business-messages/ — Viber Business Messages official product page.
+
+
+## 25. Mobile UI/UX Update — Customer, Transaction, and Activity Views
+
+**Date:** 2026-08-19
+
+The owner approved a mobile-first UI/UX improvement while explicitly requiring that the PIN remain unchanged and that customer data, ledger transactions, audit-log records, database schema/data, Telegram settings, Telegram delivery code, Vercel environment variables, and Cron configuration remain untouched.
+
+The following presentation-only changes were implemented:
+
+| File | UI-only change |
+|---|---|
+| `src/components/Dashboard.jsx` | Customer cards now use a mobile-first one-column layout before expanding at larger breakpoints; card actions have larger touch targets; pagination wraps on small screens; a mobile customer-list return button was added; the customer detail form uses responsive padding; transactions now have a mobile card/list rendering while the desktop table remains available at the `md` breakpoint. |
+| `src/components/TransactionFilter.jsx` | Quick filters and date inputs use full-width, touch-friendly controls on small screens and retain compact controls on larger screens. |
+| `src/app/activity/page.js` | Activity History now renders mobile-friendly record cards on small screens and keeps the wide table for desktop; the history header wraps safely on narrow screens. |
+
+The implementation does not add a database migration, call a write API, change business calculations, alter the PIN value or flow, change Telegram delivery, or change any Vercel environment/configuration value.
+
+Local verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed; Next.js compiled, lint/type checks passed, and all 7 static pages generated. |
+| Protected files | `prisma/schema.prisma`, Telegram helper/cron route, `package.json`, `pnpm-lock.yaml`, and `vercel.json` unchanged. |
+| Database/business records | No customer, ledger, audit, backup, or restore operation was executed. |
+| Production deployment | Not yet pushed/deployed at the time of this entry; production read-only verification remains required. |
+
+Remaining caution: the existing Next.js build warning about `themeColor` metadata remains unrelated to this UI-only change. It was not modified because the current task is limited to the approved mobile UI work and must not expand into unrelated configuration changes.

@@ -117,10 +117,10 @@ export default function TransactionFilter({
   return (
     <div className="flex flex-col gap-4 p-4 bg-white border border-slate-200 rounded-xl w-full">
       {/* Quick Action Filter Tabs */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
         <button
           onClick={() => handleQuickFilter("all")}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          className={`min-h-10 w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors sm:w-auto ${
             filterType === "all"
               ? "bg-indigo-600 text-white"
               : "text-slate-700 hover:text-white hover:bg-slate-300"
@@ -130,7 +130,7 @@ export default function TransactionFilter({
         </button>
         <button
           onClick={() => handleQuickFilter("today")}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          className={`min-h-10 w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors sm:w-auto ${
             filterType === "today"
               ? "bg-indigo-600 text-white"
               : "text-slate-700 hover:text-white hover:bg-slate-300"
@@ -140,7 +140,7 @@ export default function TransactionFilter({
         </button>
         <button
           onClick={() => handleQuickFilter("month")}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+          className={`min-h-10 w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors sm:w-auto ${
             filterType === "month"
               ? "bg-indigo-600 text-white"
               : "text-slate-700 hover:text-white hover:bg-slate-300"
@@ -152,7 +152,7 @@ export default function TransactionFilter({
 
       {/* Custom Date Range Selectors */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-1 items-stretch gap-2 sm:flex sm:flex-wrap sm:items-center">
           <label className="text-xs text-slate-700 font-medium">
             Custom Range:
           </label>
@@ -160,15 +160,15 @@ export default function TransactionFilter({
             type="date"
             value={startDate}
             onChange={handleStartDateChange}
-            className="flex-1 min-w-[130px] bg-white border border-slate-300 text-sm text-slate-900 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+            className="min-h-10 w-full bg-white border border-slate-300 text-sm text-slate-900 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors sm:min-w-[130px] sm:w-auto"
             placeholder="Start Date"
           />
-          <span className="text-slate-700 text-sm font-medium">မှ</span>
+          <span className="hidden text-slate-700 text-sm font-medium sm:inline">မှ</span>
           <input
             type="date"
             value={endDate}
             onChange={handleEndDateChange}
-            className="flex-1 min-w-[130px] bg-white border border-slate-300 text-sm text-slate-900 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+            className="min-h-10 w-full bg-white border border-slate-300 text-sm text-slate-900 rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors sm:min-w-[130px] sm:w-auto"
             placeholder="End Date"
           />
         </div>
@@ -177,7 +177,7 @@ export default function TransactionFilter({
         {filterType === "custom" && (startDate || endDate) && (
           <button
             onClick={handleResetCustom}
-            className="text-xs text-rose-400 hover:text-rose-300 font-medium transition-colors underline underline-offset-2"
+            className="min-h-10 rounded-md px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 font-medium transition-colors underline underline-offset-2 sm:text-right"
           >
             Reset
           </button>

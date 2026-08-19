@@ -1153,7 +1153,7 @@ export default function Dashboard() {
 
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <input
               type="text"
               className="flex-1 h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner"
@@ -1171,7 +1171,7 @@ export default function Dashboard() {
             )}
           </div>
           {showCustomerList && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-2 customer-list-container animate-slide-up">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-2 customer-list-container animate-slide-up">
             {loading ? (
               <div className="col-span-full rounded-lg border border-slate-200 p-4 text-center text-slate-600">
                 <div className="flex items-center justify-center gap-2">
@@ -1183,7 +1183,7 @@ export default function Dashboard() {
               paginatedCustomers.map((customer) => (
                 <div
                   key={`customer-${customer.id}`}
-                  className={`cursor-pointer rounded-xl border p-4 customer-card ${
+                  className={`cursor-pointer rounded-xl border p-3 sm:p-4 customer-card ${
                     highlightedCustomerId === customer.id
                       ? "border-cyan-500 bg-cyan-500/10 ring-2 ring-cyan-500/40 scale-105 shadow-lg"
                       : selectedCustomerId === customer.id
@@ -1220,7 +1220,7 @@ export default function Dashboard() {
                   </div>
                   <div className="mt-3 flex gap-2">
                     <button
-                      className="flex-1 rounded-md px-2 py-1 text-xs font-medium text-cyan-600 hover:bg-cyan-950/60"
+                      className="flex min-h-10 flex-1 items-center justify-center rounded-md px-2 py-2 text-xs font-medium text-cyan-700 hover:bg-cyan-50"
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditCustomer(customer);
@@ -1230,7 +1230,7 @@ export default function Dashboard() {
                       Edit
                     </button>
                     <button
-                      className="flex-1 rounded-md px-2 py-1 text-xs font-medium text-rose-300 hover:bg-rose-950/60"
+                      className="flex min-h-10 flex-1 items-center justify-center rounded-md px-2 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeletingCustomer(customer);
@@ -1251,11 +1251,11 @@ export default function Dashboard() {
 
           )}
           {customers.length > 0 && totalPages > 1 && showCustomerList && (
-            <div className="mt-4 flex items-center justify-between gap-2">
+            <div className="mt-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
               <div className="text-sm text-slate-600">
                 <span className="font-medium text-slate-700">{customers.length}</span> customers - Page <span className="font-medium text-slate-700">{currentPage}</span> of <span className="font-medium text-slate-700">{totalPages}</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
                 <button
                   className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:border-cyan-400 hover:text-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -1300,9 +1300,10 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : selectedCustomer ? (
-              <div id="customer-details-section">
+              <div id="customer-details-section" className="scroll-mt-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between pt-4">
                   <div>
+                    <button type="button" onClick={() => setShowCustomerList(true)} className="mb-3 rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:hidden">Customer List သို့ပြန်ရန်</button>
                     <h2 className="text-xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
                     <p className="mt-1 text-sm text-slate-700">
                       {[selectedCustomer.phone, selectedCustomer.routeTag].filter(Boolean).join(" / ") ||
@@ -1330,7 +1331,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-6 grid gap-6 grid-cols-1 xl:grid-cols-2 items-start">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-6 shadow-sm h-full min-h-[400px]">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-4 shadow-sm h-full min-h-[400px] sm:p-6">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းအသစ်သွင်းရန်</h3>
                     <form className="mt-4 space-y-4" onSubmit={createLedgerTransaction}>
                       <div className="flex p-1 bg-slate-50/80 rounded-xl border border-slate-200 mb-4 shadow-inner">
@@ -1426,7 +1427,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-8">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းမှတ်တမ်း (Transactions)</h3>
                   </div>
                   
@@ -1435,7 +1436,22 @@ export default function Dashboard() {
                     onFilterChange={handleFilterChange}
                   />
 
-                  <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+                  <div className="mt-4 space-y-3 md:hidden">{filteredLedgers.length ? filteredLedgers.map((ledger) => (
+                    <article key={`mobile-${ledger.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div><p className="text-xs text-slate-500">Date</p><p className="mt-1 text-sm font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
+                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
+                      </div>
+                      <p className={`mt-3 text-xl font-bold ${ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
+                      <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-xs">
+                        <div><p className="text-slate-500">Payment</p><p className="mt-1 font-medium text-slate-700">{ledger.paymentType || "-"}</p></div>
+                        <div><p className="text-slate-500">Note</p><p className="mt-1 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
+                      </div>
+                      <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-4 min-h-10 w-full rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
+                    </article>
+                  )) : <div className="rounded-xl border border-slate-200 px-4 py-8 text-center text-sm text-slate-500">Transaction မရှိသေးပါ။</div>}</div>
+
+                  <div className="mt-4 hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
                     <table className="w-full text-left text-sm text-slate-700">
                       <thead className="bg-slate-100 text-xs uppercase text-slate-700">
                         <tr>
