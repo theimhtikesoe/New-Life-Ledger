@@ -601,3 +601,8 @@ Verification completed:
 | Protected files | No database schema, package/lock, Vercel, Daily Summary API, Activity History API, Telegram, or Cron changes. |
 | Mutating operations | No customer, ledger, audit-log, restore, delete, or database write was added. |
 | Data safety | Existing records remain read-only during loading/retry; only GET requests are retried. |
+
+
+### Production Verification for Section 32
+
+The production deployment for commit `a5f3cff` was verified with a cache-busted Dashboard URL. During the initial request window, KPI cards showed `ရယူနေသည်...` and the customer list showed its loading spinner; they did not show misleading zero values. After the read-only requests completed, the Dashboard displayed 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. The Add Customer section remained collapsed on first entry. The `/api/customers` response returned 156 customer records, and no write operation was performed during this verification.
