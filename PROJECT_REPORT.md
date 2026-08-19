@@ -580,3 +580,24 @@ Verification completed:
 | `git diff --check` | Passed. |
 | Protected files | No changes detected. |
 | Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed by the UI change. |
+
+
+## 32. Reliable Dashboard Loading and Network Retry
+
+**Date:** 2026-08-19
+
+The Dashboard initial data-loading flow was strengthened after a Myanmar phone intermittently showed a connection error and temporary zero values while the page itself had loaded. The change is UI/data-fetch handling only and does not change the API contracts or database.
+
+The Dashboard now makes the initial customer request only once when no search term is active, rather than requesting the same all-customer data twice. Read-only GET requests use a 12-second timeout and up to three attempts with short backoff for network errors and server-side 5xx responses. Aborted requests are still cancelled normally when the search term changes or the component unmounts. Non-GET operations remain single-attempt to avoid duplicate customer, ledger, restore, or other mutations.
+
+While the initial request is pending, KPI cards show `ရယူနေသည်...` instead of displaying misleading zero values. If all data cannot be loaded, KPI values show a dash and the customer list shows a clear data-not-ready state with a retry button. Raw browser messages such as `Type error`, `Failed to fetch`, `NetworkError`, `Load failed`, and timeout messages are converted into a Burmese connection message; the existing retry action remains available.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Protected files | No database schema, package/lock, Vercel, Daily Summary API, Activity History API, Telegram, or Cron changes. |
+| Mutating operations | No customer, ledger, audit-log, restore, delete, or database write was added. |
+| Data safety | Existing records remain read-only during loading/retry; only GET requests are retried. |

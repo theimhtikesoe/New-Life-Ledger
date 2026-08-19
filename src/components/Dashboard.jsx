@@ -27,39 +27,101 @@ function formatMyanmarDateInputValue(value = new Date()) {
 
 function friendlyError(error) {
   const message = String(error?.message || "").trim();
-  if (error?.name === "TypeError" || /^(Type error|Failed to fetch|NetworkError|Load failed)$/i.test(message)) {
+  if (error?.name === "TypeError" || error?.name === "TimeoutError" || /^(Type error|Failed to fetch|NetworkError|Load failed|Request timed out)$/i.test(message)) {
     return "အင်တာနက် သို့မဟုတ် server connection ခဏမတည်ငြိမ်ပါ။ ပြန်စမ်းမည်ကို နှိပ်ပြီး ထပ်မံရယူပါ။";
   }
   return message || "အချက်အလက်ရယူရာတွင် အမှားအယွင်းဖြစ်နေပါသည်။";
 }
 
+function isRetryableNetworkError(error) {
+  const message = String(error?.message || "").trim();
+  return error?.name === "TypeError" || error?.name === "TimeoutError" || /^(Type error|Failed to fetch|NetworkError|Load failed|Request timed out)$/i.test(message);
+}
+
+async function fetchWithTimeout(path, options, parentSignal) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 12000);
+  const relayAbort = () => controller.abort();
+  if (parentSignal) {
+    if (parentSignal.aborted) relayAbort();
+    else parentSignal.addEventListener("abort", relayAbort, { once: true });
+  }
+
+  try {
+    return await fetch(path, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (timedOut && error.name === "AbortError") {
+      error.name = "TimeoutError";
+      error.message = "Request timed out";
+      error.retryable = true;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    parentSignal?.removeEventListener("abort", relayAbort);
+  }
+}
+
+function waitBeforeRetry(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, milliseconds);
+    if (!signal) return;
+    const cancel = () => {
+      clearTimeout(timer);
+      reject(new DOMException("Request aborted", "AbortError"));
+    };
+    if (signal.aborted) cancel();
+    else signal.addEventListener("abort", cancel, { once: true });
+  });
+}
+
 async function api(path, options) {
   const { signal, ...restOptions } = options || {};
+  const method = String(restOptions.method || "GET").toUpperCase();
+  const canRetry = method === "GET";
   const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") : "";
-  const response = await fetch(path, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(actorName ? { "x-actor-name": actorName } : {}),
-    },
-    signal,
-    ...restOptions,
-  });
-  const text = await response.text();
-  let body = {};
+  const maxAttempts = canRetry ? 3 : 1;
 
-  if (text) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      body = JSON.parse(text);
-    } catch {
-      body = { error: text };
+      const response = await fetchWithTimeout(path, {
+        headers: {
+          "Content-Type": "application/json",
+          ...(actorName ? { "x-actor-name": actorName } : {}),
+        },
+        ...restOptions,
+      }, signal);
+      const text = await response.text();
+      let body = {};
+
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = { error: text };
+        }
+      }
+
+      if (!response.ok) {
+        const error = new Error(body.error || `Request failed with status ${response.status}`);
+        error.retryable = response.status >= 500;
+        throw error;
+      }
+
+      return body.data;
+    } catch (error) {
+      if (error.name === "AbortError" || attempt === maxAttempts || (!error.retryable && !isRetryableNetworkError(error))) {
+        throw error;
+      }
+      await waitBeforeRetry(350 * attempt, signal);
     }
   }
 
-  if (!response.ok) {
-    throw new Error(body.error || `Request failed with status ${response.status}`);
-  }
-
-  return body.data;
+  throw new Error("Request failed");
 }
 
 // Alert notification component
@@ -124,6 +186,7 @@ export default function Dashboard() {
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [showCustomerList, setShowCustomerList] = useState(true);
   const [message, setMessage] = useState("");
+  const [dataLoadError, setDataLoadError] = useState("");
   const [alert, setAlert] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredLedgers, setFilteredLedgers] = useState([]);
@@ -264,16 +327,20 @@ export default function Dashboard() {
 
   const loadDashboard = useCallback(async (signal) => {
     setLoading(true);
+    setDataLoadError("");
     try {
+      const customerRequest = api(`/api/customers${search ? `?q=${encodeURIComponent(search)}` : ""}`, { signal });
+      const allCustomersRequest = search ? api("/api/customers", { signal }) : customerRequest;
       const [customerRows, kpayRows, allCustomersRows] = await Promise.all([
-        api(`/api/customers${search ? `?q=${encodeURIComponent(search)}` : ""}`, { signal }),
+        customerRequest,
         api("/api/unverified-kpay?status=PENDING", { signal }),
-        api("/api/customers", { signal }), // Fetch all customers for KPI
+        allCustomersRequest,
       ]);
       setCustomers(customerRows);
       setPendingKpay(kpayRows);
       setAllCustomersForKPI(allCustomersRows);
       setMessage("");
+      setDataLoadError("");
       
       // Collect all ledgers from all customers
       const allLedgersData = [];
@@ -287,6 +354,7 @@ export default function Dashboard() {
       if (error.name === 'AbortError') return;
       console.error("Dashboard data loading error:", error);
       const message = friendlyError(error);
+      setDataLoadError(message);
       setMessage(message);
       showAlert(message, "error");
     } finally {
@@ -361,16 +429,6 @@ export default function Dashboard() {
       setLoadingMoreTransactions(false);
     }
   }, [selectedCustomerId, selectedCustomer, transactionPagination, loadingMoreTransactions, showAlert]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadDashboard(controller.signal).catch((error) => {
-      if (error.name === 'AbortError') return;
-      setMessage(error.message);
-      showAlert(error.message, "error");
-    });
-    return () => controller.abort();
-  }, [loadDashboard, showAlert]);
 
   useEffect(() => {
     loadCustomer().catch((error) => {
@@ -1079,14 +1137,14 @@ export default function Dashboard() {
             {/* Total Balance */}
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm hover:shadow-md transition-shadow">
               <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">စုစုပေါင်း အကြွေး</p>
-              <p className="mt-2 text-2xl font-bold text-rose-700">{formatMoney(totalBalance)}</p>
+              <p className="mt-2 text-2xl font-bold text-rose-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : formatMoney(totalBalance)}</p>
               <p className="mt-1 text-xs text-rose-500">Total Balance</p>
             </div>
 
             {/* Customer Count */}
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm hover:shadow-md transition-shadow">
               <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Customer အရေအတွက်</p>
-              <p className="mt-2 text-2xl font-bold text-blue-700">{customerCount}</p>
+              <p className="mt-2 text-2xl font-bold text-blue-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : customerCount}</p>
               <p className="mt-1 text-xs text-blue-500">Total Customers</p>
             </div>
 
@@ -1096,7 +1154,7 @@ export default function Dashboard() {
               className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer text-left"
             >
               <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">ယနေ့ ငွေချေမှုများ</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">{todayTransactions}</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : todayTransactions}</p>
               <p className="mt-1 text-xs text-emerald-500">Today&apos;s Paid Transactions</p>
             </button>
 
@@ -1200,6 +1258,17 @@ export default function Dashboard() {
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-400"></div>
                   <span>Customer များ ရှာဖွေနေသည်...</span>
                 </div>
+              </div>
+            ) : dataLoadError ? (
+              <div className="col-span-full rounded-lg border border-rose-200 bg-rose-50 p-5 text-center text-sm text-rose-700">
+                <p>Customer data မရသေးပါ။ ခဏစောင့်ပြီး ပြန်စမ်းနေပါသည်။</p>
+                <button
+                  type="button"
+                  onClick={() => { setDataLoadError(""); setMessage(""); loadDashboard(); }}
+                  className="mt-3 rounded-md border border-rose-300 bg-white px-4 py-2 font-semibold text-rose-700 hover:bg-rose-100"
+                >
+                  ပြန်စမ်းမည်
+                </button>
               </div>
             ) : customers.length ? (
               paginatedCustomers.map((customer) => (
