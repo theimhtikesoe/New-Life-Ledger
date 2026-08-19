@@ -655,3 +655,21 @@ Verification completed:
 ### Production Verification for Section 34
 
 The production deployment for commit `826c598` returned Dashboard HTTP 200. The protected daily report endpoint returned HTTP 401 without its required authorization header, confirming that the Cron endpoint remains protected. The Dashboard showed the two-line title `Customer ငွေရှင်းတမ်း` and `Customer အကြွေးရှင်းတမ်း`, and the collapsed Add Customer section showed a larger Add control directly beside its text. After read-only data loading, the existing baseline remained 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. No customer, ledger, audit-log, or database mutation was performed.
+
+
+## 35. Header Action Alignment and Full-Screen Initial Loading Lock
+
+**Date:** 2026-08-20
+
+The Dashboard header was refined for the mobile screenshot layout. On narrow screens, the Myanmar date/time remains centered on the first row, while the two-line Customer title and the action-button group are placed beneath it in aligned columns. The action controls remain consistent at tablet and desktop widths. This prevents the title and right-side buttons from appearing visually detached or uneven.
+
+A full-screen loading overlay was added for the initial Dashboard data request. While data is being retrieved, the page shows a centered spinner with `အချက်အလက်များ ရယူနေသည်...` and blocks interaction with Dashboard controls, customer cards, Add/Edit/Delete actions, report links, and other buttons. The overlay disappears only after the initial request finishes; if loading fails, the existing friendly error and retry flow remains available. The overlay is presentation and request-state handling only and does not create fallback data or write records.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Protected files | No database, API, Telegram, Cron, package, or environment changes. |
+| Data safety | No customer, ledger, audit-log, restore, delete, or database write was added. |

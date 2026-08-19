@@ -1056,28 +1056,42 @@ export default function Dashboard() {
   }, [selectedCustomer]);
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-white" aria-busy={loading}>
       {alert && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
+      )}
+      {loading && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/25 px-4 backdrop-blur-[2px]"
+          role="status"
+          aria-live="polite"
+          aria-label="အချက်အလက်များကို ရယူနေသည်"
+        >
+          <div className="w-full max-w-xs rounded-2xl border border-white/70 bg-white/95 p-6 text-center shadow-2xl">
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-cyan-100 border-t-cyan-600" />
+            <p className="mt-4 text-base font-semibold text-slate-900">အချက်အလက်များ ရယူနေသည်...</p>
+            <p className="mt-1 text-sm text-slate-500">ခဏစောင့်ပါ</p>
+          </div>
+        </div>
       )}
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
-          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] md:items-center md:gap-x-6">
-            <div className="min-w-0 md:max-w-[360px] md:justify-self-start">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] md:items-center md:gap-x-6">
+            <div className="order-2 col-start-1 row-start-2 min-w-0 md:order-none md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-start">
               <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
               <h1 className="mt-1 max-w-[360px] text-[clamp(1.3rem,2.2vw,1.8rem)] font-semibold leading-tight tracking-tight text-slate-900">
                 <span className="block">Customer ငွေရှင်းတမ်း</span>
                 <span className="block">Customer အကြွေးရှင်းတမ်း</span>
               </h1>
             </div>
-            <div className="order-first min-w-[190px] text-center md:order-none md:min-w-[210px]">
+            <div className="order-1 col-span-2 min-w-0 text-center md:order-none md:col-span-1 md:min-w-[210px]">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700">ယနေ့ရက်စွဲ</p>
               <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="grid w-full max-w-[340px] grid-cols-2 items-center gap-2 md:justify-self-end">
+            <div className="order-3 col-start-2 row-start-2 grid w-full max-w-[190px] grid-cols-2 items-center gap-2 md:order-none md:col-start-auto md:row-start-auto md:max-w-[340px] md:justify-self-end">
               <div className="col-span-2 flex [&>button]:w-full">
                 <OverdueNotificationBell
                 customers={allCustomersForKPI} 
