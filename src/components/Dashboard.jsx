@@ -1086,9 +1086,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] md:items-center md:gap-x-6">
             <div className="order-2 col-span-2 col-start-1 row-start-2 min-w-0 md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-start">
               <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
-              <h1 className="mt-1 max-w-[360px] text-[clamp(1.3rem,2.2vw,1.8rem)] font-semibold leading-tight tracking-tight text-slate-900">
-                <span className="block">Customer ငွေရှင်းတမ်း</span>
-                <span className="block">Customer အကြွေးရှင်းတမ်း</span>
+              <h1 className="mt-1 max-w-none whitespace-nowrap text-[clamp(1rem,1.8vw,1.55rem)] font-semibold leading-tight tracking-tight text-slate-900">
+                Customer ငွေရှင်းတမ်း၊ Customer အကြွေးရှင်းတမ်း
               </h1>
             </div>
             <div className="order-1 col-span-2 min-w-0 text-center md:order-none md:col-span-1 md:min-w-[210px]">

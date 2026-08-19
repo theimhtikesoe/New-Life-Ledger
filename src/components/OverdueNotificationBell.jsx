@@ -76,11 +76,13 @@ export default function OverdueNotificationBell({ customers = [], onSelectCustom
   if (overdueDebts.length === 0) {
     return (
       <button
-        className="relative flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+        type="button"
+        className="relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
         title="No overdue debts"
       >
-        <span className="text-lg">🔔</span>
-        <span className="text-xs text-slate-500">No alerts</span>
+        <span className="text-base">🔔</span>
+        <span>အကြွေး သတိပေးချက်</span>
+        <span className="text-xs font-medium text-slate-400">မရှိ</span>
       </button>
     );
   }
@@ -88,12 +90,14 @@ export default function OverdueNotificationBell({ customers = [], onSelectCustom
   return (
     <>
       <button
+        type="button"
         onClick={() => setShowModal(true)}
-        className="relative flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 transition-colors"
+        className="relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-100"
         title={`${overdueDebts.length} overdue debts`}
       >
-        <span className="text-lg">🔔</span>
-        <span className="inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-rose-600 text-xs font-bold text-white">
+        <span className="text-base">🔔</span>
+        <span>အကြွေး သတိပေးချက်</span>
+        <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-xs font-bold text-white">
           {overdueDebts.length}
         </span>
       </button>

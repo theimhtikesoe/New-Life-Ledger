@@ -726,3 +726,30 @@ Verification completed:
 ### Production Verification for Section 37
 
 The production deployment for commit `10bdeb3` returned Dashboard HTTP 200 and Customers API HTTP 200. During initial loading, the centered spinner overlay appeared and blocked interaction. After loading, the action controls appeared inside a single soft-background rounded panel; at phone widths they used a one-column stack with matching button height, rounded corners, centered labels, and no overlap. The read-only data baseline remained 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. The change was limited to `Dashboard.jsx`; no customer, ledger, audit-log, or database mutation was performed.
+
+
+## 38. Dashboard One-line Title and Centered Debt Alert Button
+
+**Date:** 2026-08-20
+
+The owner requested that the Dashboard title be shown on one line as `Customer ငွေရှင်းတမ်း၊ Customer အကြွေးရှင်းတမ်း`, instead of splitting the two phrases across separate lines. The overdue notification control was also requested to display a clear Burmese label rather than only a bell icon and count.
+
+The following presentation-only changes were implemented:
+
+| File | UI change |
+|---|---|
+| `src/components/Dashboard.jsx` | Changed the Dashboard title to one line: `Customer ငွေရှင်းတမ်း၊ Customer အကြွေးရှင်းတမ်း`. The title uses responsive sizing and prevents unintended wrapping in the header. |
+| `src/components/OverdueNotificationBell.jsx` | Changed the notification control to show `🔔 အကြွေး သတိပေးချက်` centered within a full-width, rounded, shadowed button. When overdue records exist, the red count badge remains visible. When none exist, the same label displays with `မရှိ` and remains non-destructive/read-only. |
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed; Next.js compiled, lint/type checks passed, and all pages generated. |
+| `git diff --check` | Passed. |
+| Changed files | Only `src/components/Dashboard.jsx` and `src/components/OverdueNotificationBell.jsx` before documentation. |
+| Protected files | Database schema, customer/ledger/audit APIs, Telegram flow/settings, Cron, Vercel environment, package manifests, and PIN were not changed. |
+| Data safety | No customer, ledger, balance, audit, backup, restore, or database operation was executed. Existing records were not deleted, overwritten, or modified. |
+| Production deployment | Requires commit/push and the normal Vercel deployment check before the owner confirms the final phone/tablet appearance. |
+
+The existing `themeColor` metadata build warning remains unrelated to this UI-only change and was not modified.
