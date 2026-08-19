@@ -562,3 +562,21 @@ Verification completed:
 | Protected files | No changes to database schema, package/lock files, Vercel configuration, Daily Summary API, Activity History API, daily-report route, or Telegram helper. |
 | Production GET checks | `/api/customers` and `/api/unverified-kpay?status=PENDING` returned HTTP 200 during diagnosis. |
 | Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed by the fix. |
+
+
+## 31. Collapsed Add Customer Mobile UI
+
+**Date:** 2026-08-19
+
+The Dashboard's Add Customer section was changed to start in a collapsed state. On first entry, the mobile screen now shows the `Customer အသစ်ထည့်ရန်` title, supporting text, and the `Add` control only, allowing the customer list and KPI area to appear earlier in the viewport. Pressing `Add` expands the existing form so the user can enter name, phone number, starting balance, and submit the customer.
+
+The existing form validation, create-customer request, actor tracking, optimistic UI behavior, and post-submit collapse behavior remain unchanged. This is a single UI state change in `Dashboard.jsx`; no database schema, customer records, ledger transactions, audit logs, PIN, Telegram delivery, Cron schedule, or Vercel environment was changed.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Protected files | No changes detected. |
+| Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed by the UI change. |

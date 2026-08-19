@@ -118,7 +118,7 @@ export default function Dashboard() {
     date: "",
     paymentType: "",
   });
-  const [showAddCustomer, setShowAddCustomer] = useState(true);
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
