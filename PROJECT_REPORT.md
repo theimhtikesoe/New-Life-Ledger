@@ -250,3 +250,22 @@ Local verification completed after this change:
 | Data safety | No customer, ledger, balance, or audit records were deleted or modified by this rendering fix |
 
 The next required steps are to commit the WASM renderer fix, deploy it, confirm that Vercel creates the serverless functions successfully, and only then ask the owner to run one fresh Telegram test. The latest Telegram output must not be treated as evidence against the new WASM implementation until that new deployment has completed.
+
+
+## 12. Deployment Update — WASM Renderer Package Succeeded
+
+**Date:** 2026-08-19
+
+The owner shared screenshots showing that the older deployments `9dc29e1` and `695b779` were still marked as errors in the Vercel dashboard. Those screenshots were from before the new renderer deployment completed.
+
+The latest renderer fix was committed as `744ed45` (`Use WASM renderer for deployable Myanmar reports`) and pushed to `main`. Vercel subsequently reported:
+
+```text
+Deployment has completed
+```
+
+The deployment URL is <https://vercel.com/theimhtikesoes-projects/new-life-ledger/Fh45Qog8zAmvtGAthGpdEFtQBCJF>.
+
+This confirms that the previous invalid serverless deployment-package problem was avoided by removing the native `@resvg/resvg-js` package from the deployed implementation and using the repository-bundled `@resvg/resvg-wasm` asset instead. Local build also passed, and the WASM renderer fixture generated a PNG successfully.
+
+The production Telegram report has not yet been considered fully verified. A fresh manual report must still be sent from the new successful deployment and checked for Burmese text, English fallback text, PDF readability, and delivery to both configured recipients. Existing database records remain untouched by the renderer/deployment changes.
