@@ -650,3 +650,8 @@ Verification completed:
 | Cron schedule | `30 3 * * *` = 10:00 Myanmar Time. |
 | Protected data/API files | No schema, ledger, audit, daily-summary, activity, Telegram helper, or report-generation changes. |
 | Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed. |
+
+
+### Production Verification for Section 34
+
+The production deployment for commit `826c598` returned Dashboard HTTP 200. The protected daily report endpoint returned HTTP 401 without its required authorization header, confirming that the Cron endpoint remains protected. The Dashboard showed the two-line title `Customer ငွေရှင်းတမ်း` and `Customer အကြွေးရှင်းတမ်း`, and the collapsed Add Customer section showed a larger Add control directly beside its text. After read-only data loading, the existing baseline remained 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. No customer, ledger, audit-log, or database mutation was performed.
