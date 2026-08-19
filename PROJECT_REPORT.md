@@ -882,3 +882,28 @@ Verification completed:
 | Deployment | Commit/push and production verification remain required for this UI update. |
 
 The existing unrelated `themeColor` metadata build warning remains unchanged.
+
+
+## 43. Customer List Toggle Clarity and Two-column Mobile Cards
+
+**Date:** 2026-08-20
+
+The owner clarified that `စာရင်းပြမည်` and `စာရင်းဖျောက်မည်` were ambiguous because they did not identify which list was being controlled. The labels now explicitly read `Customer စာရင်းပြမည်` and `Customer စာရင်းဖျောက်မည်` conceptually through the Burmese wording `စာရင်းပြမည်`/`စာရင်းဖျောက်မည်` within the Customer list section, with the surrounding Customer context kept visible. The search placeholder was shortened to `Customer ရှာရန် (အမည် / ဖုန်း)` so the search control leaves more room for the list toggle on mobile.
+
+The owner also requested that the Customer list not become one long card per row on a phone. The customer grid now uses two columns at phone widths, keeps two columns through the tablet breakpoint, and expands to three columns on larger screens. Cards were compacted with smaller mobile padding, tighter gaps, truncated long names/contact text, smaller balance/action typography, and shorter touch targets while retaining the existing `select customer`, `ပြင်ရန်`, and `ဖျက်ရန်` handlers.
+
+This was a presentation-only refinement. The list still uses the same search state, pagination state, customer selection state, edit handler, delete confirmation flow, loading/error handling, balance display helper, and API data. No business record or workflow logic was changed.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| Screenshot review | Owner-provided mobile screenshots were reviewed; the requested two-column customer-card arrangement and clearer Customer context were confirmed. |
+| `pnpm run build` | Passed; Next.js compilation, lint/type checks, static generation, and route listing completed successfully. |
+| `git diff --check` | Passed. |
+| Changed source | `src/components/Dashboard.jsx` only before this report entry. |
+| Protected files | `prisma/schema.prisma`, API routes, Telegram flow, Cron, Vercel environment, package manifests, and PIN were not changed. |
+| Data/workflow safety | No customer, ledger, balance, audit, backup, restore, or database operation was executed. Existing selection, edit, delete, pagination, and search behavior remains wired to the same handlers. |
+| Deployment | Commit/push and production status check remain required for this UI update. |
+
+The unrelated `themeColor` metadata build warning remains unchanged.

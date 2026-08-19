@@ -1270,7 +1270,7 @@ export default function Dashboard() {
             <input
               type="text"
               className="min-w-0 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner sm:flex-1 sm:h-12"
-              placeholder="Customer အမည် သို့မဟုတ် ဖုန်းနံပါတ် ရှာရန်"
+              placeholder="Customer ရှာရန် (အမည် / ဖုန်း)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -1284,7 +1284,7 @@ export default function Dashboard() {
             )}
           </div>
           {showCustomerList && (
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-1 customer-list-container animate-slide-up">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-1 customer-list-container animate-slide-up">
             {loading ? (
               <div className="col-span-full rounded-lg border border-slate-200 p-4 text-center text-slate-600">
                 <div className="flex items-center justify-center gap-2">
@@ -1307,7 +1307,7 @@ export default function Dashboard() {
               paginatedCustomers.map((customer) => (
                 <div
                   key={`customer-${customer.id}`}
-                  className={`cursor-pointer rounded-xl border p-2.5 sm:p-3 lg:p-4 customer-card ${
+                  className={`cursor-pointer rounded-lg border p-2 sm:p-3 lg:p-4 customer-card ${
                     highlightedCustomerId === customer.id
                       ? "border-cyan-500 bg-cyan-500/10 ring-2 ring-cyan-500/40 shadow-lg"
                       : selectedCustomerId === customer.id
@@ -1326,16 +1326,16 @@ export default function Dashboard() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-bold text-slate-900 text-sm hover:text-cyan-600 transition-colors">{customer.name}</h3>
-                      <p className="text-[11px] text-slate-600">
+                      <h3 className="truncate font-bold text-slate-900 text-xs hover:text-cyan-600 transition-colors sm:text-sm">{customer.name}</h3>
+                      <p className="truncate text-[10px] text-slate-600 sm:text-[11px]">
                         {[customer.phone, customer.routeTag].filter(Boolean).join(" / ") || "ဆက်သွယ်ရန်အချက်အလက်မရှိ"}
                       </p>
                     </div>
                   </div>
-                  <div className="mt-2.5 pt-2.5 border-t border-slate-200/50 flex items-center justify-between">
-                    <p className="text-xs text-slate-700 font-medium">{getBalanceLabel(customer.current_balance)}</p>
+                  <div className="mt-2 pt-2 border-t border-slate-200/50 flex items-center justify-between gap-1">
+                    <p className="truncate text-[10px] text-slate-700 font-medium sm:text-xs">{getBalanceLabel(customer.current_balance)}</p>
                     <p
-                      className={`text-sm font-semibold ${
+                      className={`shrink-0 text-xs font-semibold sm:text-sm ${
                         customer.current_balance > 0
                           ? "text-rose-700"
                           : customer.current_balance < 0
@@ -1346,9 +1346,9 @@ export default function Dashboard() {
                       {formatBalanceAmount(customer.current_balance)}
                     </p>
                   </div>
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-2 flex gap-1.5">
                     <button
-                      className="flex min-h-10 flex-1 items-center justify-center rounded-md px-2 py-2 text-xs font-medium text-cyan-700 hover:bg-cyan-50"
+                      className="flex min-h-8 flex-1 items-center justify-center rounded-md px-1 py-1.5 text-[10px] font-medium text-cyan-700 hover:bg-cyan-50 sm:min-h-9 sm:text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditCustomer(customer);
@@ -1358,7 +1358,7 @@ export default function Dashboard() {
                       ပြင်ရန်
                     </button>
                     <button
-                      className="flex min-h-10 flex-1 items-center justify-center rounded-md px-2 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                      className="flex min-h-8 flex-1 items-center justify-center rounded-md px-1 py-1.5 text-[10px] font-medium text-rose-600 hover:bg-rose-50 sm:min-h-9 sm:text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeletingCustomer(customer);
