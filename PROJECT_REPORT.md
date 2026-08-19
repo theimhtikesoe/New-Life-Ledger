@@ -786,3 +786,35 @@ Verification completed:
 | Deployment | Commit/push and production verification remain required for this compact UI change. |
 
 The existing unrelated `themeColor` metadata warning remains unchanged.
+
+
+## 40. Option A Balance Display and Currency Suffix Correction
+
+**Date:** 2026-08-20
+
+The owner clarified that a negative customer balance is intentional: it represents a customer who prepaid, so payments exceed debt and the remaining value is a customer credit rather than an outstanding debt. The owner selected **Option A** for the UI presentation.
+
+The presentation now distinguishes the balance states without changing the underlying accounting sign or calculations:
+
+| Raw balance state | Display label | Display color | Display amount |
+|---|---|---|---|
+| Positive | `လက်ကျန်အကြွေး` | Red | Positive amount with one `Ks` suffix |
+| Negative | `ကြိုတင်ငွေ လက်ကျန်` | Green | Absolute amount without the minus sign, with one `Ks` suffix |
+| Zero | `လက်ကျန်မရှိ` | Slate | `0 Ks` |
+
+The raw negative value remains unchanged in the database, calculations, exports, backup/restore data, and transaction logic. Only the customer-list and selected-customer UI display converts a negative balance to its absolute visual amount and labels it as prepaid credit.
+
+The mobile Transactions amount expression was also corrected so the shared `formatMoney()` currency suffix is not followed by a second literal `Ks`. Transaction amounts now display once, such as `3,726,250 Ks`, rather than `3,726,250 Ks Ks`.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed; Next.js compilation, lint/type checks, static generation, and route listing completed successfully. |
+| `git diff --check` | Passed. |
+| Changed source | `src/components/Dashboard.jsx` only, before this report entry. |
+| Protected files | Database schema, API routes, Telegram flow, Cron, Vercel environment, package manifests, and PIN were not changed. |
+| Data safety | No customer, ledger, balance, audit, backup, restore, or database operation was executed. Raw negative balances and all existing records remain unchanged. |
+| Deployment | Commit/push and production verification remain required for this UI update. |
+
+The unrelated `themeColor` metadata build warning remains unchanged.

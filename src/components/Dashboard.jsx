@@ -15,6 +15,17 @@ function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
 }
 
+function getBalanceLabel(value) {
+  const amount = Number(value || 0);
+  if (amount > 0) return "လက်ကျန်အကြွေး";
+  if (amount < 0) return "ကြိုတင်ငွေ လက်ကျန်";
+  return "လက်ကျန်မရှိ";
+}
+
+function formatBalanceAmount(value) {
+  return formatMoney(Math.abs(Number(value || 0)));
+}
+
 function formatDate(value) {
   return formatMyanmarDateTime(value);
 }
@@ -1322,13 +1333,17 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="mt-2.5 pt-2.5 border-t border-slate-200/50 flex items-center justify-between">
-                    <p className="text-xs text-slate-700 font-medium">Balance</p>
+                    <p className="text-xs text-slate-700 font-medium">{getBalanceLabel(customer.current_balance)}</p>
                     <p
                       className={`text-sm font-semibold ${
-                        customer.current_balance > 0 ? "text-rose-700" : "text-emerald-700"
+                        customer.current_balance > 0
+                          ? "text-rose-700"
+                          : customer.current_balance < 0
+                            ? "text-emerald-700"
+                            : "text-slate-700"
                       }`}
                     >
-                      {formatMoney(customer.current_balance)}
+                      {formatBalanceAmount(customer.current_balance)}
                     </p>
                   </div>
                   <div className="mt-3 flex gap-2">
@@ -1432,13 +1447,17 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-slate-700 font-medium">လက်ကျန်အကြွေး</p>
+                    <p className="text-sm text-slate-700 font-medium">{getBalanceLabel(selectedCustomer.current_balance)}</p>
                     <p
                       className={`text-2xl font-bold sm:text-3xl ${
-                        selectedCustomer.current_balance > 0 ? "text-rose-700" : "text-emerald-700"
+                        selectedCustomer.current_balance > 0
+                          ? "text-rose-700"
+                          : selectedCustomer.current_balance < 0
+                            ? "text-emerald-700"
+                            : "text-slate-700"
                       }`}
                     >
-                      {formatMoney(selectedCustomer.current_balance)}
+                      {formatBalanceAmount(selectedCustomer.current_balance)}
                     </p>
                   </div>
                 </div>
@@ -1555,7 +1574,7 @@ export default function Dashboard() {
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Date</p><p className="mt-0.5 truncate text-xs font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
                       </div>
-                      <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)} Ks</p>
+                      <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
                       <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[11px]">
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.paymentType || "-"}</p></div>
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
