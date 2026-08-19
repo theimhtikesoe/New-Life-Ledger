@@ -222,3 +222,31 @@ The report must describe secrets by variable name only. Never record token value
 [8]: `src/lib/telegram.js` — Telegram delivery helper.
 [9]: `prisma/schema.prisma` — Database schema, including audit logging.
 [10]: `vercel.json` — Vercel Cron configuration.
+
+
+## 11. Latest Update — Telegram Output Still Unreadable and WASM Packaging Fix
+
+**Date:** 2026-08-19
+
+The owner provided a newly received Telegram image/PDF showing that Burmese labels still render as square boxes. The visible output matches the previous successful deployment, not the newest renderer code, because the website was still serving the last successful deployment while commit `695b779` had failed during Vercel output packaging.
+
+The failed deployment log showed that the Next.js build itself completed successfully, including the daily-report route, but Vercel failed while creating the serverless deployment package with:
+
+```text
+The framework produced an invalid deployment package for a Serverless Function.
+Typically this means that the framework produces files in symlinked directories.
+```
+
+The likely cause was the native `@resvg/resvg-js` binary package being traced into the Vercel serverless function. The current working fix replaces the native renderer with the pure WASM package `@resvg/resvg-wasm` and copies its WASM binary into `assets/resvg.wasm`, which is a normal repository asset. The report renderer also bundles `NotoSansMyanmar-Regular.ttf` for Burmese and `DejaVuSans.ttf` for Latin characters.
+
+Local verification completed after this change:
+
+| Check | Result |
+|---|---|
+| `pnpm build` | Passed locally; Next.js compiled and listed `/api/cron/daily-report` |
+| WASM renderer fixture | Passed locally; generated a PNG using the bundled WASM renderer and Myanmar font |
+| Production deployment | Not yet attempted for the current uncommitted WASM fix |
+| Telegram verification | Must wait until the new production deployment succeeds; the owner’s latest screenshot is from the old deployment |
+| Data safety | No customer, ledger, balance, or audit records were deleted or modified by this rendering fix |
+
+The next required steps are to commit the WASM renderer fix, deploy it, confirm that Vercel creates the serverless functions successfully, and only then ask the owner to run one fresh Telegram test. The latest Telegram output must not be treated as evidence against the new WASM implementation until that new deployment has completed.

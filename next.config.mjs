@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Keep the report font inside the Vercel serverless function bundle.
-  // Keep the report font and renderer assets inside the serverless bundle.
+  // Keep the report font and WASM renderer asset inside the serverless bundle.
   experimental: {
-    serverComponentsExternalPackages: ['@resvg/resvg-js'],
     outputFileTracingIncludes: {
-      '/*': ['./assets/**/*', './node_modules/@resvg/**/*'],
+      '/*': ['./assets/**/*'],
     },
   },
   // Headers for PWA support

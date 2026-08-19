@@ -1,5 +1,5 @@
 import { PDFDocument } from "pdf-lib";
-import { Resvg } from "@resvg/resvg-js";
+import { initWasm, Resvg } from "@resvg/resvg-wasm";
 import fs from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
@@ -174,6 +174,21 @@ function resolveFontPath() {
   return fs.existsSync(bundled) ? bundled : null;
 }
 
+function resolveLatinFontPath() {
+  const bundled = path.join(process.cwd(), "assets", "DejaVuSans.ttf");
+  return fs.existsSync(bundled) ? bundled : null;
+}
+
+let resvgReady;
+
+async function ensureResvgReady() {
+  if (!resvgReady) {
+    const wasmPath = path.join(process.cwd(), "assets", "resvg.wasm");
+    resvgReady = initWasm(fs.readFileSync(wasmPath));
+  }
+  await resvgReady;
+}
+
 function wrapPdfText(text, font, fontSize, maxWidth) {
   const words = String(text ?? "").split(/\s+/).filter(Boolean);
   if (!words.length) return [""];
@@ -235,8 +250,11 @@ function createReportSvg(report) {
 
 async function renderReportImage(report) {
   const fontPath = resolveFontPath();
+  const latinFontPath = resolveLatinFontPath();
+  if (!fontPath || !latinFontPath) throw new Error("Daily report font assets are unavailable in the serverless bundle");
+  await ensureResvgReady();
   const svg = createReportSvg(report);
-  return Buffer.from(new Resvg(svg, { font: { fontFiles: [fontPath] } }).render().asPng());
+  return Buffer.from(new Resvg(svg, { font: { fontBuffers: [fs.readFileSync(fontPath), fs.readFileSync(latinFontPath)], loadSystemFonts: false } }).render().asPng());
 }
 
 export async function createDailySummaryImage(report) {
