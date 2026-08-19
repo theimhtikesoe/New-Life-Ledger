@@ -1266,25 +1266,25 @@ export default function Dashboard() {
 
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
             <input
               type="text"
-              className="flex-1 h-12 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner"
-              placeholder="Customer ရှာဖွေရန် (အမည် သို့မဟုတ် ဖုန်းနံပါတ်)"
+              className="min-w-0 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner sm:flex-1 sm:h-12"
+              placeholder="Customer အမည် သို့မဟုတ် ဖုန်းနံပါတ် ရှာရန်"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             {selectedCustomerId && (
               <button
                 onClick={() => setShowCustomerList(!showCustomerList)}
-                className="ml-3 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap"
+                className="ml-0 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap sm:ml-3 sm:w-auto"
               >
-                {showCustomerList ? "Hide List" : "Show List"}
+                {showCustomerList ? "စာရင်းဖျောက်မည်" : "စာရင်းပြမည်"}
               </button>
             )}
           </div>
           {showCustomerList && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-2 customer-list-container animate-slide-up">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-1 customer-list-container animate-slide-up">
             {loading ? (
               <div className="col-span-full rounded-lg border border-slate-200 p-4 text-center text-slate-600">
                 <div className="flex items-center justify-center gap-2">
@@ -1307,9 +1307,9 @@ export default function Dashboard() {
               paginatedCustomers.map((customer) => (
                 <div
                   key={`customer-${customer.id}`}
-                  className={`cursor-pointer rounded-xl border p-3 sm:p-4 customer-card ${
+                  className={`cursor-pointer rounded-xl border p-2.5 sm:p-3 lg:p-4 customer-card ${
                     highlightedCustomerId === customer.id
-                      ? "border-cyan-500 bg-cyan-500/10 ring-2 ring-cyan-500/40 scale-105 shadow-lg"
+                      ? "border-cyan-500 bg-cyan-500/10 ring-2 ring-cyan-500/40 shadow-lg"
                       : selectedCustomerId === customer.id
                       ? "border-cyan-500 bg-cyan-500/5 ring-1 ring-cyan-500/20"
                       : "border-slate-200 bg-slate-50/40 hover:border-slate-300 hover:bg-slate-50/60"
@@ -1328,7 +1328,7 @@ export default function Dashboard() {
                     <div>
                       <h3 className="font-bold text-slate-900 text-sm hover:text-cyan-600 transition-colors">{customer.name}</h3>
                       <p className="text-[11px] text-slate-600">
-                        {[customer.phone, customer.routeTag].filter(Boolean).join(" / ") || "No contact"}
+                        {[customer.phone, customer.routeTag].filter(Boolean).join(" / ") || "ဆက်သွယ်ရန်အချက်အလက်မရှိ"}
                       </p>
                     </div>
                   </div>
@@ -1355,7 +1355,7 @@ export default function Dashboard() {
                       }}
                       disabled={isSubmitting}
                     >
-                      Edit
+                      ပြင်ရန်
                     </button>
                     <button
                       className="flex min-h-10 flex-1 items-center justify-center rounded-md px-2 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50"
@@ -1365,7 +1365,7 @@ export default function Dashboard() {
                       }}
                       disabled={isSubmitting}
                     >
-                      Delete
+                      ဖျက်ရန်
                     </button>
                   </div>
                 </div>
@@ -1381,7 +1381,7 @@ export default function Dashboard() {
           {customers.length > 0 && totalPages > 1 && showCustomerList && (
             <div className="mt-4 flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
               <div className="text-sm text-slate-600">
-                <span className="font-medium text-slate-700">{customers.length}</span> customers - Page <span className="font-medium text-slate-700">{currentPage}</span> of <span className="font-medium text-slate-700">{totalPages}</span>
+                <span className="font-medium text-slate-700">{customers.length}</span> ယောက် • စာမျက်နှာ <span className="font-medium text-slate-700">{currentPage}</span> / <span className="font-medium text-slate-700">{totalPages}</span>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
                 <button
@@ -1389,7 +1389,7 @@ export default function Dashboard() {
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  ယခင်
                 </button>
                 <div className="flex items-center gap-1">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
@@ -1411,7 +1411,7 @@ export default function Dashboard() {
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                  နောက်
                 </button>
               </div>
             </div>
@@ -1435,7 +1435,7 @@ export default function Dashboard() {
                     <h2 className="text-xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
                     <p className="mt-1 text-sm text-slate-700">
                       {[selectedCustomer.phone, selectedCustomer.routeTag].filter(Boolean).join(" / ") ||
-                        "No phone"}
+                        "ဖုန်းနံပါတ်မရှိ"}
                     </p>
                   </div>
                   <div className="text-right">
@@ -1454,14 +1454,14 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-6 grid-cols-1 xl:grid-cols-2 items-start">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-4 shadow-sm h-full min-h-[400px] sm:p-6">
+                <div className="mt-5 grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2 items-start">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-3 shadow-sm sm:p-5">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းအသစ်သွင်းရန်</h3>
-                    <form className="mt-4 space-y-4" onSubmit={createLedgerTransaction}>
-                      <div className="flex p-1 bg-slate-50/80 rounded-xl border border-slate-200 mb-4 shadow-inner">
+                    <form className="mt-3 space-y-3" onSubmit={createLedgerTransaction}>
+                      <div className="flex p-1 bg-slate-50/80 rounded-xl border border-slate-200 mb-3 shadow-inner">
                         <button
                           type="button"
-                          className={`flex-1 py-2.5 text-sm font-semibold rounded-md transition-all ${
+                          className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
                             ledgerForm.type === "CREDIT"
                               ? "bg-rose-600 text-slate-900 shadow-lg"
                               : "text-slate-600 hover:text-slate-200"
@@ -1473,7 +1473,7 @@ export default function Dashboard() {
                         </button>
                         <button
                           type="button"
-                          className={`flex-1 py-2.5 text-sm font-semibold rounded-md transition-all ${
+                          className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
                             ledgerForm.type === "DEBIT"
                               ? "bg-emerald-600 text-slate-900 shadow-lg"
                               : "text-slate-600 hover:text-slate-200"
@@ -1485,7 +1485,7 @@ export default function Dashboard() {
                         </button>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         <div className="space-y-1.5">
                           <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">ရက်စွဲ</label>
                           <div className="relative">
@@ -1541,10 +1541,10 @@ export default function Dashboard() {
                       ></textarea>
 
                       <button 
-                        className="w-full min-h-12 rounded-md bg-cyan-400 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full min-h-11 rounded-md bg-cyan-400 py-2.5 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed sm:min-h-12 sm:py-3"
                         disabled={isSubmitting}
                       >
-                        {isSubmitting ? "Saving..." : "Save Transaction"}
+                        {isSubmitting ? "သိမ်းဆည်းနေသည်..." : "စာရင်းသိမ်းမည်"}
                       </button>
                     </form>
                   </div>

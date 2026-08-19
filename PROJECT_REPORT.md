@@ -844,3 +844,41 @@ Verification completed:
 | Deployment | Commit/push and production verification remain required for this UI update. |
 
 The unrelated `themeColor` metadata build warning remains unchanged.
+
+
+## 42. Mobile Dashboard Readability and Data-entry Clarity Pass
+
+**Date:** 2026-08-20
+
+The owner approved a broader mobile UI/UX clarity pass with an explicit requirement that data-entry operators should not become confused and that existing functions, workflows, customer data, ledger data, audit history, database, Telegram settings, Cron, Vercel environment, and PIN must remain untouched.
+
+The presentation-only changes were limited to `src/components/Dashboard.jsx`:
+
+| Area | Change |
+|---|---|
+| Customer search | Search input now uses a clearer Burmese placeholder, stable full-width mobile sizing, and a compact responsive row with the list visibility control. |
+| Customer list | The list remains one column through phone widths and expands to two columns at the `md` breakpoint, preventing narrow mobile cards from compressing Burmese names and actions. Card padding and list gap were reduced for clearer scanning. |
+| Customer actions | `Edit`/`Delete` labels were changed to `ပြင်ရန်`/`ဖျက်ရန်`; the existing handlers and confirmation flows remain unchanged. Missing contact text is now Burmese and clearer. |
+| List visibility | `Hide List`/`Show List` were changed to `စာရင်းဖျောက်မည်`/`စာရင်းပြမည်`, with full-width mobile sizing and compact desktop sizing. |
+| Pagination | The summary now uses a compact Burmese format: `ယောက် • စာမျက်နှာ current / total`; Previous/Next became `ယခင်`/`နောက်`. Existing page state and click handlers remain unchanged. |
+| Customer highlight | Removed the temporary `scale-105` effect so selecting a customer does not make the card jump or alter nearby layout. The highlight border/ring remains. |
+| Transaction form | Reduced mobile-only outer padding, section gaps, toggle padding, and form spacing. The form remains visible and uses the same fields, validation, submit handler, balance update, and audit flow. |
+| Save action | `Saving...`/`Save Transaction` became `သိမ်းဆည်းနေသည်...`/`စာရင်းသိမ်းမည်` for clearer data-entry feedback. The submit action is unchanged. |
+| Transaction history | Existing compact mobile cards, filters, export action, amount formatting, and delete handlers remain functional; this pass only adjusts surrounding workflow hierarchy and form density. |
+
+The redesign does not hide or remove any data-entry capability. The operator still searches/selects a customer, edits or deletes through the existing handlers, enters debt/payment/date/note data, saves through the same API, filters transactions, exports CSV, and loads additional history using the same workflow.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| Full screenshot audit | Completed across eight ordered vertical tiles of the owner-provided mobile screenshot. |
+| `pnpm run build` | Passed; Next.js compilation, lint/type checks, static generation, and route listing completed successfully. |
+| `git diff --check` | Passed. |
+| Changed source | `src/components/Dashboard.jsx` only before this report entry. |
+| Protected files | `prisma/schema.prisma`, API routes, Telegram flow, Cron, Vercel environment, package manifests, and PIN were not changed. |
+| Data safety | No customer, ledger, balance, audit, backup, restore, or database operation was executed. Existing records were not deleted, overwritten, or modified. |
+| Workflow safety | Existing event handlers and API calls were preserved; only labels, responsive classes, spacing, and non-mutating presentation behavior changed. |
+| Deployment | Commit/push and production verification remain required for this UI update. |
+
+The existing unrelated `themeColor` metadata build warning remains unchanged.
