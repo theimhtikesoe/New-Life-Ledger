@@ -316,3 +316,14 @@ No database records were changed by this diagnosis or by the font comparison wor
 The owner requested that all Telegram report delivery go to the Telegram group only. The implementation now reads `TELEGRAM_GROUP_CHAT_ID` for Telegram notifications and does not use `TELEGRAM_PRIVATE_CHAT_ID` for either daily report files or KPay webhook messages.
 
 The daily report sends the PNG and PDF exactly once to the configured group. The successful-delivery audit summary now states that the report was sent to the Telegram group. The local production build passed after this change, and no database records were modified.
+
+
+## 16. Latest Update — Group-only UI Text and Myanmar Font Readability Fix
+
+**Date:** 2026-08-19
+
+The owner identified remaining `private chat နှင့် group` wording in the Data Management page, the confirmation dialog, and the success message. These user-facing strings have now been changed to state clearly that the PDF and image are sent to the **Telegram group တစ်ခုတည်း**.
+
+The latest report screenshot also confirmed that the previous Noto Sans Myanmar output was technically readable in many places but still visually difficult to read because of Myanmar glyph appearance and spacing. A local font comparison was performed using Noto Sans Myanmar, Padauk, and Noto Serif Myanmar. Padauk produced the clearest local result for the target Burmese labels, so the report renderer now bundles and uses `assets/Padauk-Regular.ttf` while retaining the Latin fallback font.
+
+The local production build passed after both changes. The database, backup Excel content, restore policy, and existing records were not changed. A fresh production deployment and Telegram group-only test are still required before this version is considered final.

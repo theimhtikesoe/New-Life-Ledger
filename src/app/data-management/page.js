@@ -51,14 +51,14 @@ export default function DataManagementPage() {
 
   const handleManualReportTest = async () => {
     if (!cronSecret.trim()) return;
-    if (!window.confirm("အရင်နေ့ Daily Summary ကို PDF + image အဖြစ် Telegram private chat နှင့် group နှစ်ခုလုံးသို့ အခုချက်ချင်းပို့မည်။ ဆက်လုပ်မလား?")) return;
+    if (!window.confirm("အရင်နေ့ Daily Summary ကို PDF + image အဖြစ် Telegram group တစ်ခုတည်းသို့ အခုချက်ချင်းပို့မည်။ ဆက်လုပ်မလား?")) return;
     setLoading(true); setError(""); setMessage("");
     try {
       const response = await fetch("/api/cron/daily-report", { method: "POST", headers: { Authorization: `Bearer ${cronSecret.trim()}` } });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Telegram report test မအောင်မြင်ပါ။");
       setCronSecret("");
-      setMessage(`Telegram test report အောင်မြင်ပါပြီ။ ${body.date} စာရင်းကို private chat နှင့် group နှစ်ခုလုံးသို့ ပို့ပြီးပါပြီ။`);
+      setMessage(`Telegram test report အောင်မြင်ပါပြီ။ ${body.date} စာရင်း၏ PDF နှင့် image ကို Telegram group တစ်ခုတည်းသို့ ပို့ပြီးပါပြီ။`);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
@@ -100,7 +100,7 @@ export default function DataManagementPage() {
 
         <section className="rounded-xl border border-violet-200 bg-violet-50 p-5">
           <h2 className="text-lg font-semibold text-violet-900">Telegram Report Test</h2>
-          <p className="mt-2 text-sm text-violet-800">အခုချက်ချင်း အရင်နေ့စာရင်းကို PDF + summary image အဖြစ် Telegram private chat နှင့် group နှစ်ခုလုံးသို့ စမ်းပို့ရန် အသုံးပြုပါ။ Secret ကို browser ထဲမသိမ်းဘဲ ဒီတစ်ကြိမ်အတွက်သာ အသုံးပြုပါမယ်။</p>
+          <p className="mt-2 text-sm text-violet-800">အခုချက်ချင်း အရင်နေ့စာရင်းကို PDF + summary image အဖြစ် Telegram group တစ်ခုတည်းသို့ စမ်းပို့ရန် အသုံးပြုပါ။ Secret ကို browser ထဲမသိမ်းဘဲ ဒီတစ်ကြိမ်အတွက်သာ အသုံးပြုပါမယ်။</p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <input type="password" value={cronSecret} onChange={(e) => setCronSecret(e.target.value)} placeholder="CRON_SECRET ကို ထည့်ပါ" autoComplete="off" className="min-w-0 flex-1 rounded-lg border border-violet-300 bg-white px-3 py-3 text-sm" />
             <button type="button" onClick={handleManualReportTest} disabled={!cronSecret.trim() || loading} className="rounded-lg bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-700 disabled:bg-slate-400">Send Test Report</button>

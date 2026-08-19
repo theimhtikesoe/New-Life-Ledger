@@ -170,7 +170,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
 }
 
 function resolveFontPath() {
-  const bundled = path.join(process.cwd(), "assets", "NotoSansMyanmar-Regular.ttf");
+  const bundled = path.join(process.cwd(), "assets", "Padauk-Regular.ttf");
   return fs.existsSync(bundled) ? bundled : null;
 }
 
@@ -250,7 +250,7 @@ function createReportSvg(report) {
   }).join("") : `<text x="90" y="${activityStartY}" class="row">ဒီနေ့လုပ်ဆောင်ချက်မရှိသေးပါ။</text>`;
   return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <style>
-      .title,.subtitle,.heading,.label,.value,.detail,.row,.small,.tiny { font-family: 'Noto Sans Myanmar', sans-serif; fill: #0f172a; }
+      .title,.subtitle,.heading,.label,.value,.detail,.row,.small,.tiny { font-family: 'Padauk', sans-serif; fill: #0f172a; }
       .title { font-size: 42px; } .subtitle { font-size: 24px; fill: #475569; } .heading { font-size: 28px; } .label { font-size: 22px; fill: #334155; } .value { font-size: 38px; } .detail { font-size: 19px; fill: #475569; } .row { font-size: 22px; } .small { font-size: 22px; } .tiny { font-size: 18px; } .bold { font-weight: 700; } .green { fill: #047857; } .red { fill: #be123c; } .line { stroke: #e2e8f0; stroke-width: 2; }
     </style>
     <rect width="100%" height="100%" fill="#f8fafc"/><rect x="28" y="28" width="2144" height="${height - 56}" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
