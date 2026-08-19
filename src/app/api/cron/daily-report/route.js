@@ -22,10 +22,16 @@ async function runDailyReport() {
     createDailyActivityImage(report),
   ]);
   const caption = [
-    `New Life Ledger — ${report.periodLabel}`,
-    `ငွေချေ ${report.summary.paidCount} ခု / ${report.summary.paidAmount.toLocaleString()} Ks`,
-    `အကြွေးတိုး ${report.summary.debtCount} ခု / ${report.summary.debtAmount.toLocaleString()} Ks`,
-    `Transactions ${report.summary.totalTransactions} ခု | Activity ${report.summary.auditCount} ခု`,
+    "<b>NEW LIFE LEDGER</b>",
+    "<b>DAILY BUSINESS REPORT</b>",
+    "",
+    `<b>REPORT DATE</b>\n<code>${report.dateLabel}</code>`,
+    `<b>TIME RANGE</b>\n<code>00:00–23:59 (Myanmar Time)</code>`,
+    "",
+    `🟢 <b>ငွေချေ</b>  <code>${report.summary.paidCount} ခု</code>  <b>${report.summary.paidAmount.toLocaleString()} Ks</b>`,
+    `🔴 <b>အကြွေးတိုး</b>  <code>${report.summary.debtCount} ခု</code>  <b>${report.summary.debtAmount.toLocaleString()} Ks</b>`,
+    `🔵 <b>Transactions</b>  <code>${report.summary.totalTransactions} ခု</code>`,
+    `🟣 <b>Activity</b>  <code>${report.summary.auditCount} ခု</code>`,
   ].join("\n");
 
   const delivery = await sendDailyReportToTelegram({

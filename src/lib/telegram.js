@@ -8,6 +8,7 @@ async function sendTelegramFile({ token, chatId, method, buffer, filename, mimeT
   const form = new FormData();
   form.append("chat_id", chatId);
   form.append("caption", caption || "");
+  if (caption) form.append("parse_mode", "HTML");
   if (method === "sendPhoto") {
     form.append("photo", new Blob([buffer], { type: mimeType }), filename);
   } else {

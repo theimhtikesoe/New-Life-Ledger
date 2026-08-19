@@ -382,3 +382,12 @@ The owner confirmed that the browser-rendered report now works, but the single l
 The PDF now contains two pages in the same order: page 1 is Daily Summary and page 2 is Activity History. Both pages are embedded from the same browser-rendered panel screenshots used for the PNG files, preserving identical Burmese typography and layout. This is a presentation-only change; report data, audit records, customer records, ledger records, backup, and restore logic are unchanged.
 
 A local Next.js production build passed after the split-panel implementation. A fresh production deployment and Telegram group test are still required.
+
+
+## 22. Color-coded Telegram Caption and Clear Date/Time Display
+
+**Date:** 2026-08-19
+
+The Telegram group caption now uses Telegram HTML formatting. It presents `NEW LIFE LEDGER` and `DAILY BUSINESS REPORT` as headings, separates `REPORT DATE` from `TIME RANGE`, and uses bold values with colored status markers for ငွေချေ, အကြွေးတိုး, Transactions, and Activity. The time range is explicitly shown as `00:00–23:59 (Myanmar Time)` so it cannot be confused with the delivery time.
+
+The media upload helper now sends `parse_mode=HTML` for captions so the bold and code formatting is rendered by Telegram. The local Next.js production build passed. This is a caption-only presentation change and does not modify any database records or report calculations.
