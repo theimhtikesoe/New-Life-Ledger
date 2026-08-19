@@ -1,4 +1,5 @@
-import PDFDocument from "pdfkit";
+import { PDFDocument } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import sharp from "sharp";
 import fs from "node:fs";
 import path from "node:path";
@@ -156,69 +157,84 @@ function resolveFontPath() {
   return fs.existsSync(bundled) ? bundled : null;
 }
 
+function wrapPdfText(text, font, fontSize, maxWidth) {
+  const words = String(text ?? "").split(/\s+/).filter(Boolean);
+  if (!words.length) return [""];
+  const lines = [];
+  let line = "";
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && font.widthOfTextAtSize(candidate, fontSize) > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 export async function createDailyReportPdf(report) {
   const fontPath = resolveFontPath();
-  if (!fontPath) {
-    throw new Error("Daily report font asset is unavailable in the serverless bundle");
-  }
-  const doc = new PDFDocument({ size: "A4", margin: 36, bufferPages: true });
-  doc.font(fontPath);
+  if (!fontPath) throw new Error("Daily report font asset is unavailable in the serverless bundle");
 
-  const chunks = [];
-  doc.on("data", (chunk) => chunks.push(chunk));
-  const done = new Promise((resolve, reject) => {
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
-    doc.on("error", reject);
-  });
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+  const font = await pdfDoc.embedFont(fs.readFileSync(fontPath), { subset: true });
+  const pageSize = [595.28, 841.89];
+  const margin = 36;
+  const maxWidth = pageSize[0] - margin * 2;
+  let page = pdfDoc.addPage(pageSize);
+  let y = pageSize[1] - margin;
+
+  const draw = (text, size = 10, gap = 5) => {
+    const lines = wrapPdfText(text, font, size, maxWidth);
+    for (const line of lines) {
+      if (y < margin + size + gap) {
+        page = pdfDoc.addPage(pageSize);
+        y = pageSize[1] - margin;
+      }
+      page.drawText(line, { x: margin, y: y - size, size, font });
+      y -= size + gap;
+    }
+  };
+  const heading = (text, size = 12) => {
+    y -= 8;
+    draw(text, size, 5);
+    y -= 3;
+  };
 
   const { summary } = report;
-  doc.fontSize(18).text("New Life Ledger - Daily Report");
-  doc.moveDown(0.25).fontSize(10).text(report.periodLabel);
-  doc.moveDown(0.8).fontSize(12).text("Daily Summary", { underline: true });
-  doc.moveDown(0.35).fontSize(10);
-  doc.text(`Paid transactions: ${summary.paidCount} | ${amount(summary.paidAmount)}`);
-  doc.text(`Debt increases: ${summary.debtCount} | ${amount(summary.debtAmount)}`);
-  doc.text(`Total transactions: ${summary.totalTransactions}`);
-  doc.text(`Activity actions: ${summary.auditCount}`);
-
-  doc.moveDown(0.8).fontSize(12).text("Payment Types", { underline: true });
-  doc.moveDown(0.3).fontSize(10);
+  draw("New Life Ledger - Daily Report", 18, 7);
+  draw(report.periodLabel, 10, 8);
+  heading("Daily Summary");
+  draw(`Paid transactions: ${summary.paidCount} | ${amount(summary.paidAmount)}`);
+  draw(`Debt increases: ${summary.debtCount} | ${amount(summary.debtAmount)}`);
+  draw(`Total transactions: ${summary.totalTransactions}`);
+  draw(`Activity actions: ${summary.auditCount}`);
+  heading("Payment Types");
   const paymentEntries = Object.entries(summary.paymentTypes);
-  if (!paymentEntries.length) doc.text("No payment records");
-  paymentEntries.forEach(([key, value]) => doc.text(`${key}: ${amount(value)}`));
+  if (!paymentEntries.length) draw("No payment records");
+  paymentEntries.forEach(([key, value]) => draw(`${key}: ${amount(value)}`));
+  heading("Customer Summary");
+  if (!report.customers.length) draw("No customer transactions for this period");
+  report.customers.forEach((customer) => draw(`${customer.customerName} | Paid ${amount(customer.paidAmount)} | Debt ${amount(customer.debtAmount)}`, 9, 4));
 
-  doc.moveDown(0.8).fontSize(12).text("Customer Summary", { underline: true });
-  doc.moveDown(0.3).fontSize(9);
-  if (!report.customers.length) doc.text("No customer transactions for this period");
-  report.customers.forEach((customer) => {
-    doc.text(
-      `${customer.customerName} | Paid ${amount(customer.paidAmount)} | Debt ${amount(customer.debtAmount)}`,
-    );
-  });
-
-  doc.addPage().fontSize(12).text("Transactions", { underline: true });
-  doc.moveDown(0.35).fontSize(8);
-  if (!report.ledgers.length) doc.text("No transactions for this period");
+  page = pdfDoc.addPage(pageSize);
+  y = pageSize[1] - margin;
+  heading("Transactions");
+  if (!report.ledgers.length) draw("No transactions for this period", 9);
   report.ledgers.forEach((ledger, index) => {
     const kind = ledger.type === "DEBIT" ? "PAYMENT" : "DEBT INCREASE";
-    doc.text(
-      `${index + 1}. ${formatMyanmarDate(ledger.date)} | ${ledger.customer.name} | ${kind} | ${amount(ledger.amount)} | ${ledger.paymentType || "-"}`,
-    );
-    if (ledger.note) doc.text(`   Note: ${ledger.note}`);
-    doc.moveDown(0.15);
+    draw(`${index + 1}. ${formatMyanmarDate(ledger.date)} | ${ledger.customer.name} | ${kind} | ${amount(ledger.amount)} | ${ledger.paymentType || "-"}`, 8, 3);
+    if (ledger.note) draw(`Note: ${ledger.note}`, 8, 3);
   });
+  heading("Activity History");
+  if (!report.auditLogs.length) draw("No new audit actions for this period", 8);
+  report.auditLogs.forEach((log, index) => draw(`${index + 1}. ${formatMyanmarDate(log.createdAt)} | ${log.actorName || ""} | ${log.action} | ${log.entityLabel || log.entityType} | ${log.summary}`, 8, 3));
 
-  doc.moveDown(0.7).fontSize(12).text("Activity History", { underline: true });
-  doc.moveDown(0.35).fontSize(8);
-  if (!report.auditLogs.length) doc.text("No new audit actions for this period");
-  report.auditLogs.forEach((log, index) => {
-    doc.text(
-      `${index + 1}. ${formatMyanmarDate(log.createdAt)} | ${log.actorName || ""} | ${log.action} | ${log.entityLabel || log.entityType} | ${log.summary}`,
-    );
-  });
-
-  doc.end();
-  return done;
+  return Buffer.from(await pdfDoc.save());
 }
 
 export async function createDailySummaryImage(report) {
