@@ -209,13 +209,26 @@ function createReportHtml(report, fontDataUri, latinDataUri) {
   </style></head><body><main class="page"><h1>Daily Summary</h1><div class="subtitle">${esc(report.periodLabel)}</div><div class="cards"><div class="card"><div class="card-label">ငွေချေသူ</div><div class="card-value">${summary.paidCount}</div><div class="card-detail">${esc(amount(summary.paidAmount))}</div></div><div class="card"><div class="card-label">အကြွေးတိုးသူ</div><div class="card-value">${summary.debtCount}</div><div class="card-detail">${esc(amount(summary.debtAmount))}</div></div><div class="card"><div class="card-label">Transaction စုစုပေါင်း</div><div class="card-value">${summary.totalTransactions}</div></div><div class="card"><div class="card-label">လုပ်ဆောင်ချက်မှတ်တမ်း</div><div class="card-value">${summary.auditCount}</div></div></div><h2>Customer အလိုက် စာရင်းချုပ်</h2><table class="summary-table"><thead><tr><th>Customer</th><th>ငွေချေ</th><th>အကြွေးတိုး</th></tr></thead><tbody>${customerRows || `<tr><td colspan="3">ဒီနေ့စာရင်းမရှိသေးပါ။</td></tr>`}</tbody></table><div class="payment"><h2 style="margin-top:0">Payment Type</h2>${paymentRows}</div><h1 style="margin-top:55px">Activity History</h1><div class="subtitle">${esc(report.dateLabel)} Activity — ${logs.length} actions</div><table class="activity-table" style="margin-top:18px"><thead><tr><th>စာရင်းနေ့/အချိန်</th><th>လုပ်သူ</th><th>လုပ်ဆောင်ချက်</th><th>Customer / အကြောင်းအရာ</th><th>ပမာဏ</th><th>Payment</th><th>Note</th><th>Source</th></tr></thead><tbody>${activityRows || `<tr><td colspan="8">ဒီနေ့လုပ်ဆောင်ချက်မရှိသေးပါ။</td></tr>`}</tbody></table></main></body></html>`;
 }
 
-async function renderReportImage(report) {
+let chromiumExecutablePromise;
+const reportImageCache = new WeakMap();
+
+function getChromiumExecutablePath() {
+  if (!chromiumExecutablePromise) {
+    chromiumExecutablePromise = chromium.executablePath(REMOTE_CHROMIUM_PACK_URL).catch((error) => {
+      chromiumExecutablePromise = undefined;
+      throw error;
+    });
+  }
+  return chromiumExecutablePromise;
+}
+
+async function renderReportImageUncached(report) {
   const fontPath = resolveFontPath();
   const latinFontPath = resolveLatinFontPath();
   if (!fontPath || !latinFontPath) throw new Error("Daily report font assets are unavailable in the serverless bundle");
   const browser = await playwright.launch({
     args: chromium.args,
-    executablePath: await chromium.executablePath(REMOTE_CHROMIUM_PACK_URL),
+    executablePath: await getChromiumExecutablePath(),
     headless: true,
   });
   try {
@@ -231,6 +244,17 @@ async function renderReportImage(report) {
   } finally {
     await browser.close();
   }
+}
+
+function renderReportImage(report) {
+  if (!reportImageCache.has(report)) {
+    const promise = renderReportImageUncached(report).catch((error) => {
+      reportImageCache.delete(report);
+      throw error;
+    });
+    reportImageCache.set(report, promise);
+  }
+  return reportImageCache.get(report);
 }
 
 export async function createDailySummaryImage(report) {

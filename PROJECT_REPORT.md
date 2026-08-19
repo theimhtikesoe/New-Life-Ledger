@@ -362,3 +362,12 @@ The Vercel log showed that the full bundled Chromium deployment built successful
 To avoid shipping the large native Chromium `bin` directory, the report renderer now uses `@sparticuz/chromium-min` and downloads the official x64 pack from the pinned v149.0.0 GitHub release at runtime. The full `@sparticuz/chromium` package and its tracing rule were removed. `playwright-core` and `@sparticuz/chromium-min` remain external server packages, while only the small report font assets are traced locally.
 
 A local remote-pack browser test successfully launched Chromium and rendered Burmese sample text. The full Next.js production build also passed. Production deployment must still be completed and the group-only Telegram endpoint must be tested before this migration is considered final.
+
+
+## 20. ETXTBSY Fix — Serialize Remote Chromium Extraction
+
+**Date:** 2026-08-19
+
+After the remote-pack deployment became runnable, the daily-report endpoint returned `browserType.launch: spawn ETXTBSY` while using `/tmp/chromium`. The daily route creates the PNG and PDF in parallel; both paths previously attempted to initialize/extract the same remote Chromium executable concurrently. That created a temporary executable lock race.
+
+The renderer now uses one shared Chromium executable-path promise per serverless instance and one shared report-image promise per report object. The first request performs the remote pack extraction, and concurrent PNG/PDF calls wait for the same completed promise. Failed initialization clears the promise so a later invocation can retry safely. The local Next.js production build passed after this change, and no database/data operation was changed.
