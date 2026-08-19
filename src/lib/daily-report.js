@@ -158,8 +158,11 @@ function resolveFontPath() {
 
 export async function createDailyReportPdf(report) {
   const fontPath = resolveFontPath();
+  if (!fontPath) {
+    throw new Error("Daily report font asset is unavailable in the serverless bundle");
+  }
   const doc = new PDFDocument({ size: "A4", margin: 36, bufferPages: true });
-  if (fontPath) doc.font(fontPath);
+  doc.font(fontPath);
 
   const chunks = [];
   doc.on("data", (chunk) => chunks.push(chunk));
