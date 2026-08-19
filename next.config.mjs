@@ -3,9 +3,9 @@ const nextConfig = {
   // Keep report fonts and serverless browser assets available to the report function.
   experimental: {
     outputFileTracingIncludes: {
-      '/*': ['./assets/**/*', './node_modules/@sparticuz/chromium/bin/**/*'],
+      '/*': ['./assets/**/*'],
     },
-    serverComponentsExternalPackages: ['playwright-core', '@sparticuz/chromium'],
+    serverComponentsExternalPackages: ['playwright-core', '@sparticuz/chromium-min'],
   },
   // Headers for PWA support
   async headers() {

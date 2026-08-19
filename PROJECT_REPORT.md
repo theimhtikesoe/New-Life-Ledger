@@ -351,3 +351,14 @@ The first browser-rendered report deployment failed at runtime because Vercel di
 The root cause was packaging/tracing, not report data or Myanmar text. The package contains `chromium.br`, `al2023.tar.br`, `fonts.tar.br`, and `swiftshader.tar.br`; the local Next.js NFT trace did not include these files before the fix. Next.js configuration now explicitly includes `./node_modules/@sparticuz/chromium/bin/**/*` under `outputFileTracingIncludes` while keeping the package external. A clean local production build passed, and the daily-report NFT manifest now lists all four Chromium bin assets.
 
 A new production deployment is required to verify the Vercel package runtime. Existing database records remain untouched.
+
+
+## 19. Remote Chromium Pack Migration
+
+**Date:** 2026-08-19
+
+The Vercel log showed that the full bundled Chromium deployment built successfully but failed while deploying outputs because of an invalid serverless package involving symlinked directories. The build cache reached approximately 219 MB. The failure happened after `Build Completed`, so it was a packaging limitation rather than a JavaScript compile error.
+
+To avoid shipping the large native Chromium `bin` directory, the report renderer now uses `@sparticuz/chromium-min` and downloads the official x64 pack from the pinned v149.0.0 GitHub release at runtime. The full `@sparticuz/chromium` package and its tracing rule were removed. `playwright-core` and `@sparticuz/chromium-min` remain external server packages, while only the small report font assets are traced locally.
+
+A local remote-pack browser test successfully launched Chromium and rendered Burmese sample text. The full Next.js production build also passed. Production deployment must still be completed and the group-only Telegram endpoint must be tested before this migration is considered final.

@@ -1,5 +1,5 @@
 import { PDFDocument } from "pdf-lib";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import { chromium as playwright } from "playwright-core";
 import fs from "node:fs";
 import path from "node:path";
@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureDatabase } from "@/lib/database";
 
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
+const REMOTE_CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
 const MYANMAR_TIME_ZONE = "Asia/Yangon";
 
 function pad(value) {
@@ -214,7 +215,7 @@ async function renderReportImage(report) {
   if (!fontPath || !latinFontPath) throw new Error("Daily report font assets are unavailable in the serverless bundle");
   const browser = await playwright.launch({
     args: chromium.args,
-    executablePath: await chromium.executablePath(),
+    executablePath: await chromium.executablePath(REMOTE_CHROMIUM_PACK_URL),
     headless: true,
   });
   try {
