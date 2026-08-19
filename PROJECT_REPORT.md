@@ -678,3 +678,23 @@ Verification completed:
 ### Production Verification for Section 35
 
 The production deployment for commit `438a8f4` returned Dashboard HTTP 200 and Customers API HTTP 200. During the initial data request, a centered spinner card showed `အချက်အလက်များ ရယူနေသည်...` and `ခဏစောင့်ပါ`; the page was dimmed and interaction was blocked. After the request completed, the overlay disappeared and the Dashboard became interactive with 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. The two-line title and collapsed Add Customer section remained in place. No customer, ledger, audit-log, or database mutation was performed.
+
+
+## 36. Mobile Action Button Stack and Faster Initial Dashboard Load
+
+**Date:** 2026-08-20
+
+The mobile header action group was changed from a narrow two-column arrangement to a one-column stack at phone widths. This prevents Data Management and Report Excel labels from touching or overlapping. The overdue alert remains full-width, and all action controls use the full available mobile width; tablet and desktop retain the two-column action grid.
+
+Initial Dashboard loading was also shortened without changing API contracts or stored data. Customer and KPI data are now awaited first so balances, customer counts, and customer cards can appear as soon as the critical data is ready. Pending KPay alerts are non-critical for the initial view and load in the background. GET retry attempts were reduced from three to two because each request has a 12-second timeout; mutating requests remain single-attempt and are never retried.
+
+The full-screen loading overlay still blocks all interaction during the critical initial customer/KPI load. The page does not display fabricated zeros while that data is pending, and network failure still shows the friendly retry state.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Protected files | No database, API, Telegram, Cron, package, or environment changes. |
+| Data safety | No customer, ledger, audit-log, restore, delete, or database write was added. |

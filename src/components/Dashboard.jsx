@@ -84,7 +84,7 @@ async function api(path, options) {
   const method = String(restOptions.method || "GET").toUpperCase();
   const canRetry = method === "GET";
   const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") : "";
-  const maxAttempts = canRetry ? 3 : 1;
+  const maxAttempts = canRetry ? 2 : 1;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -331,13 +331,11 @@ export default function Dashboard() {
     try {
       const customerRequest = api(`/api/customers${search ? `?q=${encodeURIComponent(search)}` : ""}`, { signal });
       const allCustomersRequest = search ? api("/api/customers", { signal }) : customerRequest;
-      const [customerRows, kpayRows, allCustomersRows] = await Promise.all([
+      const [customerRows, allCustomersRows] = await Promise.all([
         customerRequest,
-        api("/api/unverified-kpay?status=PENDING", { signal }),
         allCustomersRequest,
       ]);
       setCustomers(customerRows);
-      setPendingKpay(kpayRows);
       setAllCustomersForKPI(allCustomersRows);
       setMessage("");
       setDataLoadError("");
@@ -350,6 +348,14 @@ export default function Dashboard() {
         }
       }
       setAllLedgers(allLedgersData);
+
+      // KPay alerts are non-critical for the initial Dashboard render.
+      // Load them in the background so customer balances and counts appear first.
+      void api("/api/unverified-kpay?status=PENDING", { signal })
+        .then((kpayRows) => setPendingKpay(kpayRows))
+        .catch((error) => {
+          if (error.name !== "AbortError") console.warn("Pending KPay data was not loaded:", error);
+        });
     } catch (error) {
       if (error.name === 'AbortError') return;
       console.error("Dashboard data loading error:", error);
@@ -1078,7 +1084,7 @@ export default function Dashboard() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] md:items-center md:gap-x-6">
-            <div className="order-2 col-start-1 row-start-2 min-w-0 md:order-none md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-start">
+            <div className="order-2 col-span-2 col-start-1 row-start-2 min-w-0 md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-start">
               <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
               <h1 className="mt-1 max-w-[360px] text-[clamp(1.3rem,2.2vw,1.8rem)] font-semibold leading-tight tracking-tight text-slate-900">
                 <span className="block">Customer ငွေရှင်းတမ်း</span>
@@ -1091,8 +1097,8 @@ export default function Dashboard() {
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="order-3 col-start-2 row-start-2 grid w-full max-w-[190px] grid-cols-2 items-center gap-2 md:order-none md:col-start-auto md:row-start-auto md:max-w-[340px] md:justify-self-end">
-              <div className="col-span-2 flex [&>button]:w-full">
+            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-[320px] grid-cols-1 items-center gap-2 justify-self-end md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:grid-cols-2 md:max-w-[340px] md:justify-self-end">
+              <div className="col-span-1 flex [&>button]:w-full md:col-span-2">
                 <OverdueNotificationBell
                 customers={allCustomersForKPI} 
                 onSelectCustomer={(id) => {
