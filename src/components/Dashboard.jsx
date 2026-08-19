@@ -1063,21 +1063,22 @@ export default function Dashboard() {
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
-          <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
-            <div className="md:justify-self-start">
-              <p className="text-sm text-cyan-600">New Life Ledger Dashboard</p>
-              <h1 className="mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl">
+          <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] md:items-center md:gap-x-6">
+            <div className="min-w-0 md:max-w-[360px] md:justify-self-start">
+              <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
+              <h1 className="mt-1 max-w-[360px] text-[clamp(1.35rem,2.4vw,1.85rem)] font-semibold leading-tight tracking-tight text-slate-900">
                 Customer ငွေရှင်းတမ်း/အကြွေးရှင်းတမ်း
               </h1>
             </div>
-            <div className="order-first text-center md:order-none">
+            <div className="order-first min-w-[190px] text-center md:order-none md:min-w-[210px]">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700">ယနေ့ရက်စွဲ</p>
               <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-self-end">
-              <OverdueNotificationBell 
+            <div className="grid w-full max-w-[340px] grid-cols-2 items-center gap-2 md:justify-self-end">
+              <div className="col-span-2 flex [&>button]:w-full">
+                <OverdueNotificationBell
                 customers={allCustomersForKPI} 
                 onSelectCustomer={(id) => {
                   // If clicking the same customer, we still want to trigger the scroll effect
@@ -1092,24 +1093,25 @@ export default function Dashboard() {
                   }
                   setSearch(""); // Clear search
                 }} 
-              />
+                />
+              </div>
               <a
                 href="/data-management"
-                className="flex items-center gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-medium text-cyan-700 transition-colors hover:bg-cyan-100"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 transition-colors hover:bg-cyan-100"
                 title="Data Management"
               >
                 🗂️ Data Management
               </a>
               <button
                 onClick={handleExportExcel}
-                className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
                 title="Report Excel ထုတ်ရန်"
               >
                 📊 Report Excel
               </button>
               <button
                 onClick={() => setShowRecycleBin(true)}
-                className="flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
               >
                 🗑️ Recycle Bin
               </button>

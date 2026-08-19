@@ -606,3 +606,21 @@ Verification completed:
 ### Production Verification for Section 32
 
 The production deployment for commit `a5f3cff` was verified with a cache-busted Dashboard URL. During the initial request window, KPI cards showed `ရယူနေသည်...` and the customer list showed its loading spinner; they did not show misleading zero values. After the read-only requests completed, the Dashboard displayed 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. The Add Customer section remained collapsed on first entry. The `/api/customers` response returned 156 customer records, and no write operation was performed during this verification.
+
+
+## 33. iPad/Tablet Dashboard Header UI
+
+**Date:** 2026-08-19
+
+The Dashboard header was adjusted for iPad and tablet widths after a screenshot showed the Myanmar title wrapping awkwardly and the right-side action buttons appearing uneven. The header now uses balanced responsive columns with a bounded title area, a stable centered Myanmar date/time block, and a uniform action-button grid. The Myanmar title uses a responsive clamp and tighter line-height so it remains readable without excessive vertical growth. Data Management, Report Excel, Recycle Bin, and overdue-alert controls use consistent minimum height, alignment, spacing, and width behavior at tablet sizes.
+
+This is a presentation-only change in `Dashboard.jsx`. Button actions, loading/retry behavior, customer/ledger/audit data, PIN, database, Telegram delivery, Cron schedule, and Vercel environment were not changed.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed after whitespace cleanup. |
+| Protected files | No changes to schema, package/lock, Vercel, API, Telegram, or Cron files. |
+| Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed. |
