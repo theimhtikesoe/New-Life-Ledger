@@ -1097,8 +1097,8 @@ export default function Dashboard() {
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-[320px] grid-cols-1 items-center gap-2 justify-self-end md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:grid-cols-2 md:max-w-[340px] md:justify-self-end">
-              <div className="col-span-1 flex [&>button]:w-full md:col-span-2">
+            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-1 items-center gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-2 shadow-sm justify-self-stretch md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[340px] md:justify-self-end xl:grid-cols-2">
+              <div className="col-span-1 flex [&>button]:w-full xl:col-span-2">
                 <OverdueNotificationBell
                 customers={allCustomersForKPI} 
                 onSelectCustomer={(id) => {
@@ -1118,21 +1118,21 @@ export default function Dashboard() {
               </div>
               <a
                 href="/data-management"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 transition-colors hover:bg-cyan-100"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
                 title="Data Management"
               >
                 🗂️ Data Management
               </a>
               <button
                 onClick={handleExportExcel}
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
                 title="Report Excel ထုတ်ရန်"
               >
                 📊 Report Excel
               </button>
               <button
                 onClick={() => setShowRecycleBin(true)}
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
               >
                 🗑️ Recycle Bin
               </button>

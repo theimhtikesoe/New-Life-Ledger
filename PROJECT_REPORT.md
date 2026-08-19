@@ -703,3 +703,21 @@ Verification completed:
 ### Production Verification for Section 36
 
 The production deployment for commit `50b1249` returned Dashboard HTTP 200 and Customers API HTTP 200. During initial loading, the centered overlay spinner and Burmese loading message were visible and interaction was blocked. After critical customer/KPI data completed, the overlay disappeared and the Dashboard showed 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. Pending KPay data is now loaded in the background after the critical customer/KPI render. At mobile widths, the action group is configured as a one-column stack so Data Management and Report Excel labels do not overlap. No customer, ledger, audit-log, or database mutation was performed.
+
+
+## 37. Premium Mobile Header Action Panel
+
+**Date:** 2026-08-20
+
+The phone-sized Dashboard header action area was redesigned as a premium compact panel. At phone widths, the panel now spans the available header width, uses a soft neutral background, rounded corners, a subtle border, and consistent shadow. The overdue alert, Data Management, Report Excel, and Recycle Bin controls use a single-column stack with matching height, rounded corners, centered labels, and consistent spacing, preventing overlap and making the group feel like one intentional control surface. At wider desktop widths, the panel returns to the existing compact two-column arrangement.
+
+The laptop/Mac behavior remains unchanged in principle, and the change is limited to responsive presentation classes in `Dashboard.jsx`. Customer, ledger, audit-log, database, PIN, Telegram, Cron, and Vercel configuration were not changed.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Protected files | No database, API, Telegram, Cron, package, or environment changes. |
+| Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed. |
