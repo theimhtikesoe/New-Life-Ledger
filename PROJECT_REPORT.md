@@ -455,3 +455,15 @@ Local verification completed:
 | Production deployment | Not yet pushed/deployed at the time of this entry; production read-only verification remains required. |
 
 Remaining caution: the existing Next.js build warning about `themeColor` metadata remains unrelated to this UI-only change. It was not modified because the current task is limited to the approved mobile UI work and must not expand into unrelated configuration changes.
+
+
+## 26. Mobile UI Deployment and Read-only Regression
+
+**Date:** 2026-08-19  
+**Commit:** `17fc88a` — `Improve mobile ledger UI`
+
+The approved mobile UI changes were committed and pushed to `main`. The local production build had already passed before the push. Production returned HTTP 200 after the push and the dashboard loaded successfully.
+
+After the initial loading state completed, the production dashboard showed the same baseline business data observed before the UI change: 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. Customer cards, pagination, customer names, balances, and the overdue count remained present.
+
+The deployment change was limited to presentation code and `PROJECT_REPORT.md`. No customer, ledger, audit-log, database, backup, restore, Telegram, Cron, Vercel environment, or PIN operation was executed or changed. The remaining date/time UI work is intentionally separate and has not yet been implemented.
