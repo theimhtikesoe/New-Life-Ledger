@@ -27,7 +27,7 @@ async function runDailyReport() {
     "",
     `<b>REPORT DATE</b>\n<code>${report.dateLabel}</code>`,
     `<b>TIME RANGE</b>\n<code>00:00–23:59 (Myanmar Time)</code>`,
-    `<b>DELIVERY</b>\n<code>08:00 Myanmar Time • Telegram Group</code>`,
+    `<b>DELIVERY</b>\n<code>10:00 Myanmar Time • Telegram Group</code>`,
     "",
     `🟢 <b>ငွေချေ</b>  <code>${report.summary.paidCount} ခု</code>  <b>${report.summary.paidAmount.toLocaleString()} Ks</b>`,
     `🔴 <b>အကြွေးတိုး</b>  <code>${report.summary.debtCount} ခု</code>  <b>${report.summary.debtAmount.toLocaleString()} Ks</b>`,

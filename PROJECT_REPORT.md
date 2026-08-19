@@ -629,3 +629,24 @@ Verification completed:
 ### Production Verification for Section 33
 
 The production deployment for commit `624fe1d` returned HTTP 200 and was checked in an authenticated browser session after data loading completed. At the tablet-sized viewport, the title area remained bounded, the Myanmar date/time stayed centered, and the overdue alert, Data Management, Report Excel, and Recycle Bin controls appeared in a consistent action grid. Existing baseline values remained 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. The Add Customer section remained collapsed, and no customer, ledger, audit-log, or database mutation was performed during the check.
+
+
+## 34. Telegram Delivery Time Changed to 10:00 and Dashboard Title/Add UI
+
+**Date:** 2026-08-20
+
+The Telegram daily report schedule was changed from 08:00 Myanmar Standard Time to 10:00 Myanmar Standard Time. The Vercel Cron expression is now `30 3 * * *` (03:30 UTC = 10:00 Myanmar Time). The report still covers the previous Myanmar calendar day from `00:00–23:59`, remains Telegram Group-only, and still sends the Daily Summary PNG, Activity History PNG, and 2-page PDF. The report generation, date-range logic, Telegram delivery helper, recipient, and database records were not changed.
+
+The Dashboard title was also changed from one long wrapped line to two lines: `Customer ငွေရှင်းတမ်း` and `Customer အကြွေးရှင်းတမ်း`. The Add Customer section now places a larger aligned Add/Hide control directly beside the `Customer အသစ်ထည့်ရန်` text rather than leaving the control visually isolated on the far right. This is a presentation-only change.
+
+The intermittent phone `Type error` was reviewed separately. A time-zone mismatch could cause a wrong report date or day-boundary calculation, but it does not normally cause a browser `TypeError` or `Failed to fetch`. The app's Myanmar UTC+06:30 conversion and previous-day report range remain explicit; the phone issue is handled by the existing loading, timeout, retry, and friendly network-error UI.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Cron schedule | `30 3 * * *` = 10:00 Myanmar Time. |
+| Protected data/API files | No schema, ledger, audit, daily-summary, activity, Telegram helper, or report-generation changes. |
+| Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed. |
