@@ -931,3 +931,22 @@ Verification completed:
 | Deployment | Commit/push and production status check remain required for this correction. |
 
 The unrelated `themeColor` metadata build warning remains unchanged.
+
+
+## 45. Dashboard Title Wording Simplification
+
+**Date:** 2026-08-20
+
+The owner requested that the Dashboard title be simplified from `Customer ငွေရှင်းတမ်း၊ Customer အကြွေးရှင်းတမ်း` to `Customer ငွေရှင်းတမ်း၊ အကြွေးရှင်းတမ်း`. The title text in `src/components/Dashboard.jsx` was changed exactly as requested.
+
+This is a presentation-only text change. No customer, ledger, balance, audit, database, function, workflow, Telegram, Cron, Vercel environment, or PIN behavior was modified.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed; Next.js compilation and route generation completed successfully. |
+| `git diff --check` | Passed. |
+| Changed source | `src/components/Dashboard.jsx` only before this report entry. |
+| Data/workflow safety | Existing functions, API calls, records, and business calculations remain unchanged. |
+| Deployment | Commit/push and production status check remain required for this title correction. |
