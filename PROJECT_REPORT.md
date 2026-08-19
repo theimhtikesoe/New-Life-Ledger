@@ -467,3 +467,35 @@ The approved mobile UI changes were committed and pushed to `main`. The local pr
 After the initial loading state completed, the production dashboard showed the same baseline business data observed before the UI change: 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. Customer cards, pagination, customer names, balances, and the overdue count remained present.
 
 The deployment change was limited to presentation code and `PROJECT_REPORT.md`. No customer, ledger, audit-log, database, backup, restore, Telegram, Cron, Vercel environment, or PIN operation was executed or changed. The remaining date/time UI work is intentionally separate and has not yet been implemented.
+
+
+## 27. Myanmar Date/Time Consistency and Dashboard Digital Clock
+
+**Date:** 2026-08-19
+
+The owner approved continuing with Myanmar date/time improvements after the mobile UI work, and requested a centered digital clock on the Index/Dashboard. The implementation keeps the existing PIN unchanged and does not modify customer, ledger, audit-log, database, Telegram, Cron, or Vercel environment data/settings.
+
+The following UI and date-range changes were made:
+
+| Area | Change |
+|---|---|
+| Dashboard | Added a centered header widget showing the current Myanmar date, live `HH:MM:SS` digital time, and `Myanmar Time (UTC+06:30)`. The clock updates once per second in the browser. |
+| Dashboard KPI | Today's paid count and Today's Payments modal now compare calendar dates using Myanmar time instead of browser-local midnight boundaries. |
+| Customer transactions | Customer transaction date/time display and mobile transaction cards now use Asia/Yangon formatting. Transaction filter scopes (today, month, custom range) compare Myanmar calendar dates. |
+| Daily Summary | Default selected date now uses the current Myanmar date. The header explicitly displays `Report Date` and `Time Range: 00:00–23:59 (Myanmar Time)`. |
+| Daily Summary API | Date filters now query the UTC interval corresponding to the selected Myanmar calendar day: 00:00 Myanmar time through the next 00:00 Myanmar time. |
+| Activity History | Default date, timestamps, and API date filter now use the same Myanmar calendar/timezone behavior. |
+| Shared utilities | Added `src/lib/myanmar-time.js` for server/API range calculation and `src/lib/myanmar-time-client.js` for browser formatting. Client-only date helpers remain local where required by the existing Next.js bundle behavior. |
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| Clean `pnpm run build` | Passed after resolving a client/server named-export bundling issue by keeping client helpers local and separating client/server utilities. |
+| Myanmar boundary fixture | Passed: 2026-08-19 17:29:59.999 UTC maps to 2026-08-19 Myanmar time; 17:30:00.000 UTC maps to 2026-08-20 Myanmar time. |
+| `git diff --check` | Passed. |
+| Database/business records | No customer, ledger, audit, backup, restore, or migration operation was performed. |
+| Telegram flow/settings | Unchanged. |
+| Vercel environment/Cron | Unchanged. |
+| PIN | Unchanged. |
+| Production deployment | Pending push/deployment and read-only production verification for this date/time update. |

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
@@ -8,10 +9,8 @@ export async function GET(request) {
   try {
     await ensureDatabase();
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get("date") || new Date().toISOString().slice(0, 10);
-    const start = new Date(`${dateParam}T00:00:00.000Z`);
-    const end = new Date(start);
-    end.setUTCDate(end.getUTCDate() + 1);
+    const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
+    const { start, end } = getMyanmarDayRange(dateParam);
 
     const [ledgers, auditCount] = await Promise.all([
       prisma.ledger.findMany({

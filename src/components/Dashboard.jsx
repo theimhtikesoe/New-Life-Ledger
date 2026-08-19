@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 // import KPISummaryDashboard from "./KPISummaryDashboard";
 import TransactionFilter from "./TransactionFilter";
 import OverdueNotificationBell from "./OverdueNotificationBell";
+import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -15,10 +16,13 @@ function formatMoney(value) {
 }
 
 function formatDate(value) {
-  return new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return formatMyanmarDateTime(value);
+}
+
+function formatMyanmarDateInputValue(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const local = new Date(date.getTime() + (6 * 60 + 30) * 60 * 1000);
+  return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`;
 }
 
 async function api(path, options) {
@@ -120,6 +124,12 @@ export default function Dashboard() {
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [allLedgers, setAllLedgers] = useState([]);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Auto-scroll and auto-hide list when a customer is selected
   useEffect(() => {
@@ -375,40 +385,29 @@ export default function Dashboard() {
     [allCustomersForKPI],
   );
 
-  // Calculate today's transactions
+  // Calculate today's transactions using Myanmar calendar date
   const todayTransactions = useMemo(() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
-
+    const todayMyanmar = formatMyanmarDateInputValue(new Date());
     let count = 0;
     allCustomersForKPI.forEach(customer => {
       if (customer.ledgers) {
-        count += customer.ledgers.filter(ledger => {
-          const ledgerDate = new Date(ledger.date);
-          // Only count Paid (DEBIT) transactions
-          return ledgerDate >= todayStart && ledgerDate < todayEnd && ledger.type === "DEBIT";
-        }).length;
+        count += customer.ledgers.filter(ledger =>
+          formatMyanmarDateInputValue(ledger.date) === todayMyanmar && ledger.type === "DEBIT"
+        ).length;
       }
     });
     return count;
   }, [allCustomersForKPI]);
 
-  // Get today's payment transactions with customer details
+    // Get today's payment transactions with customer details using Myanmar calendar date
   const todayPaymentsList = useMemo(() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
-
+    const todayMyanmar = formatMyanmarDateInputValue(new Date());
     const payments = [];
     allCustomersForKPI.forEach(customer => {
       if (customer.ledgers) {
         customer.ledgers.forEach(ledger => {
-          const ledgerDate = new Date(ledger.date);
-          // Only include Paid (DEBIT) transactions from today
-          if (ledgerDate >= todayStart && ledgerDate < todayEnd && ledger.type === "DEBIT") {
+          // Only include Paid (DEBIT) transactions from today in Myanmar time
+          if (formatMyanmarDateInputValue(ledger.date) === todayMyanmar && ledger.type === "DEBIT") {
             payments.push({
               ...ledger,
               customerName: customer.name,
@@ -996,14 +995,20 @@ export default function Dashboard() {
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
+          <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
+            <div className="md:justify-self-start">
               <p className="text-sm text-cyan-600">New Life Ledger Dashboard</p>
               <h1 className="mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl">
                 Customer ငွေရှင်းတမ်း/အကြွေးရှင်းတမ်း
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="order-first text-center md:order-none">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700">ယနေ့ရက်စွဲ</p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
+              <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
+              <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-self-end">
               <OverdueNotificationBell 
                 customers={allCustomersForKPI} 
                 onSelectCustomer={(id) => {

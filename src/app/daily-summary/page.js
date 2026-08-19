@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 
 const money = new Intl.NumberFormat("en-US");
-const today = new Date().toISOString().slice(0, 10);
+
+function formatMyanmarDateInputValue(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const local = new Date(date.getTime() + (6 * 60 + 30) * 60 * 1000);
+  return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`;
+}
+
+const today = formatMyanmarDateInputValue(new Date());
 
 function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
@@ -43,6 +51,8 @@ export default function DailySummaryPage() {
             <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
             <h1 className="mt-2 text-2xl font-bold text-slate-900">Daily Summary</h1>
             <p className="mt-1 text-sm text-slate-600">ရွေးထားသောနေ့၏ ငွေချေမှုနှင့် အကြွေးတိုးမှု အသေးစိတ်</p>
+            <p className="mt-2 text-xs font-medium text-cyan-700">Report Date: {formatMyanmarDateLabel(`${date}T00:00:00+06:30`)}</p>
+            <p className="mt-1 text-xs text-slate-500">Time Range: 00:00–23:59 (Myanmar Time)</p>
           </div>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800" />
         </header>

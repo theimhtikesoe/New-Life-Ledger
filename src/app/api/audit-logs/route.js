@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { ACTORS } from "@/lib/audit";
+import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
 function dateRange(dateParam) {
   if (!dateParam) return null;
-  const start = new Date(`${dateParam}T00:00:00.000Z`);
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
+  const { start, end } = getMyanmarDayRange(dateParam);
   return { gte: start, lt: end };
 }
 

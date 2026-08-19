@@ -1,6 +1,11 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+function formatMyanmarDateInputValue(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const local = new Date(date.getTime() + (6 * 60 + 30) * 60 * 1000);
+  return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`;
+}
 
 /**
  * TransactionFilter Component
@@ -22,46 +27,24 @@ export default function TransactionFilter({
    * Filtering Logic wrapped in useMemo for optimal client-side performance
    */
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
-      const tDate = new Date(t.date);
-      const today = new Date();
+    const today = formatMyanmarDateInputValue(new Date());
+    const currentMonth = today.slice(0, 7);
 
-      // Normalize today to start of day for comparison
-      today.setHours(0, 0, 0, 0);
-      tDate.setHours(0, 0, 0, 0);
+    return transactions.filter((t) => {
+      const txDate = formatMyanmarDateInputValue(t.date);
 
       if (filterType === "today") {
-        return tDate.getTime() === today.getTime();
+        return txDate === today;
       }
 
       if (filterType === "month") {
-        return (
-          tDate.getMonth() === today.getMonth() &&
-          tDate.getFullYear() === today.getFullYear()
-        );
+        return txDate.slice(0, 7) === currentMonth;
       }
 
       if (filterType === "custom") {
-        const txDate = new Date(t.date);
-        txDate.setHours(0, 0, 0, 0);
-
-        if (startDate && endDate) {
-          const start = new Date(startDate);
-          const end = new Date(endDate);
-          start.setHours(0, 0, 0, 0);
-          end.setHours(0, 0, 0, 0);
-          return txDate >= start && txDate <= end;
-        }
-        if (startDate) {
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          return txDate >= start;
-        }
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(0, 0, 0, 0);
-          return txDate <= end;
-        }
+        if (startDate && endDate) return txDate >= startDate && txDate <= endDate;
+        if (startDate) return txDate >= startDate;
+        if (endDate) return txDate <= endDate;
       }
 
       return true; // default 'all'
