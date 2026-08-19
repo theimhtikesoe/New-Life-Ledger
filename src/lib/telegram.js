@@ -65,7 +65,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
     buffer: activityImageBuffer,
     filename: `new-life-ledger-${dateLabel}-activity.png`,
     mimeType: "image/png",
-    caption: `Activity History — ${dateLabel}`,
+    caption: `📊 <b>ACTIVITY HISTORY</b>\n<code>${dateLabel}</code>\n<code>00:00–23:59 (Myanmar Time)</code>`,
   }) : null;
   const pdf = await sendTelegramFile({
     token,
@@ -74,7 +74,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
     buffer: pdfBuffer,
     filename: `New-Life-Ledger-Daily-${dateLabel}.pdf`,
     mimeType: "application/pdf",
-    caption: `Daily report PDF — ${dateLabel}`,
+    caption: `📄 <b>DAILY REPORT PDF</b>\n<code>${dateLabel}</code>\n<code>Page 1: Daily Summary • Page 2: Activity History</code>`,
   });
   return { results: [{ chatId: groupChatId, imageMessageId: image.result?.message_id, activityImageMessageId: activity?.result?.message_id, pdfMessageId: pdf.result?.message_id }] };
 }

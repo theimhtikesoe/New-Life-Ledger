@@ -511,3 +511,35 @@ The Myanmar date/time and Dashboard clock update was pushed to `main` and became
 Production Daily Summary displayed `Report Date: Wednesday, 19 August 2026` and `Time Range: 00:00–23:59 (Myanmar Time)`. Production Activity History defaulted to 2026-08-19, loaded 11 existing records, and displayed timestamps using Myanmar time, such as `19 Aug 2026, 08:06`.
 
 The date-boundary fixture confirmed that UTC `2026-08-19T17:29:59.999Z` belongs to Myanmar date 2026-08-19, while UTC `2026-08-19T17:30:00.000Z` begins Myanmar date 2026-08-20. No customer, ledger, audit-log, backup, restore, database, Telegram, Cron, Vercel environment, or PIN operation was performed.
+
+
+## 29. Telegram Group Caption Content and Formatting Review
+
+**Date:** 2026-08-19
+
+The Telegram daily-report caption was reviewed against the owner's required group-only delivery format. The caption continues to use Telegram HTML parse mode and now includes a clearer delivery context in addition to the report metrics.
+
+The final main caption contains the following separated sections:
+
+| Section | Content and formatting |
+|---|---|
+| Header | Bold `NEW LIFE LEDGER` and `DAILY BUSINESS REPORT`. |
+| Report date | Bold `REPORT DATE` followed by the generated previous Myanmar calendar date in a code block. |
+| Covered period | Bold `TIME RANGE` followed by `00:00–23:59 (Myanmar Time)` in a code block. |
+| Delivery context | Bold `DELIVERY` followed by `08:00 Myanmar Time • Telegram Group` in a code block. This describes the intended schedule and recipient scope; it does not replace the Vercel Cron schedule. |
+| Metrics | Green paid line, red debt-increase line, blue transaction-count line, and purple activity-count line. Counts use code formatting and amounts use bold formatting. |
+| Attachments | A `FILES` line identifies the three delivered files: Daily Summary PNG, Activity History PNG, and the two-page PDF. |
+
+Attachment captions were also clarified. The Activity History image caption now includes its title, report date, and Myanmar time range. The PDF caption now identifies the report date and states that page 1 is Daily Summary and page 2 is Activity History.
+
+The delivery helper remains group-only and sends exactly three messages in sequence: Daily Summary PNG, Activity History PNG, and the two-page PDF. No private chat recipient or Viber recipient was added.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Protected data/config files | Database schema, package/lock files, Vercel configuration, Daily Summary API, and Activity History API had no changes in this caption update. |
+| Customer/ledger/audit data | No data write, migration, restore, deletion, or overwrite was performed by this update. |
+| Telegram recipient scope | `TELEGRAM_GROUP_CHAT_ID` remains the only configured recipient in the delivery helper. |
