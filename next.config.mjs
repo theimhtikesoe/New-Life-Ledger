@@ -3,7 +3,7 @@ const nextConfig = {
   // Keep report fonts and serverless browser assets available to the report function.
   experimental: {
     outputFileTracingIncludes: {
-      '/*': ['./assets/**/*'],
+      '/*': ['./assets/**/*', './node_modules/@sparticuz/chromium/bin/**/*'],
     },
     serverComponentsExternalPackages: ['playwright-core', '@sparticuz/chromium'],
   },

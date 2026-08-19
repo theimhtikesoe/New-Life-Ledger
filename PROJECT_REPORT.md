@@ -340,3 +340,14 @@ The new approach builds an HTML report using the same browser text-rendering pat
 The previous `@resvg/resvg-wasm` dependency and `assets/resvg.wasm` asset are no longer used and have been removed. Next.js now keeps `playwright-core` and `@sparticuz/chromium` external for the server function, while the report font assets remain included through output tracing.
 
 A local Chromium prototype rendered Burmese text successfully, and the full Next.js production build passed after the migration. No database schema, customer, ledger, audit, backup, or restore data was changed. Production deployment and a fresh Telegram group-only test remain required.
+
+
+## 18. Chromium Packaging Fix After Production Error
+
+**Date:** 2026-08-19
+
+The first browser-rendered report deployment failed at runtime because Vercel did not include the `@sparticuz/chromium/bin` compressed Chromium assets in the serverless function. The reported error was: `The input directory "/var/task/node_modules/.pnpm/@sparticuz+chromium@149.0.0/node_modules/@sparticuz/chromium/bin" does not exist.`
+
+The root cause was packaging/tracing, not report data or Myanmar text. The package contains `chromium.br`, `al2023.tar.br`, `fonts.tar.br`, and `swiftshader.tar.br`; the local Next.js NFT trace did not include these files before the fix. Next.js configuration now explicitly includes `./node_modules/@sparticuz/chromium/bin/**/*` under `outputFileTracingIncludes` while keeping the package external. A clean local production build passed, and the daily-report NFT manifest now lists all four Chromium bin assets.
+
+A new production deployment is required to verify the Vercel package runtime. Existing database records remain untouched.
