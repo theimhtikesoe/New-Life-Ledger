@@ -721,3 +721,8 @@ Verification completed:
 | `git diff --check` | Passed. |
 | Protected files | No database, API, Telegram, Cron, package, or environment changes. |
 | Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed. |
+
+
+### Production Verification for Section 37
+
+The production deployment for commit `10bdeb3` returned Dashboard HTTP 200 and Customers API HTTP 200. During initial loading, the centered spinner overlay appeared and blocked interaction. After loading, the action controls appeared inside a single soft-background rounded panel; at phone widths they used a one-column stack with matching button height, rounded corners, centered labels, and no overlap. The read-only data baseline remained 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. The change was limited to `Dashboard.jsx`; no customer, ledger, audit-log, or database mutation was performed.
