@@ -400,3 +400,30 @@ The media upload helper now sends `parse_mode=HTML` for captions so the bold and
 The manual test is separate from the scheduled automation. `vercel.json` schedules `/api/cron/daily-report` with `30 1 * * *`, which is 01:30 UTC and therefore 08:00 Myanmar Standard Time (UTC+06:30) every day. The endpoint is protected by `CRON_SECRET` and sends only to `TELEGRAM_GROUP_CHAT_ID`.
 
 At each scheduled run, `getPreviousMyanmarDayRange()` calculates the previous Myanmar calendar day from `00:00` up to, but not including, the next `00:00`. The report caption explicitly displays the report date and `00:00–23:59 (Myanmar Time)`. The scheduled output uses the approved format: color-coded caption, Daily Summary image, Activity History image, and a two-page PDF. The most recent caption-format production deployment completed successfully; the next scheduled run is the final real-world automation confirmation.
+
+
+## 24. Viber Partner Research and Preliminary Recommendation
+
+**Date:** 2026-08-19
+
+The owner wants the same daily PDF and PNG report that is sent to the Telegram group to be delivered automatically to the father's Viber account at 08:00 Myanmar time, without a person forwarding it. The chosen architecture is direct dual delivery: generate the files once in the New Life Ledger scheduled job, then send the same files independently to Telegram and Viber.
+
+The user supplied the Viber Business Account link `https://viber.me/9595214808`, which resolves to **New Life 6miles, Taunggyi.** with a `Message business` action. This is a Business Account profile link, not an API credential.
+
+The official Viber partner directory and supplied MessagingPartners.pdf were reviewed. Two Myanmar candidates are most relevant:
+
+| Partner | Evidence found | Preliminary fit |
+|---|---|---|
+| VMG Group of Companies / VMG Myanmar | Listed by Viber as a Myanmar partner; VMG's own page advertises Viber SMS, API connectivity, high-resolution images, buttons, scalability, and SMS fallback. | Strong first contact for local support, API/media capability, and fallback. Public pricing/API reference was not found. |
+| eTradeMyanmar Co., Ltd. | Listed by Viber for Myanmar with both Viber Business Messages and Viber Chatbots; established in Myanmar's TMT sector since 2003. | Strong backup or parallel contact, especially because the official Viber profile explicitly lists Business Messages. Public pricing/API reference was not found. |
+
+The recommended next step is to contact VMG and eTradeMyanmar in parallel and request a one-recipient transactional Business Messages quote and technical test. Neither partner should be selected solely from the directory. They must confirm Myanmar delivery, one-recipient scheduling, image and PDF/file support (or HTTPS file URL support), recipient opt-in, API credentials/webhook requirements, pricing/minimum spend, and whether the existing New Life 6miles Business Account can be used as the sender.
+
+No Viber credentials, phone number, or API integration has been added yet. Existing Telegram automation and all customer/database records remain unchanged.
+
+References:
+
+1. https://www.forbusiness.viber.com/en/messaging-partners/ — Viber official partner directory.
+2. https://www.forbusiness.viber.com/en/messaging-partners/partner/etrade-myanmar-co — official eTradeMyanmar partner profile.
+3. https://vmgmyanmar.com/business/vibersms — VMG Myanmar Viber SMS/API page.
+4. https://www.forbusiness.viber.com/en/business-messages/ — Viber Business Messages official product page.
