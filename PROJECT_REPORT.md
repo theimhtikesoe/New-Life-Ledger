@@ -269,3 +269,23 @@ The deployment URL is <https://vercel.com/theimhtikesoes-projects/new-life-ledge
 This confirms that the previous invalid serverless deployment-package problem was avoided by removing the native `@resvg/resvg-js` package from the deployed implementation and using the repository-bundled `@resvg/resvg-wasm` asset instead. Local build also passed, and the WASM renderer fixture generated a PNG successfully.
 
 The production Telegram report has not yet been considered fully verified. A fresh manual report must still be sent from the new successful deployment and checked for Burmese text, English fallback text, PDF readability, and delivery to both configured recipients. Existing database records remain untouched by the renderer/deployment changes.
+
+
+## 13. Latest Update — Myanmar Text Visible, Table Layout Overlap Remains
+
+**Date:** 2026-08-19
+
+The owner confirmed that the latest production report now renders Burmese glyphs instead of square boxes. This validates the WASM renderer and bundled-font direction. A new screenshot then showed that several labels and values overlap inside the Customer Summary and Activity History tables.
+
+The overlap was caused by the report SVG using fixed x-coordinates that were too close for the Burmese labels, long customer names, amount strings, and activity columns. The latest local fix widens the canvas, increases row spacing, separates the columns, reduces the risk of long text crossing into neighboring columns by clipping long values, and adds a dedicated Note column.
+
+| Area | Layout change |
+|---|---|
+| Report canvas | Increased width from 1800 to 2200 units |
+| Customer table | Wider separation between Customer, ငွေချေ, and အကြွေးတိုး columns |
+| Payment Type | Dynamic section height based on payment-type rows |
+| Activity table | Separate columns for time, actor, action, customer, amount, payment, note, and source |
+| Long text | Added safe clipping with an ellipsis rather than allowing text to overlap another column |
+| Data safety | No database records were changed; the update only changes report rendering |
+
+The updated implementation compiled successfully locally and still exposes `/api/cron/daily-report`. It must be deployed and tested with a fresh Telegram report before the layout is considered final.

@@ -211,40 +211,54 @@ function actionLabel(action) {
   return ({ PAYMENT: "ငွေချေ", DEBT_INCREASE: "အကြွေးတိုး", CREATE: "အသစ်ထည့်", UPDATE: "ပြင်ဆင်", RESTORE: "ပြန်ယူ", DELETE: "ဖျက်", PERMANENT_DELETE: "အပြီးဖျက်", DAILY_REPORT_SENT: "Daily Report ပို့" })[action] || action;
 }
 
+function clipText(value, maxLength) {
+  const text = String(value ?? "");
+  const chars = Array.from(text);
+  return chars.length > maxLength ? `${chars.slice(0, maxLength - 1).join("")}…` : text;
+}
+
 function createReportSvg(report) {
   const fontPath = resolveFontPath();
   if (!fontPath) throw new Error("Daily report font asset is unavailable in the serverless bundle");
   const { summary } = report;
   const customers = report.customers || [];
   const logs = report.activityLogs || report.auditLogs || [];
-  const width = 1800;
+  const width = 2200;
   const customerRows = Math.max(customers.length, 1);
   const activityRows = Math.max(logs.length, 1);
-  const height = 760 + customerRows * 64 + 300 + activityRows * 68;
+  const customerStartY = 500;
+  const customerRowHeight = 64;
+  const paymentTop = customerStartY + customerRows * customerRowHeight + 45;
+  const paymentHeight = Math.max(180, 90 + Object.keys(summary.paymentTypes || {}).length * 45);
+  const activityTop = paymentTop + paymentHeight + 100;
+  const activityHeaderY = activityTop + 105;
+  const activityStartY = activityTop + 165;
+  const activityRowHeight = 58;
+  const height = activityStartY + activityRows * activityRowHeight + 90;
   const esc = escapeXml;
-  const card = (x, fill, label, value, detail = "") => `<rect x="${x}" y="170" width="390" height="140" rx="18" fill="${fill}"/><text x="${x + 26}" y="215" class="label">${esc(label)}</text><text x="${x + 26}" y="266" class="value">${esc(value)}</text><text x="${x + 26}" y="294" class="detail">${esc(detail)}</text>`;
+  const card = (x, fill, label, value, detail = "") => `<rect x="${x}" y="170" width="500" height="140" rx="18" fill="${fill}"/><text x="${x + 26}" y="215" class="label">${esc(label)}</text><text x="${x + 26}" y="266" class="value">${esc(value)}</text><text x="${x + 26}" y="294" class="detail">${esc(detail)}</text>`;
   const customerRowsSvg = customers.length ? customers.map((customer, index) => {
-    const y = 435 + index * 64;
-    return `<line x1="70" y1="${y + 18}" x2="1730" y2="${y + 18}" class="line"/><text x="90" y="${y}" class="row">${esc(customer.customerName)}</text><text x="1100" y="${y}" class="row green">${customer.paidCount} / ${esc(amount(customer.paidAmount))}</text><text x="1430" y="${y}" class="row red">${customer.unpaidCount ?? customer.debtCount ?? 0} / ${esc(amount(customer.unpaidAmount ?? customer.debtAmount))}</text>`;
-  }).join("") : `<text x="90" y="435" class="row">ဒီနေ့စာရင်းမရှိသေးပါ။</text>`;
-  const paymentRows = Object.entries(summary.paymentTypes || {}).map(([type, value], index) => `<text x="90" y="${500 + index * 45}" class="small">${esc(type)}</text><text x="1650" y="${500 + index * 45}" text-anchor="end" class="small bold">${esc(amount(value))}</text>`).join("") || `<text x="90" y="500" class="small">ငွေချေမှုမရှိသေးပါ။</text>`;
-  const activityTop = 620 + customerRows * 64 + 250;
+    const y = customerStartY + index * customerRowHeight;
+    return `<line x1="70" y1="${y + 22}" x2="2130" y2="${y + 22}" class="line"/><text x="90" y="${y}" class="row">${esc(clipText(customer.customerName, 46))}</text><text x="1350" y="${y}" class="row green">${customer.paidCount} / ${esc(amount(customer.paidAmount))}</text><text x="1770" y="${y}" class="row red">${customer.unpaidCount ?? customer.debtCount ?? 0} / ${esc(amount(customer.unpaidAmount ?? customer.debtAmount))}</text>`;
+  }).join("") : `<text x="90" y="${customerStartY}" class="row">ဒီနေ့စာရင်းမရှိသေးပါ။</text>`;
+  const paymentEntries = Object.entries(summary.paymentTypes || {});
+  const paymentRows = paymentEntries.length ? paymentEntries.map(([type, value], index) => `<text x="110" y="${paymentTop + 105 + index * 45}" class="small">${esc(clipText(type, 32))}</text><text x="2070" y="${paymentTop + 105 + index * 45}" text-anchor="end" class="small bold">${esc(amount(value))}</text>`).join("") : `<text x="110" y="${paymentTop + 105}" class="small">ငွေချေမှုမရှိသေးပါ။</text>`;
   const activityRowsSvg = logs.length ? logs.map((log, index) => {
     const metadata = log.metadata || {};
-    const y = activityTop + 110 + index * 68;
-    return `<line x1="70" y1="${y + 18}" x2="1730" y2="${y + 18}" class="line"/><text x="90" y="${y}" class="tiny">${esc(formatMyanmarDate(log.createdAt))}</text><text x="390" y="${y}" class="tiny">${esc(log.actorName || "")}</text><text x="570" y="${y}" class="tiny">${esc(actionLabel(log.action))}</text><text x="800" y="${y}" class="tiny">${esc(log.entityLabel || log.entityType || "")}</text><text x="1180" y="${y}" class="tiny">${esc(metadata.amount == null ? "" : amount(metadata.amount))}</text><text x="1430" y="${y}" class="tiny">${esc(metadata.paymentType || "")}</text><text x="1600" y="${y}" class="tiny">${esc(log.eventSource === "legacy" ? "အရင်စာရင်း" : "အသစ်မှတ်တမ်း")}</text>`;
-  }).join("") : `<text x="90" y="${activityTop + 110}" class="row">ဒီနေ့လုပ်ဆောင်ချက်မရှိသေးပါ။</text>`;
+    const y = activityStartY + index * activityRowHeight;
+    return `<line x1="70" y1="${y + 20}" x2="2130" y2="${y + 20}" class="line"/><text x="90" y="${y}" class="tiny">${esc(clipText(formatMyanmarDate(log.createdAt), 19))}</text><text x="370" y="${y}" class="tiny">${esc(clipText(log.actorName || "", 12))}</text><text x="520" y="${y}" class="tiny">${esc(clipText(actionLabel(log.action), 15))}</text><text x="760" y="${y}" class="tiny">${esc(clipText(log.entityLabel || log.entityType || "", 34))}</text><text x="1370" y="${y}" class="tiny">${esc(metadata.amount == null ? "" : amount(metadata.amount))}</text><text x="1600" y="${y}" class="tiny">${esc(clipText(metadata.paymentType || "", 15))}</text><text x="1770" y="${y}" class="tiny">${esc(clipText(metadata.note || "", 18))}</text><text x="2000" y="${y}" class="tiny">${esc(log.eventSource === "legacy" ? "အရင်စာရင်း" : "အသစ်မှတ်တမ်း")}</text>`;
+  }).join("") : `<text x="90" y="${activityStartY}" class="row">ဒီနေ့လုပ်ဆောင်ချက်မရှိသေးပါ။</text>`;
   return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <style>
       .title,.subtitle,.heading,.label,.value,.detail,.row,.small,.tiny { font-family: 'Noto Sans Myanmar', sans-serif; fill: #0f172a; }
       .title { font-size: 42px; } .subtitle { font-size: 24px; fill: #475569; } .heading { font-size: 28px; } .label { font-size: 22px; fill: #334155; } .value { font-size: 38px; } .detail { font-size: 19px; fill: #475569; } .row { font-size: 22px; } .small { font-size: 22px; } .tiny { font-size: 18px; } .bold { font-weight: 700; } .green { fill: #047857; } .red { fill: #be123c; } .line { stroke: #e2e8f0; stroke-width: 2; }
     </style>
-    <rect width="100%" height="100%" fill="#f8fafc"/><rect x="28" y="28" width="1744" height="${height - 56}" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+    <rect width="100%" height="100%" fill="#f8fafc"/><rect x="28" y="28" width="2144" height="${height - 56}" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
     <text x="70" y="90" class="title">Daily Summary</text><text x="70" y="130" class="subtitle">${esc(report.periodLabel)}</text>
-    ${card(65, "#ecfdf5", "ငွေချေသူ", String(summary.paidCount), amount(summary.paidAmount))}${card(475, "#fff1f2", "အကြွေးတိုးသူ", String(summary.debtCount), amount(summary.debtAmount))}${card(885, "#eff6ff", "Transaction စုစုပေါင်း", String(summary.totalTransactions))}${card(1295, "#f5f3ff", "လုပ်ဆောင်ချက်မှတ်တမ်း", String(summary.auditCount))}
-    <text x="70" y="370" class="heading">Customer အလိုက် စာရင်းချုပ်</text><text x="90" y="420" class="small">Customer</text><text x="1100" y="420" class="small">ငွေချေ</text><text x="1430" y="420" class="small">အကြွေးတိုး</text>${customerRowsSvg}
-    <rect x="70" y="${450 + customerRows * 64}" width="1660" height="190" rx="16" fill="#f8fafc"/><text x="90" y="${490 + customerRows * 64}" class="heading">Payment Type</text>${paymentRows}
-    <text x="70" y="${activityTop}" class="title">Activity History</text><text x="70" y="${activityTop + 42}" class="subtitle">${esc(report.dateLabel)} Activity — ${logs.length} actions</text><text x="90" y="${activityTop + 92}" class="small">စာရင်းနေ့/အချိန်</text><text x="390" y="${activityTop + 92}" class="small">လုပ်သူ</text><text x="570" y="${activityTop + 92}" class="small">လုပ်ဆောင်ချက်</text><text x="800" y="${activityTop + 92}" class="small">Customer / အကြောင်းအရာ</text><text x="1180" y="${activityTop + 92}" class="small">ပမာဏ</text><text x="1430" y="${activityTop + 92}" class="small">Payment</text><text x="1600" y="${activityTop + 92}" class="small">Source</text>${activityRowsSvg}
+    ${card(65, "#ecfdf5", "ငွေချေသူ", String(summary.paidCount), amount(summary.paidAmount))}${card(595, "#fff1f2", "အကြွေးတိုးသူ", String(summary.debtCount), amount(summary.debtAmount))}${card(1125, "#eff6ff", "Transaction စုစုပေါင်း", String(summary.totalTransactions))}${card(1655, "#f5f3ff", "လုပ်ဆောင်ချက်မှတ်တမ်း", String(summary.auditCount))}
+    <text x="70" y="400" class="heading">Customer အလိုက် စာရင်းချုပ်</text><text x="90" y="460" class="small">Customer</text><text x="1350" y="460" class="small">ငွေချေ</text><text x="1770" y="460" class="small">အကြွေးတိုး</text>${customerRowsSvg}
+    <rect x="70" y="${paymentTop}" width="2060" height="${paymentHeight}" rx="16" fill="#f8fafc"/><text x="110" y="${paymentTop + 55}" class="heading">Payment Type</text>${paymentRows}
+    <text x="70" y="${activityTop}" class="title">Activity History</text><text x="70" y="${activityTop + 42}" class="subtitle">${esc(report.dateLabel)} Activity — ${logs.length} actions</text><text x="90" y="${activityHeaderY}" class="small">စာရင်းနေ့/အချိန်</text><text x="370" y="${activityHeaderY}" class="small">လုပ်သူ</text><text x="520" y="${activityHeaderY}" class="small">လုပ်ဆောင်ချက်</text><text x="760" y="${activityHeaderY}" class="small">Customer / အကြောင်းအရာ</text><text x="1370" y="${activityHeaderY}" class="small">ပမာဏ</text><text x="1600" y="${activityHeaderY}" class="small">Payment</text><text x="1770" y="${activityHeaderY}" class="small">Note</text><text x="2000" y="${activityHeaderY}" class="small">Source</text>${activityRowsSvg}
   </svg>`;
 }
 
