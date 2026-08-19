@@ -25,6 +25,14 @@ function formatMyanmarDateInputValue(value = new Date()) {
   return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`;
 }
 
+function friendlyError(error) {
+  const message = String(error?.message || "").trim();
+  if (error?.name === "TypeError" || /^(Type error|Failed to fetch|NetworkError|Load failed)$/i.test(message)) {
+    return "အင်တာနက် သို့မဟုတ် server connection ခဏမတည်ငြိမ်ပါ။ ပြန်စမ်းမည်ကို နှိပ်ပြီး ထပ်မံရယူပါ။";
+  }
+  return message || "အချက်အလက်ရယူရာတွင် အမှားအယွင်းဖြစ်နေပါသည်။";
+}
+
 async function api(path, options) {
   const { signal, ...restOptions } = options || {};
   const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") : "";
@@ -277,8 +285,10 @@ export default function Dashboard() {
       setAllLedgers(allLedgersData);
     } catch (error) {
       if (error.name === 'AbortError') return;
-      setMessage(error.message);
-      showAlert(error.message, "error");
+      console.error("Dashboard data loading error:", error);
+      const message = friendlyError(error);
+      setMessage(message);
+      showAlert(message, "error");
     } finally {
       setLoading(false);
     }
@@ -1048,9 +1058,16 @@ export default function Dashboard() {
             </div>
           </div>
           {message ? (
-            <p className="mt-4 rounded-md border border-rose-900 bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
-              {message}
-            </p>
+            <div className="mt-4 flex flex-col gap-3 rounded-md border border-rose-900 bg-rose-950/60 px-3 py-3 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between">
+              <span>{message}</span>
+              <button
+                type="button"
+                onClick={() => { setMessage(""); loadDashboard(); }}
+                className="shrink-0 rounded-md border border-rose-300/60 px-3 py-2 font-semibold text-rose-100 hover:bg-rose-900/50"
+              >
+                ပြန်စမ်းမည်
+              </button>
+            </div>
           ) : null}
         </header>
 

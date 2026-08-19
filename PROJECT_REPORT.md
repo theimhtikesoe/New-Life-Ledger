@@ -543,3 +543,22 @@ Verification completed:
 | Protected data/config files | Database schema, package/lock files, Vercel configuration, Daily Summary API, and Activity History API had no changes in this caption update. |
 | Customer/ledger/audit data | No data write, migration, restore, deletion, or overwrite was performed by this update. |
 | Telegram recipient scope | `TELEGRAM_GROUP_CHAT_ID` remains the only configured recipient in the delivery helper. |
+
+
+## 30. PIN-after-login Dashboard Type Error Handling
+
+**Date:** 2026-08-19
+
+A user reported that, on another phone, entering the existing PIN and reaching the Dashboard sometimes displayed a red `Type error` banner. Read-only checks showed that the Dashboard initial load requests the customers list, pending KPay list, and all-customer KPI data in parallel. The production GET endpoints returned HTTP 200 during verification, and the Dashboard loaded the existing baseline data normally: 14,242,250 Ks total balance, 156 customers, and 5 overdue alerts. This indicates an intermittent client/network or API request failure rather than a PIN or database-record problem.
+
+The fix is UI-only. Dashboard errors that appear as browser `TypeError`, `Type error`, `Failed to fetch`, `NetworkError`, or `Load failed` are now shown as a clear Burmese connection message instead of the raw browser error. The error banner also includes a `ပြန်စမ်းမည်` retry button that re-runs the existing read-only dashboard load requests. The underlying PIN, API endpoints, database queries, customer/ledger/audit records, Telegram delivery, Cron, Vercel environment, and data mutation logic were not changed.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| `pnpm run build` | Passed. |
+| `git diff --check` | Passed. |
+| Protected files | No changes to database schema, package/lock files, Vercel configuration, Daily Summary API, Activity History API, daily-report route, or Telegram helper. |
+| Production GET checks | `/api/customers` and `/api/unverified-kpay?status=PENDING` returned HTTP 200 during diagnosis. |
+| Data safety | No customer, ledger, audit-log, restore, delete, or database write was performed by the fix. |
