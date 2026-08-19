@@ -818,3 +818,29 @@ Verification completed:
 | Deployment | Commit/push and production verification remain required for this UI update. |
 
 The unrelated `themeColor` metadata build warning remains unchanged.
+
+
+## 41. Prepaid Balance Wording and Transactions CSV Placement
+
+**Date:** 2026-08-20
+
+The owner requested a wording refinement from `ကြိုတင်ငွေ လက်ကျန်` to `ကြိုတင်ငွေချေ လက်ကျန်` so the meaning of a prepaid customer balance is more explicit. The UI helper now uses the requested wording while keeping the existing Option A behavior: positive debt remains red, negative prepaid credit remains green and is shown without the accounting minus sign, and zero is shown as `လက်ကျန်မရှိ`.
+
+The owner also requested that `ဒီ Customer ၏ စာရင်း Export (CSV)` be moved out of the selected-customer summary card and placed near the Transactions controls. The button is now rendered directly below the `TransactionFilter` panel, which contains `အားလုံး`, `ဒီနေ့`, `ဒီလ`, and Custom Range date controls. It is full-width on narrow mobile screens and sizes to its content on larger screens. The existing `exportToCSV` handler and CSV contents were not changed; only the presentation location and responsive styling changed.
+
+Screenshot review confirmed that the former placement was visually separated from the transaction history, while the new placement keeps the export action next to the records and active filter context. The selected-customer summary card no longer contains the CSV action button.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| Screenshot review | Completed across six ordered vertical tiles of the owner-provided screenshot. |
+| `pnpm run build` | Passed; Next.js compilation, lint/type checks, static generation, and route listing completed successfully. |
+| `git diff --check` | Passed. |
+| Changed source | `src/components/Dashboard.jsx` only before this report entry. |
+| Export behavior | Existing `exportToCSV` handler remains in use; no export data transformation was changed. |
+| Protected files | Database schema, API routes, Telegram flow, Cron, Vercel environment, package manifests, and PIN were not changed. |
+| Data safety | No customer, ledger, balance, audit, backup, restore, or database operation was executed. |
+| Deployment | Commit/push and production verification remain required for this UI update. |
+
+The unrelated `themeColor` metadata build warning remains unchanged.

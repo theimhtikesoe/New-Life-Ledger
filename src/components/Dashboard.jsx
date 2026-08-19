@@ -18,7 +18,7 @@ function formatMoney(value) {
 function getBalanceLabel(value) {
   const amount = Number(value || 0);
   if (amount > 0) return "လက်ကျန်အကြွေး";
-  if (amount < 0) return "ကြိုတင်ငွေ လက်ကျန်";
+  if (amount < 0) return "ကြိုတင်ငွေချေ လက်ကျန်";
   return "လက်ကျန်မရှိ";
 }
 
@@ -1437,14 +1437,6 @@ export default function Dashboard() {
                       {[selectedCustomer.phone, selectedCustomer.routeTag].filter(Boolean).join(" / ") ||
                         "No phone"}
                     </p>
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        className="min-h-11 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-emerald-500"
-                        onClick={exportToCSV}
-                      >
-                        ဒီ Customer ၏ စာရင်း Export (CSV)
-                      </button>
-                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-700 font-medium">{getBalanceLabel(selectedCustomer.current_balance)}</p>
@@ -1567,6 +1559,16 @@ export default function Dashboard() {
                     transactions={selectedCustomer.ledgers || []} 
                     onFilterChange={handleFilterChange}
                   />
+
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                    <button
+                      type="button"
+                      className="min-h-10 w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm transition-colors hover:bg-emerald-500 sm:w-auto"
+                      onClick={exportToCSV}
+                    >
+                      ဒီ Customer ၏ စာရင်း Export (CSV)
+                    </button>
+                  </div>
 
                   <div className="mt-3 space-y-2 md:hidden">{filteredLedgers.length ? filteredLedgers.map((ledger) => (
                     <article key={`mobile-${ledger.id}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
