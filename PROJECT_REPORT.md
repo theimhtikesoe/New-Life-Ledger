@@ -371,3 +371,14 @@ A local remote-pack browser test successfully launched Chromium and rendered Bur
 After the remote-pack deployment became runnable, the daily-report endpoint returned `browserType.launch: spawn ETXTBSY` while using `/tmp/chromium`. The daily route creates the PNG and PDF in parallel; both paths previously attempted to initialize/extract the same remote Chromium executable concurrently. That created a temporary executable lock race.
 
 The renderer now uses one shared Chromium executable-path promise per serverless instance and one shared report-image promise per report object. The first request performs the remote pack extraction, and concurrent PNG/PDF calls wait for the same completed promise. Failed initialization clears the promise so a later invocation can retry safely. The local Next.js production build passed after this change, and no database/data operation was changed.
+
+
+## 21. Mobile-friendly Report Redesign
+
+**Date:** 2026-08-19
+
+The owner confirmed that the browser-rendered report now works, but the single long image was difficult to read in Telegram's mobile preview. The report was redesigned into two independently captured browser panels: a Daily Summary image and an Activity History image. The Telegram group now receives both images followed by the PDF.
+
+The PDF now contains two pages in the same order: page 1 is Daily Summary and page 2 is Activity History. Both pages are embedded from the same browser-rendered panel screenshots used for the PNG files, preserving identical Burmese typography and layout. This is a presentation-only change; report data, audit records, customer records, ledger records, backup, and restore logic are unchanged.
+
+A local Next.js production build passed after the split-panel implementation. A fresh production deployment and Telegram group test are still required.

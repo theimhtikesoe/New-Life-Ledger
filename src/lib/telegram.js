@@ -43,7 +43,7 @@ export async function sendTelegramMessage(message) {
   return { results: [{ chatId: groupChatId, messageId: body.result?.message_id }] };
 }
 
-export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, dateLabel, caption }) {
+export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activityImageBuffer, dateLabel, caption }) {
   const { token, groupChatId } = getTelegramConfig();
   if (!token || !groupChatId) {
     throw new Error("TELEGRAM_BOT_TOKEN and TELEGRAM_GROUP_CHAT_ID are required");
@@ -57,6 +57,15 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, dateLa
     mimeType: "image/png",
     caption,
   });
+  const activity = activityImageBuffer ? await sendTelegramFile({
+    token,
+    chatId: groupChatId,
+    method: "sendPhoto",
+    buffer: activityImageBuffer,
+    filename: `new-life-ledger-${dateLabel}-activity.png`,
+    mimeType: "image/png",
+    caption: `Activity History — ${dateLabel}`,
+  }) : null;
   const pdf = await sendTelegramFile({
     token,
     chatId: groupChatId,
@@ -66,7 +75,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, dateLa
     mimeType: "application/pdf",
     caption: `Daily report PDF — ${dateLabel}`,
   });
-  return { results: [{ chatId: groupChatId, imageMessageId: image.result?.message_id, pdfMessageId: pdf.result?.message_id }] };
+  return { results: [{ chatId: groupChatId, imageMessageId: image.result?.message_id, activityImageMessageId: activity?.result?.message_id, pdfMessageId: pdf.result?.message_id }] };
 }
 
 export function telegramRecipientsConfigured() {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDailyReportData, createDailyReportPdf, createDailySummaryImage } from "@/lib/daily-report";
+import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailyActivityImage } from "@/lib/daily-report";
 import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { prisma } from "@/lib/prisma";
 
@@ -16,9 +16,10 @@ function isAuthorized(request) {
 async function runDailyReport() {
   const startedAt = Date.now();
   const report = await getDailyReportData();
-  const [pdfBuffer, imageBuffer] = await Promise.all([
+  const [pdfBuffer, imageBuffer, activityImageBuffer] = await Promise.all([
     createDailyReportPdf(report),
     createDailySummaryImage(report),
+    createDailyActivityImage(report),
   ]);
   const caption = [
     `New Life Ledger — ${report.periodLabel}`,
@@ -30,6 +31,7 @@ async function runDailyReport() {
   const delivery = await sendDailyReportToTelegram({
     pdfBuffer,
     imageBuffer,
+    activityImageBuffer,
     dateLabel: report.dateLabel,
     caption,
   });
