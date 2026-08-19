@@ -698,3 +698,8 @@ Verification completed:
 | `git diff --check` | Passed. |
 | Protected files | No database, API, Telegram, Cron, package, or environment changes. |
 | Data safety | No customer, ledger, audit-log, restore, delete, or database write was added. |
+
+
+### Production Verification for Section 36
+
+The production deployment for commit `50b1249` returned Dashboard HTTP 200 and Customers API HTTP 200. During initial loading, the centered overlay spinner and Burmese loading message were visible and interaction was blocked. After critical customer/KPI data completed, the overlay disappeared and the Dashboard showed 14,242,250 Ks total balance, 156 customers, 5 overdue alerts, and 0 today's paid transactions. Pending KPay data is now loaded in the background after the critical customer/KPI render. At mobile widths, the action group is configured as a one-column stack so Data Management and Report Excel labels do not overlap. No customer, ledger, audit-log, or database mutation was performed.
