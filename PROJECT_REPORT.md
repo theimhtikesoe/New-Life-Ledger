@@ -753,3 +753,36 @@ Verification completed:
 | Production deployment | Requires commit/push and the normal Vercel deployment check before the owner confirms the final phone/tablet appearance. |
 
 The existing `themeColor` metadata build warning remains unrelated to this UI-only change and was not modified.
+
+
+## 39. Compact Mobile Transactions Card Layout
+
+**Date:** 2026-08-20
+
+The owner provided a tall mobile screenshot showing that the stacked Transactions cards were much taller than the previous table presentation. The screenshot was inspected in eight ordered overlapping vertical tiles. It confirmed that nine records were loaded (`9 / 9 transactions loaded`) and that the excessive page length came from repeated card spacing and full-width action rows, not from extra records or data corruption.
+
+The mobile transaction renderer in `src/components/Dashboard.jsx` was adjusted as follows:
+
+| Area | Compact adjustment |
+|---|---|
+| Card container | Reduced from rounded-xl/p-4 to a smaller rounded-lg container with compact horizontal and vertical padding. |
+| Card spacing | Reduced the list gap and internal margins between date, amount, details, and action. |
+| Date/type row | Reduced label and date typography while keeping the date readable; the type badge remains visible and does not shrink. |
+| Amount | Reduced mobile-only amount typography from `text-xl` to `text-lg` and retained the currency suffix. |
+| Payment/Note | Reduced divider padding, grid gap, and label/value sizes; long values remain truncated instead of expanding the card. |
+| Delete action | Kept a full-width touch-friendly action but reduced its height, padding, and font size to remove unnecessary vertical bulk. |
+| Tablet/Desktop | The existing desktop table under `md:block` was not changed. This fix is limited to the `md:hidden` mobile cards. |
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| Screenshot review | Completed across all 8 ordered tiles; nine loaded records and repeated card height were confirmed. |
+| `pnpm run build` | Passed; Next.js compilation, lint/type checks, static generation, and route listing completed successfully. |
+| `git diff --check` | Passed. |
+| Changed source | Only `src/components/Dashboard.jsx` before this report entry. |
+| Protected files | `prisma/schema.prisma`, API routes, Telegram flow, Cron, Vercel environment, package manifests, and PIN were not changed. |
+| Data safety | No customer, ledger, balance, audit, backup, restore, or database operation was executed. Existing records were not deleted, overwritten, or modified. |
+| Deployment | Commit/push and production verification remain required for this compact UI change. |
+
+The existing unrelated `themeColor` metadata warning remains unchanged.

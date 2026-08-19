@@ -1549,20 +1549,20 @@ export default function Dashboard() {
                     onFilterChange={handleFilterChange}
                   />
 
-                  <div className="mt-4 space-y-3 md:hidden">{filteredLedgers.length ? filteredLedgers.map((ledger) => (
-                    <article key={`mobile-${ledger.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div><p className="text-xs text-slate-500">Date</p><p className="mt-1 text-sm font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
-                        <span className={`rounded-full px-2 py-1 text-xs font-medium ${ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
+                  <div className="mt-3 space-y-2 md:hidden">{filteredLedgers.length ? filteredLedgers.map((ledger) => (
+                    <article key={`mobile-${ledger.id}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Date</p><p className="mt-0.5 truncate text-xs font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
                       </div>
-                      <p className={`mt-3 text-xl font-bold ${ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
-                      <div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-xs">
-                        <div><p className="text-slate-500">Payment</p><p className="mt-1 font-medium text-slate-700">{ledger.paymentType || "-"}</p></div>
-                        <div><p className="text-slate-500">Note</p><p className="mt-1 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
+                      <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)} Ks</p>
+                      <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[11px]">
+                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.paymentType || "-"}</p></div>
+                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
                       </div>
-                      <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-4 min-h-10 w-full rounded-md border border-rose-200 px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
+                      <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
                     </article>
-                  )) : <div className="rounded-xl border border-slate-200 px-4 py-8 text-center text-sm text-slate-500">Transaction မရှိသေးပါ။</div>}</div>
+                  )) : <div className="rounded-lg border border-slate-200 px-3 py-6 text-center text-sm text-slate-500">Transaction မရှိသေးပါ။</div>}</div>
 
                   <div className="mt-4 hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
                     <table className="w-full text-left text-sm text-slate-700">
