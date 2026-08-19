@@ -1266,10 +1266,10 @@ export default function Dashboard() {
 
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
-          <div className="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 mb-3">
             <input
               type="text"
-              className="min-w-0 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner sm:flex-1 sm:h-12"
+              className="min-w-0 flex-1 h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner sm:h-12 sm:px-4 sm:text-sm"
               placeholder="Customer ရှာရန် (အမည် / ဖုန်း)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -1277,9 +1277,9 @@ export default function Dashboard() {
             {selectedCustomerId && (
               <button
                 onClick={() => setShowCustomerList(!showCustomerList)}
-                className="ml-0 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap sm:ml-3 sm:w-auto"
+                className="shrink-0 rounded-md border border-slate-300 px-2 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap sm:px-3 sm:text-sm"
               >
-                {showCustomerList ? "စာရင်းဖျောက်မည်" : "စာရင်းပြမည်"}
+                {showCustomerList ? "Customer စာရင်းဖျောက်မည်" : "Customer စာရင်းပြမည်"}
               </button>
             )}
           </div>

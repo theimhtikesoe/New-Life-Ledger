@@ -907,3 +907,27 @@ Verification completed:
 | Deployment | Commit/push and production status check remain required for this UI update. |
 
 The unrelated `themeColor` metadata build warning remains unchanged.
+
+
+## 44. Explicit Customer List Toggle Context and Compact Search Row
+
+**Date:** 2026-08-20
+
+The owner reviewed the production screenshot and correctly noted that the previous toggle still displayed only `စာရင်းဖျောက်မည်`, which did not identify what list was being controlled. The wording is now explicit: `Customer စာရင်းပြမည်` when the list is hidden and `Customer စာရင်းဖျောက်မည်` when the list is visible.
+
+The Customer search/toggle row was also refined for narrow phones. The search input is slightly smaller and uses the shorter placeholder `Customer ရှာရန် (အမည် / ဖုန်း)`. The toggle remains beside it in the same row, uses a compact non-wrapping button, and retains the same `setShowCustomerList` handler. This preserves the existing list visibility workflow while making the purpose of the button unambiguous and leaving more horizontal space for search.
+
+The two-column mobile Customer card layout from the previous update remains in place. No Customer selection, pagination, edit, delete, API, balance, ledger, audit, backup, restore, Telegram, Cron, Vercel environment, or PIN behavior was changed.
+
+Verification completed:
+
+| Check | Result |
+|---|---|
+| Production screenshot review | Confirmed the previous label lacked Customer context and the search/toggle row needed tightening. |
+| `pnpm run build` | Passed; Next.js compilation, lint/type checks, static generation, and route listing completed successfully. |
+| `git diff --check` | Passed. |
+| Changed source | `src/components/Dashboard.jsx` only before this report entry. |
+| Data/workflow safety | Existing handlers, API calls, data, database, audit records, and business calculations were not changed. |
+| Deployment | Commit/push and production status check remain required for this correction. |
+
+The unrelated `themeColor` metadata build warning remains unchanged.
