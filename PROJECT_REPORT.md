@@ -327,3 +327,16 @@ The owner identified remaining `private chat နှင့် group` wording in t
 The latest report screenshot also confirmed that the previous Noto Sans Myanmar output was technically readable in many places but still visually difficult to read because of Myanmar glyph appearance and spacing. A local font comparison was performed using Noto Sans Myanmar, Padauk, and Noto Serif Myanmar. Padauk produced the clearest local result for the target Burmese labels, so the report renderer now bundles and uses `assets/Padauk-Regular.ttf` while retaining the Latin fallback font.
 
 The local production build passed after both changes. The database, backup Excel content, restore policy, and existing records were not changed. A fresh production deployment and Telegram group-only test are still required before this version is considered final.
+
+
+## 17. New Report Architecture — Browser-rendered Raster Image and Image-based PDF
+
+**Date:** 2026-08-19
+
+The owner tested the Padauk-based report and confirmed that the output still did not match the website closely enough. Repeatedly changing SVG/PDF fonts was therefore stopped. The report renderer has been redesigned to use a serverless Chromium browser through `playwright-core` and `@sparticuz/chromium`.
+
+The new approach builds an HTML report using the same browser text-rendering path used by web pages, embeds the report font files with `@font-face`, waits for `document.fonts.ready`, and captures the complete Daily Summary plus Activity History page as a PNG screenshot. The PDF is created by embedding that exact raster image, so the image and PDF share the same rendering output and cannot diverge through separate font engines.
+
+The previous `@resvg/resvg-wasm` dependency and `assets/resvg.wasm` asset are no longer used and have been removed. Next.js now keeps `playwright-core` and `@sparticuz/chromium` external for the server function, while the report font assets remain included through output tracing.
+
+A local Chromium prototype rendered Burmese text successfully, and the full Next.js production build passed after the migration. No database schema, customer, ledger, audit, backup, or restore data was changed. Production deployment and a fresh Telegram group-only test remain required.

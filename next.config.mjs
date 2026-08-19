@@ -1,10 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Keep the report font and WASM renderer asset inside the serverless bundle.
+  // Keep report fonts and serverless browser assets available to the report function.
   experimental: {
     outputFileTracingIncludes: {
       '/*': ['./assets/**/*'],
     },
+    serverComponentsExternalPackages: ['playwright-core', '@sparticuz/chromium'],
   },
   // Headers for PWA support
   async headers() {
