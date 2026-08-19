@@ -157,6 +157,12 @@ function resolveFontPath() {
   return fs.existsSync(bundled) ? bundled : null;
 }
 
+function resolveFontDataUri() {
+  const fontPath = resolveFontPath();
+  if (!fontPath) throw new Error("Daily report font asset is unavailable in the serverless bundle");
+  return `data:font/ttf;base64,${fs.readFileSync(fontPath).toString("base64")}`;
+}
+
 function wrapPdfText(text, font, fontSize, maxWidth) {
   const words = String(text ?? "").split(/\s+/).filter(Boolean);
   if (!words.length) return [""];
@@ -239,6 +245,7 @@ export async function createDailyReportPdf(report) {
 
 export async function createDailySummaryImage(report) {
   const { summary } = report;
+  const fontDataUri = resolveFontDataUri();
   const width = 1200;
   const rowHeight = 58;
   const height = 500 + Math.min(report.customers.length, 8) * rowHeight;
@@ -248,11 +255,12 @@ export async function createDailySummaryImage(report) {
   }).join("");
   const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <style>
-      .title { font: 700 34px Arial, sans-serif; fill: #0f172a; }
-      .subtitle { font: 20px Arial, sans-serif; fill: #475569; }
-      .label { font: 700 18px Arial, sans-serif; fill: #334155; }
-      .value { font: 700 30px Arial, sans-serif; fill: #0f172a; }
-      .row { font: 20px Arial, sans-serif; fill: #334155; }
+      @font-face { font-family: NotoMyanmar; src: url('${fontDataUri}'); }
+      .title { font-family: NotoMyanmar, sans-serif; font-size: 34px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-family: NotoMyanmar, sans-serif; font-size: 20px; fill: #475569; }
+      .label { font-family: NotoMyanmar, sans-serif; font-size: 18px; font-weight: 700; fill: #334155; }
+      .value { font-family: NotoMyanmar, sans-serif; font-size: 30px; font-weight: 700; fill: #0f172a; }
+      .row { font-family: NotoMyanmar, sans-serif; font-size: 20px; fill: #334155; }
     </style>
     <rect width="100%" height="100%" fill="#f8fafc"/>
     <rect x="28" y="28" width="1144" height="${height - 56}" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
