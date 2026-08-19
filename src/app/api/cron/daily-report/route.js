@@ -40,7 +40,7 @@ async function runDailyReport() {
       action: "DAILY_REPORT_SENT",
       entityType: "DailyReport",
       entityLabel: report.dateLabel,
-      summary: `Daily report sent to Telegram private chat and group for ${report.dateLabel}`,
+      summary: `Daily report sent to Telegram group for ${report.dateLabel}`,
       metadata: {
         dateLabel: report.dateLabel,
         periodLabel: report.periodLabel,

@@ -289,3 +289,30 @@ The overlap was caused by the report SVG using fixed x-coordinates that were too
 | Data safety | No database records were changed; the update only changes report rendering |
 
 The updated implementation compiled successfully locally and still exposes `/api/cron/daily-report`. It must be deployed and tested with a fresh Telegram report before the layout is considered final.
+
+
+## 14. Latest Feedback — Layout Improved but Burmese Text Still Needs Clarification
+
+**Date:** 2026-08-19
+
+The owner tested the deployment after the table-spacing fix and reported that the output is better but still not acceptable. The latest screenshot shows that the report is no longer dominated by square boxes, but some Burmese glyphs appear visually crowded or incomplete and the owner cannot clearly distinguish missing glyphs from overlapping glyphs.
+
+This is a report-rendering issue, not an Excel-data issue. The backup Excel export and add-only restore flow preserve structured values such as customer names, amounts, dates, payment types, and audit records. Downloading the Excel file and restoring it cannot automatically fix image/PDF font shaping, because the Telegram report is generated later by its own renderer. Excel restore remains useful for verifying that the underlying data is present and safe, but it is not a solution for report typography.
+
+The next rendering investigation should compare the bundled Noto Sans Myanmar font against a bundled Padauk or other Myanmar font, while keeping the current data and add-only safety policy unchanged. The report must be judged separately on these two criteria:
+
+| Criterion | Meaning |
+|---|---|
+| Data completeness | All labels, customer names, amounts, dates, payment types, notes, and activity fields exist in the output |
+| Visual correctness | Burmese glyphs are shaped/readable and table columns do not overlap |
+
+No database records were changed by this diagnosis or by the font comparison work.
+
+
+## 15. Recipient Policy Update — Telegram Group Only
+
+**Date:** 2026-08-19
+
+The owner requested that all Telegram report delivery go to the Telegram group only. The implementation now reads `TELEGRAM_GROUP_CHAT_ID` for Telegram notifications and does not use `TELEGRAM_PRIVATE_CHAT_ID` for either daily report files or KPay webhook messages.
+
+The daily report sends the PNG and PDF exactly once to the configured group. The successful-delivery audit summary now states that the report was sent to the Telegram group. The local production build passed after this change, and no database records were modified.

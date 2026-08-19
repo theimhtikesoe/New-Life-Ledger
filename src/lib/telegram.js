@@ -1,9 +1,7 @@
 function getTelegramConfig() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatIds = [process.env.TELEGRAM_PRIVATE_CHAT_ID, process.env.TELEGRAM_GROUP_CHAT_ID]
-    .map((value) => value?.trim())
-    .filter(Boolean);
-  return { token, chatIds: [...new Set(chatIds)] };
+  const groupChatId = process.env.TELEGRAM_GROUP_CHAT_ID?.trim();
+  return { token, groupChatId };
 }
 
 async function sendTelegramFile({ token, chatId, method, buffer, filename, mimeType, caption }) {
@@ -28,62 +26,50 @@ async function sendTelegramFile({ token, chatId, method, buffer, filename, mimeT
 }
 
 export async function sendTelegramMessage(message) {
-  const { token, chatIds } = getTelegramConfig();
-  const legacyChatId = process.env.TELEGRAM_CHAT_ID?.trim();
-  const recipients = chatIds.length ? chatIds : legacyChatId ? [legacyChatId] : [];
-  if (!token || !recipients.length) {
-    console.warn("Telegram env vars are missing; skipping notification.");
+  const { token, groupChatId } = getTelegramConfig();
+  if (!token || !groupChatId) {
+    console.warn("Telegram group env vars are missing; skipping notification.");
     return { skipped: true };
   }
-
-  const results = [];
-  for (const chatId of recipients) {
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "HTML" }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.ok) {
-      throw new Error(`Telegram sendMessage failed for ${chatId}: ${response.status} ${body.description || "unknown error"}`);
-    }
-    results.push({ chatId, messageId: body.result?.message_id });
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: groupChatId, text: message, parse_mode: "HTML" }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.ok) {
+    throw new Error(`Telegram sendMessage failed for ${groupChatId}: ${response.status} ${body.description || "unknown error"}`);
   }
-  return { results };
+  return { results: [{ chatId: groupChatId, messageId: body.result?.message_id }] };
 }
 
 export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, dateLabel, caption }) {
-  const { token, chatIds } = getTelegramConfig();
-  if (!token || chatIds.length !== 2) {
-    throw new Error("TELEGRAM_BOT_TOKEN, TELEGRAM_PRIVATE_CHAT_ID, and TELEGRAM_GROUP_CHAT_ID are required");
+  const { token, groupChatId } = getTelegramConfig();
+  if (!token || !groupChatId) {
+    throw new Error("TELEGRAM_BOT_TOKEN and TELEGRAM_GROUP_CHAT_ID are required");
   }
-
-  const results = [];
-  for (const chatId of chatIds) {
-    const image = await sendTelegramFile({
-      token,
-      chatId,
-      method: "sendPhoto",
-      buffer: imageBuffer,
-      filename: `new-life-ledger-${dateLabel}.png`,
-      mimeType: "image/png",
-      caption,
-    });
-    const pdf = await sendTelegramFile({
-      token,
-      chatId,
-      method: "sendDocument",
-      buffer: pdfBuffer,
-      filename: `New-Life-Ledger-Daily-${dateLabel}.pdf`,
-      mimeType: "application/pdf",
-      caption: `Daily report PDF — ${dateLabel}`,
-    });
-    results.push({ chatId, imageMessageId: image.result?.message_id, pdfMessageId: pdf.result?.message_id });
-  }
-  return { results };
+  const image = await sendTelegramFile({
+    token,
+    chatId: groupChatId,
+    method: "sendPhoto",
+    buffer: imageBuffer,
+    filename: `new-life-ledger-${dateLabel}.png`,
+    mimeType: "image/png",
+    caption,
+  });
+  const pdf = await sendTelegramFile({
+    token,
+    chatId: groupChatId,
+    method: "sendDocument",
+    buffer: pdfBuffer,
+    filename: `New-Life-Ledger-Daily-${dateLabel}.pdf`,
+    mimeType: "application/pdf",
+    caption: `Daily report PDF — ${dateLabel}`,
+  });
+  return { results: [{ chatId: groupChatId, imageMessageId: image.result?.message_id, pdfMessageId: pdf.result?.message_id }] };
 }
 
 export function telegramRecipientsConfigured() {
-  const { token, chatIds } = getTelegramConfig();
-  return Boolean(token && chatIds.length === 2);
+  const { token, groupChatId } = getTelegramConfig();
+  return Boolean(token && groupChatId);
 }
