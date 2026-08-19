@@ -1,10 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Keep the report font inside the Vercel serverless function bundle.
-  // Without this, PDFKit falls back to Helvetica and looks for a missing AFM file.
+  // Keep the report font and renderer assets inside the serverless bundle.
   experimental: {
+    serverComponentsExternalPackages: ['@resvg/resvg-js'],
     outputFileTracingIncludes: {
-      '/*': ['./assets/**/*'],
+      '/*': ['./assets/**/*', './node_modules/@resvg/**/*'],
     },
   },
   // Headers for PWA support

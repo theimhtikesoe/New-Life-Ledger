@@ -1,6 +1,5 @@
 import { PDFDocument } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
-import sharp from "sharp";
+import { Resvg } from "@resvg/resvg-js";
 import fs from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
@@ -140,6 +139,23 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
   ]);
 
   const { summary, customers } = summarizeLedgers(ledgers);
+  const legacyLogs = ledgers.map((ledger) => ({
+    id: `legacy-${ledger.id}`,
+    actorName: "",
+    action: ledger.type === "DEBIT" ? "PAYMENT" : "DEBT_INCREASE",
+    entityType: "Ledger",
+    entityLabel: ledger.customer.name,
+    summary: `${ledger.customer.name} ${ledger.type === "DEBIT" ? "ငွေချေ" : "အကြွေးတိုး"} ${ledger.amount.toLocaleString()} Ks`,
+    createdAt: ledger.date,
+    eventSource: "legacy",
+    metadata: {
+      amount: ledger.amount,
+      paymentType: ledger.paymentType,
+      note: ledger.note,
+    },
+  }));
+  const activityLogs = [...auditLogs.map((log) => ({ ...log, eventSource: "audit" })), ...legacyLogs]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return {
     dateLabel,
     periodLabel: `${dateLabel} 00:00–23:59 (Myanmar time)`,
@@ -149,18 +165,13 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
     customers,
     ledgers,
     auditLogs,
+    activityLogs,
   };
 }
 
 function resolveFontPath() {
   const bundled = path.join(process.cwd(), "assets", "NotoSansMyanmar-Regular.ttf");
   return fs.existsSync(bundled) ? bundled : null;
-}
-
-function resolveFontDataUri() {
-  const fontPath = resolveFontPath();
-  if (!fontPath) throw new Error("Daily report font asset is unavailable in the serverless bundle");
-  return `data:font/ttf;base64,${fs.readFileSync(fontPath).toString("base64")}`;
 }
 
 function wrapPdfText(text, font, fontSize, maxWidth) {
@@ -181,97 +192,62 @@ function wrapPdfText(text, font, fontSize, maxWidth) {
   return lines;
 }
 
-export async function createDailyReportPdf(report) {
+function actionLabel(action) {
+  return ({ PAYMENT: "ငွေချေ", DEBT_INCREASE: "အကြွေးတိုး", CREATE: "အသစ်ထည့်", UPDATE: "ပြင်ဆင်", RESTORE: "ပြန်ယူ", DELETE: "ဖျက်", PERMANENT_DELETE: "အပြီးဖျက်", DAILY_REPORT_SENT: "Daily Report ပို့" })[action] || action;
+}
+
+function createReportSvg(report) {
   const fontPath = resolveFontPath();
   if (!fontPath) throw new Error("Daily report font asset is unavailable in the serverless bundle");
-
-  const pdfDoc = await PDFDocument.create();
-  pdfDoc.registerFontkit(fontkit);
-  const font = await pdfDoc.embedFont(fs.readFileSync(fontPath), { subset: true });
-  const pageSize = [595.28, 841.89];
-  const margin = 36;
-  const maxWidth = pageSize[0] - margin * 2;
-  let page = pdfDoc.addPage(pageSize);
-  let y = pageSize[1] - margin;
-
-  const draw = (text, size = 10, gap = 5) => {
-    const lines = wrapPdfText(text, font, size, maxWidth);
-    for (const line of lines) {
-      if (y < margin + size + gap) {
-        page = pdfDoc.addPage(pageSize);
-        y = pageSize[1] - margin;
-      }
-      page.drawText(line, { x: margin, y: y - size, size, font });
-      y -= size + gap;
-    }
-  };
-  const heading = (text, size = 12) => {
-    y -= 8;
-    draw(text, size, 5);
-    y -= 3;
-  };
-
   const { summary } = report;
-  draw("New Life Ledger - Daily Report", 18, 7);
-  draw(report.periodLabel, 10, 8);
-  heading("Daily Summary");
-  draw(`Paid transactions: ${summary.paidCount} | ${amount(summary.paidAmount)}`);
-  draw(`Debt increases: ${summary.debtCount} | ${amount(summary.debtAmount)}`);
-  draw(`Total transactions: ${summary.totalTransactions}`);
-  draw(`Activity actions: ${summary.auditCount}`);
-  heading("Payment Types");
-  const paymentEntries = Object.entries(summary.paymentTypes);
-  if (!paymentEntries.length) draw("No payment records");
-  paymentEntries.forEach(([key, value]) => draw(`${key}: ${amount(value)}`));
-  heading("Customer Summary");
-  if (!report.customers.length) draw("No customer transactions for this period");
-  report.customers.forEach((customer) => draw(`${customer.customerName} | Paid ${amount(customer.paidAmount)} | Debt ${amount(customer.debtAmount)}`, 9, 4));
+  const customers = report.customers || [];
+  const logs = report.activityLogs || report.auditLogs || [];
+  const width = 1800;
+  const customerRows = Math.max(customers.length, 1);
+  const activityRows = Math.max(logs.length, 1);
+  const height = 760 + customerRows * 64 + 300 + activityRows * 68;
+  const esc = escapeXml;
+  const card = (x, fill, label, value, detail = "") => `<rect x="${x}" y="170" width="390" height="140" rx="18" fill="${fill}"/><text x="${x + 26}" y="215" class="label">${esc(label)}</text><text x="${x + 26}" y="266" class="value">${esc(value)}</text><text x="${x + 26}" y="294" class="detail">${esc(detail)}</text>`;
+  const customerRowsSvg = customers.length ? customers.map((customer, index) => {
+    const y = 435 + index * 64;
+    return `<line x1="70" y1="${y + 18}" x2="1730" y2="${y + 18}" class="line"/><text x="90" y="${y}" class="row">${esc(customer.customerName)}</text><text x="1100" y="${y}" class="row green">${customer.paidCount} / ${esc(amount(customer.paidAmount))}</text><text x="1430" y="${y}" class="row red">${customer.unpaidCount ?? customer.debtCount ?? 0} / ${esc(amount(customer.unpaidAmount ?? customer.debtAmount))}</text>`;
+  }).join("") : `<text x="90" y="435" class="row">ဒီနေ့စာရင်းမရှိသေးပါ။</text>`;
+  const paymentRows = Object.entries(summary.paymentTypes || {}).map(([type, value], index) => `<text x="90" y="${500 + index * 45}" class="small">${esc(type)}</text><text x="1650" y="${500 + index * 45}" text-anchor="end" class="small bold">${esc(amount(value))}</text>`).join("") || `<text x="90" y="500" class="small">ငွေချေမှုမရှိသေးပါ။</text>`;
+  const activityTop = 620 + customerRows * 64 + 250;
+  const activityRowsSvg = logs.length ? logs.map((log, index) => {
+    const metadata = log.metadata || {};
+    const y = activityTop + 110 + index * 68;
+    return `<line x1="70" y1="${y + 18}" x2="1730" y2="${y + 18}" class="line"/><text x="90" y="${y}" class="tiny">${esc(formatMyanmarDate(log.createdAt))}</text><text x="390" y="${y}" class="tiny">${esc(log.actorName || "")}</text><text x="570" y="${y}" class="tiny">${esc(actionLabel(log.action))}</text><text x="800" y="${y}" class="tiny">${esc(log.entityLabel || log.entityType || "")}</text><text x="1180" y="${y}" class="tiny">${esc(metadata.amount == null ? "" : amount(metadata.amount))}</text><text x="1430" y="${y}" class="tiny">${esc(metadata.paymentType || "")}</text><text x="1600" y="${y}" class="tiny">${esc(log.eventSource === "legacy" ? "အရင်စာရင်း" : "အသစ်မှတ်တမ်း")}</text>`;
+  }).join("") : `<text x="90" y="${activityTop + 110}" class="row">ဒီနေ့လုပ်ဆောင်ချက်မရှိသေးပါ။</text>`;
+  return `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      .title,.subtitle,.heading,.label,.value,.detail,.row,.small,.tiny { font-family: 'Noto Sans Myanmar', sans-serif; fill: #0f172a; }
+      .title { font-size: 42px; } .subtitle { font-size: 24px; fill: #475569; } .heading { font-size: 28px; } .label { font-size: 22px; fill: #334155; } .value { font-size: 38px; } .detail { font-size: 19px; fill: #475569; } .row { font-size: 22px; } .small { font-size: 22px; } .tiny { font-size: 18px; } .bold { font-weight: 700; } .green { fill: #047857; } .red { fill: #be123c; } .line { stroke: #e2e8f0; stroke-width: 2; }
+    </style>
+    <rect width="100%" height="100%" fill="#f8fafc"/><rect x="28" y="28" width="1744" height="${height - 56}" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="70" y="90" class="title">Daily Summary</text><text x="70" y="130" class="subtitle">${esc(report.periodLabel)}</text>
+    ${card(65, "#ecfdf5", "ငွေချေသူ", String(summary.paidCount), amount(summary.paidAmount))}${card(475, "#fff1f2", "အကြွေးတိုးသူ", String(summary.debtCount), amount(summary.debtAmount))}${card(885, "#eff6ff", "Transaction စုစုပေါင်း", String(summary.totalTransactions))}${card(1295, "#f5f3ff", "လုပ်ဆောင်ချက်မှတ်တမ်း", String(summary.auditCount))}
+    <text x="70" y="370" class="heading">Customer အလိုက် စာရင်းချုပ်</text><text x="90" y="420" class="small">Customer</text><text x="1100" y="420" class="small">ငွေချေ</text><text x="1430" y="420" class="small">အကြွေးတိုး</text>${customerRowsSvg}
+    <rect x="70" y="${450 + customerRows * 64}" width="1660" height="190" rx="16" fill="#f8fafc"/><text x="90" y="${490 + customerRows * 64}" class="heading">Payment Type</text>${paymentRows}
+    <text x="70" y="${activityTop}" class="title">Activity History</text><text x="70" y="${activityTop + 42}" class="subtitle">${esc(report.dateLabel)} Activity — ${logs.length} actions</text><text x="90" y="${activityTop + 92}" class="small">စာရင်းနေ့/အချိန်</text><text x="390" y="${activityTop + 92}" class="small">လုပ်သူ</text><text x="570" y="${activityTop + 92}" class="small">လုပ်ဆောင်ချက်</text><text x="800" y="${activityTop + 92}" class="small">Customer / အကြောင်းအရာ</text><text x="1180" y="${activityTop + 92}" class="small">ပမာဏ</text><text x="1430" y="${activityTop + 92}" class="small">Payment</text><text x="1600" y="${activityTop + 92}" class="small">Source</text>${activityRowsSvg}
+  </svg>`;
+}
 
-  page = pdfDoc.addPage(pageSize);
-  y = pageSize[1] - margin;
-  heading("Transactions");
-  if (!report.ledgers.length) draw("No transactions for this period", 9);
-  report.ledgers.forEach((ledger, index) => {
-    const kind = ledger.type === "DEBIT" ? "PAYMENT" : "DEBT INCREASE";
-    draw(`${index + 1}. ${formatMyanmarDate(ledger.date)} | ${ledger.customer.name} | ${kind} | ${amount(ledger.amount)} | ${ledger.paymentType || "-"}`, 8, 3);
-    if (ledger.note) draw(`Note: ${ledger.note}`, 8, 3);
-  });
-  heading("Activity History");
-  if (!report.auditLogs.length) draw("No new audit actions for this period", 8);
-  report.auditLogs.forEach((log, index) => draw(`${index + 1}. ${formatMyanmarDate(log.createdAt)} | ${log.actorName || ""} | ${log.action} | ${log.entityLabel || log.entityType} | ${log.summary}`, 8, 3));
-
-  return Buffer.from(await pdfDoc.save());
+async function renderReportImage(report) {
+  const fontPath = resolveFontPath();
+  const svg = createReportSvg(report);
+  return Buffer.from(new Resvg(svg, { font: { fontFiles: [fontPath] } }).render().asPng());
 }
 
 export async function createDailySummaryImage(report) {
-  const { summary } = report;
-  const fontDataUri = resolveFontDataUri();
-  const width = 1200;
-  const rowHeight = 58;
-  const height = 500 + Math.min(report.customers.length, 8) * rowHeight;
-  const customerRows = report.customers.slice(0, 8).map((customer, index) => {
-    const y = 330 + index * rowHeight;
-    return `<text x="70" y="${y}" class="row">${escapeXml(customer.customerName)}</text><text x="760" y="${y}" class="row">Paid ${escapeXml(amount(customer.paidAmount))}</text><text x="1010" y="${y}" class="row">Debt ${escapeXml(amount(customer.debtAmount))}</text>`;
-  }).join("");
-  const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-    <style>
-      @font-face { font-family: NotoMyanmar; src: url('${fontDataUri}'); }
-      .title { font-family: NotoMyanmar, sans-serif; font-size: 34px; font-weight: 700; fill: #0f172a; }
-      .subtitle { font-family: NotoMyanmar, sans-serif; font-size: 20px; fill: #475569; }
-      .label { font-family: NotoMyanmar, sans-serif; font-size: 18px; font-weight: 700; fill: #334155; }
-      .value { font-family: NotoMyanmar, sans-serif; font-size: 30px; font-weight: 700; fill: #0f172a; }
-      .row { font-family: NotoMyanmar, sans-serif; font-size: 20px; fill: #334155; }
-    </style>
-    <rect width="100%" height="100%" fill="#f8fafc"/>
-    <rect x="28" y="28" width="1144" height="${height - 56}" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
-    <text x="70" y="90" class="title">New Life Ledger - Daily Summary</text>
-    <text x="70" y="128" class="subtitle">${escapeXml(report.periodLabel)}</text>
-    <rect x="65" y="160" width="250" height="115" rx="16" fill="#dcfce7"/><text x="88" y="198" class="label">Paid</text><text x="88" y="242" class="value">${summary.paidCount} | ${escapeXml(amount(summary.paidAmount))}</text>
-    <rect x="335" y="160" width="250" height="115" rx="16" fill="#fee2e2"/><text x="358" y="198" class="label">Debt Increase</text><text x="358" y="242" class="value">${summary.debtCount} | ${escapeXml(amount(summary.debtAmount))}</text>
-    <rect x="605" y="160" width="250" height="115" rx="16" fill="#dbeafe"/><text x="628" y="198" class="label">Transactions</text><text x="628" y="242" class="value">${summary.totalTransactions}</text>
-    <rect x="875" y="160" width="250" height="115" rx="16" fill="#fef3c7"/><text x="898" y="198" class="label">Activity</text><text x="898" y="242" class="value">${summary.auditCount}</text>
-    <text x="70" y="315" class="label">Top customer activity</text>
-    ${customerRows || '<text x="70" y="360" class="row">No customer transactions for this period</text>'}
-  </svg>`;
-  return sharp(Buffer.from(svg)).png().toBuffer();
+  return renderReportImage(report);
+}
+
+export async function createDailyReportPdf(report) {
+  const imageBuffer = await renderReportImage(report);
+  const pdfDoc = await PDFDocument.create();
+  const image = await pdfDoc.embedPng(imageBuffer);
+  const page = pdfDoc.addPage([900, 900 * image.height / image.width]);
+  page.drawImage(image, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
+  return Buffer.from(await pdfDoc.save());
 }
