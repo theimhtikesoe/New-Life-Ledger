@@ -192,6 +192,9 @@ export default function Dashboard({ view = "overview" }) {
   const [allCustomersForKPI, setAllCustomersForKPI] = useState([]);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
+  const [deletedCustomerDetail, setDeletedCustomerDetail] = useState(null);
+  const [loadingDeletedCustomerDetail, setLoadingDeletedCustomerDetail] = useState(false);
+  const [deletedCustomerDetailError, setDeletedCustomerDetailError] = useState("");
   const [pendingKpay, setPendingKpay] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -669,6 +672,20 @@ export default function Dashboard({ view = "overview" }) {
       setLoadingDeleted(false);
     }
   }, [showAlert]);
+
+  async function openDeletedCustomerDetail(customer) {
+    setDeletedCustomerDetailError("");
+    setDeletedCustomerDetail({ ...customer, ledgers: [], kpayAliases: [] });
+    setLoadingDeletedCustomerDetail(true);
+    try {
+      const detail = await api(`/api/customers/${encodeURIComponent(customer.id)}?includeLedgers=true`);
+      setDeletedCustomerDetail(detail);
+    } catch (error) {
+      setDeletedCustomerDetailError(error.message || "Customer အသေးစိတ် ရယူ၍ မရပါ။");
+    } finally {
+      setLoadingDeletedCustomerDetail(false);
+    }
+  }
 
   useEffect(() => {
     if (showRecycleBin) {
@@ -1307,6 +1324,22 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     setFilteredLedgers(selectedCustomer?.ledgers || []);
   }, [selectedCustomer]);
+
+  const deletedCustomerLedgers = deletedCustomerDetail?.ledgers || [];
+  const deletedCustomerLedgerSummary = deletedCustomerLedgers.reduce(
+    (summary, ledger) => {
+      const amount = Number(ledger.amount || 0);
+      if (ledger.type === "CREDIT") {
+        summary.debtCount += 1;
+        summary.debtAmount += amount;
+      } else {
+        summary.paidCount += 1;
+        summary.paidAmount += amount;
+      }
+      return summary;
+    },
+    { paidCount: 0, paidAmount: 0, debtCount: 0, debtAmount: 0 },
+  );
 
   return (
     <main className="min-h-screen bg-white" aria-busy={loading}>
@@ -2009,6 +2042,15 @@ export default function Dashboard({ view = "overview" }) {
                           </button>
                         </div>
                       </div>
+                      <div className="mt-3 border-t border-slate-200 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => openDeletedCustomerDetail(customer)}
+                          className="min-h-10 w-full rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-800 hover:bg-cyan-100"
+                        >
+                          အသေးစိတ်ကြည့်ရန်
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -2024,6 +2066,110 @@ export default function Dashboard({ view = "overview" }) {
                 className="rounded-md bg-slate-200 px-5 py-2 text-sm font-medium text-slate-900 hover:bg-slate-200"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletedCustomerDetail && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 p-3 backdrop-blur-sm sm:p-4">
+          <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-cyan-200 bg-white shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-cyan-200 bg-gradient-to-r from-cyan-50 to-sky-50 px-4 py-4 sm:px-5">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Customer အသေးစိတ်</p>
+                <h3 className="mt-1 truncate text-xl font-semibold text-slate-900">{deletedCustomerDetail.name}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeletedCustomerDetail(null);
+                  setDeletedCustomerDetailError("");
+                }}
+                className="rounded-full p-2 text-slate-600 hover:bg-white hover:text-slate-900"
+                aria-label="အသေးစိတ်ပိတ်ရန်"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
+              {loadingDeletedCustomerDetail ? (
+                <div className="flex min-h-52 items-center justify-center">
+                  <div className="text-center">
+                    <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-cyan-100 border-t-cyan-600" />
+                    <p className="mt-3 text-sm text-slate-600">Customer အသေးစိတ် ရယူနေသည်...</p>
+                  </div>
+                </div>
+              ) : deletedCustomerDetailError ? (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+                  <p className="font-semibold">အသေးစိတ် ရယူ၍ မရပါ</p>
+                  <p className="mt-1">{deletedCustomerDetailError}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <section className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                    <h4 className="font-semibold text-slate-900">Customer အချက်အလက်</h4>
+                    <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                      <div><p className="text-xs text-slate-500">Customer အမည်</p><p className="mt-1 font-medium text-slate-900">{deletedCustomerDetail.name}</p></div>
+                      <div><p className="text-xs text-slate-500">ဖုန်းနံပါတ်</p><p className="mt-1 font-medium text-slate-900">{deletedCustomerDetail.phone || "မရှိပါ"}</p></div>
+                      <div><p className="text-xs text-slate-500">လမ်းကြောင်း</p><p className="mt-1 font-medium text-slate-900">{deletedCustomerDetail.routeTag || "မသတ်မှတ်ရသေးပါ"}</p></div>
+                      <div><p className="text-xs text-slate-500">ဖျက်ထားသည့်အချိန်</p><p className="mt-1 font-medium text-rose-700">{deletedCustomerDetail.deletedAt ? formatDate(deletedCustomerDetail.deletedAt) : "မသိရသေးပါ"}</p></div>
+                      <div><p className="text-xs text-slate-500">စတင်ထည့်ထားသည့်အချိန်</p><p className="mt-1 font-medium text-slate-900">{deletedCustomerDetail.createdAt ? formatDate(deletedCustomerDetail.createdAt) : "မသိရသေးပါ"}</p></div>
+                      <div><p className="text-xs text-slate-500">လက်ရှိလက်ကျန်</p><p className="mt-1 font-medium text-slate-900">{getBalanceLabel(deletedCustomerDetail.current_balance)} — {formatBalanceAmount(deletedCustomerDetail.current_balance)}</p></div>
+                    </div>
+                    <div className="mt-4 border-t border-slate-200 pt-3">
+                      <p className="text-xs text-slate-500">KPay အမည်များ</p>
+                      {deletedCustomerDetail.kpayAliases?.length ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {deletedCustomerDetail.kpayAliases.map((alias) => <span key={alias.id} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200">{alias.kpayName}</span>)}
+                        </div>
+                      ) : <p className="mt-1 text-sm text-slate-600">KPay ချိတ်ဆက်ထားခြင်း မရှိပါ။</p>}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h4 className="font-semibold text-slate-900">ငွေစာရင်းအနှစ်ချုပ်</h4>
+                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3"><p className="text-xs text-emerald-700">ငွေချေ</p><p className="mt-1 text-lg font-bold text-emerald-800">{deletedCustomerLedgerSummary.paidCount} ခု</p><p className="text-xs text-emerald-700">{formatMoney(deletedCustomerLedgerSummary.paidAmount)}</p></div>
+                      <div className="rounded-lg border border-rose-200 bg-rose-50 p-3"><p className="text-xs text-rose-700">အကြွေးတိုး</p><p className="mt-1 text-lg font-bold text-rose-800">{deletedCustomerLedgerSummary.debtCount} ခု</p><p className="text-xs text-rose-700">{formatMoney(deletedCustomerLedgerSummary.debtAmount)}</p></div>
+                      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3"><p className="text-xs text-blue-700">စာရင်းစုစုပေါင်း</p><p className="mt-1 text-lg font-bold text-blue-800">{deletedCustomerLedgers.length} ခု</p></div>
+                      <div className="rounded-lg border border-violet-200 bg-violet-50 p-3"><p className="text-xs text-violet-700">ပြသထားသည့်စာရင်း</p><p className="mt-1 text-lg font-bold text-violet-800">နောက်ဆုံး ၅၀</p></div>
+                    </div>
+                  </section>
+
+                  <section className="rounded-xl border border-slate-200 bg-white">
+                    <div className="border-b border-slate-200 px-4 py-3">
+                      <h4 className="font-semibold text-slate-900">ငွေချေ / အကြွေးတိုး အသေးစိတ်</h4>
+                      <p className="mt-1 text-xs text-slate-500">နောက်ဆုံး ၅၀ စာရင်းကို ရက်စွဲအလိုက် ပြထားပါသည်။</p>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {deletedCustomerLedgers.length ? deletedCustomerLedgers.map((ledger) => (
+                        <article key={ledger.id} className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0"><p className="text-xs text-slate-500">{formatDate(ledger.date)}</p><p className="mt-1 text-sm font-medium text-slate-800">{ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"} {ledger.saleType ? `(${ledger.saleType})` : ""}</p></div>
+                            <p className={`shrink-0 text-base font-bold ${ledger.type === "CREDIT" ? "text-rose-700" : "text-emerald-700"}`}>{formatMoney(ledger.amount)}</p>
+                          </div>
+                          <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                            <div><span className="text-slate-500">ငွေပေးချေမှုအမျိုးအစား — </span><span className="font-medium text-slate-700">{ledger.paymentType || "မသတ်မှတ်ရသေးပါ"}</span></div>
+                            <div><span className="text-slate-500">မှတ်ချက် — </span><span className="font-medium text-slate-700">{ledger.note || "မရှိပါ"}</span></div>
+                          </div>
+                        </article>
+                      )) : <p className="px-4 py-8 text-center text-sm text-slate-500">ငွေစာရင်း မရှိသေးပါ။</p>}
+                    </div>
+                  </section>
+                </div>
+              )}
+            </div>
+            <div className="flex shrink-0 justify-end border-t border-cyan-200 bg-cyan-50/50 px-4 py-3 sm:px-5">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeletedCustomerDetail(null);
+                  setDeletedCustomerDetailError("");
+                }}
+                className="min-h-10 rounded-md bg-slate-200 px-5 py-2 text-sm font-medium text-slate-900 hover:bg-slate-300"
+              >
+                ပိတ်မည်
               </button>
             </div>
           </div>
