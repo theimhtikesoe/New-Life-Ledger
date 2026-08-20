@@ -26,11 +26,11 @@ function clearDashboardDraftFields(fields) {
     const actorName = localStorage.getItem("actorName");
     const draftKey = getDashboardDraftStorageKey(actorName);
     if (!draftKey) return;
-    const rawDraft = localStorage.getItem(draftKey);
+    const rawDraft = sessionStorage.getItem(draftKey);
     if (!rawDraft) return;
     const draft = JSON.parse(rawDraft);
     fields.forEach((field) => delete draft[field]);
-    localStorage.setItem(draftKey, JSON.stringify(draft));
+    sessionStorage.setItem(draftKey, JSON.stringify(draft));
   } catch (error) {
     console.warn("Dashboard draft could not be cleared:", error);
   }
@@ -282,7 +282,8 @@ export default function Dashboard({ view = "overview" }) {
   }, []);
 
   // Keep unfinished local work available when the actor-only idle lock appears.
-  // Each actor has a separate draft so shared-phone users do not see one another's form data.
+  // Each actor has a separate session draft so shared-phone users do not see one another's form data.
+  // sessionStorage survives a refresh in this tab and clears when the tab/PWA session closes.
   // These drafts never include PIN values or server credentials.
   useEffect(() => {
     const resetDraftState = () => {
@@ -316,7 +317,7 @@ export default function Dashboard({ view = "overview" }) {
       const draftKey = getDashboardDraftStorageKey(actorName);
       let draft = null;
       try {
-        const rawDraft = draftKey ? localStorage.getItem(draftKey) : null;
+        const rawDraft = draftKey ? sessionStorage.getItem(draftKey) : null;
         draft = rawDraft ? JSON.parse(rawDraft) : null;
       } catch (error) {
         console.warn("Dashboard draft could not be restored:", error);
@@ -378,7 +379,7 @@ export default function Dashboard({ view = "overview" }) {
         selectedCustomerId,
         savedAt: new Date().toISOString(),
       };
-      localStorage.setItem(draftKey, JSON.stringify(draft));
+      sessionStorage.setItem(draftKey, JSON.stringify(draft));
     } catch (error) {
       console.warn("Dashboard draft could not be saved:", error);
     }
