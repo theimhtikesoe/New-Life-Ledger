@@ -214,8 +214,11 @@ export default function Dashboard() {
   const [todayPaymentsList, setTodayPaymentsList] = useState([]);
   const [overdueDebts, setOverdueDebts] = useState(null);
   const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
+  const [telegramReportStep, setTelegramReportStep] = useState("preview");
+  const [telegramReportPreview, setTelegramReportPreview] = useState(null);
   const [telegramReportPin, setTelegramReportPin] = useState("");
   const [telegramReportError, setTelegramReportError] = useState("");
+  const [isLoadingTelegramReportPreview, setIsLoadingTelegramReportPreview] = useState(false);
   const [isSendingTelegramReport, setIsSendingTelegramReport] = useState(false);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -272,6 +275,45 @@ export default function Dashboard() {
     setAlert(null);
   }, []);
 
+  const resetTelegramReportModal = useCallback(() => {
+    setShowTelegramReportModal(false);
+    setTelegramReportStep("preview");
+    setTelegramReportPreview(null);
+    setTelegramReportPin("");
+    setTelegramReportError("");
+    setIsLoadingTelegramReportPreview(false);
+    setIsSendingTelegramReport(false);
+  }, []);
+
+  const handleOpenTelegramReportPreview = useCallback(async () => {
+    setShowTelegramReportModal(true);
+    setTelegramReportStep("preview");
+    setTelegramReportPreview(null);
+    setTelegramReportPin("");
+    setTelegramReportError("");
+    setIsLoadingTelegramReportPreview(true);
+    try {
+      const response = await fetch(`/api/telegram/manual-report-preview?refresh=${Date.now()}`, {
+        cache: "no-store",
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) {
+        throw new Error(body.error || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
+      }
+      setTelegramReportPreview(body.data);
+    } catch (error) {
+      setTelegramReportError(error.message || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
+    } finally {
+      setIsLoadingTelegramReportPreview(false);
+    }
+  }, []);
+
+  const handleProceedToTelegramPin = useCallback(() => {
+    if (!telegramReportPreview) return;
+    setTelegramReportStep("pin");
+    setTelegramReportError("");
+  }, [telegramReportPreview]);
+
   const handleManualTelegramReport = useCallback(async (event) => {
     event.preventDefault();
     const pin = telegramReportPin.trim();
@@ -294,15 +336,14 @@ export default function Dashboard() {
       if (!response.ok || !body.ok) {
         throw new Error(body.error || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
       }
-      setTelegramReportPin("");
-      setShowTelegramReportModal(false);
+      resetTelegramReportModal();
       showAlert(`ယမန်နေ့ ${body.date} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
     } catch (error) {
       setTelegramReportError(error.message || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
     } finally {
       setIsSendingTelegramReport(false);
     }
-  }, [isSendingTelegramReport, showAlert, telegramReportPin]);
+  }, [isSendingTelegramReport, resetTelegramReportModal, showAlert, telegramReportPin]);
 
   const handleExportExcel = useCallback(() => {
     if (!allCustomersForKPI || allCustomersForKPI.length === 0) {
@@ -1256,11 +1297,7 @@ export default function Dashboard() {
                 📊 Report Excel
               </button>
               <button
-                onClick={() => {
-                  setTelegramReportError("");
-                  setTelegramReportPin("");
-                  setShowTelegramReportModal(true);
-                }}
+                onClick={handleOpenTelegramReportPreview}
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
                 title="ငွေရှင်းတမ်း ပို့ရန်"
               >
@@ -2088,57 +2125,125 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Manual Telegram Report PIN Modal */}
+      {/* Manual Telegram Report Preview and PIN Modal */}
       {showTelegramReportModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md">
-          <div className="w-full max-w-sm rounded-2xl border border-violet-200 bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-lg rounded-2xl border border-violet-200 bg-white p-6 shadow-2xl">
             <div className="mb-5 text-center">
               <div className="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-2xl">📨</div>
               <h3 className="text-xl font-bold text-slate-900">ငွေရှင်းတမ်း ပို့ရန်</h3>
-              <p className="mt-2 text-sm text-slate-600">ယမန်နေ့ မြန်မာရက်စာရင်းကို Telegram group သို့ ပို့မည်။</p>
+              <p className="mt-2 text-sm text-slate-600">အရင်ဆုံး report date နဲ့ အခြေအနေကို စစ်ဆေးပါ။</p>
             </div>
-            <form onSubmit={handleManualTelegramReport}>
-              <label className="block text-sm font-semibold text-slate-700" htmlFor="telegram-report-pin">PIN code</label>
-              <input
-                id="telegram-report-pin"
-                type="password"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={telegramReportPin}
-                onChange={(event) => {
-                  setTelegramReportPin(event.target.value);
-                  setTelegramReportError("");
-                }}
-                placeholder="PIN code ထည့်ပါ"
-                className="mt-2 w-full rounded-xl border border-violet-300 px-4 py-3 text-center text-lg tracking-[0.35em] outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
-                disabled={isSendingTelegramReport}
-                autoFocus
-              />
-              {telegramReportError ? (
-                <p className="mt-3 whitespace-pre-wrap rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{telegramReportError}</p>
-              ) : null}
-              <div className="mt-5 flex gap-3">
-                <button
-                  type="button"
-                  className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50"
-                  onClick={() => {
-                    setShowTelegramReportModal(false);
-                    setTelegramReportPin("");
+
+            {telegramReportStep === "preview" ? (
+              <>
+                {isLoadingTelegramReportPreview ? (
+                  <div className="rounded-xl border border-violet-100 bg-violet-50 p-6 text-center text-sm text-violet-700">
+                    ယမန်နေ့ report အချက်အလက်များ ရယူနေသည်...
+                  </div>
+                ) : telegramReportError && !telegramReportPreview ? (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                    {telegramReportError}
+                  </div>
+                ) : telegramReportPreview ? (
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-center">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">REPORT DATE</p>
+                      <p className="mt-1 text-2xl font-bold text-violet-900">{telegramReportPreview.date}</p>
+                      <p className="mt-1 text-xs text-violet-700">{telegramReportPreview.period}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                        <p className="text-xs text-emerald-700">ငွေချေ</p>
+                        <p className="mt-1 text-lg font-bold text-emerald-800">{telegramReportPreview.summary.paidCount} ခု</p>
+                        <p className="text-xs text-emerald-700">{formatMoney(telegramReportPreview.summary.paidAmount)}</p>
+                      </div>
+                      <div className="rounded-lg border border-rose-200 bg-rose-50 p-3">
+                        <p className="text-xs text-rose-700">အကြွေးတိုး</p>
+                        <p className="mt-1 text-lg font-bold text-rose-800">{telegramReportPreview.summary.debtCount} ခု</p>
+                        <p className="text-xs text-rose-700">{formatMoney(telegramReportPreview.summary.debtAmount)}</p>
+                      </div>
+                      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                        <p className="text-xs text-blue-700">Transactions</p>
+                        <p className="mt-1 text-lg font-bold text-blue-800">{telegramReportPreview.summary.totalTransactions} ခု</p>
+                      </div>
+                      <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+                        <p className="text-xs text-purple-700">Activity</p>
+                        <p className="mt-1 text-lg font-bold text-purple-800">{telegramReportPreview.summary.auditCount} ခု</p>
+                      </div>
+                    </div>
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      ဒီအချက်အလက်များမှန်ကန်ကြောင်း စစ်ပြီးမှ PIN ထည့်ကာ Telegram group သို့ ပို့ပါမည်။
+                    </p>
+                  </div>
+                ) : null}
+                <div className="mt-5 flex gap-3">
+                  <button
+                    type="button"
+                    className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+                    onClick={resetTelegramReportModal}
+                    disabled={isLoadingTelegramReportPreview}
+                  >
+                    မပို့တော့ပါ
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-bold text-white hover:bg-violet-700 disabled:bg-slate-400"
+                    onClick={handleProceedToTelegramPin}
+                    disabled={!telegramReportPreview || isLoadingTelegramReportPreview}
+                  >
+                    အချက်အလက်မှန်ပါသည်
+                  </button>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={handleManualTelegramReport}>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                  <p className="text-sm font-semibold text-emerald-800">{telegramReportPreview?.date} report ကို ပို့မည်</p>
+                  <p className="mt-1 text-xs text-emerald-700">ငွေချေ {telegramReportPreview?.summary.paidCount} ခု • အကြွေးတိုး {telegramReportPreview?.summary.debtCount} ခု • Activity {telegramReportPreview?.summary.auditCount} ခု</p>
+                </div>
+                <label className="mt-5 block text-sm font-semibold text-slate-700" htmlFor="telegram-report-pin">PIN code</label>
+                <input
+                  id="telegram-report-pin"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={telegramReportPin}
+                  onChange={(event) => {
+                    setTelegramReportPin(event.target.value);
                     setTelegramReportError("");
                   }}
+                  placeholder="PIN code ထည့်ပါ"
+                  className="mt-2 w-full rounded-xl border border-violet-300 px-4 py-3 text-center text-lg tracking-[0.35em] outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
                   disabled={isSendingTelegramReport}
-                >
-                  မပို့တော့ပါ
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-bold text-white hover:bg-violet-700 disabled:bg-slate-400"
-                  disabled={!telegramReportPin.trim() || isSendingTelegramReport}
-                >
-                  {isSendingTelegramReport ? "ပို့နေသည်..." : "ပို့မည်"}
-                </button>
-              </div>
-            </form>
+                  autoFocus
+                />
+                {telegramReportError ? (
+                  <p className="mt-3 whitespace-pre-wrap rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{telegramReportError}</p>
+                ) : null}
+                <div className="mt-5 flex gap-3">
+                  <button
+                    type="button"
+                    className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+                    onClick={() => {
+                      setTelegramReportStep("preview");
+                      setTelegramReportPin("");
+                      setTelegramReportError("");
+                    }}
+                    disabled={isSendingTelegramReport}
+                  >
+                    နောက်သို့
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-bold text-white hover:bg-violet-700 disabled:bg-slate-400"
+                    disabled={!telegramReportPin.trim() || isSendingTelegramReport}
+                  >
+                    {isSendingTelegramReport ? "ပို့နေသည်..." : "Telegram သို့ ပို့မည်"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
