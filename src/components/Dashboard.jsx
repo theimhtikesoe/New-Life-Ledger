@@ -213,6 +213,10 @@ export default function Dashboard() {
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState([]);
   const [overdueDebts, setOverdueDebts] = useState(null);
+  const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
+  const [telegramReportPin, setTelegramReportPin] = useState("");
+  const [telegramReportError, setTelegramReportError] = useState("");
+  const [isSendingTelegramReport, setIsSendingTelegramReport] = useState(false);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [isOnline, setIsOnline] = useState(() => (
@@ -267,6 +271,38 @@ export default function Dashboard() {
   const hideAlert = useCallback(() => {
     setAlert(null);
   }, []);
+
+  const handleManualTelegramReport = useCallback(async (event) => {
+    event.preventDefault();
+    const pin = telegramReportPin.trim();
+    if (!pin || isSendingTelegramReport) return;
+
+    setIsSendingTelegramReport(true);
+    setTelegramReportError("");
+    try {
+      const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") || "" : "";
+      const response = await fetch("/api/telegram/manual-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${pin}`,
+          ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
+        },
+        body: JSON.stringify({}),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) {
+        throw new Error(body.error || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
+      }
+      setTelegramReportPin("");
+      setShowTelegramReportModal(false);
+      showAlert(`ယမန်နေ့ ${body.date} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
+    } catch (error) {
+      setTelegramReportError(error.message || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
+    } finally {
+      setIsSendingTelegramReport(false);
+    }
+  }, [isSendingTelegramReport, showAlert, telegramReportPin]);
 
   const handleExportExcel = useCallback(() => {
     if (!allCustomersForKPI || allCustomersForKPI.length === 0) {
@@ -1220,6 +1256,17 @@ export default function Dashboard() {
                 📊 Report Excel
               </button>
               <button
+                onClick={() => {
+                  setTelegramReportError("");
+                  setTelegramReportPin("");
+                  setShowTelegramReportModal(true);
+                }}
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+                title="ငွေရှင်းတမ်း ပို့ရန်"
+              >
+                📨 ငွေရှင်းတမ်း ပို့ရန်
+              </button>
+              <button
                 onClick={() => setShowRecycleBin(true)}
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
               >
@@ -2037,6 +2084,61 @@ export default function Dashboard() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Telegram Report PIN Modal */}
+      {showTelegramReportModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-2xl border border-violet-200 bg-white p-6 shadow-2xl">
+            <div className="mb-5 text-center">
+              <div className="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-2xl">📨</div>
+              <h3 className="text-xl font-bold text-slate-900">ငွေရှင်းတမ်း ပို့ရန်</h3>
+              <p className="mt-2 text-sm text-slate-600">ယမန်နေ့ မြန်မာရက်စာရင်းကို Telegram group သို့ ပို့မည်။</p>
+            </div>
+            <form onSubmit={handleManualTelegramReport}>
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="telegram-report-pin">PIN code</label>
+              <input
+                id="telegram-report-pin"
+                type="password"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={telegramReportPin}
+                onChange={(event) => {
+                  setTelegramReportPin(event.target.value);
+                  setTelegramReportError("");
+                }}
+                placeholder="PIN code ထည့်ပါ"
+                className="mt-2 w-full rounded-xl border border-violet-300 px-4 py-3 text-center text-lg tracking-[0.35em] outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                disabled={isSendingTelegramReport}
+                autoFocus
+              />
+              {telegramReportError ? (
+                <p className="mt-3 whitespace-pre-wrap rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{telegramReportError}</p>
+              ) : null}
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50"
+                  onClick={() => {
+                    setShowTelegramReportModal(false);
+                    setTelegramReportPin("");
+                    setTelegramReportError("");
+                  }}
+                  disabled={isSendingTelegramReport}
+                >
+                  မပို့တော့ပါ
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-bold text-white hover:bg-violet-700 disabled:bg-slate-400"
+                  disabled={!telegramReportPin.trim() || isSendingTelegramReport}
+                >
+                  {isSendingTelegramReport ? "ပို့နေသည်..." : "ပို့မည်"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
