@@ -14,6 +14,27 @@ const AUTO_RETRY_DELAY_MS = 8000;
 const RESUME_REFRESH_AFTER_MS = 30000;
 const API_REQUEST_TIMEOUT_MS = 20000;
 const MAX_GET_ATTEMPTS = 3;
+const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
+
+function getDashboardDraftStorageKey(actorName) {
+  return actorName ? `${DASHBOARD_DRAFT_STORAGE_PREFIX}-${encodeURIComponent(actorName)}` : "";
+}
+
+function clearDashboardDraftFields(fields) {
+  if (typeof window === "undefined") return;
+  try {
+    const actorName = localStorage.getItem("actorName");
+    const draftKey = getDashboardDraftStorageKey(actorName);
+    if (!draftKey) return;
+    const rawDraft = localStorage.getItem(draftKey);
+    if (!rawDraft) return;
+    const draft = JSON.parse(rawDraft);
+    fields.forEach((field) => delete draft[field]);
+    localStorage.setItem(draftKey, JSON.stringify(draft));
+  } catch (error) {
+    console.warn("Dashboard draft could not be cleared:", error);
+  }
+}
 
 function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
@@ -238,6 +259,10 @@ export default function Dashboard({ view = "overview" }) {
   const retryCountdownRef = useRef(null);
   const telegramPreviewRequestRef = useRef(0);
   const lastDashboardAttemptAtRef = useRef(0);
+  const dashboardDraftRestoredRef = useRef(false);
+  const dashboardDraftActorRef = useRef("");
+  const dashboardDraftRestoredPageRef = useRef(false);
+  const dashboardDraftWriteSkipRef = useRef(true);
 
   const clearAutoRetryTimers = useCallback(() => {
     if (retryTimerRef.current) {
@@ -255,6 +280,109 @@ export default function Dashboard({ view = "overview" }) {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Keep unfinished local work available when the actor-only idle lock appears.
+  // Each actor has a separate draft so shared-phone users do not see one another's form data.
+  // These drafts never include PIN values or server credentials.
+  useEffect(() => {
+    const resetDraftState = () => {
+      setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
+      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "" });
+      setEditForm({ name: "", phone: "", routeTag: "" });
+      setEditingCustomer(null);
+      setSearch("");
+      dashboardDraftRestoredPageRef.current = false;
+      setCurrentPage(1);
+      setShowAddCustomer(false);
+      setShowCustomerList(true);
+      setSelectedCustomerId(null);
+      setSelectedCustomer(null);
+      setMatchingKpay(null);
+      setMatchCustomerId("");
+      setShowPinModal(false);
+      setPinValue("");
+      setPinError("");
+      setDeletingTransaction(null);
+      setShowTelegramReportModal(false);
+      setTelegramReportStep("preview");
+      setTelegramReportPin("");
+      setTelegramReportPreview(null);
+      setTelegramReportError("");
+      setFilteredLedgers([]);
+    };
+
+    const applyDraftForActor = (actorName) => {
+      dashboardDraftActorRef.current = actorName || "";
+      const draftKey = getDashboardDraftStorageKey(actorName);
+      let draft = null;
+      try {
+        const rawDraft = draftKey ? localStorage.getItem(draftKey) : null;
+        draft = rawDraft ? JSON.parse(rawDraft) : null;
+      } catch (error) {
+        console.warn("Dashboard draft could not be restored:", error);
+      }
+
+      resetDraftState();
+      if (!draft) return;
+
+      if (draft.newCustomer && typeof draft.newCustomer === "object") setNewCustomer((prev) => ({ ...prev, ...draft.newCustomer }));
+      if (draft.ledgerForm && typeof draft.ledgerForm === "object") setLedgerForm((prev) => ({ ...prev, ...draft.ledgerForm }));
+      if (draft.editForm && typeof draft.editForm === "object") setEditForm((prev) => ({ ...prev, ...draft.editForm }));
+      if (draft.matchingKpay && typeof draft.matchingKpay === "object") setMatchingKpay(draft.matchingKpay);
+      if (typeof draft.matchCustomerId === "string") setMatchCustomerId(draft.matchCustomerId);
+      setEditingCustomer(draft.editingCustomer && typeof draft.editingCustomer === "object" ? draft.editingCustomer : null);
+      if (typeof draft.search === "string") setSearch(draft.search);
+      if (Number.isFinite(Number(draft.currentPage)) && Number(draft.currentPage) > 0) {
+        dashboardDraftRestoredPageRef.current = true;
+        setCurrentPage(Math.floor(Number(draft.currentPage)));
+      }
+      if (typeof draft.showAddCustomer === "boolean") setShowAddCustomer(draft.showAddCustomer);
+      if (typeof draft.showCustomerList === "boolean") setShowCustomerList(draft.showCustomerList);
+      setSelectedCustomerId(draft.selectedCustomerId || null);
+    };
+
+    applyDraftForActor(localStorage.getItem("actorName") || "");
+    dashboardDraftRestoredRef.current = true;
+
+    const handleActorSelected = (event) => {
+      applyDraftForActor(event.detail?.actorName || localStorage.getItem("actorName") || "");
+    };
+    window.addEventListener("new-life-ledger:actor-selected", handleActorSelected);
+    return () => window.removeEventListener("new-life-ledger:actor-selected", handleActorSelected);
+  }, []);
+
+  useEffect(() => {
+    if (!dashboardDraftRestoredRef.current) return;
+    if (dashboardDraftWriteSkipRef.current) {
+      dashboardDraftWriteSkipRef.current = false;
+      return;
+    }
+    try {
+      const actorName = localStorage.getItem("actorName") || dashboardDraftActorRef.current;
+      const draftKey = getDashboardDraftStorageKey(actorName);
+      if (!draftKey) return;
+      const draft = {
+        actorName,
+        newCustomer,
+        ledgerForm,
+        editForm,
+        matchingKpay,
+        matchCustomerId,
+        editingCustomer: editingCustomer
+          ? { id: editingCustomer.id, name: editingCustomer.name, phone: editingCustomer.phone, routeTag: editingCustomer.routeTag }
+          : null,
+        search,
+        currentPage,
+        showAddCustomer,
+        showCustomerList,
+        selectedCustomerId,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch (error) {
+      console.warn("Dashboard draft could not be saved:", error);
+    }
+  }, [newCustomer, ledgerForm, editForm, matchingKpay, matchCustomerId, editingCustomer, search, currentPage, showAddCustomer, showCustomerList, selectedCustomerId]);
 
   // Auto-scroll and auto-hide list when a customer is selected
   useEffect(() => {
@@ -633,6 +761,10 @@ export default function Dashboard({ view = "overview" }) {
 
   // Reset to first page when search changes
   useEffect(() => {
+    if (dashboardDraftRestoredPageRef.current) {
+      dashboardDraftRestoredPageRef.current = false;
+      return;
+    }
     setCurrentPage(1);
   }, [search]);
 
@@ -655,6 +787,7 @@ export default function Dashboard({ view = "overview" }) {
       setCustomers(prev => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name, 'my')));
       setAllCustomersForKPI(prev => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name, 'my')));
       setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
+      clearDashboardDraftFields(["newCustomer"]);
       setSelectedCustomerId(customer.id);
       setShowAddCustomer(false);
       showAlert(`Customer "${customer.name}" အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီ။`, "success");
@@ -751,6 +884,7 @@ export default function Dashboard({ view = "overview" }) {
         date: "",
         paymentType: "",
       });
+      clearDashboardDraftFields(["ledgerForm"]);
       
       showAlert("Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
@@ -914,6 +1048,7 @@ export default function Dashboard({ view = "overview" }) {
         date: "",
         paymentType: "",
       });
+      clearDashboardDraftFields(["ledgerForm"]);
       
       showAlert("Sales လက်ခြင်းအောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
@@ -1011,6 +1146,7 @@ export default function Dashboard({ view = "overview" }) {
       
       setEditingCustomer(null);
       setEditForm({ name: "", phone: "", routeTag: "" });
+      clearDashboardDraftFields(["editForm", "editingCustomer"]);
       
       if (selectedCustomerId === customer.id) {
         setSelectedCustomer(prev => ({ ...prev, ...customer }));
@@ -1924,7 +2060,7 @@ export default function Dashboard({ view = "overview" }) {
                 <button
                   type="button"
                   className="flex-1 rounded-md bg-slate-200 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-200"
-                  onClick={() => setEditingCustomer(null)}
+                  onClick={() => { setEditingCustomer(null); setEditForm({ name: "", phone: "", routeTag: "" }); }}
                   disabled={isSubmitting}
                 >
                   Cancel

@@ -95,6 +95,7 @@ export default function PINLogin({ onSuccess }) {
     setSelectingActor(false);
     setActorLocked(false);
     setIsAuthenticated(true);
+    window.dispatchEvent(new CustomEvent("new-life-ledger:actor-selected", { detail: { actorName } }));
     onSuccess?.(actorName);
   };
 
