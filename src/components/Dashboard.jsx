@@ -2221,9 +2221,11 @@ export default function Dashboard({ view = "overview" }) {
 
       {/* Manual Telegram Report Preview and PIN Modal */}
       {showTelegramReportModal && (
-        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/80 px-3 py-4 pb-10 backdrop-blur-md sm:flex sm:items-center sm:justify-center sm:p-4">
-          <div className="mx-auto my-2 w-full max-w-lg rounded-2xl border border-violet-200 bg-white p-5 shadow-2xl sm:my-8 sm:p-6">
-            <div className="mb-5 text-center">
+        <div className="fixed inset-0 z-[60] bg-slate-900/80 backdrop-blur-md sm:p-4">
+          <div className="flex min-h-[100dvh] items-start justify-center overflow-y-auto px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:min-h-full sm:items-center sm:py-0">
+            <div className="my-0 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-2xl sm:my-8 sm:max-h-[calc(100vh-4rem)]">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6">
+                <div className="mb-5 text-center">
               <div className="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-2xl">📨</div>
               <h3 className="text-xl font-bold text-slate-900">ငွေရှင်းတမ်း ပို့ရန်</h3>
               <p className="mt-2 text-sm text-slate-600">အရင်ဆုံး report date နဲ့ အခြေအနေကို စစ်ဆေးပါ။</p>
@@ -2240,7 +2242,7 @@ export default function Dashboard({ view = "overview" }) {
                     max={getPreviousMyanmarDateInputValue(currentTime)}
                     onChange={handleTelegramReportDateChange}
                     disabled={isLoadingTelegramReportPreview || isSendingTelegramReport}
-                    className="mt-2 w-full rounded-xl border border-violet-300 bg-white px-4 py-3 text-center text-lg font-semibold text-slate-800 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 disabled:bg-slate-100"
+                    className="mt-2 block min-w-0 w-full max-w-full box-border appearance-none rounded-xl border border-violet-300 bg-white px-3 py-3 text-center text-base font-semibold leading-normal text-slate-800 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 disabled:bg-slate-100 sm:px-4 sm:text-lg"
                   />
                   <p className="mt-2 text-xs text-slate-500">ရွေးထားတဲ့နေ့အတွက် Daily Summary နဲ့ Activity History ကို preview ပြပြီး၊ အဲ့ဒီနေ့ report ကိုပဲ Telegram သို့ ပို့ပါမယ်။</p>
                 </div>
@@ -2351,6 +2353,8 @@ export default function Dashboard({ view = "overview" }) {
                 </div>
               </form>
             )}
+              </div>
+            </div>
           </div>
         </div>
       )}
