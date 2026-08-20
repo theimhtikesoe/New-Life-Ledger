@@ -80,6 +80,23 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_actorName_idx" ON "AuditLog"("actorName")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_entityType_idx" ON "AuditLog"("entityType")`);
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "AutoReportRun" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "status" TEXT NOT NULL,
+            "trigger" TEXT NOT NULL DEFAULT 'schedule',
+            "reportDate" TEXT,
+            "periodLabel" TEXT,
+            "recipientCount" INTEGER NOT NULL DEFAULT 0,
+            "counts" JSONB,
+            "elapsedMs" INTEGER,
+            "errorMessage" TEXT,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_createdAt_idx" ON "AutoReportRun"("createdAt")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_reportDate_idx" ON "AutoReportRun"("reportDate")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
         setupComplete = true;
         return;
       }
@@ -193,6 +210,23 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_actorName_idx" ON "AuditLog"("actorName")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_entityType_idx" ON "AuditLog"("entityType")`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "AutoReportRun" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "status" TEXT NOT NULL,
+          "trigger" TEXT NOT NULL DEFAULT 'schedule',
+          "reportDate" TEXT,
+          "periodLabel" TEXT,
+          "recipientCount" INTEGER NOT NULL DEFAULT 0,
+          "counts" JSONB,
+          "elapsedMs" INTEGER,
+          "errorMessage" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_createdAt_idx" ON "AutoReportRun"("createdAt")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_reportDate_idx" ON "AutoReportRun"("reportDate")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
       
       // Mark setup as complete
       setupComplete = true;

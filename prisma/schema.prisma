@@ -65,6 +65,23 @@ model AuditLog {
   @@index([entityType])
 }
 
+model AutoReportRun {
+  id              String   @id @default(uuid()) @db.Uuid
+  status          String
+  trigger         String   @default("schedule")
+  reportDate      String?
+  periodLabel     String?
+  recipientCount  Int      @default(0)
+  counts          Json?
+  elapsedMs       Int?
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([reportDate])
+  @@index([status])
+}
+
 model UnverifiedKpay {
   id                  String    @id @default(uuid()) @db.Uuid
   raw_text            String
