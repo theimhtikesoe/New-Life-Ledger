@@ -55,18 +55,27 @@ function ServiceWorkerRegister() {
     <script
       dangerouslySetInnerHTML={{
         __html: `
-          if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-              navigator.serviceWorker.register('/service-worker.js').then(
-                (registration) => {
-                  console.log('Service Worker registered:', registration);
-                },
-                (error) => {
-                  console.log('Service Worker registration failed:', error);
-                }
-              );
+          (() => {
+            if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+            let registrationPromise;
+            const updateServiceWorker = () => {
+              registrationPromise = registrationPromise || navigator.serviceWorker.register('/service-worker.js', {
+                updateViaCache: 'none',
+              });
+              registrationPromise.then((registration) => {
+                registration.update().catch(() => {});
+              }).catch((error) => {
+                console.warn('Service Worker registration failed:', error);
+              });
+            };
+
+            window.addEventListener('load', updateServiceWorker, { once: true });
+            window.addEventListener('pageshow', updateServiceWorker);
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') updateServiceWorker();
             });
-          }
+          })();
         `,
       }}
     />

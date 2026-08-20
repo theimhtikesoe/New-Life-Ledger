@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import * as XLSX from "xlsx";
 // import KPISummaryDashboard from "./KPISummaryDashboard";
 import TransactionFilter from "./TransactionFilter";
@@ -10,6 +10,8 @@ import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } fro
 
 const money = new Intl.NumberFormat("en-US");
 const today = new Date().toISOString().slice(0, 10);
+const AUTO_RETRY_DELAY_MS = 8000;
+const RESUME_REFRESH_AFTER_MS = 30000;
 
 function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
@@ -207,6 +209,25 @@ export default function Dashboard() {
   const [allLedgers, setAllLedgers] = useState([]);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [isOnline, setIsOnline] = useState(() => (
+    typeof navigator === "undefined" ? true : navigator.onLine
+  ));
+  const [nextAutoRetrySeconds, setNextAutoRetrySeconds] = useState(0);
+  const retryTimerRef = useRef(null);
+  const retryCountdownRef = useRef(null);
+  const lastDashboardAttemptAtRef = useRef(0);
+
+  const clearAutoRetryTimers = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (retryCountdownRef.current) {
+      clearInterval(retryCountdownRef.current);
+      retryCountdownRef.current = null;
+    }
+    setNextAutoRetrySeconds(0);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -337,6 +358,7 @@ export default function Dashboard() {
   }, [allCustomersForKPI, showAlert]);
 
   const loadDashboard = useCallback(async (signal) => {
+    lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
     setDataLoadError("");
     try {
@@ -350,6 +372,7 @@ export default function Dashboard() {
       setAllCustomersForKPI(allCustomersRows);
       setMessage("");
       setDataLoadError("");
+      clearAutoRetryTimers();
       
       // Collect all ledgers from all customers
       const allLedgersData = [];
@@ -377,7 +400,61 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [search, showAlert]);
+  }, [clearAutoRetryTimers, search, showAlert]);
+
+  // iPhone standalone PWAs can pause while they are in the background. Refresh
+  // when the app becomes visible again, or immediately when the connection returns.
+  useEffect(() => {
+    const updateOnlineStatus = () => setIsOnline(navigator.onLine !== false);
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+    return () => {
+      window.removeEventListener("online", updateOnlineStatus);
+      window.removeEventListener("offline", updateOnlineStatus);
+    };
+  }, []);
+
+  useEffect(() => {
+    const refreshOnResume = () => {
+      if (document.visibilityState === "hidden" || navigator.onLine === false || loading) return;
+      const hasConnectionError = Boolean(dataLoadError);
+      const dataIsStale = Date.now() - lastDashboardAttemptAtRef.current >= RESUME_REFRESH_AFTER_MS;
+      if (hasConnectionError || dataIsStale) {
+        loadDashboard();
+      }
+    };
+
+    window.addEventListener("pageshow", refreshOnResume);
+    window.addEventListener("online", refreshOnResume);
+    document.addEventListener("visibilitychange", refreshOnResume);
+    return () => {
+      window.removeEventListener("pageshow", refreshOnResume);
+      window.removeEventListener("online", refreshOnResume);
+      document.removeEventListener("visibilitychange", refreshOnResume);
+    };
+  }, [dataLoadError, loadDashboard, loading]);
+
+  // Keep retrying a failed initial load in the foreground instead of leaving
+  // the Home Screen app stuck on the connection-error panel.
+  useEffect(() => {
+    clearAutoRetryTimers();
+    if (!dataLoadError || !isOnline) return undefined;
+
+    let secondsRemaining = Math.ceil(AUTO_RETRY_DELAY_MS / 1000);
+    setNextAutoRetrySeconds(secondsRemaining);
+    retryCountdownRef.current = setInterval(() => {
+      secondsRemaining -= 1;
+      setNextAutoRetrySeconds(Math.max(secondsRemaining, 0));
+    }, 1000);
+    retryTimerRef.current = setTimeout(() => {
+      retryTimerRef.current = null;
+      if (document.visibilityState === "hidden" || navigator.onLine === false) return;
+      setMessage("ချိတ်ဆက်နေပါသည်။ အချက်အလက်များကို အလိုအလျောက် ပြန်လည်ရယူနေပါသည်။");
+      loadDashboard();
+    }, AUTO_RETRY_DELAY_MS);
+
+    return clearAutoRetryTimers;
+  }, [clearAutoRetryTimers, dataLoadError, isOnline, loadDashboard]);
 
   const loadDeletedCustomers = useCallback(async () => {
     setLoadingDeleted(true);
@@ -1150,7 +1227,18 @@ export default function Dashboard() {
           </div>
           {message ? (
             <div className="mt-4 flex flex-col gap-3 rounded-md border border-rose-900 bg-rose-950/60 px-3 py-3 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between">
-              <span>{message}</span>
+              <span className="flex-1">
+                <span>{message}</span>
+                {dataLoadError ? (
+                  <span className="mt-1 block text-xs text-rose-200/80">
+                    {!isOnline
+                      ? "အင်တာနက်ပြန်ရလာသောအခါ အလိုအလျောက် ပြန်လည်ရယူပါမည်။"
+                      : nextAutoRetrySeconds > 0
+                        ? `${nextAutoRetrySeconds} စက္ကန့်အတွင်း အလိုအလျောက် ပြန်စမ်းပါမည်။`
+                        : "အချက်အလက်များကို အလိုအလျောက် ပြန်လည်ရယူနေပါသည်။"}
+                  </span>
+                ) : null}
+              </span>
               <button
                 type="button"
                 onClick={() => { setMessage(""); loadDashboard(); }}
@@ -1295,6 +1383,13 @@ export default function Dashboard() {
             ) : dataLoadError ? (
               <div className="col-span-full rounded-lg border border-rose-200 bg-rose-50 p-5 text-center text-sm text-rose-700">
                 <p>Customer data မရသေးပါ။ ခဏစောင့်ပြီး ပြန်စမ်းနေပါသည်။</p>
+                <p className="mt-1 text-xs text-rose-600">
+                  {!isOnline
+                    ? "အင်တာနက်ပြန်ရလာသောအခါ အလိုအလျောက် ပြန်လည်ရယူပါမည်။"
+                    : nextAutoRetrySeconds > 0
+                      ? `${nextAutoRetrySeconds} စက္ကန့်အတွင်း အလိုအလျောက် ပြန်စမ်းပါမည်။`
+                      : "အချက်အလက်များကို အလိုအလျောက် ပြန်လည်ရယူနေပါသည်။"}
+                </p>
                 <button
                   type="button"
                   onClick={() => { setDataLoadError(""); setMessage(""); loadDashboard(); }}
