@@ -32,7 +32,13 @@ function money(value) {
 }
 
 export default function ActivityPage() {
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(() => {
+    if (typeof window !== "undefined") {
+      const requestedDate = new URLSearchParams(window.location.search).get("date") || "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) return requestedDate;
+    }
+    return today;
+  });
   const [actor, setActor] = useState("");
   const [action, setAction] = useState("");
   const [logs, setLogs] = useState([]);
