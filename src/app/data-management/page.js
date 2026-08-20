@@ -3,6 +3,7 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import { encodeActorHeader } from "@/lib/actor-header";
+import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 
 function iso(value) {
   return value ? new Date(value).toISOString() : "";
@@ -28,6 +29,55 @@ function downloadBackup(data) {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(auditLogs), "Audit History");
   workbook.Workbook = { Props: { Title: "New Life Ledger Backup", Subject: "Official restore backup" } };
   XLSX.writeFile(workbook, `New-Life-Ledger-Backup-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+function downloadReportExcel(customers) {
+  const workbook = XLSX.utils.book_new();
+
+  customers.forEach((customer) => {
+    const sortedTransactions = [...(customer.ledgers || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+    let runningBalance = 0;
+    const rows = [
+      ["Customer Name:", customer.name],
+      ["Phone:", customer.phone || "-"],
+      ["Current Total Balance:", customer.current_balance],
+      [],
+      ["ရက်စွဲ (Date)", "အမျိုးအစား (Type)", "ငွေပေးချေမှု (Payment)", "ပမာဏ (Amount)", "အကြွေးလက်ကျန် (Balance)", "မှတ်ချက် (Note)"],
+    ];
+
+    sortedTransactions.forEach((transaction) => {
+      runningBalance += transaction.type === "CREDIT" ? transaction.amount : -transaction.amount;
+      rows.push([
+        formatMyanmarDateTime(transaction.date),
+        transaction.type === "CREDIT" ? "အကြွေးတိုး (+)" : "ငွေချေ (-)",
+        transaction.paymentType || "-",
+        transaction.amount,
+        runningBalance,
+        transaction.note || "-",
+      ]);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet["!cols"] = [
+      { wch: 25 },
+      { wch: 20 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 35 },
+    ];
+
+    let sheetName = String(customer.name || `Customer-${customer.id}`).replace(/[\\/?*[\]]/g, "").substring(0, 31) || `Customer-${customer.id.substring(0, 8)}`;
+    let finalSheetName = sheetName;
+    let counter = 1;
+    while (workbook.SheetNames.includes(finalSheetName)) {
+      finalSheetName = `${sheetName.substring(0, 28)}-${counter}`;
+      counter += 1;
+    }
+    XLSX.utils.book_append_sheet(workbook, worksheet, finalSheetName);
+  });
+
+  XLSX.writeFile(workbook, `New-Life-Ledger-Full-Export-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 async function sendRestore(file, mode) {
@@ -75,6 +125,22 @@ export default function DataManagementPage() {
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
+  const handleReportExport = async () => {
+    setLoading(true); setError(""); setMessage("");
+    try {
+      const actorName = localStorage.getItem("actorName") || "";
+      const response = await fetch("/api/customers?includeLedgers=true", {
+        headers: { "x-actor-name": encodeActorHeader(actorName) },
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Report Excel export မအောင်မြင်ပါ။");
+      const customers = Array.isArray(body.data) ? body.data : [];
+      if (!customers.length) throw new Error("Report Excel ထုတ်ရန် customer data မရှိသေးပါ။");
+      downloadReportExcel(customers);
+      setMessage(`Report Excel အောင်မြင်စွာ ထွက်လာပါပြီ။ Customers ${customers.length} ယောက် ပါဝင်ပါတယ်။`);
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
+
   const handlePreview = async () => {
     if (!file) return;
     setLoading(true); setError(""); setMessage(""); setResult(null);
@@ -97,6 +163,7 @@ export default function DataManagementPage() {
         <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Data အားလုံး Export</h2><p className="mt-2 text-sm text-slate-600">Customers၊ Transactions၊ Activity History ကို restore ပြန်လုပ်နိုင်သော official Excel format ဖြင့် download လုပ်ပါ။</p><button type="button" onClick={handleBackupExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "Backup Excel Download"}</button></div>
           <div className="rounded-xl border border-blue-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Restore</h2><p className="mt-2 text-sm text-slate-600">ဒီ website က ထုတ်ထားသော `New-Life-Ledger-Backup-*.xlsx` ဖိုင်ကိုသာ ပြန်တင်ပါ။ အရင်ဆုံး preview စစ်ပြီးမှ confirm restore လုပ်ရပါမယ်။</p><input type="file" accept=".xlsx,.xls" onChange={(e) => { setFile(e.target.files?.[0] || null); setPreview(null); setResult(null); setError(""); }} className="mt-4 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm" /><button type="button" onClick={handlePreview} disabled={!file || loading} className="mt-3 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400">Preview Restore</button></div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm md:col-span-2"><h2 className="text-lg font-semibold text-emerald-900">📊 Report Excel</h2><p className="mt-2 text-sm text-emerald-800">Customer တစ်ယောက်ချင်းစီ၏ လက်ကျန်နှင့် ငွေချေ/အကြွေးတိုးစာရင်းများကို Excel ဖိုင်အဖြစ် ထုတ်ယူပါ။</p><button type="button" onClick={handleReportExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "📊 Report Excel ထုတ်ရန်"}</button></div>
         </section>
 
         <section className="rounded-xl border border-violet-200 bg-violet-50 p-5">

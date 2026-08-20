@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import * as XLSX from "xlsx";
 // import KPISummaryDashboard from "./KPISummaryDashboard";
 import TransactionFilter from "./TransactionFilter";
 import OverdueNotificationBell from "./OverdueNotificationBell";
@@ -384,101 +383,6 @@ export default function Dashboard({ view = "overview" }) {
       setIsSendingTelegramReport(false);
     }
   }, [isSendingTelegramReport, resetTelegramReportModal, showAlert, telegramReportPin, telegramReportPreview]);
-
-  const handleExportExcel = useCallback(() => {
-    if (!allCustomersForKPI || allCustomersForKPI.length === 0) {
-      showAlert("Export လုပ်ရန် data မရှိသေးပါ။", "error");
-      return;
-    }
-
-    try {
-      const wb = XLSX.utils.book_new();
-
-      allCustomersForKPI.forEach((customer) => {
-        // Prepare transactions and calculate running balance
-        const sortedTransactions = (customer.ledgers || []).sort((a, b) => new Date(a.date) - new Date(b.date));
-        
-        let currentRunningBalance = 0;
-        const rows = sortedTransactions.map((t) => {
-          if (t.type === "CREDIT") {
-            currentRunningBalance += t.amount;
-          } else {
-            currentRunningBalance -= t.amount;
-          }
-          
-          return {
-            "ရက်စွဲ (Date)": formatDate(t.date),
-            "အမျိုးအစား (Type)": t.type === "CREDIT" ? "အကြွေးတိုး (+)" : "ငွေချေ (-)",
-            "ပမာဏ (Amount)": t.amount,
-            "အကြွေးလက်ကျန် (Balance)": currentRunningBalance,
-            "မှတ်ချက် (Note)": t.note || "-",
-          };
-        });
-
-        // Create worksheet starting with some summary info
-        const wsData = [
-          ["Customer Name:", customer.name],
-          ["Phone:", customer.phone || "-"],
-          ["Current Total Balance:", customer.current_balance],
-          [], // Empty row
-          ["ရက်စွဲ (Date)", "အမျိုးအစား (Type)", "ငွေပေးချေမှု (Payment)", "ပမာဏ (Amount)", "အကြွေးလက်ကျန် (Balance)", "မှတ်ချက် (Note)"]
-        ];
-
-        // Add transaction rows
-        sortedTransactions.forEach((t, index) => {
-          // Re-calculate running balance for the final output array
-          let rb = 0;
-          for(let i=0; i<=index; i++) {
-            if(sortedTransactions[i].type === "CREDIT") rb += sortedTransactions[i].amount;
-            else rb -= sortedTransactions[i].amount;
-          }
-
-          wsData.push([
-            formatDate(t.date),
-            t.type === "CREDIT" ? "အကြွေးတိုး (+)" : "ငွေချေ (-)",
-            t.paymentType || "-",
-            t.amount,
-            rb,
-            t.note || "-"
-          ]);
-        });
-
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-        // Set column widths
-        const wscols = [
-          { wch: 25 }, // Date
-          { wch: 20 }, // Type
-          { wch: 20 }, // Payment Type
-          { wch: 15 }, // Amount
-          { wch: 20 }, // Balance
-          { wch: 35 }, // Note
-        ];
-        ws["!cols"] = wscols;
-
-        // Sheet name must be unique and max 31 chars
-        let sheetName = customer.name.replace(/[\\/?*[\]]/g, "").substring(0, 31);
-        if (!sheetName) sheetName = `Customer-${customer.id.substring(0, 8)}`;
-        
-        // Ensure unique sheet names
-        let finalSheetName = sheetName;
-        let counter = 1;
-        while (wb.SheetNames.includes(finalSheetName)) {
-          finalSheetName = `${sheetName.substring(0, 28)}-${counter}`;
-          counter++;
-        }
-
-        XLSX.utils.book_append_sheet(wb, ws, finalSheetName);
-      });
-
-      const fileName = `New-Life-Ledger-Full-Export-${new Date().toISOString().slice(0, 10)}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      showAlert("Excel export အောင်မြင်စွာ ထွက်လာပါပြီ။", "success");
-    } catch (error) {
-      console.error("Export error:", error);
-      showAlert("Excel export လုပ်ရာတွင် အမှားအယွင်းရှိခဲ့ပါသည်။", "error");
-    }
-  }, [allCustomersForKPI, showAlert]);
 
   const loadOverdueDebts = useCallback(async () => {
     // This is a non-critical background request. Keep it independent from the
@@ -1345,13 +1249,6 @@ export default function Dashboard({ view = "overview" }) {
               >
                 🗂️ Data Management
               </a>
-              <button
-                onClick={handleExportExcel}
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
-                title="Report Excel ထုတ်ရန်"
-              >
-                📊 Report Excel
-              </button>
             </div>
           </div>
           {message ? (
@@ -1509,7 +1406,7 @@ export default function Dashboard({ view = "overview" }) {
             {selectedCustomerId && (
               <button
                 onClick={() => setShowCustomerList(!showCustomerList)}
-                className="shrink-0 rounded-md border border-slate-300 px-2 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors whitespace-nowrap sm:px-3 sm:text-sm"
+                 className={`shrink-0 rounded-md border px-2 py-2 text-[11px] font-semibold transition-colors whitespace-nowrap sm:px-3 sm:text-sm ${showCustomerList ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100" : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
               >
                 {showCustomerList ? "Customer စာရင်းဖျောက်မည်" : "Customer စာရင်းပြမည်"}
               </button>
