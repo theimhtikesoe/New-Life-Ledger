@@ -1,4 +1,4 @@
-const CACHE_NAME = 'new-life-ledger-v1';
+const CACHE_NAME = 'new-life-ledger-v2';
 const urlsToCache = [
   '/',
   '/manifest.json',
