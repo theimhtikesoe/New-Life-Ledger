@@ -11,21 +11,22 @@ export async function runDailyReport({ actorName = "System", trigger = "schedule
     createDailySummaryImage(report),
     createDailyActivityImage(report),
   ]);
+  const activityCount = (report.activityLogs || []).length;
   const caption = [
     "<b>NEW LIFE LEDGER</b>",
-    "<b>DAILY BUSINESS REPORT</b>",
+    "<b>နေ့စဉ် လုပ်ငန်းစာရင်းချုပ်</b>",
     "",
-    `<b>REPORT DATE</b>\n<code>${report.dateLabel}</code>`,
-    `<b>TIME RANGE</b>\n<code>00:00–23:59 (Myanmar Time)</code>`,
-    `<b>DELIVERY</b>\n<code>08:00–10:00 Myanmar Time • Telegram Group</code>`,
+    `<b>စာရင်းရက်စွဲ</b>\n<code>${report.dateLabel}</code>`,
+    `<b>စာရင်းကာလ</b>\n<code>00:00–23:59 (မြန်မာစံတော်ချိန်)</code>`,
+    `<b>ပို့မည့်အချိန်</b>\n<code>မြန်မာစံတော်ချိန် မနက် ၀၈:၀၀ ဝန်းကျင်</code>`,
     "",
-    `🟢 <b>ငွေချေ</b>  <code>${report.summary.paidCount} ခု</code>  <b>${report.summary.paidAmount.toLocaleString()} Ks</b>`,
-    `🔴 <b>အကြွေးတိုး</b>  <code>${report.summary.debtCount} ခု</code>  <b>${report.summary.debtAmount.toLocaleString()} Ks</b>`,
-    `🔵 <b>Transactions</b>  <code>${report.summary.totalTransactions} ခု</code>`,
-    `🟣 <b>Activity</b>  <code>${report.summary.auditCount} ခု</code>`,
+    `🟢 <b>ငွေချေ</b>  <code>${report.summary.paidCount} ခု</code>  <b>${report.summary.paidAmount.toLocaleString()} ကျပ်</b>`,
+    `🔴 <b>အကြွေးတိုး</b>  <code>${report.summary.debtCount} ခု</code>  <b>${report.summary.debtAmount.toLocaleString()} ကျပ်</b>`,
+    `🔵 <b>စုစုပေါင်းစာရင်း</b>  <code>${report.summary.totalTransactions} ခု</code>`,
+    activityCount > 0 ? `🟣 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>  <code>${activityCount} ခု</code>` : null,
     "",
-    "📎 <b>FILES</b>  <code>Daily Summary PNG • Activity History PNG • 2-page PDF</code>",
-  ].join("\n");
+    "📎 နေ့စဉ်စာရင်းချုပ်ပုံ၊ လုပ်ဆောင်ချက်မှတ်တမ်းပုံနှင့် PDF ဖိုင် ပူးတွဲပါရှိပါသည်။",
+  ].filter(Boolean).join("\n");
 
   const delivery = await sendDailyReportToTelegram({
     pdfBuffer,
@@ -50,6 +51,7 @@ export async function runDailyReport({ actorName = "System", trigger = "schedule
         debtCount: report.summary.debtCount,
         totalTransactions: report.summary.totalTransactions,
         auditCount: report.summary.auditCount,
+        activityCount,
         elapsedMs: Date.now() - startedAt,
         recipients: delivery.results.map((item) => item.chatId),
       },
@@ -64,6 +66,7 @@ export async function runDailyReport({ actorName = "System", trigger = "schedule
       debtIncrease: report.summary.debtCount,
       transactions: report.summary.totalTransactions,
       auditActions: report.summary.auditCount,
+      activityActions: activityCount,
     },
     recipients: delivery.results.length,
     elapsedMs: Date.now() - startedAt,

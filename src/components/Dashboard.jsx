@@ -2220,8 +2220,8 @@ export default function Dashboard() {
                         <p className="mt-1 text-lg font-bold text-blue-800">{telegramReportPreview.summary.totalTransactions} ခု</p>
                       </div>
                       <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
-                        <p className="text-xs text-purple-700">Activity</p>
-                        <p className="mt-1 text-lg font-bold text-purple-800">{telegramReportPreview.summary.auditCount} ခု</p>
+                        <p className="text-xs text-purple-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p>
+                        <p className="mt-1 text-lg font-bold text-purple-800">{telegramReportPreview.summary.activityCount ?? telegramReportPreview.summary.auditCount} ခု</p>
                       </div>
                     </div>
                     <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
@@ -2252,7 +2252,7 @@ export default function Dashboard() {
               <form onSubmit={handleManualTelegramReport}>
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
                   <p className="text-sm font-semibold text-emerald-800">{telegramReportPreview?.date} report ကို ပို့မည်</p>
-                  <p className="mt-1 text-xs text-emerald-700">ငွေချေ {telegramReportPreview?.summary.paidCount} ခု • အကြွေးတိုး {telegramReportPreview?.summary.debtCount} ခု • Activity {telegramReportPreview?.summary.auditCount} ခု</p>
+                  <p className="mt-1 text-xs text-emerald-700">ငွေချေ {telegramReportPreview?.summary.paidCount} ခု • အကြွေးတိုး {telegramReportPreview?.summary.debtCount} ခု • လုပ်ဆောင်ချက် {telegramReportPreview?.summary.activityCount ?? telegramReportPreview?.summary.auditCount} ခု</p>
                 </div>
                 <label className="mt-5 block text-sm font-semibold text-slate-700" htmlFor="telegram-report-pin">PIN code</label>
                 <input

@@ -23,6 +23,7 @@ export async function GET(request) {
           debtAmount: report.summary.debtAmount,
           totalTransactions: report.summary.totalTransactions,
           auditCount: report.summary.auditCount,
+          activityCount: report.summary.activityCount ?? report.activityLogs.length,
         },
       },
     });

@@ -65,7 +65,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
     buffer: activityImageBuffer,
     filename: `new-life-ledger-${dateLabel}-activity.png`,
     mimeType: "image/png",
-    caption: `📊 <b>ACTIVITY HISTORY</b>\n<code>${dateLabel}</code>\n<code>00:00–23:59 (Myanmar Time)</code>`,
+    caption: `📊 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>\n<code>${dateLabel}</code>\n<code>မြန်မာစံတော်ချိန် 00:00–23:59</code>`,
   }) : null;
   const pdf = await sendTelegramFile({
     token,
@@ -74,7 +74,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
     buffer: pdfBuffer,
     filename: `New-Life-Ledger-Daily-${dateLabel}.pdf`,
     mimeType: "application/pdf",
-    caption: `📄 <b>DAILY REPORT PDF</b>\n<code>${dateLabel}</code>\n<code>Page 1: Daily Summary • Page 2: Activity History</code>`,
+    caption: `📄 <b>နေ့စဉ်စာရင်းချုပ် PDF</b>\n<code>${dateLabel}</code>\n<code>စာမျက်နှာ ၁ — နေ့စဉ်စာရင်းချုပ် • စာမျက်နှာ ၂ — လုပ်ဆောင်ချက်မှတ်တမ်း</code>`,
   });
   return { results: [{ chatId: groupChatId, imageMessageId: image.result?.message_id, activityImageMessageId: activity?.result?.message_id, pdfMessageId: pdf.result?.message_id }] };
 }
