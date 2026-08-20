@@ -166,7 +166,8 @@ function AlertNotification({ message, type, onClose }) {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ view = "overview" }) {
+  const isLedgerView = view === "ledger";
   const [customers, setCustomers] = useState([]);
   const [allCustomersForKPI, setAllCustomersForKPI] = useState([]);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
@@ -1377,8 +1378,10 @@ export default function Dashboard() {
 
 
 
-        {/* Compact Summary Box */}
-        <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+        {!isLedgerView ? (
+          <>
+            {/* Compact Summary Box */}
+            <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {/* Total Balance */}
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -1421,10 +1424,23 @@ export default function Dashboard() {
               <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
               <p className="mt-1 text-xs text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
             </a>
-          </div>
-        </section>
 
-        <section className="rounded-lg border border-cyan-500/30 bg-white p-4">
+            <a
+              href="/ledger"
+              className="rounded-lg border border-cyan-200 bg-cyan-50 p-4 shadow-sm transition-all hover:border-cyan-300 hover:shadow-md"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Customer စာရင်း</p>
+              <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>
+              <p className="mt-1 text-xs text-cyan-700">Customer စာရင်းသွင်းရန် →</p>
+            </a>
+          </div>
+            </section>
+          </>
+        ) : null}
+
+        {isLedgerView ? (
+          <>
+            <section className="rounded-lg border border-cyan-500/30 bg-white p-4">
           <button
             className="flex min-h-12 items-center justify-start gap-3 text-left"
             onClick={() => setShowAddCustomer((value) => !value)}
@@ -1897,7 +1913,9 @@ export default function Dashboard() {
               </div>
             )}
           </div>
-        </section>
+          </section>
+          </>
+        ) : null}
       </div>
 
       {/* Recycle Bin Modal */}
