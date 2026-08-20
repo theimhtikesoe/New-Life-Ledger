@@ -63,6 +63,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
     return overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
   }, [customers]);
 
+  const isLoadingOverdueDebts = overdueDebtsProp === null;
   const overdueDebts = overdueDebtsProp ?? calculatedOverdueDebts;
 
   const formatMoney = (value) => {
@@ -74,6 +75,21 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
       dateStyle: "medium",
     }).format(date);
   };
+
+  if (isLoadingOverdueDebts) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-500 shadow-sm"
+        title="Loading overdue debts"
+      >
+        <span className="text-base">🔔</span>
+        <span>အကြွေး သတိပေးချက်</span>
+        <span className="text-xs font-medium text-slate-400">ရယူနေသည်...</span>
+      </button>
+    );
+  }
 
   if (overdueDebts.length === 0) {
     return (

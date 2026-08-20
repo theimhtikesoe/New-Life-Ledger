@@ -212,7 +212,7 @@ export default function Dashboard() {
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState([]);
-  const [overdueDebts, setOverdueDebts] = useState([]);
+  const [overdueDebts, setOverdueDebts] = useState(null);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [isOnline, setIsOnline] = useState(() => (
@@ -363,6 +363,19 @@ export default function Dashboard() {
     }
   }, [allCustomersForKPI, showAlert]);
 
+  const loadOverdueDebts = useCallback(() => {
+    // This is a non-critical background request. Do not attach the dashboard
+    // search AbortController, otherwise a search/refresh can cancel the badge.
+    return api("/api/overdue-debts")
+      .then((rows) => setOverdueDebts(rows))
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          console.warn("Overdue debts were not loaded:", error);
+          setOverdueDebts([]);
+        }
+      });
+  }, []);
+
   const loadDashboard = useCallback(async (signal) => {
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
@@ -377,18 +390,14 @@ export default function Dashboard() {
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
       setTodayPaymentsList([]);
-      setOverdueDebts([]);
+      setOverdueDebts(null);
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
       
       // Overdue debt records are loaded separately because the initial customer
       // payload intentionally omits all ledger history.
-      void api("/api/overdue-debts", { signal })
-        .then((rows) => setOverdueDebts(rows))
-        .catch((error) => {
-          if (error.name !== "AbortError") console.warn("Overdue debts were not loaded:", error);
-        });
+      void loadOverdueDebts();
 
       // Today's payments are non-critical for the initial customer list.
       // Load only today's transactions in the background so slow mobile paths
@@ -428,7 +437,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [clearAutoRetryTimers, search, showAlert]);
+  }, [clearAutoRetryTimers, loadOverdueDebts, search, showAlert]);
 
   // iPhone standalone PWAs can pause while they are in the background. Refresh
   // when the app becomes visible again, or immediately when the connection returns.
