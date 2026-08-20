@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const CORRECT_PIN = "126365";
 const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
+const ACTOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
 
 export default function PINLogin({ onSuccess }) {
   const [pin, setPin] = useState("");
@@ -9,20 +11,64 @@ export default function PINLogin({ onSuccess }) {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectingActor, setSelectingActor] = useState(false);
+  const [actorLocked, setActorLocked] = useState(false);
+  const lastActivityAtRef = useRef(Date.now());
+
+  const lockActorSelection = useCallback(() => {
+    localStorage.removeItem("actorName");
+    setActorLocked(true);
+    setSelectingActor(true);
+    setError("");
+  }, []);
 
   useEffect(() => {
     const authenticated = localStorage.getItem("pinAuthenticated");
     const actorName = localStorage.getItem("actorName");
     if (authenticated === "true" && ACTORS.includes(actorName)) {
       setIsAuthenticated(true);
+      setActorLocked(false);
+      lastActivityAtRef.current = Date.now();
       onSuccess?.(actorName);
     } else {
       setIsAuthenticated(false);
+      setActorLocked(false);
       localStorage.removeItem("pinAuthenticated");
       localStorage.removeItem("actorName");
     }
     setIsLoading(false);
   }, [onSuccess]);
+
+  useEffect(() => {
+    if (!isAuthenticated || actorLocked) return undefined;
+
+    const markActivity = () => {
+      lastActivityAtRef.current = Date.now();
+    };
+
+    let timerId;
+    const checkIdle = () => {
+      const elapsed = Date.now() - lastActivityAtRef.current;
+      if (elapsed >= ACTOR_IDLE_TIMEOUT_MS) {
+        lockActorSelection();
+        return;
+      }
+      timerId = window.setTimeout(checkIdle, Math.min(ACTOR_IDLE_TIMEOUT_MS - elapsed, 1000));
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") checkIdle();
+    };
+
+    ACTIVITY_EVENTS.forEach((eventName) => window.addEventListener(eventName, markActivity, { passive: true }));
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    checkIdle();
+
+    return () => {
+      if (timerId) window.clearTimeout(timerId);
+      ACTIVITY_EVENTS.forEach((eventName) => window.removeEventListener(eventName, markActivity));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [actorLocked, isAuthenticated, lockActorSelection]);
 
   const handlePinChange = (e) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
@@ -45,7 +91,9 @@ export default function PINLogin({ onSuccess }) {
   const handleActorSelect = (actorName) => {
     localStorage.setItem("pinAuthenticated", "true");
     localStorage.setItem("actorName", actorName);
+    lastActivityAtRef.current = Date.now();
     setSelectingActor(false);
+    setActorLocked(false);
     setIsAuthenticated(true);
     onSuccess?.(actorName);
   };
@@ -55,18 +103,25 @@ export default function PINLogin({ onSuccess }) {
     localStorage.removeItem("actorName");
     setIsAuthenticated(false);
     setSelectingActor(false);
+    setActorLocked(false);
     setPin("");
     setError("");
   };
 
-  if (isLoading || isAuthenticated) return null;
+  if (isLoading || (isAuthenticated && !actorLocked)) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-800">New Life Ledger</h1>
-          <p className="text-gray-600">{selectingActor ? "ဘယ်သူအသုံးပြုနေပါသလဲ ရွေးပါ" : "PIN code ထည့်သွင်းပါ"}</p>
+          <p className="text-gray-600">
+            {actorLocked
+              ? "၅ မိနစ်အသုံးမပြုထားပါ။ လက်ရှိအသုံးပြုနေသူကို ပြန်ရွေးပါ"
+              : selectingActor
+                ? "ဘယ်သူအသုံးပြုနေပါသလဲ ရွေးပါ"
+                : "PIN code ထည့်သွင်းပါ"}
+          </p>
         </div>
 
         {selectingActor ? (
