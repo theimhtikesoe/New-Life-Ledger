@@ -28,15 +28,15 @@ export async function GET(request) {
     const limitParam = Number(searchParams.get("limit") || 100);
     const limit = Math.min(Math.max(Number.isFinite(limitParam) ? Math.floor(limitParam) : 100, 1), 500);
     const range = dateRange(dateParam);
-    const legacyAction = legacyActionFilter(action);
-
+        const legacyAction = legacyActionFilter(action);
+    const isHiddenReportAction = action === "DAILY_REPORT_SENT";
     const includeLegacy = !actor && (!action || Boolean(legacyAction));
     const [auditLogs, legacyLedgers] = await Promise.all([
       prisma.auditLog.findMany({
         where: {
           ...(range ? { createdAt: range } : {}),
           ...(ACTORS.includes(actor) ? { actorName: actor } : {}),
-          ...(action ? { action } : {}),
+          ...(isHiddenReportAction ? { action: "__HIDDEN_DAILY_REPORT_SENT__" } : action ? { action } : { NOT: { action: "DAILY_REPORT_SENT" } }),
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: limit,
