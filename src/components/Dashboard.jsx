@@ -1422,9 +1422,9 @@ export default function Dashboard({ view = "overview" }) {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {/* Total Balance */}
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm hover:shadow-md transition-shadow">
-              <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">စုစုပေါင်း အကြွေး</p>
+              <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">အသားတင်ရရန်လက်ကျန်</p>
               <p className="mt-2 text-2xl font-bold text-rose-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : formatMoney(totalBalance)}</p>
-              <p className="mt-1 text-xs text-rose-500">Total Balance</p>
+              <p className="mt-1 text-xs text-rose-500">Net Receivable Balance</p>
             </div>
 
             {/* Customer Count */}
