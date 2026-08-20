@@ -65,7 +65,7 @@ export default function DailySummaryPage() {
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5"><p className="text-sm text-emerald-700">ငွေချေသူ</p><p className="mt-2 text-3xl font-bold text-emerald-800">{data.summary.paidCount}</p><p className="mt-1 text-sm text-emerald-700">{formatMoney(data.summary.paidAmount)}</p></div>
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-5"><p className="text-sm text-rose-700">အကြွေးတိုးသူ</p><p className="mt-2 text-3xl font-bold text-rose-800">{data.summary.unpaidCount}</p><p className="mt-1 text-sm text-rose-700">{formatMoney(data.summary.unpaidAmount)}</p></div>
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-5"><p className="text-sm text-blue-700">Transaction စုစုပေါင်း</p><p className="mt-2 text-3xl font-bold text-blue-800">{data.summary.totalTransactions}</p></div>
-              <div className="rounded-xl border border-violet-200 bg-violet-50 p-5"><p className="text-sm text-violet-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p><p className="mt-2 text-3xl font-bold text-violet-800">{data.summary.auditCount}</p></div>
+              <a href={`/activity?date=${date}`} className="rounded-xl border border-violet-200 bg-violet-50 p-5 transition hover:border-violet-300 hover:bg-violet-100"><p className="text-sm text-violet-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p><p className="mt-2 text-3xl font-bold text-violet-800">{data.summary.activityCount ?? data.summary.auditCount}</p><p className="mt-1 text-xs text-violet-700">အသေးစိတ်ကြည့်ရန် →</p></a>
             </section>
 
             <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">

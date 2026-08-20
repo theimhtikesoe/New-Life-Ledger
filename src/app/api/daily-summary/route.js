@@ -12,7 +12,7 @@ export async function GET(request) {
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
 
-    const [ledgers, auditCount] = await Promise.all([
+    const [ledgers, auditLogs] = await Promise.all([
       prisma.ledger.findMany({
         where: { date: { gte: start, lt: end } },
         select: {
@@ -26,13 +26,24 @@ export async function GET(request) {
         },
         orderBy: [{ date: "desc" }, { id: "desc" }],
       }),
-      prisma.auditLog.count({
+      prisma.auditLog.findMany({
         where: {
           createdAt: { gte: start, lt: end },
           NOT: { action: "DAILY_REPORT_SENT" },
         },
+        select: {
+          entityType: true,
+          entityId: true,
+        },
       }),
     ]);
+
+    const auditedLedgerIds = new Set(
+      auditLogs
+        .filter((log) => log.entityType === "Ledger" && log.entityId)
+        .map((log) => String(log.entityId)),
+    );
+    const activityCount = auditLogs.length + ledgers.filter((ledger) => !auditedLedgerIds.has(String(ledger.id))).length;
 
     const summary = {
       paidCount: 0,
@@ -40,7 +51,8 @@ export async function GET(request) {
       unpaidCount: 0,
       unpaidAmount: 0,
       totalTransactions: ledgers.length,
-      auditCount,
+      auditCount: auditLogs.length,
+      activityCount,
       paymentTypes: {},
     };
     const customerMap = new Map();
