@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { encodeActorHeader } from "@/lib/actor-header";
 
 function iso(value) {
   return value ? new Date(value).toISOString() : "";
@@ -34,7 +35,7 @@ async function sendRestore(file, mode) {
   formData.append("file", file);
   formData.append("mode", mode);
   const actorName = localStorage.getItem("actorName") || "";
-  const response = await fetch("/api/restore", { method: "POST", body: formData, headers: { "x-actor-name": actorName } });
+  const response = await fetch("/api/restore", { method: "POST", body: formData, headers: { "x-actor-name": encodeActorHeader(actorName) } });
   const body = await response.json();
   if (!response.ok) throw new Error([body.error, ...(body.details || [])].filter(Boolean).join("\n"));
   return body.data;
@@ -66,7 +67,7 @@ export default function DataManagementPage() {
     setLoading(true); setError(""); setMessage("");
     try {
       const actorName = localStorage.getItem("actorName") || "";
-      const response = await fetch("/api/backup", { headers: { "x-actor-name": actorName } });
+      const response = await fetch("/api/backup", { headers: { "x-actor-name": encodeActorHeader(actorName) } });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Backup export မအောင်မြင်ပါ။");
       downloadBackup(body.data);

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
+import { encodeActorHeader } from "@/lib/actor-header";
 
 const money = new Intl.NumberFormat("en-US");
 
@@ -19,7 +20,7 @@ function formatMoney(value) {
 
 async function fetchJson(path) {
   const actorName = localStorage.getItem("actorName") || "";
-  const response = await fetch(path, { headers: { "x-actor-name": actorName } });
+  const response = await fetch(path, { headers: { "x-actor-name": encodeActorHeader(actorName) } });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error || "Request failed");
   return body.data;

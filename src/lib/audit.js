@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
+import { decodeActorHeader } from "./actor-header";
+
 export const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
 
 export function getActorName(request, fallback = "Staff") {
-  const actor = request?.headers?.get?.("x-actor-name")?.trim();
+  const rawActor = request?.headers?.get?.("x-actor-name") || "";
+  const actor = decodeActorHeader(rawActor).trim();
   return ACTORS.includes(actor) ? actor : fallback;
 }
 

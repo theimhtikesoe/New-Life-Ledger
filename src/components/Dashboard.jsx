@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import TransactionFilter from "./TransactionFilter";
 import OverdueNotificationBell from "./OverdueNotificationBell";
 import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } from "@/lib/myanmar-time-client";
+import { encodeActorHeader } from "@/lib/actor-header";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -108,7 +109,7 @@ async function api(path, options) {
       const response = await fetchWithTimeout(path, {
         headers: {
           "Content-Type": "application/json",
-          ...(actorName ? { "x-actor-name": actorName } : {}),
+          ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
         },
         ...restOptions,
       }, signal);
