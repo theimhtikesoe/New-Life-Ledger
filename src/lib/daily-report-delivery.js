@@ -17,7 +17,6 @@ export async function runDailyReport({ date } = {}) {
     "",
     `<b>စာရင်းရက်စွဲ</b>\n<code>${report.dateLabel}</code>`,
     `<b>စာရင်းကာလ</b>\n<code>00:00–23:59 (မြန်မာစံတော်ချိန်)</code>`,
-    `<b>ပို့မည့်အချိန်</b>\n<code>မြန်မာစံတော်ချိန် မနက် ၀၈:၀၀ ဝန်းကျင်</code>`,
     "",
     `🟢 <b>ငွေချေ</b>  <code>${report.summary.paidCount} ခု</code>  <b>${report.summary.paidAmount.toLocaleString()} ကျပ်</b>`,
     `🔴 <b>အကြွေးတိုး</b>  <code>${report.summary.debtCount} ခု</code>  <b>${report.summary.debtAmount.toLocaleString()} ကျပ်</b>`,
