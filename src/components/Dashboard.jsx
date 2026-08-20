@@ -2221,8 +2221,8 @@ export default function Dashboard({ view = "overview" }) {
 
       {/* Manual Telegram Report Preview and PIN Modal */}
       {showTelegramReportModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-md">
-          <div className="w-full max-w-lg rounded-2xl border border-violet-200 bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-900/80 px-3 py-4 pb-10 backdrop-blur-md sm:flex sm:items-center sm:justify-center sm:p-4">
+          <div className="mx-auto my-2 w-full max-w-lg rounded-2xl border border-violet-200 bg-white p-5 shadow-2xl sm:my-8 sm:p-6">
             <div className="mb-5 text-center">
               <div className="mx-auto mb-3 inline-flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-2xl">📨</div>
               <h3 className="text-xl font-bold text-slate-900">ငွေရှင်းတမ်း ပို့ရန်</h3>
