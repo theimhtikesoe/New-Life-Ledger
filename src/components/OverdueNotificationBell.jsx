@@ -71,9 +71,11 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
   };
 
   const formatDate = (date) => {
+    const parsedDate = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) return "-";
     return new Intl.DateTimeFormat("en-GB", {
       dateStyle: "medium",
-    }).format(date);
+    }).format(parsedDate);
   };
 
   if (isLoadingOverdueDebts) {
