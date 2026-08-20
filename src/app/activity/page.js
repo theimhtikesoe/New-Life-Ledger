@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
+import { encodeActorHeader } from "@/lib/actor-header";
 
 const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
 const ACTIONS = ["PAYMENT", "DEBT_INCREASE", "CREATE", "UPDATE", "RESTORE", "DELETE", "PERMANENT_DELETE"];
@@ -16,7 +17,7 @@ const today = formatMyanmarDateInputValue(new Date());
 
 async function fetchLogs(query) {
   const actorName = localStorage.getItem("actorName") || "";
-  const response = await fetch(`/api/audit-logs?${query}`, { headers: { "x-actor-name": actorName } });
+  const response = await fetch(`/api/audit-logs?${query}`, { headers: { "x-actor-name": encodeActorHeader(actorName) } });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error || "Request failed");
   return body.data;
