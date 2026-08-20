@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { ensureDatabase } from "@/lib/database";
+import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
 const REMOTE_CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
@@ -54,10 +55,8 @@ export function getPreviousMyanmarDayRange(now = new Date()) {
   const year = previousLocalDay.getUTCFullYear();
   const month = previousLocalDay.getUTCMonth();
   const day = previousLocalDay.getUTCDate();
-  const start = new Date(Date.UTC(year, month, day) - MYANMAR_OFFSET_MS);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
   const dateLabel = `${year}-${pad(month + 1)}-${pad(day)}`;
-  return { start, end, dateLabel };
+  return getMyanmarDayRange(dateLabel);
 }
 
 function summarizeLedgers(ledgers) {

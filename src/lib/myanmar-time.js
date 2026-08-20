@@ -28,7 +28,18 @@ export function getMyanmarDateInputValue(value = new Date()) {
 export function getMyanmarDayRange(value = new Date()) {
   const dateInput = getMyanmarDateInputValue(value);
   const [year, month, day] = dateInput.split("-").map(Number);
-  const start = new Date(Date.UTC(year, month - 1, day) - MYANMAR_OFFSET_MS);
+  const calendarDate = new Date(Date.UTC(year, month - 1, day));
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    calendarDate.getUTCFullYear() !== year ||
+    calendarDate.getUTCMonth() !== month - 1 ||
+    calendarDate.getUTCDate() !== day
+  ) {
+    throw new Error("ရွေးထားသော report date မမှန်ကန်ပါ။");
+  }
+  const start = new Date(calendarDate.getTime() - MYANMAR_OFFSET_MS);
   const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
   return { start, end, dateLabel: dateInput };
 }

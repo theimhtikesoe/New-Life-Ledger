@@ -41,6 +41,13 @@ function formatMyanmarDateInputValue(value = new Date()) {
   return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`;
 }
 
+function getPreviousMyanmarDateInputValue(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const local = new Date(date.getTime() + (6 * 60 + 30) * 60 * 1000);
+  const previous = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() - 1));
+  return formatMyanmarDateInputValue(new Date(previous.getTime() - (6 * 60 + 30) * 60 * 1000));
+}
+
 function friendlyError(error) {
   const message = String(error?.message || "").trim();
   if (error?.name === "TypeError" || error?.name === "TimeoutError" || /^(Type error|Failed to fetch|NetworkError|Load failed|Request timed out)$/i.test(message)) {
@@ -215,6 +222,7 @@ export default function Dashboard() {
   const [overdueDebts, setOverdueDebts] = useState(null);
   const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
   const [telegramReportStep, setTelegramReportStep] = useState("preview");
+  const [telegramReportDate, setTelegramReportDate] = useState(() => getPreviousMyanmarDateInputValue());
   const [telegramReportPreview, setTelegramReportPreview] = useState(null);
   const [telegramReportPin, setTelegramReportPin] = useState("");
   const [telegramReportError, setTelegramReportError] = useState("");
@@ -228,6 +236,7 @@ export default function Dashboard() {
   const [nextAutoRetrySeconds, setNextAutoRetrySeconds] = useState(0);
   const retryTimerRef = useRef(null);
   const retryCountdownRef = useRef(null);
+  const telegramPreviewRequestRef = useRef(0);
   const lastDashboardAttemptAtRef = useRef(0);
 
   const clearAutoRetryTimers = useCallback(() => {
@@ -285,28 +294,58 @@ export default function Dashboard() {
     setIsSendingTelegramReport(false);
   }, []);
 
-  const handleOpenTelegramReportPreview = useCallback(async () => {
-    setShowTelegramReportModal(true);
-    setTelegramReportStep("preview");
+  const loadTelegramReportPreview = useCallback(async (date) => {
+    const requestId = telegramPreviewRequestRef.current + 1;
+    telegramPreviewRequestRef.current = requestId;
     setTelegramReportPreview(null);
-    setTelegramReportPin("");
     setTelegramReportError("");
     setIsLoadingTelegramReportPreview(true);
     try {
-      const response = await fetch(`/api/telegram/manual-report-preview?refresh=${Date.now()}`, {
+      const query = new URLSearchParams({ date, refresh: String(Date.now()) });
+      const response = await fetch(`/api/telegram/manual-report-preview?${query.toString()}`, {
         cache: "no-store",
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.ok) {
         throw new Error(body.error || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
       }
-      setTelegramReportPreview(body.data);
+      if (telegramPreviewRequestRef.current === requestId) {
+        setTelegramReportPreview(body.data);
+      }
     } catch (error) {
-      setTelegramReportError(error.message || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
+      if (telegramPreviewRequestRef.current === requestId) {
+        setTelegramReportError(error.message || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
+      }
     } finally {
-      setIsLoadingTelegramReportPreview(false);
+      if (telegramPreviewRequestRef.current === requestId) {
+        setIsLoadingTelegramReportPreview(false);
+      }
     }
   }, []);
+
+  const handleOpenTelegramReportPreview = useCallback(() => {
+    const defaultDate = getPreviousMyanmarDateInputValue();
+    setShowTelegramReportModal(true);
+    setTelegramReportStep("preview");
+    setTelegramReportDate(defaultDate);
+    setTelegramReportPin("");
+    loadTelegramReportPreview(defaultDate);
+  }, [loadTelegramReportPreview]);
+
+  const handleTelegramReportDateChange = useCallback((event) => {
+    const nextDate = event.target.value;
+    setTelegramReportDate(nextDate);
+    setTelegramReportStep("preview");
+    setTelegramReportPin("");
+    if (!nextDate) {
+      telegramPreviewRequestRef.current += 1;
+      setTelegramReportPreview(null);
+      setTelegramReportError("Report date ရွေးပေးပါ။");
+      setIsLoadingTelegramReportPreview(false);
+      return;
+    }
+    loadTelegramReportPreview(nextDate);
+  }, [loadTelegramReportPreview]);
 
   const handleProceedToTelegramPin = useCallback(() => {
     if (!telegramReportPreview) return;
@@ -330,20 +369,20 @@ export default function Dashboard() {
           Authorization: `Bearer ${pin}`,
           ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
         },
-        body: JSON.stringify({}),
+          body: JSON.stringify({ date: telegramReportPreview?.date }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.ok) {
         throw new Error(body.error || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
       }
       resetTelegramReportModal();
-      showAlert(`ယမန်နေ့ ${body.date} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
+      showAlert(`${body.date} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
     } catch (error) {
       setTelegramReportError(error.message || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
     } finally {
       setIsSendingTelegramReport(false);
     }
-  }, [isSendingTelegramReport, resetTelegramReportModal, showAlert, telegramReportPin]);
+  }, [isSendingTelegramReport, resetTelegramReportModal, showAlert, telegramReportPin, telegramReportPreview]);
 
   const handleExportExcel = useCallback(() => {
     if (!allCustomersForKPI || allCustomersForKPI.length === 0) {
@@ -2137,9 +2176,22 @@ export default function Dashboard() {
 
             {telegramReportStep === "preview" ? (
               <>
+                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <label className="block text-sm font-semibold text-slate-700" htmlFor="telegram-report-date">Report date ရွေးပါ</label>
+                  <input
+                    id="telegram-report-date"
+                    type="date"
+                    value={telegramReportDate}
+                    max={getPreviousMyanmarDateInputValue(currentTime)}
+                    onChange={handleTelegramReportDateChange}
+                    disabled={isLoadingTelegramReportPreview || isSendingTelegramReport}
+                    className="mt-2 w-full rounded-xl border border-violet-300 bg-white px-4 py-3 text-center text-lg font-semibold text-slate-800 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 disabled:bg-slate-100"
+                  />
+                  <p className="mt-2 text-xs text-slate-500">ရွေးထားတဲ့နေ့အတွက် Daily Summary နဲ့ Activity History ကို preview ပြပြီး၊ အဲ့ဒီနေ့ report ကိုပဲ Telegram သို့ ပို့ပါမယ်။</p>
+                </div>
                 {isLoadingTelegramReportPreview ? (
                   <div className="rounded-xl border border-violet-100 bg-violet-50 p-6 text-center text-sm text-violet-700">
-                    ယမန်နေ့ report အချက်အလက်များ ရယူနေသည်...
+                    {telegramReportDate || "ရွေးထားသောနေ့"} report အချက်အလက်များ ရယူနေသည်...
                   </div>
                 ) : telegramReportError && !telegramReportPreview ? (
                   <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">

@@ -1,10 +1,11 @@
 import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailyActivityImage } from "@/lib/daily-report";
 import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { prisma } from "@/lib/prisma";
+import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
-export async function runDailyReport({ actorName = "System", trigger = "schedule" } = {}) {
+export async function runDailyReport({ actorName = "System", trigger = "schedule", date } = {}) {
   const startedAt = Date.now();
-  const report = await getDailyReportData();
+  const report = await getDailyReportData(date ? getMyanmarDayRange(date) : undefined);
   const [pdfBuffer, imageBuffer, activityImageBuffer] = await Promise.all([
     createDailyReportPdf(report),
     createDailySummaryImage(report),
