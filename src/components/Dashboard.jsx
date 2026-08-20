@@ -210,7 +210,7 @@ export default function Dashboard() {
   const [transactionPagination, setTransactionPagination] = useState({ offset: 0, limit: 50, total: 0, hasMore: false });
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
-  const [allLedgers, setAllLedgers] = useState([]);
+  const [todayPaymentsList, setTodayPaymentsList] = useState([]);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [isOnline, setIsOnline] = useState(() => (
@@ -366,26 +366,39 @@ export default function Dashboard() {
     setLoading(true);
     setDataLoadError("");
     try {
-      const customerRequest = api(`/api/customers${search ? `?q=${encodeURIComponent(search)}` : ""}`, { signal });
-      const allCustomersRequest = search ? api("/api/customers", { signal }) : customerRequest;
+      const customerRequest = api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal });
+      const allCustomersRequest = search ? api("/api/customers?includeLedgers=false", { signal }) : customerRequest;
       const [customerRows, allCustomersRows] = await Promise.all([
         customerRequest,
         allCustomersRequest,
       ]);
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
+      setTodayPaymentsList([]);
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
       
-      // Collect all ledgers from all customers
-      const allLedgersData = [];
-      for (const customer of allCustomersRows) {
-        if (customer.ledgers && Array.isArray(customer.ledgers)) {
-          allLedgersData.push(...customer.ledgers);
-        }
-      }
-      setAllLedgers(allLedgersData);
+      // Today's payments are non-critical for the initial customer list.
+      // Load only today's transactions in the background so slow mobile paths
+      // can render customers and balances immediately.
+      void api("/api/daily-summary", { signal })
+        .then((summary) => {
+          const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
+          const payments = (summary.transactions || [])
+            .filter((transaction) => transaction.type === "DEBIT")
+            .map((transaction) => ({
+              ...transaction,
+              customerId: transaction.customer?.id,
+              customerName: transaction.customer?.name || "",
+              customerPhone: phoneByCustomerId.get(transaction.customer?.id) || null,
+            }))
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+          setTodayPaymentsList(payments);
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") console.warn("Today summary was not loaded:", error);
+        });
 
       // KPay alerts are non-critical for the initial Dashboard render.
       // Load them in the background so customer balances and counts appear first.
@@ -463,7 +476,7 @@ export default function Dashboard() {
   const loadDeletedCustomers = useCallback(async () => {
     setLoadingDeleted(true);
     try {
-      const deletedRows = await api("/api/customers?deleted=true");
+      const deletedRows = await api("/api/customers?deleted=true&includeLedgers=false");
       setDeletedCustomers(deletedRows);
     } catch (error) {
       showAlert(error.message, "error");
@@ -551,42 +564,7 @@ export default function Dashboard() {
     [allCustomersForKPI],
   );
 
-  // Calculate today's transactions using Myanmar calendar date
-  const todayTransactions = useMemo(() => {
-    const todayMyanmar = formatMyanmarDateInputValue(new Date());
-    let count = 0;
-    allCustomersForKPI.forEach(customer => {
-      if (customer.ledgers) {
-        count += customer.ledgers.filter(ledger =>
-          formatMyanmarDateInputValue(ledger.date) === todayMyanmar && ledger.type === "DEBIT"
-        ).length;
-      }
-    });
-    return count;
-  }, [allCustomersForKPI]);
-
-    // Get today's payment transactions with customer details using Myanmar calendar date
-  const todayPaymentsList = useMemo(() => {
-    const todayMyanmar = formatMyanmarDateInputValue(new Date());
-    const payments = [];
-    allCustomersForKPI.forEach(customer => {
-      if (customer.ledgers) {
-        customer.ledgers.forEach(ledger => {
-          // Only include Paid (DEBIT) transactions from today in Myanmar time
-          if (formatMyanmarDateInputValue(ledger.date) === todayMyanmar && ledger.type === "DEBIT") {
-            payments.push({
-              ...ledger,
-              customerName: customer.name,
-              customerPhone: customer.phone,
-              customerId: customer.id,
-            });
-          }
-        });
-      }
-    });
-    // Sort by date descending (newest first)
-    return payments.sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [allCustomersForKPI]);
+    const todayTransactions = todayPaymentsList.length;
 
   // Pagination logic
   const paginatedCustomers = useMemo(() => {
@@ -1120,28 +1098,12 @@ export default function Dashboard() {
     return cartons * rate - deductions;
   }, [ledgerForm.cartons, ledgerForm.rate, ledgerForm.deductions, ledgerForm.type, ledgerForm.saleType]);
 
-  // Calculate KPI metrics
-  const kpiMetrics = useMemo(() => {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-
-    const todaysTransactions = allLedgers.filter(ledger => {
-      const ledgerDate = new Date(ledger.date);
-      // Only count Paid (DEBIT) transactions
-      return ledgerDate >= todayStart && ledgerDate <= todayEnd && ledger.type === "DEBIT";
-    });
-
-    const totalBalance = customers.reduce((sum, customer) => sum + (customer.current_balance || 0), 0);
-    const totalCustomers = customers.length;
-
-    return {
-      todaysTransactionCount: todaysTransactions.length,
-      totalBalance,
-      totalCustomers,
-    };
-  }, [allLedgers, customers]);
+  // Calculate KPI metrics from the lightweight customer list and today's summary.
+  const kpiMetrics = useMemo(() => ({
+    todaysTransactionCount: todayPaymentsList.length,
+    totalBalance: customers.reduce((sum, customer) => sum + (customer.current_balance || 0), 0),
+    totalCustomers: customers.length,
+  }), [customers, todayPaymentsList.length]);
 
   // Handle filter changes from TransactionFilter component
   const handleFilterChange = useCallback((filtered) => {

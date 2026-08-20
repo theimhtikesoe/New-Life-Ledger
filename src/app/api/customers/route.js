@@ -12,9 +12,37 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();
     const showDeleted = searchParams.get("deleted") === "true";
+    const includeLedgers = searchParams.get("includeLedgers") !== "false";
 
     // Optimized: Select only necessary fields to reduce data transfer
     // Better search for Burmese: prioritize startsWith, then fallback to contains
+    // Keep the initial dashboard response small enough for slower Myanmar
+    // mobile/VPN paths. Full transaction history is loaded on demand.
+    const select = {
+      id: true,
+      name: true,
+      phone: true,
+      routeTag: true,
+      current_balance: true,
+      deletedAt: true,
+    };
+    if (includeLedgers) {
+      select.ledgers = {
+        select: {
+          id: true,
+          date: true,
+          type: true,
+          saleType: true,
+          cartons: true,
+          rate: true,
+          amount: true,
+          note: true,
+          paymentType: true,
+        },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+      };
+    }
+
     const customers = await prisma.customer.findMany({
       where: {
         AND: [
@@ -33,35 +61,8 @@ export async function GET(request) {
           },
         ],
       },
-      // Keep the initial dashboard response small enough for slower Myanmar
-      // mobile/VPN paths. Full transaction history is loaded on demand.
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        routeTag: true,
-        current_balance: true,
-        deletedAt: true,
-        ledgers: {
-          select: {
-            id: true,
-            date: true,
-            type: true,
-            saleType: true,
-            cartons: true,
-            rate: true,
-            amount: true,
-            note: true,
-            paymentType: true,
-          },
-          orderBy: [{ date: "desc" }, { id: "desc" }],
-        },
-      },
-      orderBy: [
-        {
-          name: "asc",
-        },
-      ],
+      select,
+      orderBy: [{ name: "asc" }],
     });
 
     // Post-process to sort startsWith matches first for better UX
