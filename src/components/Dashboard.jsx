@@ -1321,6 +1321,19 @@ export default function Dashboard() {
                 }} 
                 />
               </div>
+              <button
+                onClick={handleOpenTelegramReportPreview}
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+                title="ငွေရှင်းတမ်း ပို့ရန်"
+              >
+                📨 ငွေရှင်းတမ်း ပို့ရန်
+              </button>
+              <button
+                onClick={() => setShowRecycleBin(true)}
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+              >
+                🗑️ Recycle Bin
+              </button>
               <a
                 href="/data-management"
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
@@ -1334,19 +1347,6 @@ export default function Dashboard() {
                 title="Report Excel ထုတ်ရန်"
               >
                 📊 Report Excel
-              </button>
-              <button
-                onClick={handleOpenTelegramReportPreview}
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
-                title="ငွေရှင်းတမ်း ပို့ရန်"
-              >
-                📨 ငွေရှင်းတမ်း ပို့ရန်
-              </button>
-              <button
-                onClick={() => setShowRecycleBin(true)}
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-              >
-                🗑️ Recycle Bin
               </button>
             </div>
           </div>
