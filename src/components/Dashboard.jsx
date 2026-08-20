@@ -1322,6 +1322,15 @@ export default function Dashboard({ view = "overview" }) {
                 }} 
                 />
               </div>
+              {isLedgerView ? (
+                <a
+                  href="/"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 xl:col-span-2"
+                  title="KPI Dashboard သို့ ပြန်ရန်"
+                >
+                  ← KPI Dashboard သို့ ပြန်ရန်
+                </a>
+              ) : null}
               <button
                 onClick={handleOpenTelegramReportPreview}
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
