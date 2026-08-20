@@ -11,24 +11,33 @@ function iso(value) {
 
 function downloadBackup(data) {
   const workbook = XLSX.utils.book_new();
+  const counts = data.counts || {};
   const infoRows = [
     ["format", data.format],
     ["version", data.version],
     ["generatedAt", data.generatedAt],
-    ["customers", data.counts.customers],
-    ["transactions", data.counts.transactions],
-    ["auditLogs", data.counts.auditLogs],
+    ["customers", counts.customers || 0],
+    ["transactions", counts.transactions || 0],
+    ["kpayAliases", counts.kpayAliases || 0],
+    ["unverifiedKpay", counts.unverifiedKpay || 0],
+    ["auditLogs", counts.auditLogs || 0],
   ];
-  const customers = data.customers.map((item) => ({ ...item, createdAt: iso(item.createdAt), deletedAt: iso(item.deletedAt) }));
-  const transactions = data.transactions.map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
-  const auditLogs = data.auditLogs.map((item) => ({ ...item, metadata: item.metadata ? JSON.stringify(item.metadata) : "", createdAt: iso(item.createdAt) }));
+  const customers = (data.customers || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), deletedAt: iso(item.deletedAt) }));
+  const transactions = (data.transactions || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
+  const kpayAliases = (data.kpayAliases || []).map((item) => ({ ...item }));
+  const unverifiedKpay = (data.unverifiedKpay || []).map((item) => ({ ...item, createdAt: iso(item.createdAt) }));
+  const auditLogs = (data.auditLogs || []).map((item) => ({ ...item, metadata: item.metadata ? JSON.stringify(item.metadata) : "", createdAt: iso(item.createdAt) }));
+  const integrityRows = Object.entries(data.integrity || {}).map(([key, value]) => [key, typeof value === "object" ? JSON.stringify(value) : value ?? ""]);
 
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(infoRows), "Backup Info");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(customers), "Customers");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(transactions), "Transactions");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(kpayAliases), "KPay Aliases");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(unverifiedKpay), "Pending KPay");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(auditLogs), "Audit History");
-  workbook.Workbook = { Props: { Title: "New Life Ledger Backup", Subject: "Official restore backup" } };
-  XLSX.writeFile(workbook, `New-Life-Ledger-Backup-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["key", "value"], ...integrityRows]), "Integrity");
+  workbook.Workbook = { Props: { Title: "New Life Ledger Backup", Subject: "Official restore backup with all entities and integrity checks" } };
+  XLSX.writeFile(workbook, `New-Life-Ledger-Backup-v${data.version || 2}-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 function downloadReportExcel(customers) {
@@ -121,7 +130,7 @@ export default function DataManagementPage() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Backup export မအောင်မြင်ပါ။");
       downloadBackup(body.data);
-      setMessage(`Backup export အောင်မြင်ပါပြီ။ Customers ${body.data.counts.customers}၊ Transactions ${body.data.counts.transactions}၊ Audit ${body.data.counts.auditLogs} ခု ပါဝင်ပါတယ်။`);
+      setMessage(`Backup export အောင်မြင်ပါပြီ။ Customers ${body.data.counts.customers}၊ Transactions ${body.data.counts.transactions}၊ KPay Alias ${body.data.counts.kpayAliases}၊ Pending KPay ${body.data.counts.unverifiedKpay}၊ Audit ${body.data.counts.auditLogs} ခု ပါဝင်ပြီး balance mismatch ${body.data.integrity.balanceMismatchCount} ခု ဖြစ်ပါတယ်။`);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
@@ -161,7 +170,7 @@ export default function DataManagementPage() {
         {error && <pre className="whitespace-pre-wrap rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</pre>}
 
         <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Data အားလုံး Export</h2><p className="mt-2 text-sm text-slate-600">Customers၊ Transactions၊ Activity History ကို restore ပြန်လုပ်နိုင်သော official Excel format ဖြင့် download လုပ်ပါ။</p><button type="button" onClick={handleBackupExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "Backup Excel Download"}</button></div>
+          <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Data အားလုံး Export</h2><p className="mt-2 text-sm text-slate-600">Customers၊ Transactions၊ KPay Alias၊ Pending KPay၊ Activity History နှင့် Integrity စစ်ဆေးချက်များအားလုံးပါသော official Excel backup ကို download လုပ်ပါ။</p><button type="button" onClick={handleBackupExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "Backup Excel Download"}</button></div>
           <div className="rounded-xl border border-blue-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Restore</h2><p className="mt-2 text-sm text-slate-600">ဒီ website က ထုတ်ထားသော `New-Life-Ledger-Backup-*.xlsx` ဖိုင်ကိုသာ ပြန်တင်ပါ။ အရင်ဆုံး preview စစ်ပြီးမှ confirm restore လုပ်ရပါမယ်။</p><input type="file" accept=".xlsx,.xls" onChange={(e) => { setFile(e.target.files?.[0] || null); setPreview(null); setResult(null); setError(""); }} className="mt-4 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm" /><button type="button" onClick={handlePreview} disabled={!file || loading} className="mt-3 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400">Preview Restore</button></div>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm md:col-span-2"><h2 className="text-lg font-semibold text-emerald-900">📊 Report Excel</h2><p className="mt-2 text-sm text-emerald-800">Customer တစ်ယောက်ချင်းစီ၏ လက်ကျန်နှင့် ငွေချေ/အကြွေးတိုးစာရင်းများကို Excel ဖိုင်အဖြစ် ထုတ်ယူပါ။</p><button type="button" onClick={handleReportExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "📊 Report Excel ထုတ်ရန်"}</button></div>
         </section>
@@ -176,8 +185,8 @@ export default function DataManagementPage() {
           <p className="mt-2 text-xs text-violet-700">မအောင်မြင်ပါက CRON_SECRET မှန်/မမှန်နှင့် Vercel Production environment ထဲ ထည့်ထား/မထား စစ်ပါ။</p>
         </section>
 
-        {preview && <section className="rounded-xl border border-amber-200 bg-amber-50 p-5"><h2 className="text-lg font-semibold text-amber-900">Restore Preview</h2><p className="mt-2 text-sm text-amber-800">အောက်ပါ record များကိုသာ ထည့်မည်။ ရှိပြီးသား record များကို Update/Delete မလုပ်ပါ။</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Customer ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.customers}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Transaction ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.transactions}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Audit ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.auditLogs}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Skip လုပ်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willSkip.customers + preview.willSkip.transactions + preview.willSkip.auditLogs}</p></div></div><button type="button" onClick={handleConfirm} disabled={loading} className="mt-5 rounded-lg bg-amber-600 px-4 py-3 font-semibold text-white hover:bg-amber-700 disabled:bg-slate-400">Confirm Restore</button></section>}
-        {result && <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-5"><h2 className="text-lg font-semibold text-emerald-900">Restore Result</h2><p className="mt-2 text-sm text-emerald-800">Customer {result.result.addedCustomers}၊ Transaction {result.result.addedTransactions}၊ Audit {result.result.addedAuditLogs} ခု ထည့်ပြီးပါပြီ။</p></section>}
+        {preview && <section className="rounded-xl border border-amber-200 bg-amber-50 p-5"><h2 className="text-lg font-semibold text-amber-900">Restore Preview</h2><p className="mt-2 text-sm text-amber-800">Backup ထဲရှိ record များကို စစ်ပြီး မရှိသေးသော record များကိုသာ ထည့်မည်။ ရှိပြီးသား record များကို Update/Delete မလုပ်ပါ။ Restore ပြီးနောက် သက်ဆိုင်ရာ Customer balance များကို Ledger အားလုံးမှ ပြန်တွက်မည်။</p>{preview.integrityWarnings?.length ? <div className="mt-3 rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700"><p className="font-semibold">Integrity warning</p>{preview.integrityWarnings.map((warning) => <p key={warning}>{warning}</p>)}</div> : null}<div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3"><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Customer ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.customers}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Transaction ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.transactions}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">KPay Alias ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.kpayAliases}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Pending KPay ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.unverifiedKpay}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Audit ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.auditLogs}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Balance ပြန်တွက်မည်</p><p className="text-xl font-bold text-slate-900">{preview.balanceRecalculation?.customers || 0}</p></div></div>{preview.aliasConflicts?.length ? <p className="mt-3 text-sm text-amber-800">KPay alias တူနေသောကြောင့် မပြောင်းဘဲ skip လုပ်မည့် alias {preview.aliasConflicts.length} ခု ရှိပါသည်။</p> : null}<button type="button" onClick={handleConfirm} disabled={loading || preview.integrityWarnings?.length > 0} className="mt-5 rounded-lg bg-amber-600 px-4 py-3 font-semibold text-white hover:bg-amber-700 disabled:bg-slate-400">{preview.integrityWarnings?.length ? "Integrity ပြန်စစ်ရန်" : "Confirm Restore"}</button></section>}
+        {result && <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-5"><h2 className="text-lg font-semibold text-emerald-900">Restore Result</h2><p className="mt-2 text-sm text-emerald-800">Customer {result.result.addedCustomers}၊ Transaction {result.result.addedTransactions}၊ KPay Alias {result.result.addedAliases}၊ Pending KPay {result.result.addedPendingKpay}၊ Audit {result.result.addedAuditLogs} ခု ထည့်ပြီးပါပြီ။ Customer balance {result.result.correctedBalances} ခုကို Ledger အားလုံးအပေါ်မူတည်ပြီး ပြန်တွက်ထားပါတယ်။</p></section>}
 
         <section className="rounded-xl border border-slate-200 bg-white p-5"><h2 className="text-lg font-semibold text-slate-900">Backup သုံးစွဲပုံ</h2><ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-600"><li>အရင်ဆုံး Backup Excel Download ဖြင့် official backup ထုတ်ပါ။</li><li>ဖိုင်ကို လုံခြုံသောနေရာတွင် သိမ်းပါ။</li><li>နောင်တွင် restore လိုပါက file ရွေးပြီး Preview Restore လုပ်ပါ။</li><li>Preview အရေအတွက်မှန်မှသာ Confirm Restore နှိပ်ပါ။</li></ol></section>
       </div>

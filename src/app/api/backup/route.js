@@ -4,10 +4,15 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+function signedLedgerAmount(transaction) {
+  return transaction.type === "CREDIT" ? transaction.amount : -transaction.amount;
+}
+
 export async function GET() {
   try {
     await ensureDatabase();
-    const [customers, transactions, auditLogs] = await Promise.all([
+
+    const [customers, transactions, kpayAliases, unverifiedKpay, auditLogs] = await Promise.all([
       prisma.customer.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -38,6 +43,26 @@ export async function GET() {
           createdAt: true,
         },
       }),
+      prisma.kpayAlias.findMany({
+        orderBy: { id: "asc" },
+        select: {
+          id: true,
+          kpayName: true,
+          customerId: true,
+        },
+      }),
+      prisma.unverifiedKpay.findMany({
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          raw_text: true,
+          kpayName: true,
+          amount: true,
+          status: true,
+          suggestedCustomerId: true,
+          createdAt: true,
+        },
+      }),
       prisma.auditLog.findMany({
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: {
@@ -54,14 +79,57 @@ export async function GET() {
       }),
     ]);
 
+    const ledgerTotals = new Map();
+    for (const transaction of transactions) {
+      ledgerTotals.set(
+        transaction.customerId,
+        (ledgerTotals.get(transaction.customerId) || 0) + signedLedgerAmount(transaction),
+      );
+    }
+
+    const balanceMismatches = customers
+      .map((customer) => {
+        const storedBalance = customer.current_balance || 0;
+        const recomputedBalance = ledgerTotals.get(customer.id) || 0;
+        return {
+          customerId: customer.id,
+          name: customer.name,
+          storedBalance,
+          recomputedBalance,
+          difference: storedBalance - recomputedBalance,
+        };
+      })
+      .filter((item) => item.difference !== 0);
+
+    const customerBalanceTotal = customers.reduce((sum, customer) => sum + (customer.current_balance || 0), 0);
+    const transactionNetBalance = transactions.reduce((sum, transaction) => sum + signedLedgerAmount(transaction), 0);
+
     return NextResponse.json({
       data: {
         format: "new-life-ledger-backup",
-        version: 1,
+        version: 2,
         generatedAt: new Date().toISOString(),
-        counts: { customers: customers.length, transactions: transactions.length, auditLogs: auditLogs.length },
+        counts: {
+          customers: customers.length,
+          transactions: transactions.length,
+          kpayAliases: kpayAliases.length,
+          unverifiedKpay: unverifiedKpay.length,
+          auditLogs: auditLogs.length,
+        },
+        integrity: {
+          algorithm: "Customer.current_balance = sum(CREDIT amounts) - sum(DEBIT amounts)",
+          customerBalanceTotal,
+          transactionNetBalance,
+          totalDifference: customerBalanceTotal - transactionNetBalance,
+          reconciledCustomers: customers.length - balanceMismatches.length,
+          balanceMismatchCount: balanceMismatches.length,
+          balanceMismatches,
+          overpaymentHistory: "Derived from chronological Ledger CREDIT/DEBIT rows; no separate balance field is omitted.",
+        },
         customers,
         transactions,
+        kpayAliases,
+        unverifiedKpay,
         auditLogs,
       },
     });
