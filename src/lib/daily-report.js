@@ -134,13 +134,21 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
       orderBy: [{ date: "asc" }, { id: "asc" }],
     }),
     prisma.auditLog.findMany({
-      where: { createdAt: { gte: start, lt: end } },
+      where: {
+        createdAt: { gte: start, lt: end },
+        NOT: { action: "DAILY_REPORT_SENT" },
+      },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     }),
   ]);
 
   const { summary, customers } = summarizeLedgers(ledgers);
-  const legacyLogs = ledgers.map((ledger) => ({
+  const auditedLedgerIds = new Set(
+    auditLogs
+      .filter((log) => log.entityType === "Ledger" && log.entityId)
+      .map((log) => String(log.entityId)),
+  );
+  const legacyLogs = ledgers.filter((ledger) => !auditedLedgerIds.has(String(ledger.id))).map((ledger) => ({
     id: `legacy-${ledger.id}`,
     actorName: "",
     action: ledger.type === "DEBIT" ? "PAYMENT" : "DEBT_INCREASE",
@@ -181,7 +189,7 @@ function resolveLatinFontPath() {
 }
 
 function actionLabel(action) {
-  return ({ PAYMENT: "ငွေချေ", DEBT_INCREASE: "အကြွေးတိုး", CREATE: "အသစ်ထည့်", UPDATE: "ပြင်ဆင်", RESTORE: "ပြန်ယူ", DELETE: "ဖျက်", PERMANENT_DELETE: "အပြီးဖျက်", DAILY_REPORT_SENT: "Daily Report ပို့" })[action] || action;
+  return ({ PAYMENT: "ငွေချေ", DEBT_INCREASE: "အကြွေးတိုး", CREATE: "အသစ်ထည့်", UPDATE: "ပြင်ဆင်", RESTORE: "ပြန်ယူ", DELETE: "ဖျက်", PERMANENT_DELETE: "အပြီးဖျက်", })[action] || action;
 }
 
 function clipText(value, maxLength) {

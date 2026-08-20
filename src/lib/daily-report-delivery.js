@@ -1,9 +1,8 @@
 import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailyActivityImage } from "@/lib/daily-report";
 import { sendDailyReportToTelegram } from "@/lib/telegram";
-import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
-export async function runDailyReport({ actorName = "System", trigger = "schedule", date } = {}) {
+export async function runDailyReport({ date } = {}) {
   const startedAt = Date.now();
   const report = await getDailyReportData(date ? getMyanmarDayRange(date) : undefined);
   const [pdfBuffer, imageBuffer, activityImageBuffer] = await Promise.all([
@@ -36,27 +35,6 @@ export async function runDailyReport({ actorName = "System", trigger = "schedule
     caption,
   });
 
-  await prisma.auditLog.create({
-    data: {
-      actorName: actorName || "System",
-      action: "DAILY_REPORT_SENT",
-      entityType: "DailyReport",
-      entityLabel: report.dateLabel,
-      summary: `${trigger === "manual" ? "Manual" : "Scheduled"} daily report sent to Telegram group for ${report.dateLabel}`,
-      metadata: {
-        dateLabel: report.dateLabel,
-        periodLabel: report.periodLabel,
-        trigger,
-        paidCount: report.summary.paidCount,
-        debtCount: report.summary.debtCount,
-        totalTransactions: report.summary.totalTransactions,
-        auditCount: report.summary.auditCount,
-        activityCount,
-        elapsedMs: Date.now() - startedAt,
-        recipients: delivery.results.map((item) => item.chatId),
-      },
-    },
-  });
 
   return {
     date: report.dateLabel,

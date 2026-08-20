@@ -26,7 +26,12 @@ export async function GET(request) {
         },
         orderBy: [{ date: "desc" }, { id: "desc" }],
       }),
-      prisma.auditLog.count({ where: { createdAt: { gte: start, lt: end } } }),
+      prisma.auditLog.count({
+        where: {
+          createdAt: { gte: start, lt: end },
+          NOT: { action: "DAILY_REPORT_SENT" },
+        },
+      }),
     ]);
 
     const summary = {
