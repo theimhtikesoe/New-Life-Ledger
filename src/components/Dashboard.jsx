@@ -1406,7 +1406,7 @@ export default function Dashboard({ view = "overview" }) {
             {selectedCustomerId && (
               <button
                 onClick={() => setShowCustomerList(!showCustomerList)}
-                 className={`shrink-0 rounded-md border px-2 py-2 text-[11px] font-semibold transition-colors whitespace-nowrap sm:px-3 sm:text-sm ${showCustomerList ? "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100" : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                 className={`shrink-0 rounded-md border px-2 py-2 text-[11px] font-semibold transition-colors whitespace-nowrap sm:px-3 sm:text-sm ${showCustomerList ? "border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100" : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
               >
                 {showCustomerList ? "Customer စာရင်းဖျောက်မည်" : "Customer စာရင်းပြမည်"}
               </button>
