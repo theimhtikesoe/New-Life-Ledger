@@ -1382,7 +1382,7 @@ export default function Dashboard({ view = "overview" }) {
           <>
             {/* Compact Summary Box */}
             <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {/* Total Balance */}
             <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm hover:shadow-md transition-shadow">
               <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">စုစုပေါင်း အကြွေး</p>
