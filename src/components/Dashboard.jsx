@@ -1289,6 +1289,9 @@ export default function Dashboard({ view = "overview" }) {
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
+          {isLedgerView ? (
+            <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
+          ) : null}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] md:items-center md:gap-x-6">
             <div className="order-2 col-span-2 col-start-1 row-start-2 min-w-0 md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-start">
               <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
@@ -1322,15 +1325,6 @@ export default function Dashboard({ view = "overview" }) {
                 }} 
                 />
               </div>
-              {isLedgerView ? (
-                <a
-                  href="/"
-                  className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-semibold text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 xl:col-span-2"
-                  title="KPI Dashboard သို့ ပြန်ရန်"
-                >
-                  ← KPI Dashboard သို့ ပြန်ရန်
-                </a>
-              ) : null}
               <button
                 onClick={handleOpenTelegramReportPreview}
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
