@@ -33,8 +33,29 @@ export async function GET(request) {
           },
         ],
       },
-      include: {
-        ledgers: true,
+      // Keep the initial dashboard response small enough for slower Myanmar
+      // mobile/VPN paths. Full transaction history is loaded on demand.
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        routeTag: true,
+        current_balance: true,
+        deletedAt: true,
+        ledgers: {
+          select: {
+            id: true,
+            date: true,
+            type: true,
+            saleType: true,
+            cartons: true,
+            rate: true,
+            amount: true,
+            note: true,
+            paymentType: true,
+          },
+          orderBy: [{ date: "desc" }, { id: "desc" }],
+        },
       },
       orderBy: [
         {

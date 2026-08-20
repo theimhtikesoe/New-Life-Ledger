@@ -12,6 +12,8 @@ const money = new Intl.NumberFormat("en-US");
 const today = new Date().toISOString().slice(0, 10);
 const AUTO_RETRY_DELAY_MS = 8000;
 const RESUME_REFRESH_AFTER_MS = 30000;
+const API_REQUEST_TIMEOUT_MS = 20000;
+const MAX_GET_ATTEMPTS = 3;
 
 function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
@@ -57,7 +59,7 @@ async function fetchWithTimeout(path, options, parentSignal) {
   const timer = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, 12000);
+  }, API_REQUEST_TIMEOUT_MS);
   const relayAbort = () => controller.abort();
   if (parentSignal) {
     if (parentSignal.aborted) relayAbort();
@@ -97,7 +99,9 @@ async function api(path, options) {
   const method = String(restOptions.method || "GET").toUpperCase();
   const canRetry = method === "GET";
   const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") : "";
-  const maxAttempts = canRetry ? 2 : 1;
+  // Myanmar mobile/VPN paths can take longer than one cold-start response.
+  // Keep writes single-attempt, but allow GETs enough time and retries to recover.
+  const maxAttempts = canRetry ? MAX_GET_ATTEMPTS : 1;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -130,7 +134,7 @@ async function api(path, options) {
       if (error.name === "AbortError" || attempt === maxAttempts || (!error.retryable && !isRetryableNetworkError(error))) {
         throw error;
       }
-      await waitBeforeRetry(350 * attempt, signal);
+      await waitBeforeRetry(500 * attempt, signal);
     }
   }
 
