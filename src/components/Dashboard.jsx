@@ -212,6 +212,7 @@ export default function Dashboard() {
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState([]);
+  const [overdueDebts, setOverdueDebts] = useState([]);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [isOnline, setIsOnline] = useState(() => (
@@ -376,10 +377,19 @@ export default function Dashboard() {
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
       setTodayPaymentsList([]);
+      setOverdueDebts([]);
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
       
+      // Overdue debt records are loaded separately because the initial customer
+      // payload intentionally omits all ledger history.
+      void api("/api/overdue-debts", { signal })
+        .then((rows) => setOverdueDebts(rows))
+        .catch((error) => {
+          if (error.name !== "AbortError") console.warn("Overdue debts were not loaded:", error);
+        });
+
       // Today's payments are non-critical for the initial customer list.
       // Load only today's transactions in the background so slow mobile paths
       // can render customers and balances immediately.
@@ -1154,7 +1164,8 @@ export default function Dashboard() {
             <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-1 items-center gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-2 shadow-sm justify-self-stretch md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[340px] md:justify-self-end xl:grid-cols-2">
               <div className="col-span-1 flex [&>button]:w-full xl:col-span-2">
                 <OverdueNotificationBell
-                customers={allCustomersForKPI} 
+                customers={allCustomersForKPI}
+                overdueDebts={overdueDebts}
                 onSelectCustomer={(id) => {
                   // If clicking the same customer, we still want to trigger the scroll effect
                   if (selectedCustomerId === id) {

@@ -7,7 +7,7 @@ import { getOldestUnpaidCreditDate } from "@/lib/debt-utils";
  * OverdueNotificationBell Component
  * ၁၅ ရက်ကျော်နေတဲ့ အကြွေးတွေကို သတိပေးတဲ့ component
  */
-export default function OverdueNotificationBell({ customers = [], onSelectCustomer }) {
+export default function OverdueNotificationBell({ customers = [], overdueDebts: overdueDebtsProp, onSelectCustomer }) {
   const [showModal, setShowModal] = useState(false);
 
   // Load modal state from localStorage on mount
@@ -24,7 +24,7 @@ export default function OverdueNotificationBell({ customers = [], onSelectCustom
   }, [showModal]);
 
   // Calculate overdue debts (15+ days old)
-  const overdueDebts = useMemo(() => {
+  const calculatedOverdueDebts = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const fifteenDaysAgo = new Date(today);
@@ -62,6 +62,8 @@ export default function OverdueNotificationBell({ customers = [], onSelectCustom
     // Sort by days overdue (descending - most overdue first)
     return overdue.sort((a, b) => b.daysOverdue - a.daysOverdue);
   }, [customers]);
+
+  const overdueDebts = overdueDebtsProp ?? calculatedOverdueDebts;
 
   const formatMoney = (value) => {
     return new Intl.NumberFormat("en-US").format(Number(value || 0));
