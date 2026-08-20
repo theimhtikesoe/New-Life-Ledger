@@ -54,13 +54,13 @@ function isRetryableNetworkError(error) {
   return error?.name === "TypeError" || error?.name === "TimeoutError" || /^(Type error|Failed to fetch|NetworkError|Load failed|Request timed out)$/i.test(message);
 }
 
-async function fetchWithTimeout(path, options, parentSignal) {
+async function fetchWithTimeout(path, options, parentSignal, timeoutMs = API_REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => {
     timedOut = true;
     controller.abort();
-  }, API_REQUEST_TIMEOUT_MS);
+  }, timeoutMs);
   const relayAbort = () => controller.abort();
   if (parentSignal) {
     if (parentSignal.aborted) relayAbort();
@@ -96,7 +96,7 @@ function waitBeforeRetry(milliseconds, signal) {
 }
 
 async function api(path, options) {
-  const { signal, ...restOptions } = options || {};
+  const { signal, timeoutMs = API_REQUEST_TIMEOUT_MS, ...restOptions } = options || {};
   const method = String(restOptions.method || "GET").toUpperCase();
   const canRetry = method === "GET";
   const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") : "";
@@ -112,7 +112,7 @@ async function api(path, options) {
           ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
         },
         ...restOptions,
-      }, signal);
+      }, signal, timeoutMs);
       const text = await response.text();
       let body = {};
 
@@ -366,7 +366,7 @@ export default function Dashboard() {
   const loadOverdueDebts = useCallback(() => {
     // This is a non-critical background request. Do not attach the dashboard
     // search AbortController, otherwise a search/refresh can cancel the badge.
-    return api("/api/overdue-debts")
+    return api("/api/overdue-debts", { timeoutMs: 30000 })
       .then((rows) => setOverdueDebts(rows))
       .catch((error) => {
         if (error.name !== "AbortError") {
