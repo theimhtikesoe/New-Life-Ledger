@@ -363,17 +363,32 @@ export default function Dashboard() {
     }
   }, [allCustomersForKPI, showAlert]);
 
-  const loadOverdueDebts = useCallback(() => {
-    // This is a non-critical background request. Do not attach the dashboard
-    // search AbortController, otherwise a search/refresh can cancel the badge.
-    return api("/api/overdue-debts", { timeoutMs: 30000 })
-      .then((rows) => setOverdueDebts(rows))
-      .catch((error) => {
-        if (error.name !== "AbortError") {
-          console.warn("Overdue debts were not loaded:", error);
-          setOverdueDebts([]);
-        }
+  const loadOverdueDebts = useCallback(async () => {
+    // This is a non-critical background request. Keep it independent from the
+    // dashboard search AbortController and bypass the general retry wrapper.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") || "" : "";
+      const response = await fetch(`/api/overdue-debts?refresh=${Date.now()}`, {
+        cache: "no-store",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
+        },
       });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `Request failed with status ${response.status}`);
+      setOverdueDebts(Array.isArray(body.data) ? body.data : []);
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.warn("Overdue debts were not loaded:", error);
+        setOverdueDebts([]);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
   }, []);
 
   const loadDashboard = useCallback(async (signal) => {
