@@ -26,6 +26,23 @@ async function sendTelegramFile({ token, chatId, method, buffer, filename, mimeT
   return body;
 }
 
+export async function sendTelegramPlainTextMessage(message) {
+  const { token, groupChatId } = getTelegramConfig();
+  if (!token || !groupChatId) {
+    throw new Error("Telegram configuration မပြည့်စုံသေးပါ။");
+  }
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: groupChatId, text: message }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || !body.ok) {
+    throw new Error(`Telegram custom message failed: ${response.status} ${body.description || "unknown error"}`);
+  }
+  return { results: [{ messageId: body.result?.message_id }] };
+}
+
 export async function sendTelegramMessage(message) {
   const { token, groupChatId } = getTelegramConfig();
   if (!token || !groupChatId) {

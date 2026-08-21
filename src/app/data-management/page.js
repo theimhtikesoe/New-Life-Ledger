@@ -108,6 +108,9 @@ export default function DataManagementPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [cronSecret, setCronSecret] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
+  const [customMessagePin, setCustomMessagePin] = useState("");
+  const [customMessageSending, setCustomMessageSending] = useState(false);
 
   const handleManualReportTest = async () => {
     if (!cronSecret.trim()) return;
@@ -120,6 +123,33 @@ export default function DataManagementPage() {
       setCronSecret("");
       setMessage(`Telegram test report အောင်မြင်ပါပြီ။ ${body.date} စာရင်း၏ PDF နှင့် image ကို Telegram group တစ်ခုတည်းသို့ ပို့ပြီးပါပြီ။`);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
+
+  const handleCustomMessageSend = async () => {
+    const messageText = customMessage.trim();
+    const pin = customMessagePin.trim();
+    if (!messageText || !pin || customMessageSending) return;
+    if (!window.confirm("Text box ထဲက စာကို Telegram group သို့ သီးသန့်ပို့မည်။ Report data၊ image နှင့် file မပါပါ။ ဆက်လုပ်မလား?")) return;
+
+    setCustomMessageSending(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch("/api/telegram/custom-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${pin}` },
+        body: JSON.stringify({ message: messageText }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.error || "Telegram သို့ စာပို့ခြင်း မအောင်မြင်ပါ။");
+      setCustomMessage("");
+      setCustomMessagePin("");
+      setMessage("Text box ထဲက စာကို Telegram group သို့ သီးသန့် အောင်မြင်စွာ ပို့ပြီးပါပြီ။ Report data၊ image နှင့် file မပါပါ။");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCustomMessageSending(false);
+    }
   };
 
   const handleBackupExport = async () => {
@@ -183,6 +213,41 @@ export default function DataManagementPage() {
             <button type="button" onClick={handleManualReportTest} disabled={!cronSecret.trim() || loading} className="rounded-lg bg-violet-600 px-4 py-3 font-semibold text-white hover:bg-violet-700 disabled:bg-slate-400">Send Test Report</button>
           </div>
           <p className="mt-2 text-xs text-violet-700">မအောင်မြင်ပါက CRON_SECRET မှန်/မမှန်နှင့် Vercel Production environment ထဲ ထည့်ထား/မထား စစ်ပါ။</p>
+        </section>
+
+        <section className="rounded-xl border border-sky-200 bg-sky-50 p-5">
+          <h2 className="text-lg font-semibold text-sky-900">✉️ Telegram သို့ စာပို့ရန်</h2>
+          <p className="mt-2 text-sm text-sky-800">ဒီနေရာက စာသားကို Telegram group သို့ သီးသန့်ပို့ရန်ဖြစ်ပါသည်။ Daily Report data၊ image နှင့် file များကို မတွဲပို့ပါ။</p>
+          <textarea
+            value={customMessage}
+            onChange={(e) => setCustomMessage(e.target.value)}
+            maxLength={4000}
+            rows={5}
+            placeholder="Telegram group သို့ ပို့မည့်စာကို ဒီနေရာတွင် ရေးပါ..."
+            className="mt-4 block min-h-32 w-full resize-y rounded-lg border border-sky-300 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+          />
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+            <input
+              type="password"
+              value={customMessagePin}
+              onChange={(e) => setCustomMessagePin(e.target.value)}
+              placeholder="Telegram ပို့ရန် PIN ထည့်ပါ"
+              autoComplete="off"
+              className="min-w-0 flex-1 rounded-lg border border-sky-300 bg-white px-3 py-3 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200"
+            />
+            <button
+              type="button"
+              onClick={handleCustomMessageSend}
+              disabled={!customMessage.trim() || !customMessagePin.trim() || customMessageSending}
+              className="rounded-lg bg-sky-600 px-4 py-3 font-semibold text-white hover:bg-sky-700 disabled:bg-slate-400"
+            >
+              {customMessageSending ? "ပို့နေသည်..." : "စာပို့မည်"}
+            </button>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs text-sky-700">
+            <span>စာသားအများဆုံး ၄၀၀၀ လုံး</span>
+            <span>{customMessage.length}/4000</span>
+          </div>
         </section>
 
         {preview && <section className="rounded-xl border border-amber-200 bg-amber-50 p-5"><h2 className="text-lg font-semibold text-amber-900">Restore Preview</h2><p className="mt-2 text-sm text-amber-800">Backup ထဲရှိ record များကို စစ်ပြီး မရှိသေးသော record များကိုသာ ထည့်မည်။ ရှိပြီးသား record များကို Update/Delete မလုပ်ပါ။ Restore ပြီးနောက် သက်ဆိုင်ရာ Customer balance များကို Ledger အားလုံးမှ ပြန်တွက်မည်။</p>{preview.integrityWarnings?.length ? <div className="mt-3 rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700"><p className="font-semibold">Integrity warning</p>{preview.integrityWarnings.map((warning) => <p key={warning}>{warning}</p>)}</div> : null}<div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3"><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Customer ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.customers}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Transaction ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.transactions}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">KPay Alias ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.kpayAliases}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Pending KPay ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.unverifiedKpay}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Audit ထည့်မည်</p><p className="text-xl font-bold text-slate-900">{preview.willAdd.auditLogs}</p></div><div className="rounded-lg bg-white p-3"><p className="text-xs text-slate-500">Balance ပြန်တွက်မည်</p><p className="text-xl font-bold text-slate-900">{preview.balanceRecalculation?.customers || 0}</p></div></div>{preview.aliasConflicts?.length ? <p className="mt-3 text-sm text-amber-800">KPay alias တူနေသောကြောင့် မပြောင်းဘဲ skip လုပ်မည့် alias {preview.aliasConflicts.length} ခု ရှိပါသည်။</p> : null}<button type="button" onClick={handleConfirm} disabled={loading || preview.integrityWarnings?.length > 0} className="mt-5 rounded-lg bg-amber-600 px-4 py-3 font-semibold text-white hover:bg-amber-700 disabled:bg-slate-400">{preview.integrityWarnings?.length ? "Integrity ပြန်စစ်ရန်" : "Confirm Restore"}</button></section>}
