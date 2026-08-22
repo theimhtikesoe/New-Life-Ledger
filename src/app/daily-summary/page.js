@@ -31,6 +31,9 @@ export default function DailySummaryPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [aiExplanation, setAiExplanation] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -44,6 +47,31 @@ export default function DailySummaryPage() {
 
   const paymentEntries = useMemo(() => Object.entries(data?.summary?.paymentTypes || {}), [data]);
 
+  useEffect(() => {
+    setAiExplanation("");
+    setAiError("");
+  }, [date]);
+
+  const handleAiExplain = async () => {
+    if (aiLoading) return;
+    setAiLoading(true);
+    setAiError("");
+    try {
+      const actorName = localStorage.getItem("actorName") || "";
+      const response = await fetch(`/api/ai/daily-summary?date=${encodeURIComponent(date)}`, {
+        headers: { "x-actor-name": encodeActorHeader(actorName) },
+        cache: "no-store",
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.error || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
+      setAiExplanation(body.data?.explanation || "AI ရှင်းပြချက် မရရှိပါ။");
+    } catch (err) {
+      setAiError(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
@@ -55,7 +83,12 @@ export default function DailySummaryPage() {
             <p className="mt-2 text-xs font-medium text-cyan-700">Report Date: {formatMyanmarDateLabel(`${date}T00:00:00+06:30`)}</p>
             <p className="mt-1 text-xs text-slate-500">Time Range: 00:00–23:59 (Myanmar Time)</p>
           </div>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800" />
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-56 sm:items-end">
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="block min-w-0 w-full max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 sm:w-auto" />
+            <button type="button" onClick={handleAiExplain} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:bg-slate-400 sm:w-auto">
+              {aiLoading ? "AI ရှင်းပြနေသည်..." : "AI ဖြင့် ရှင်းပြရန်"}
+            </button>
+          </div>
         </header>
 
         {error && <p className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</p>}
@@ -70,6 +103,9 @@ export default function DailySummaryPage() {
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-5"><p className="text-sm text-blue-700">Transaction စုစုပေါင်း</p><p className="mt-2 text-3xl font-bold text-blue-800">{data.summary.totalTransactions}</p></div>
               <a href={`/activity?date=${date}`} className="rounded-xl border border-violet-200 bg-violet-50 p-5 transition hover:border-violet-300 hover:bg-violet-100"><p className="text-sm text-violet-700">ရွေးထားသောနေ့ လုပ်ဆောင်ချက်</p><p className="mt-2 text-3xl font-bold text-violet-800">{data.summary.activityCount ?? data.summary.auditCount}</p><p className="mt-1 text-xs text-violet-700">အသေးစိတ်ကြည့်ရန် →</p></a>
             </section>
+
+            {aiError && <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-5"><h2 className="text-lg font-semibold text-rose-900">AI ရှင်းပြချက် အမှား</h2><p className="mt-2 whitespace-pre-wrap text-sm text-rose-800">{aiError}</p></section>}
+            {aiExplanation && <section className="rounded-xl border border-violet-200 bg-violet-50 p-5"><div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"><h2 className="text-lg font-semibold text-violet-900">AI ဖြင့် Daily Summary ရှင်းပြချက်</h2><span className="text-xs font-medium text-violet-700">{date}</span></div><p className="mt-2 text-xs text-violet-700">Daily Summary နှင့် genuine Activity History ကို တွဲဖက်ဖတ်ရှု၍ ဖန်တီးထားသော read-only ရှင်းပြချက်ဖြစ်ပါသည်။</p><div className="mt-4 whitespace-pre-wrap rounded-lg border border-violet-100 bg-white p-4 text-sm leading-7 text-slate-800">{aiExplanation}</div><p className="mt-3 text-xs text-violet-700">ဤရှင်းပြချက်သည် စာရင်းအချက်အလက်ကို အစားထိုးခြင်းမဟုတ်ပါ။ အရေးကြီးသည့် မကိုက်ညီမှုများကို Website စာရင်းနှင့် ပြန်စစ်ပါ။</p></section>}
 
             <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
               <div className="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2">
