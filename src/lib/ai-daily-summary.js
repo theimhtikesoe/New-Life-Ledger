@@ -181,6 +181,29 @@ function extractText(content) {
     .trim();
 }
 
+function sanitizeAiText(value) {
+  return String(value || "")
+    .replace(/genuineActivity\.total/gi, "လုပ်ဆောင်ချက်မှတ်တမ်း စုစုပေါင်း")
+    .replace(/genuineActivity/gi, "လုပ်ဆောင်ချက်မှတ်တမ်း")
+    .replace(/paidAmount/gi, "ငွေချေစုစုပေါင်း")
+    .replace(/debtAmount/gi, "အကြွေးတိုးစုစုပေါင်း")
+    .replace(/paidCount/gi, "ငွေချေသူအရေအတွက်")
+    .replace(/debtCount/gi, "အကြွေးတိုးသူအရေအတွက်")
+    .replace(/totalTransactions/gi, "စာရင်းစုစုပေါင်း")
+    .replace(/paymentTypes/gi, "ငွေချေမှုအမျိုးအစား")
+    .replace(/customerName/gi, "Customer အမည်")
+    .replace(/entityType/gi, "လုပ်ဆောင်ချက်အမျိုးအစား")
+    .replace(/eventAt/gi, "ဖြစ်ရပ်အချိန်")
+    .replace(/transaction\s*id/gi, "စာရင်းမှတ်တမ်းနံပါတ်")
+    .replace(/\bnull\b/gi, "မဖော်ပြထားပါ")
+    .replace(/[|]/g, " ")
+    .replace(/^#{1,6}\s*/gm, "")
+    .replace(/\*\*/g, "")
+    .replace(/`/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function parseSectionedText(text) {
   const result = { overview: "", findings: [], checks: [], caution: "" };
   const marker = /(?:^|\n)\s*(OVERVIEW|FINDINGS|CHECKS|CAUTION)\s*[:：]\s*/gi;
@@ -191,10 +214,10 @@ function parseSectionedText(text) {
     const start = match.index + match[0].length;
     const end = index + 1 < matches.length ? matches[index + 1].index : text.length;
     const value = text.slice(start, end).trim();
-    if (key === "overview") result.overview = value;
-    if (key === "findings") result.findings = value.split(/\n+/).map((item) => item.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "").trim()).filter(Boolean).slice(0, 4);
-    if (key === "checks") result.checks = value.split(/\n+/).map((item) => item.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "").trim()).filter(Boolean).slice(0, 4);
-    if (key === "caution") result.caution = value;
+    if (key === "overview") result.overview = sanitizeAiText(value);
+    if (key === "findings") result.findings = value.split(/\n+/).map((item) => sanitizeAiText(item.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "").trim())).filter(Boolean).slice(0, 4);
+    if (key === "checks") result.checks = value.split(/\n+/).map((item) => sanitizeAiText(item.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, "").trim())).filter(Boolean).slice(0, 4);
+    if (key === "caution") result.caution = sanitizeAiText(value);
   });
   return result.overview ? result : null;
 }
@@ -202,10 +225,10 @@ function parseSectionedText(text) {
 function normalizeExplanation(value) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return {
-      overview: String(value.overview || "").trim(),
-      findings: Array.isArray(value.findings) ? value.findings.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4) : [],
-      checks: Array.isArray(value.checks) ? value.checks.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4) : [],
-      caution: String(value.caution || "").trim(),
+      overview: sanitizeAiText(value.overview),
+      findings: Array.isArray(value.findings) ? value.findings.map(sanitizeAiText).filter(Boolean).slice(0, 4) : [],
+      checks: Array.isArray(value.checks) ? value.checks.map(sanitizeAiText).filter(Boolean).slice(0, 4) : [],
+      caution: sanitizeAiText(value.caution),
     };
   }
   const text = extractText(value);
@@ -216,7 +239,7 @@ function normalizeExplanation(value) {
   } catch {
     const sectioned = parseSectionedText(text);
     if (sectioned) return sectioned;
-    return { overview: text.slice(0, 2_000), findings: [], checks: [], caution: "AI အဖြေကို အောက်ပါအတိုင်း ဖတ်ရှုပါ။" };
+    return { overview: sanitizeAiText(text.slice(0, 2_000)), findings: [], checks: [], caution: "AI အဖြေကို အောက်ပါအတိုင်း ဖတ်ရှုပါ။" };
   }
 }
 
