@@ -18,6 +18,16 @@ function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
 }
 
+function isValidDateInput(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
+  const date = new Date(`${value}T00:00:00+06:30`);
+  return !Number.isNaN(date.getTime());
+}
+
+function safeMyanmarDateLabel(value) {
+  return isValidDateInput(value) ? formatMyanmarDateLabel(`${value}T00:00:00+06:30`) : "ရက်စွဲ မရွေးရသေးပါ";
+}
+
 function cleanAiText(value) {
   return String(value || "")
     .replace(/^#{1,6}\s*/gm, "")
@@ -123,11 +133,11 @@ export default function DailySummaryPage() {
               <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
               <h1 className="mt-2 text-2xl font-bold text-slate-900">Daily Summary</h1>
               <p className="mt-1 text-sm text-slate-600">ရွေးထားသောနေ့၏ ငွေချေမှုနှင့် အကြွေးတိုးမှု အသေးစိတ်</p>
-              <p className="mt-2 text-xs font-medium text-cyan-700">Report Date: {formatMyanmarDateLabel(`${date}T00:00:00+06:30`)}</p>
+              <p className="mt-2 text-xs font-medium text-cyan-700">Report Date: {safeMyanmarDateLabel(date)}</p>
               <p className="mt-1 text-xs text-slate-500">Time Range: 00:00–23:59 (Myanmar Time)</p>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-56 sm:items-end">
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="block min-w-0 w-full max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 sm:w-auto" />
+              <input type="date" value={date} onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="block min-w-0 w-full max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 sm:w-auto" />
               <button type="button" onClick={handleAiExplain} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:bg-slate-400 sm:w-auto">
                 {aiLoading ? "AI ရှင်းပြနေသည်..." : "AI ဖြင့် ရှင်းပြရန်"}
               </button>
