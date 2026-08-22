@@ -72,3 +72,11 @@ export function formatMyanmarClock(value = new Date()) {
     hour12: false,
   }).format(new Date(value));
 }
+
+export function getPreviousMyanmarDayRange(value = new Date()) {
+  const { year, month, day } = getMyanmarDateParts(value);
+  const previousCalendarDate = new Date(Date.UTC(year, month - 1, day));
+  previousCalendarDate.setUTCDate(previousCalendarDate.getUTCDate() - 1);
+  const previousDate = `${previousCalendarDate.getUTCFullYear()}-${pad(previousCalendarDate.getUTCMonth() + 1)}-${pad(previousCalendarDate.getUTCDate())}`;
+  return getMyanmarDayRange(previousDate);
+}
