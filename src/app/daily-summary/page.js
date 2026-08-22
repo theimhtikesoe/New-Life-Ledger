@@ -53,7 +53,7 @@ function AiExplanationPanel({ explanation, date }) {
         <h2 className="text-lg font-bold text-violet-950">AI ရှင်းပြချက်</h2>
         <span className="text-xs font-semibold text-violet-700">စာရင်းရက်စွဲ {date}</span>
       </div>
-      <p className="mt-1 text-xs text-violet-700">Daily Summary နှင့် genuine Activity History ကို ပေါင်းစပ်ဖတ်ရှုထားသော ရှင်းပြချက်</p>
+      <p className="mt-1 text-xs text-violet-700">နေ့စဉ်စာရင်းချုပ်နှင့် တကယ့်လုပ်ဆောင်ချက်မှတ်တမ်းကို ပေါင်းစပ်ဖတ်ရှုထားသော ရှင်းပြချက်</p>
 
       <div className="mt-4 rounded-lg border border-violet-100 bg-white p-4">
         <h3 className="text-base font-bold text-slate-900">အနှစ်ချုပ်</h3>
