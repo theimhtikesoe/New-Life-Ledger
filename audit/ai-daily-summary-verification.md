@@ -31,3 +31,10 @@ Production setup still requires adding a server-side AI-compatible endpoint and 
 4. [New Life Ledger production site](https://newlifeledger.vercel.app/daily-summary)
 5. [New Life Ledger GitHub repository](https://github.com/theimhtikesoe/New-Life-Ledger)
 
+
+## Latest production revision
+
+- Final code revision: `d6c4774`.
+- Final `/api/health` check returned HTTP 200 with `ok: true`.
+- Final unauthenticated AI route check returned HTTP 401 with the expected Burmese login-required message.
+- The d6c4774 change only localizes remaining generated English phrases; no data, authentication, Telegram, cron, backup, restore, customer, or ledger logic changed after the successful live AI-panel test.
