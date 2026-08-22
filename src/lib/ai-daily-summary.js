@@ -189,11 +189,25 @@ function getManusApiKey() {
   return process.env.MANUS_API_KEY?.trim();
 }
 
+function providerError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
 async function readManusJson(response) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.ok === false) {
-    const detail = body?.error?.message || body?.error || `HTTP ${response.status}`;
-    throw new Error(`Manus API request failed: ${detail}`);
+    if (response.status === 401 || response.status === 403) {
+      throw providerError("MANUS_AUTH", "Manus API key မမှန်ကန်ပါ သို့မဟုတ် ခွင့်ပြုချက် မရှိပါ။");
+    }
+    if (response.status === 429) {
+      throw providerError("MANUS_RATE_LIMIT", "Manus AI request အရေအတွက်ကန့်သတ်ချက် ရောက်နေပါသည်။ ခဏစောင့်ပြီး ပြန်စမ်းကြည့်ပါ။");
+    }
+    if (response.status >= 500) {
+      throw providerError("MANUS_SERVICE", "Manus AI service ကို ယခုချိန်တွင် မရရှိနိုင်ပါ။ ခဏစောင့်ပြီး ပြန်စမ်းကြည့်ပါ။");
+    }
+    throw providerError("MANUS_REQUEST", "Manus AI request မအောင်မြင်ပါ။ API setting ကို ပြန်စစ်ပါ။");
   }
   return body;
 }
@@ -213,7 +227,17 @@ async function explainWithOfficialManus(payload, apiKey) {
         title: `New Life Ledger Daily Summary ${payload.date}`,
         agent_profile: "manus-1.6-lite",
         share_visibility: "private",
-        message: { content: buildExplanationPrompt(payload) },
+        structured_output_schema: {
+          type: "object",
+          properties: { explanation: { type: "string" } },
+          required: ["explanation"],
+          additionalProperties: false,
+        },
+        message: {
+          content: buildExplanationPrompt(payload),
+          enable_skills: [],
+          connectors: [],
+        },
       }),
     });
     const created = await readManusJson(createResponse);
@@ -230,14 +254,19 @@ async function explainWithOfficialManus(payload, apiKey) {
       const messagesBody = await readManusJson(messagesResponse);
       const messages = Array.isArray(messagesBody.messages) ? messagesBody.messages : [];
       const errorEvent = messages.find((event) => event?.type === "error_message");
-      if (errorEvent) throw new Error("Manus AI task မအောင်မြင်ပါ။");
+      if (errorEvent) throw providerError("MANUS_TASK", "Manus AI task မအောင်မြင်ပါ။");
       const statusEvent = messages.find((event) => event?.type === "status_update");
       const status = statusEvent?.status_update?.agent_status;
-      const assistantEvent = messages.find((event) => event?.type === "assistant_message" && event?.assistant_message?.content);
-      if (status === "stopped" && assistantEvent) {
-        const text = extractText(assistantEvent.assistant_message.content);
+      if (status === "stopped") {
+        const structuredEvent = messages.find((event) => event?.type === "structured_output_result");
+        const structuredText = structuredEvent?.structured_output_result?.success
+          ? structuredEvent.structured_output_result.value?.explanation
+          : "";
+        if (typeof structuredText === "string" && structuredText.trim()) return structuredText.trim().slice(0, 12_000);
+        const assistantEvent = messages.find((event) => event?.type === "assistant_message" && event?.assistant_message?.content);
+        const text = extractText(assistantEvent?.assistant_message?.content);
         if (text) return text.slice(0, 12_000);
-        throw new Error("Manus AI မှ ရှင်းပြချက် မရရှိပါ။");
+        throw providerError("MANUS_EMPTY", "Manus AI မှ ရှင်းပြချက် မရရှိပါ။");
       }
       if (status === "waiting") throw new Error("Manus AI task က ထပ်မံအတည်ပြုချက် စောင့်နေပါသည်။");
       await new Promise((resolve) => setTimeout(resolve, MANUS_POLL_INTERVAL_MS));

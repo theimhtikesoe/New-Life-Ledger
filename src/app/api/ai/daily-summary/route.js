@@ -35,11 +35,10 @@ export async function GET(request) {
   } catch (error) {
     console.error("AI Daily Summary explanation failed", error);
     const message = String(error?.message || "");
-    const safeMessage = message.includes("AI provider credential")
+    const knownSafeCodes = new Set(["MANUS_AUTH", "MANUS_RATE_LIMIT", "MANUS_SERVICE", "MANUS_REQUEST", "MANUS_TASK", "MANUS_EMPTY"]);
+    const safeMessage = knownSafeCodes.has(error?.code) || message.includes("AI provider credential") || message.includes("အချိန်ကျော်")
       ? message
-      : message.includes("အချိန်ကျော်")
-        ? message
-        : "AI ရှင်းပြချက် ရယူရာတွင် အမှားဖြစ်ပါသည်။ ပြန်စမ်းကြည့်ပါ။";
+      : "AI ရှင်းပြချက် ရယူရာတွင် အမှားဖြစ်ပါသည်။ ပြန်စမ်းကြည့်ပါ။";
     return NextResponse.json({ ok: false, error: safeMessage }, { status: 503 });
   }
 }
