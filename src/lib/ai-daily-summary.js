@@ -234,7 +234,7 @@ function providerError(code, message) {
   return error;
 }
 
-async function readManusJson(response) {
+async function readManusJson(response, operation = "request") {
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.ok === false) {
     if (response.status === 401 || response.status === 403) {
@@ -246,7 +246,12 @@ async function readManusJson(response) {
     if (response.status >= 500) {
       throw providerError("MANUS_SERVICE", "Manus AI service ကို ယခုချိန်တွင် မရရှိနိုင်ပါ။ ခဏစောင့်ပြီး ပြန်စမ်းကြည့်ပါ။");
     }
-    throw providerError("MANUS_REQUEST", "Manus AI request မအောင်မြင်ပါ။ API setting ကို ပြန်စစ်ပါ။");
+    const operationMessage = operation === "create"
+      ? "Manus AI task ဖန်တီးရာတွင် အဆင်မပြေပါ။"
+      : operation === "poll"
+        ? "Manus AI ရှင်းပြချက် စစ်ဆေးရာတွင် အဆင်မပြေပါ။"
+        : "Manus AI request မအောင်မြင်ပါ။";
+    throw providerError("MANUS_REQUEST", `${operationMessage} API setting ကို ပြန်စစ်ပါ။`);
   }
   return body;
 }
@@ -271,7 +276,7 @@ async function explainWithOfficialManus(payload, apiKey) {
         },
       }),
     });
-    const created = await readManusJson(createResponse);
+    const created = await readManusJson(createResponse, "create");
     if (!created.task_id) throw new Error("Manus task ID မရရှိပါ။");
 
     const deadline = Date.now() + AI_TIMEOUT_MS - 1_000;
@@ -282,7 +287,7 @@ async function explainWithOfficialManus(payload, apiKey) {
         signal: controller.signal,
         headers: { "x-manus-api-key": apiKey },
       });
-      const messagesBody = await readManusJson(messagesResponse);
+      const messagesBody = await readManusJson(messagesResponse, "poll");
       const messages = Array.isArray(messagesBody.messages) ? messagesBody.messages : [];
       const errorEvent = messages.find((event) => event?.type === "error_message");
       if (errorEvent) throw providerError("MANUS_TASK", "Manus AI task မအောင်မြင်ပါ။");
