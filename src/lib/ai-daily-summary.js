@@ -268,8 +268,6 @@ async function explainWithOfficialManus(payload, apiKey) {
         share_visibility: "private",
         message: {
           content: buildExplanationPrompt(payload),
-          enable_skills: [],
-          connectors: [],
         },
       }),
     });
