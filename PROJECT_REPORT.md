@@ -975,3 +975,16 @@ The following code changes were made without changing customer, ledger, balance,
 Verification completed: `pnpm run build`, `pnpm run lint`, and `git diff --check` passed. A local 375px mobile check confirmed that the date input right edge remains inside the Summary card. A local unauthenticated customer API request returned 401, while a temporary test session was accepted by the session endpoint. No production write, customer/ledger mutation, restore, deletion, or Telegram send was performed.
 
 Before deployment, set `APP_PIN` and `APP_SESSION_SECRET` in the Vercel environment. `KPAY_WEBHOOK_SECRET` is optional; if it is configured, update MacroDroid with the matching header before enabling it. Production verification must then confirm login, authenticated API access, existing KPay webhook delivery, and the next scheduled report. Existing production deployment and data remain unchanged until that deployment is completed.
+
+
+## 47. Balance Detail and Full Feature Audit
+
+**Date:** 2026-08-25
+
+The owner approved a clickable Net Receivable Balance detail flow. The Dashboard `အသားတင်ရရန်လက်ကျန်` KPI is now a keyboard-accessible link to `/balance-detail`. The new page preserves the existing standalone-page navigation style with `← Dashboard`, Daily Summary, Activity History, and Customer Ledger links. It presents active-customer totals for current debt, prepaid credit, net receivable balance, customer counts, a Burmese formula explanation, search, status filters, amount/name sorting, mobile cards, desktop table, and links from each customer to the existing Ledger detail view. Recycle Bin customers are excluded from the active totals. No customer or ledger data was changed.
+
+The approved accounting convention remains `CREDIT = debt increase` and `DEBIT = customer payment`. A positive current balance is shown as red debt; a negative current balance is shown as green prepaid/payment balance. The example `CREDIT 100,000 + CREDIT 200,000 - DEBIT 400,000` produces `-100,000 Ks`, which is displayed as a green 100,000 Ks prepaid balance. The balance-detail mobile test confirmed no horizontal overflow, correct debt/prepaid cards, visible formula text, and no deleted-customer leakage.
+
+The current production Daily Summary AI button was tested once read-only. The request remained loading until completion and then returned `Manus API key မမှန်ကန်ပါ သို့မဟုတ် ခွင့်ပြုချက် မရှိပါ။` The user’s Vercel screenshot shows a `MANUS_API_KEY` variable, but the value is not visible and its presence does not prove validity or permission. The remaining AI deployment action is to replace or verify the Production `MANUS_API_KEY` in Vercel and redeploy, then retest a real report date. The source AI helper imports and calls `ensureDatabase` correctly in the feature branch.
+
+The feature branch also includes a read-only full-route audit. Customer, daily-summary, audit-log, backup, report, KPay, and auto-report APIs reject anonymous requests with HTTP 401; health remains HTTP 200 and unauthenticated session check remains available. `full-feature-audit.md` contains the detailed feature-by-feature review and prioritized remaining work.
