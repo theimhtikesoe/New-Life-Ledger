@@ -3,6 +3,8 @@ import { buildOrderExtractionPrompt, normalizeExtractedOrder, ORDER_STRUCTURED_O
 const MANUS_API_BASE = "https://api.manus.ai";
 const AI_TIMEOUT_MS = 45_000;
 const POLL_INTERVAL_MS = 1_500;
+const INITIAL_POLL_DELAY_MS = 750;
+const MAX_LIST_MESSAGES_NOT_FOUND_RETRIES = 4;
 
 function safeProviderValue(value) {
   const normalized = String(value || "").trim().replace(/[^A-Za-z0-9_.-]/g, "_");
@@ -62,13 +64,31 @@ export async function extractOrderFromText(sourceText) {
     if (!created.task_id) throw providerError("MANUS_REQUEST", "Order AI task ID မရရှိပါ။");
 
     const deadline = Date.now() + AI_TIMEOUT_MS - 1_000;
+    let firstPoll = true;
+    let listMessagesNotFoundRetries = 0;
     while (Date.now() < deadline) {
+      if (firstPoll) {
+        firstPoll = false;
+        await new Promise((resolve) => setTimeout(resolve, INITIAL_POLL_DELAY_MS));
+      }
       const response = await fetch(`${MANUS_API_BASE}/v2/task.listMessages?task_id=${encodeURIComponent(created.task_id)}&limit=100&order=desc`, {
         method: "GET",
         signal: controller.signal,
         headers: { "x-manus-api-key": apiKey },
       });
-      const body = await readJson(response, "အဖြေစစ်ဆေးခြင်း");
+      let body;
+      try {
+        body = await readJson(response, "အဖြေစစ်ဆေးခြင်း");
+        listMessagesNotFoundRetries = 0;
+      } catch (error) {
+        const isTransientNotFound = response.status === 404 && error?.provider?.providerCode === "not_found";
+        if (isTransientNotFound && listMessagesNotFoundRetries < MAX_LIST_MESSAGES_NOT_FOUND_RETRIES) {
+          listMessagesNotFoundRetries += 1;
+          await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+          continue;
+        }
+        throw error;
+      }
       const messages = Array.isArray(body.messages) ? body.messages : [];
       const errorMessage = messages.find((item) => item?.type === "error_message");
       if (errorMessage) {
