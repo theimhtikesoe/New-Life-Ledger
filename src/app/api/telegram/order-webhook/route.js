@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
-import { createOrderDraft, getOrderBySourceUpdateId } from "@/lib/order-service";
+import { createOrderDraft, getOrderBySourceUpdateId, updateOrderStatus } from "@/lib/order-service";
 import { extractOrderFromText } from "@/lib/order-ai";
-import { buildOrderDraftKeyboard, sendTelegramTextToChat, answerTelegramCallbackQuery } from "@/lib/telegram";
+import {
+  answerTelegramCallbackQuery,
+  buildOrderDraftKeyboard,
+  configuredTelegramOrderAdminIds,
+  editTelegramMessageText,
+  getTelegramChatMember,
+  isTelegramOrderAdminStatus,
+  sendTelegramTextToChat,
+} from "@/lib/telegram";
 import { formatOrderDraftMessage } from "@/lib/order-utils";
+import { sendFactoryNotificationForOrder } from "@/lib/order-delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +27,11 @@ function isAuthorized(request) {
 
 function isOrderTrigger(text) {
   const value = String(text || "").trim();
-  return /^\/order(?:\s|$)/i.test(value) || /^မှာယူမှု(?:\s|$)/u.test(value);
+  return /^\/order(?:@[A-Za-z0-9_]+)?(?:\s|$)/i.test(value) || /^မှာယူမှု(?:\s|[:၊,;.-]|$)/u.test(value);
 }
 
 function stripOrderTrigger(text) {
-  return String(text || "").trim().replace(/^\/order\s*/i, "").replace(/^မှာယူမှု\s*/u, "").trim();
+  return String(text || "").trim().replace(/^\/order(?:@[A-Za-z0-9_]+)?\s*/i, "").replace(/^မှာယူမှု(?:\s*[:၊,;.-]?\s*)/u, "").trim();
 }
 
 function safeErrorMessage(error) {
@@ -32,19 +41,85 @@ function safeErrorMessage(error) {
   return message.slice(0, 240);
 }
 
+async function isAuthorizedOrderAdmin(chatId, userId) {
+  const numericUserId = Number(userId);
+  if (!chatId || !Number.isInteger(numericUserId)) return false;
+  const configuredAdminIds = configuredTelegramOrderAdminIds();
+  if (configuredAdminIds.length && !configuredAdminIds.includes(String(numericUserId))) return false;
+  try {
+    const member = await getTelegramChatMember({ chatId, userId: numericUserId });
+    return isTelegramOrderAdminStatus(member?.status);
+  } catch (error) {
+    console.warn("Telegram order admin check failed", error);
+    return false;
+  }
+}
+
+function callbackAuditMetadata(callback) {
+  return {
+    source: "telegram_admin_callback",
+    telegramUserId: callback?.from?.id == null ? null : String(callback.from.id),
+    telegramUsername: callback?.from?.username ? String(callback.from.username).slice(0, 128) : null,
+    telegramCallbackId: callback?.id ? String(callback.id).slice(0, 128) : null,
+  };
+}
+
 async function handleCallback(update) {
   const callback = update.callback_query;
   const chatId = String(callback?.message?.chat?.id || "");
   if (!configuredOrderChatId() || chatId !== configuredOrderChatId()) return { ok: true, ignored: "wrong_chat" };
-  await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Website မှ ပြန်စစ်ပြီး Confirm လုပ်ပါ။" });
-  const data = String(callback?.data || "");
-  const match = data.match(/^order\|(?:confirm|cancel)\|[^|]+\|([^|]+)$/);
-  if (!match) return { ok: true, ignored: "unknown_callback" };
-  const appUrl = String(process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, "");
-  if (appUrl) {
-    await sendTelegramTextToChat({ chatId, text: `ဒီ Order ကို Website မှာ ပြန်စစ်ပြီး Confirm/Cancel လုပ်ပါ။\n${appUrl}/orders?orderId=${encodeURIComponent(match[1])}` });
+  const callbackUserId = callback?.from?.id;
+  if (!(await isAuthorizedOrderAdmin(chatId, callbackUserId))) {
+    await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Group admin သာ Order ခလုတ်နှိပ်နိုင်ပါသည်။", showAlert: true });
+    return { ok: true, ignored: "not_order_admin" };
   }
-  return { ok: true, status: "website_review_required" };
+  const callbackMessageId = Number(callback?.message?.message_id);
+  if (!Number.isInteger(callbackMessageId)) {
+    await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "ဒီခလုတ် message ကို မတွေ့ပါ။", showAlert: true });
+    return { ok: true, ignored: "missing_callback_message" };
+  }
+  const data = String(callback?.data || "");
+  const match = data.match(/^order\|(confirm|cancel)\|(I|B)\|([0-9a-f-]{36})$/i);
+  if (!match) {
+    await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order ခလုတ်အချက်အလက် မမှန်ပါ။", showAlert: true });
+    return { ok: true, ignored: "unknown_callback" };
+  }
+  const [, action, modeCode, orderId] = match;
+  const auditMetadata = callbackAuditMetadata(callback);
+  try {
+    if (action.toLowerCase() === "cancel") {
+      const order = await updateOrderStatus({ orderId, status: "CANCELLED", actorName: "Staff", auditMetadata });
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order ကို Cancel လုပ်ပြီးပါပြီ။" });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(order)}\n\n❌ Telegram admin မှ Cancel လုပ်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
+      return { ok: true, status: "cancelled", orderId };
+    }
+
+    const isBatch = modeCode.toUpperCase() === "B";
+    const status = isBatch ? "BATCH_QUEUED" : "CONFIRMED";
+    const statusOrder = await updateOrderStatus({ orderId, status, mode: isBatch ? "MORNING_BATCH" : "IMMEDIATE", actorName: "Staff", auditMetadata });
+    if (isBatch) {
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။" });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(statusOrder)}\n\n📦 Telegram admin မှ 08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
+      return { ok: true, status: "batch_queued", orderId };
+    }
+
+    let finalOrder = statusOrder;
+    let deliveryWarning = "";
+    try {
+      const delivery = await sendFactoryNotificationForOrder(orderId, { actorName: "Staff" });
+      finalOrder = delivery.order || statusOrder;
+      if (delivery.duplicate) deliveryWarning = "\n\nℹ️ Factory message ကို ထပ်မပို့ထားပါ။";
+    } catch (deliveryError) {
+      console.warn("Telegram admin immediate factory notification is pending", deliveryError);
+      deliveryWarning = "\n\n⚠️ Order Confirm ဖြစ်ပါပြီ။ Factory group မသတ်မှတ်ရသေးခြင်း သို့မဟုတ် ပို့ရာတွင် အခက်အခဲရှိသောကြောင့် notification ကို Pending ထားပါသည်။";
+    }
+    await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: deliveryWarning ? "Confirm ပြီးပါပြီ။ Factory notification Pending ဖြစ်နေပါသည်။" : "Confirm ပြီး Factory group သို့ ပို့ပြီးပါပြီ။" });
+    await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(finalOrder)}\n\n✅ Telegram admin မှ Confirm လုပ်ပြီးပါပြီ။${deliveryWarning}`, replyMarkup: { inline_keyboard: [] } });
+    return { ok: true, status: "confirmed", orderId, deliveryPending: Boolean(deliveryWarning) };
+  } catch (error) {
+    await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: safeErrorMessage(error), showAlert: true });
+    return { ok: true, status: "action_failed", orderId };
+  }
 }
 
 export async function POST(request) {
@@ -62,15 +137,15 @@ export async function POST(request) {
     if (!isOrderTrigger(text)) return NextResponse.json({ ok: true, ignored: "not_order_trigger" });
     const existing = await getOrderBySourceUpdateId(update.update_id);
     if (existing) return NextResponse.json({ ok: true, status: "duplicate", orderId: existing.id });
-    const sourceText = stripOrderTrigger(text);
-    if (!sourceText) {
+    const orderText = stripOrderTrigger(text);
+    if (!orderText) {
       await sendTelegramTextToChat({ chatId, text: "Order အချက်အလက်ကို `မှာယူမှု` နောက်မှာ ရေးပေးပါ။ ဥပမာ — `မှာယူမှု မမိုး၊ 1 Liter၊ 100 ဘူးဆံ့ 5 ကဒ်၊ မြောက်ဒဂုံ၊ မနက်ဖြန်`", replyToMessageId: message.message_id });
       return NextResponse.json({ ok: true, status: "missing_text" });
     }
 
     let extracted;
     try {
-      extracted = await extractOrderFromText(sourceText);
+      extracted = await extractOrderFromText(orderText);
     } catch (error) {
       await sendTelegramTextToChat({ chatId, text: `⚠️ Order ကို AI နဲ့ ဖတ်မရသေးပါ။ ${safeErrorMessage(error)}`, replyToMessageId: message.message_id });
       return NextResponse.json({ ok: true, status: "ai_failed" });
@@ -79,7 +154,7 @@ export async function POST(request) {
       sourceChatId: chatId,
       sourceMessageId: message.message_id,
       sourceUpdateId: update.update_id,
-      sourceText,
+      sourceText: text,
       extracted,
     });
     const order = result.order;

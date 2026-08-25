@@ -79,14 +79,32 @@ export async function sendTelegramTextToChat({ chatId, text, replyMarkup = undef
   return { chatId: String(chatId), messageId: last.messageId, messageIds: results.map((item) => item.messageId), raw: last.raw, results };
 }
 
-export async function answerTelegramCallbackQuery({ callbackQueryId, text = "" } = {}) {
+export async function answerTelegramCallbackQuery({ callbackQueryId, text = "", showAlert = false } = {}) {
   const { token } = getTelegramConfig();
   if (!token || !callbackQueryId) return { skipped: true };
   return telegramRequest({
     token,
     method: "answerCallbackQuery",
-    payload: { callback_query_id: callbackQueryId, text: String(text || "").slice(0, 200), show_alert: false },
+    payload: { callback_query_id: callbackQueryId, text: String(text || "").slice(0, 200), show_alert: Boolean(showAlert) },
   });
+}
+
+export async function getTelegramChatMember({ chatId, userId } = {}) {
+  const { token } = getTelegramConfig();
+  if (!token || !chatId || userId === null || userId === undefined) throw new Error("Telegram admin စစ်ရန် configuration မပြည့်စုံသေးပါ။");
+  const body = await telegramRequest({ token, method: "getChatMember", payload: { chat_id: String(chatId), user_id: Number(userId) } });
+  return body.result;
+}
+
+export function isTelegramOrderAdminStatus(status) {
+  return ["administrator", "creator", "owner"].includes(String(status || "").toLowerCase());
+}
+
+export function configuredTelegramOrderAdminIds() {
+  return String(process.env.TELEGRAM_ORDER_ADMIN_IDS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
 }
 
 export async function editTelegramMessageText({ chatId, messageId, text, replyMarkup = undefined } = {}) {
@@ -106,11 +124,13 @@ export async function editTelegramMessageText({ chatId, messageId, text, replyMa
 
 export function buildOrderDraftKeyboard(order, appUrl = "") {
   const id = String(order?.id || "");
-  if (!id || !appUrl) return undefined;
-  const url = `${String(appUrl).replace(/\/$/, "")}/orders?orderId=${encodeURIComponent(id)}`;
+  if (!id) return undefined;
+  const url = appUrl ? `${String(appUrl).replace(/\/$/, "")}/orders?orderId=${encodeURIComponent(id)}` : "";
   return {
     inline_keyboard: [
-      [{ text: "🌐 Website တွင် ပြန်စစ်/Confirm လုပ်ရန်", url }],
+      [{ text: "✅ Confirm (ချက်ချင်း)", callback_data: `order|confirm|I|${id}` }, { text: "📦 08:10 Batch", callback_data: `order|confirm|B|${id}` }],
+      [{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }],
+      ...(url ? [[{ text: "🌐 Website တွင် ပြန်စစ်/ပြင်ရန်", url }]] : []),
     ],
   };
 }

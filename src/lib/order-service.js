@@ -324,13 +324,15 @@ export async function updateOrderDetails({ orderId, requestedDate, destination, 
   return serializeOrder(updated);
 }
 
-export async function updateOrderStatus({ orderId, status, mode = null, actorName = "Staff" } = {}) {
+export async function updateOrderStatus({ orderId, status, mode = null, actorName = "Staff", auditMetadata = null } = {}) {
   await ensureDatabase();
   const allowed = new Set(["CANCELLED", "DRAFT", "NEEDS_REVIEW", "NEEDS_CUSTOMER", "CONFIRMED", "BATCH_QUEUED"]);
   if (!allowed.has(status)) throw new Error("Order status မမှန်ကန်ပါ။");
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (status === "CANCELLED" && current.status === "CANCELLED") return serializeOrder(current);
   if (status === "CANCELLED" && ["FACTORY_NOTIFIED", "COMPLETED"].includes(current.status)) throw new Error("ပို့ပြီး/ပြီးစီးပြီး Order ကို Cancel မလုပ်နိုင်ပါ။");
+  if (status === "CANCELLED" && current.deliveries?.some((delivery) => delivery.destinationType === "FACTORY" && ["SENDING", "SENT"].includes(delivery.status))) throw new Error("Factory notification ပို့နေ/ပို့ပြီး Order ကို Cancel မလုပ်နိုင်ပါ။");
   if (status === "CONFIRMED" || status === "BATCH_QUEUED") {
     if (!current.customerId || current.customer?.deletedAt) throw new Error("Active Customer မချိတ်ရသေးပါ။");
     if (normalizeMissingFields(current.missingFields).length) throw new Error("Order အချက်အလက် မပြည့်စုံသေးပါ။");
@@ -348,9 +350,9 @@ export async function updateOrderStatus({ orderId, status, mode = null, actorNam
       where: { id: current.id },
       data: {
         status,
-        notificationMode: nextMode,
-        confirmedAt: status === "CONFIRMED" || status === "BATCH_QUEUED" ? new Date() : undefined,
-        confirmedBy: status === "CONFIRMED" || status === "BATCH_QUEUED" ? actorName : undefined,
+        notificationMode: status === "CONFIRMED" || status === "BATCH_QUEUED" ? nextMode : undefined,
+        confirmedAt: status === "CONFIRMED" || status === "BATCH_QUEUED" ? new Date() : status === "CANCELLED" ? null : undefined,
+        confirmedBy: status === "CONFIRMED" || status === "BATCH_QUEUED" ? actorName : status === "CANCELLED" ? null : undefined,
       },
       include: ORDER_INCLUDE,
     });
@@ -361,6 +363,9 @@ export async function updateOrderStatus({ orderId, status, mode = null, actorNam
         update: { status: "PENDING", errorMessage: null },
       });
     }
+    if (status === "CANCELLED") {
+      await tx.orderDelivery.updateMany({ where: { orderId: current.id, status: "PENDING" }, data: { status: "CANCELLED", errorMessage: "Order cancelled" } });
+    }
     return order;
   });
   await writeAuditLog({
@@ -370,7 +375,7 @@ export async function updateOrderStatus({ orderId, status, mode = null, actorNam
     entityId: updated.id,
     entityLabel: updated.customer?.name || updated.draftCustomerName || "Order",
     summary: `Order status: ${status}`,
-    metadata: { mode: status === "CONFIRMED" || status === "BATCH_QUEUED" ? nextMode : null },
+    metadata: { mode: status === "CONFIRMED" || status === "BATCH_QUEUED" ? nextMode : null, ...(auditMetadata && typeof auditMetadata === "object" ? auditMetadata : {}) },
   });
   return serializeOrder(updated);
 }

@@ -38,6 +38,7 @@ async function claimDelivery(deliveryId) {
     if (!delivery) throw new Error("Order delivery record မတွေ့ပါ။");
     if (delivery.status === "SENT") return { delivery, shouldSend: false, reason: "already_sent" };
     if (delivery.status === "SENDING") return { delivery, shouldSend: false, reason: "already_sending" };
+    if (delivery.status === "CANCELLED") return { delivery, shouldSend: false, reason: "cancelled" };
     const claimed = await tx.orderDelivery.update({ where: { id: delivery.id }, data: { status: "SENDING", errorMessage: null } });
     return { delivery: claimed, shouldSend: true, reason: "claimed" };
   });
@@ -49,6 +50,7 @@ export async function sendFactoryNotificationForOrder(orderId, { actorName = "St
   if (!token || !factoryChatId) throw new Error("TELEGRAM_BOT_TOKEN နှင့် TELEGRAM_FACTORY_GROUP_CHAT_ID မပြည့်စုံသေးပါ။");
   const order = await getOrderById(orderId);
   if (!order) throw new Error("Order မတွေ့ပါ။");
+  if (order.status === "CANCELLED") throw new Error("Cancel လုပ်ပြီး Order ကို စက်ရုံသို့ မပို့နိုင်ပါ။");
   const delivery = order.deliveries?.find((item) => item.destinationType === "FACTORY" && item.mode === "IMMEDIATE")
     || await prisma.orderDelivery.findFirst({ where: { orderId: String(orderId), destinationType: "FACTORY", mode: "IMMEDIATE" } });
   if (!delivery) throw new Error("Factory delivery record မတွေ့ပါ။");
