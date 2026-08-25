@@ -60,7 +60,7 @@ function ServiceWorkerRegister() {
 
             let registrationPromise;
             const updateServiceWorker = () => {
-              registrationPromise = registrationPromise || navigator.serviceWorker.register('/service-worker-v7.js', {
+              registrationPromise = registrationPromise || navigator.serviceWorker.register('/service-worker-v8.js', {
                 updateViaCache: 'none',
               });
               registrationPromise.then((registration) => {
