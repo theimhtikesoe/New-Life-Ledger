@@ -90,8 +90,13 @@ export default function DailySummaryPage() {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setError("");
     fetchJson(`/api/daily-summary?date=${date}`)
-      .then((result) => active && setData(result))
+      .then((result) => {
+        if (!active) return;
+        setError("");
+        setData(result);
+      })
       .catch((err) => active && setError(err.message))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
@@ -136,8 +141,8 @@ export default function DailySummaryPage() {
               <p className="mt-2 text-xs font-medium text-cyan-700">Report Date: {safeMyanmarDateLabel(date)}</p>
               <p className="mt-1 text-xs text-slate-500">Time Range: 00:00–23:59 (Myanmar Time)</p>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-56 sm:items-end">
-              <input type="date" value={date} onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="block min-w-0 w-full max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 sm:w-auto" />
+            <div className="flex min-w-0 w-full max-w-full flex-col gap-2 sm:w-auto sm:min-w-56 sm:items-end">
+              <input type="date" value={date} onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="daily-summary-date-input block box-border min-w-0 w-full max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 sm:w-auto" />
               <button type="button" onClick={handleAiExplain} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:bg-slate-400 sm:w-auto">
                 {aiLoading ? "AI ရှင်းပြနေသည်..." : "AI ဖြင့် ရှင်းပြရန်"}
               </button>
