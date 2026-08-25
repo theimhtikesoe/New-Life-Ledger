@@ -169,27 +169,6 @@ async function api(path, options) {
   throw new Error("Request failed");
 }
 
-const HOME_ORDER_STATUS_LABELS = {
-  DRAFT: "Draft ပြန်စစ်ရန်",
-  NEEDS_CUSTOMER: "Customer မတွေ့သေး",
-  NEEDS_REVIEW: "အချက်အလက် ပြန်စစ်ရန်",
-  CONFIRMED: "အတည်ပြုပြီး",
-  BATCH_QUEUED: "မနက် batch စောင့်နေ",
-  FACTORY_NOTIFIED: "စက်ရုံသို့ ပို့ပြီး",
-  CANCELLED: "ပယ်ဖျက်ပြီး",
-};
-
-function formatHomeOrderDate(value) {
-  if (!value) return "ရက်စွဲ မသတ်မှတ်ရသေး";
-  const [year, month, day] = String(value).slice(0, 10).split("-");
-  if (!year || !month || !day) return "ရက်စွဲ မသတ်မှတ်ရသေး";
-  return `${day}/${month}/${year}`;
-}
-
-function homeOrderNeedsReview(order) {
-  return ["DRAFT", "NEEDS_CUSTOMER", "NEEDS_REVIEW"].includes(order.status);
-}
-
 // Alert notification component
 function AlertNotification({ message, type, onClose }) {
   useEffect(() => {
@@ -265,8 +244,6 @@ export default function Dashboard({ view = "overview" }) {
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState([]);
   const [overdueDebts, setOverdueDebts] = useState(null);
-  const [homeOrders, setHomeOrders] = useState([]);
-  const [homeOrdersLoading, setHomeOrdersLoading] = useState(false);
   const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
   const [telegramReportStep, setTelegramReportStep] = useState("preview");
   const [telegramReportDate, setTelegramReportDate] = useState(() => getPreviousMyanmarDateInputValue());
@@ -575,20 +552,6 @@ export default function Dashboard({ view = "overview" }) {
     }
   }, []);
 
-  const loadHomeOrders = useCallback(async () => {
-    if (isLedgerView) return;
-    setHomeOrdersLoading(true);
-    try {
-      const orderRows = await api("/api/orders?limit=60");
-      setHomeOrders(Array.isArray(orderRows) ? orderRows : []);
-    } catch (error) {
-      console.warn("Home orders were not loaded:", error);
-      setHomeOrders([]);
-    } finally {
-      setHomeOrdersLoading(false);
-    }
-  }, [isLedgerView]);
-
   const loadDashboard = useCallback(async (signal) => {
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
@@ -651,10 +614,6 @@ export default function Dashboard({ view = "overview" }) {
       setLoading(false);
     }
   }, [clearAutoRetryTimers, loadOverdueDebts, search, showAlert]);
-
-  useEffect(() => {
-    void loadHomeOrders();
-  }, [loadHomeOrders]);
 
   // iPhone standalone PWAs can pause while they are in the background. Refresh
   // when the app becomes visible again, or immediately when the connection returns.
@@ -1371,17 +1330,6 @@ export default function Dashboard({ view = "overview" }) {
     totalCustomers: customers.length,
   }), [customers, todayPaymentsList.length]);
 
-  const homeOrderSummary = useMemo(() => {
-    const activeOrders = homeOrders.filter((order) => !["CANCELLED", "COMPLETED"].includes(order.status));
-    const pendingOrders = activeOrders.filter(homeOrderNeedsReview);
-    return {
-      activeOrders,
-      pendingOrders,
-      needsCustomerCount: activeOrders.filter((order) => order.status === "NEEDS_CUSTOMER").length,
-      needsReviewCount: activeOrders.filter((order) => ["DRAFT", "NEEDS_REVIEW"].includes(order.status)).length,
-    };
-  }, [homeOrders]);
-
   // Handle filter changes from TransactionFilter component
   const handleFilterChange = useCallback((filtered) => {
     setFilteredLedgers(filtered);
@@ -1494,13 +1442,6 @@ export default function Dashboard({ view = "overview" }) {
                 📦 Orders
               </a>
               <a
-                href="/orders?view=trash"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 shadow-sm transition-colors hover:bg-rose-100"
-                title="Cancelled Order အမှိုက်ပုံး"
-              >
-                🗑️ Cancelled Order Trash
-              </a>
-              <a
                 href="/auto-report-status"
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 shadow-sm transition-colors hover:bg-amber-100"
                 title="Auto Report အခြေအနေ"
@@ -1598,48 +1539,6 @@ export default function Dashboard({ view = "overview" }) {
           </div>
             </section>
           </>
-        ) : null}
-
-        {!isLedgerView ? (
-          <section id="customer-orders" className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Telegram Order Workflow</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">Customer Orders</h2>
-                <p className="mt-1 text-sm text-slate-600">Telegram မှာဝင်လာသော Order များကို Draft စစ်ပြီး Customer ချိတ်ရန်</p>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs font-bold">
-                <a href="/orders?status=NEEDS_CUSTOMER" className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800 hover:bg-amber-100">Customer မတွေ့သေး ({homeOrderSummary.needsCustomerCount})</a>
-                <a href="/orders?status=NEEDS_REVIEW" className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-orange-800 hover:bg-orange-100">ပြန်စစ်ရန် ({homeOrderSummary.needsReviewCount})</a>
-                <a href="/orders" className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800 hover:bg-emerald-100">Orders အားလုံး →</a>
-              </div>
-            </div>
-
-            {homeOrdersLoading ? <p className="mt-4 rounded-xl bg-slate-50 px-3 py-5 text-center text-sm text-slate-500">Customer Orders ရယူနေသည်...</p> : homeOrderSummary.pendingOrders.length === 0 ? (
-              <p className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-5 text-center text-sm text-slate-500">စောင့်နေသော Customer Order မရှိသေးပါ။</p>
-            ) : (
-              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {homeOrderSummary.pendingOrders.slice(0, 6).map((order) => {
-                  const orderHref = `/orders?status=${encodeURIComponent(order.status)}&orderId=${encodeURIComponent(order.id)}#order-${encodeURIComponent(order.id)}`;
-                  const lineSummary = (order.lines || []).slice(0, 2).map((line) => `${line.bottleType || "ဘူး"} ${line.capacityLabel || ""} · ${line.cardCount || "?"} ကဒ်`).join("၊ ");
-                  return (
-                    <article key={order.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="min-w-0 truncate font-bold text-slate-900">{order.customer?.name || order.draftCustomerName || "Customer မသတ်မှတ်ရသေး"}</h3>
-                        <span className="shrink-0 rounded-full border border-slate-300 bg-white px-2 py-1 text-[11px] font-bold text-slate-700">{HOME_ORDER_STATUS_LABELS[order.status] || order.status}</span>
-                      </div>
-                      <p className="mt-2 text-xs text-slate-600">ထုတ်ရမည့်ရက်: {formatHomeOrderDate(order.requestedDate)}</p>
-                      <p className="mt-1 truncate text-xs text-slate-600">နေရာ: {order.destination || "မသတ်မှတ်ရသေး"}</p>
-                      {lineSummary ? <p className="mt-2 line-clamp-2 text-sm font-medium text-slate-800">{lineSummary}</p> : null}
-                      <a href={orderHref} className="mt-3 inline-flex min-h-9 items-center rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100">
-                        {order.status === "NEEDS_CUSTOMER" ? "Customer ချိတ်ရန် / အသစ်ထည့်ရန် →" : "Order ပြန်စစ်ရန် →"}
-                      </a>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
         ) : null}
 
         {isLedgerView ? (
