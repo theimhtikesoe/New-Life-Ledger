@@ -96,8 +96,10 @@ Telegram message format:
 
 Meaning:
 
-- `DEBIT` = Customer အကြွေးတိုးသည်။
-- `CREDIT` = Customer ငွေချေပြီး အကြွေးလျော့သည်။
+- `DEBIT` = Customer ငွေချေပြီး လက်ကျန်အကြွေး လျော့သည်။
+- `CREDIT` = Customer အကြွေးတိုးပြီး လက်ကျန်အကြွေး တိုးသည်။
+
+Balance example: လက်ကျန်အကြွေး 100,000 Ks ရှိနေချိန်တွင် `CREDIT 200,000` ထည့်လျှင် 300,000 Ks ဖြစ်ပြီး အနီရောင် debt အဖြစ်ပြမည်။ ထို့နောက် `DEBIT 400,000` ထည့်လျှင် -100,000 Ks ဖြစ်ပြီး 100,000 Ks ကြိုတင်ငွေချေ လက်ကျန်အဖြစ် အစိမ်းရောင်ပြမည်။
 
 ### UnverifiedKpay
 
@@ -198,7 +200,7 @@ TELEGRAM_CHAT_ID=""
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-Production deployment တွင် `NEXT_PUBLIC_APP_URL` ကို actual deployment URL အဖြစ်ပြောင်းရမည်။
+Production deployment တွင် `NEXT_PUBLIC_APP_URL` ကို actual deployment URL အဖြစ်ပြောင်းရမည်။ Dashboard access အတွက် `APP_PIN` နှင့် `APP_SESSION_SECRET` ကို server environment တွင်သာထားရမည်။ MacroDroid webhook အတွက် `KPAY_WEBHOOK_SECRET` သီးခြားသုံးရမည်။
 
 ## ၉။ Current Implementation Status
 
@@ -230,12 +232,15 @@ Known local note:
 
 - Vercel production requires a real Postgres `DATABASE_URL`; local SQLite files are not persistent in serverless functions.
 
-## ၁၀။ Next Milestones
+## ၁၀။ Telegram Report Schedule
 
-1. Add authentication for dashboard access.
-2. Add customer import from spreadsheet/CSV.
-3. Add backup/export for ledger data.
-4. Connect a managed Postgres database in Vercel production.
+နေ့စဉ် report သည် မနေ့က Myanmar calendar day ၏ `00:00–23:59` စာရင်းကို ဒီနေ့ Myanmar time မနက် `08:00` အနီးတွင် Vercel Cron တစ်ကြိမ်ဖြင့် ပို့ရန်ဖြစ်သည်။ လက်ရှိ Option A သည် Vercel Cron တစ်ကြိမ်တည်းဖြစ်သောကြောင့် Vercel က အလိုအလျောက် retry မလုပ်ပါ။ အောင်မြင်ပြီးသော report date ကို duplicate မပို့စေရန် report-date claim/lock သုံးမည်။ `Report Date` သည် ပို့သည့်နေ့မဟုတ်ဘဲ report ထဲတွင်ပါသော မနေ့ကစာရင်းနေ့ကို ဆိုလိုသည်။
+
+## ၁၁။ Next Milestones
+
+1. Configure `APP_PIN` and `APP_SESSION_SECRET` in Vercel and deploy the approved server-session hardening.
+2. Add a reviewed, explicit database migration path for legacy schemas now that automatic table deletion is disabled.
+3. Add KPay event idempotency/deduplication by provider event ID or a strong amount/time/raw-text fingerprint.
+4. Add customer import from spreadsheet/CSV.
 5. Add mobile-friendly Dad mode with larger tap targets and simplified matching flow.
-6. Add duplicate KPay detection by amount/time/raw text.
-7. Add audit log for matched/unmatched corrections.
+6. Add automated end-to-end checks and production monitoring for report delivery and webhook health.

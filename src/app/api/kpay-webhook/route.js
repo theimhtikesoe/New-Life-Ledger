@@ -6,7 +6,16 @@ import { sendTelegramMessage } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
+function isAuthorized(request) {
+  const configuredSecret = String(process.env.KPAY_WEBHOOK_SECRET || "").trim();
+  if (!configuredSecret) return true;
+  return request.headers.get("x-kpay-webhook-secret") === configuredSecret;
+}
+
 export async function POST(request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ ok: false, error: "Unauthorized KPay webhook request" }, { status: 401 });
+  }
   try {
     await ensureDatabase();
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { runDailyReport } from "@/lib/daily-report-delivery";
-import { recordAutoReportRun } from "@/lib/auto-report-status";
+import { beginAutoReportRun, finishAutoReportRun } from "@/lib/auto-report-status";
 import { getPreviousMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const runtime = "nodejs";
@@ -17,9 +17,26 @@ async function handle(request) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const previousDay = getPreviousMyanmarDayRange();
+  const claim = await beginAutoReportRun({
+    reportDate: previousDay.dateLabel,
+    trigger: request.headers.get("x-vercel-cron-schedule") || "schedule",
+  });
+
+  if (!claim.shouldRun) {
+    return NextResponse.json({
+      ok: true,
+      skipped: true,
+      reason: claim.reason,
+      date: previousDay.dateLabel,
+    });
+  }
+
   try {
-    const result = await runDailyReport({ trigger: "schedule" });
-    await recordAutoReportRun({
+    const result = await runDailyReport({ date: previousDay.dateLabel });
+    await finishAutoReportRun({
+      runId: claim.runId,
       status: "SUCCESS",
       reportDate: result.date,
       periodLabel: result.period,
@@ -29,10 +46,10 @@ async function handle(request) {
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    const fallbackReportDate = getPreviousMyanmarDayRange().dateLabel;
-    await recordAutoReportRun({
+    await finishAutoReportRun({
+      runId: claim.runId,
       status: "FAILED",
-      reportDate: fallbackReportDate,
+      reportDate: previousDay.dateLabel,
       error,
     });
     console.error("Daily Telegram report failed", error);

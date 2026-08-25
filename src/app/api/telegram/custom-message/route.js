@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { sendTelegramPlainTextMessage } from "@/lib/telegram";
+import { ensureDatabase } from "@/lib/database";
+import { getActorName, writeAuditLog } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,6 +38,21 @@ export async function POST(request) {
     }
 
     const result = await sendTelegramPlainTextMessage(message);
+    if (!result?.skipped) {
+      try {
+        await ensureDatabase();
+        await writeAuditLog({
+          actorName: getActorName(request),
+          action: "TELEGRAM_CUSTOM_MESSAGE_SENT",
+          entityType: "Telegram",
+          entityLabel: "Telegram Group",
+          summary: `Telegram custom message ပို့ပြီး (${message.length} လုံး)`,
+          metadata: { messageLength: message.length },
+        });
+      } catch (auditError) {
+        console.error("Custom Telegram message audit failed", auditError);
+      }
+    }
     return NextResponse.json({ ok: true, data: { sent: !result?.skipped, messageLength: message.length } });
   } catch (error) {
     console.error("Custom Telegram message failed", error);

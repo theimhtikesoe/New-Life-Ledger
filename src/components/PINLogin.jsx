@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const CORRECT_PIN = "126365";
 const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
 const ACTOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
@@ -15,27 +14,41 @@ export default function PINLogin({ onSuccess }) {
   const lastActivityAtRef = useRef(Date.now());
 
   const lockActorSelection = useCallback(() => {
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("actorName");
     setActorLocked(true);
-    setSelectingActor(true);
+    setSelectingActor(false);
+    setIsAuthenticated(false);
     setError("");
   }, []);
 
   useEffect(() => {
-    const authenticated = localStorage.getItem("pinAuthenticated");
-    const actorName = localStorage.getItem("actorName");
-    if (authenticated === "true" && ACTORS.includes(actorName)) {
-      setIsAuthenticated(true);
-      setActorLocked(false);
-      lastActivityAtRef.current = Date.now();
-      onSuccess?.(actorName);
-    } else {
-      setIsAuthenticated(false);
-      setActorLocked(false);
-      localStorage.removeItem("pinAuthenticated");
-      localStorage.removeItem("actorName");
-    }
-    setIsLoading(false);
+    let active = true;
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then((response) => response.json().catch(() => ({})))
+      .then((body) => {
+        if (!active) return;
+        const actorName = localStorage.getItem("actorName");
+        if (body.authenticated && ACTORS.includes(actorName)) {
+          setIsAuthenticated(true);
+          setActorLocked(false);
+          lastActivityAtRef.current = Date.now();
+          onSuccess?.(actorName);
+        } else {
+          setIsAuthenticated(false);
+          setActorLocked(false);
+          localStorage.removeItem("actorName");
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setIsAuthenticated(false);
+          setActorLocked(false);
+          localStorage.removeItem("actorName");
+        }
+      })
+      .finally(() => active && setIsLoading(false));
+    return () => { active = false; };
   }, [onSuccess]);
 
   useEffect(() => {
@@ -76,20 +89,27 @@ export default function PINLogin({ onSuccess }) {
     setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (pin !== CORRECT_PIN) {
-      setError("PIN code မှားနေပါသည်။ ထပ်မံ ကြိုးစားကြည့်ပါ။");
-      setPin("");
-      return;
-    }
-    setPin("");
+    if (pin.length !== 6) return;
     setError("");
-    setSelectingActor(true);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.error || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
+      setPin("");
+      setSelectingActor(true);
+    } catch (loginError) {
+      setError(loginError.message || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
+      setPin("");
+    }
   };
 
   const handleActorSelect = (actorName) => {
-    localStorage.setItem("pinAuthenticated", "true");
     localStorage.setItem("actorName", actorName);
     lastActivityAtRef.current = Date.now();
     setSelectingActor(false);
@@ -100,7 +120,7 @@ export default function PINLogin({ onSuccess }) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("pinAuthenticated");
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("actorName");
     setIsAuthenticated(false);
     setSelectingActor(false);
@@ -118,7 +138,7 @@ export default function PINLogin({ onSuccess }) {
           <h1 className="mb-2 text-3xl font-bold text-gray-800">New Life Ledger</h1>
           <p className="text-gray-600">
             {actorLocked
-              ? "၅ မိနစ်အသုံးမပြုထားပါ။ လက်ရှိအသုံးပြုနေသူကို ပြန်ရွေးပါ"
+              ? "၅ မိနစ်အသုံးမပြုထားပါ။ PIN ပြန်ထည့်ပြီး အသုံးပြုသူကို ရွေးပါ"
               : selectingActor
                 ? "ဘယ်သူအသုံးပြုနေပါသလဲ ရွေးပါ"
                 : "PIN code ထည့်သွင်းပါ"}
