@@ -32,10 +32,18 @@ describe("order numeric and date normalization", () => {
     expect(positiveInteger("0")).toBeNull();
   });
 
-  it("resolves explicit today/tomorrow phrases into Myanmar-date-shaped values", () => {
+  it("resolves explicit today/tomorrow phrases and dotted dates into Myanmar-date-shaped values", () => {
     expect(resolveOrderDate(null, "ဒီနေ့ ပို့ပါမယ်")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(resolveOrderDate(null, "မနက်ဖြန် ထုတ်ပါမယ်")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(resolveOrderDate(null, "tmr ပို့ပါမယ်")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(resolveOrderDate(null, "27.8.2026")).toBe("2026-08-27");
+  });
+
+  it("does not turn an explicit date line into a second bottle line", () => {
+    const fallback = buildFallbackOrderExtraction("မှာယူမှု ကိုသိမ်း\n0.3 Liter အဖြူ\n100 ဆံ့ 20 ကဒ်\nအဖုံးခရမ်း အပို 10\nတောင်ပေါ်ဂိတ်\n27.8.2026");
+    expect(fallback.requestedDate).toBe("2026-08-27");
+    expect(fallback.lines).toHaveLength(1);
+    expect(fallback.lines[0]).toEqual(expect.objectContaining({ bottleType: "အဖြူ", bottlesPerCard: 100, cardCount: 20, totalBottles: 2000 }));
   });
 
   it("keeps shorthand customer names, factory pickup, pickup time, and cap quantities in fallback extraction", () => {
