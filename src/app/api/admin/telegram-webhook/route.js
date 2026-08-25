@@ -23,6 +23,21 @@ function publicInfo(info) {
   };
 }
 
+function safeFailureDiagnostic(error, stage) {
+  const message = String(error?.message || "").toLowerCase();
+  const statusMatch = message.match(/failed:\s+(\d{3})/);
+  let category = "unknown_telegram_failure";
+  if (message.includes("unauthorized")) category = "telegram_token_rejected";
+  else if (message.includes("invalid webhook") || message.includes("webhook url")) category = "webhook_url_rejected";
+  else if (message.includes("secret")) category = "webhook_secret_rejected";
+  else if (message.includes("bad request")) category = "telegram_bad_request";
+  return {
+    stage,
+    category,
+    telegramHttpStatus: statusMatch ? Number(statusMatch[1]) : null,
+  };
+}
+
 export async function GET() {
   const url = productionUrl();
   const secretToken = String(process.env.TELEGRAM_ORDER_WEBHOOK_SECRET || "").trim();
@@ -53,13 +68,19 @@ export async function POST() {
       missing: { productionUrl: !url, secret: !secretToken },
     }, { status: 409 });
   }
+  let stage = "setWebhook";
   try {
     await setTelegramOrderWebhook({ url, secretToken });
+    stage = "getWebhookInfo";
     const info = await getTelegramWebhookInfo();
     const verified = String(info?.url || "") === url && Number(info?.pending_update_count || 0) >= 0;
     return NextResponse.json({ ok: verified, data: { registered: verified, webhook: publicInfo(info) } }, { status: verified ? 200 : 502 });
   } catch (error) {
-    console.error("Telegram webhook registration failed", error);
-    return NextResponse.json({ ok: false, error: "Telegram webhook register မအောင်မြင်ပါ။" }, { status: 502 });
+    console.error("Telegram webhook registration failed", { stage, error });
+    return NextResponse.json({
+      ok: false,
+      error: "Telegram webhook register မအောင်မြင်ပါ။",
+      diagnostic: safeFailureDiagnostic(error, stage),
+    }, { status: 502 });
   }
 }
