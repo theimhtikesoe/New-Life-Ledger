@@ -58,6 +58,29 @@ function cleanAiText(value) {
     .trim();
 }
 
+function buildClientAutomaticExplanation(report, reportDate) {
+  const summary = report?.summary;
+  if (!summary) return null;
+  const totalTransactions = Number(summary.totalTransactions || 0);
+  const paidCount = Number(summary.paidCount || 0);
+  const debtCount = Number(summary.unpaidCount ?? summary.debtCount ?? 0);
+  const activityCount = Number(summary.activityCount ?? summary.auditCount ?? 0);
+  const customers = Array.isArray(report?.customers) ? report.customers : [];
+  const checks = activityCount !== totalTransactions
+    ? [`စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခုနှင့် လုပ်ဆောင်ချက်မှတ်တမ်း ${activityCount.toLocaleString("en-US")} ခု မတူပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။`]
+    : [];
+  return {
+    overview: `${reportDate} အတွက် စာရင်းအချက်အလက်ကို အလိုအလျောက် အကျဉ်းချုပ်ပြထားပါသည်။ AI service ပြန်ကောင်းလာသောအခါ အသေးစိတ် ပြန်ရှင်းနိုင်ပါသည်။`,
+    findings: [
+      `${reportDate} တွင် စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခု ရှိပါသည်။`,
+      `ငွေချေမှု ${paidCount.toLocaleString("en-US")} ခု၊ အကြွေးတိုးမှု ${debtCount.toLocaleString("en-US")} ခု ရှိပါသည်။`,
+      customers.length ? `Customer စာရင်း ${customers.length.toLocaleString("en-US")} ဦး ပါဝင်ပါသည်။` : "ဒီရက်အတွက် Customer အလိုက် စာရင်းမရှိပါ။",
+    ],
+    checks,
+    caution: "ဤအဖြေသည် AI မရသေးချိန်တွင် စာရင်း data အပေါ်အခြေခံ၍ အလိုအလျောက်ပြထားခြင်းသာ ဖြစ်ပါသည်။ အရေးကြီးသောစာရင်းကို Website တွင် ပြန်စစ်ပါ။",
+  };
+}
+
 const AI_CLIENT_TIMEOUT_MS = 50_000;
 const AI_CACHE_CHECK_TIMEOUT_MS = 10_000;
 
@@ -267,7 +290,16 @@ export default function DailySummaryPage() {
       aiAbortRef.current?.abort();
       aiAbortRef.current = null;
       aiRequestStartedAtRef.current = 0;
-      setAiError("AI ရှင်းပြချက် အချိန်ကြာနေသောကြောင့် ရပ်ထားပါသည်။ အောက်က ပြန်စမ်းရန်ကို နှိပ်နိုင်ပါသည်။");
+      const fallback = buildClientAutomaticExplanation(data, date);
+      if (fallback) {
+        setAiExplanation(fallback);
+        setAiFallback(true);
+        setAiStale(false);
+        setAiSource("automatic");
+        setAiError("AI provider တုံ့ပြန်ရန် အချိန်ကြာသဖြင့် စာရင်း data အပေါ်အခြေခံသော အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်။ AI ပြန်ရသောအခါ ပြန်စမ်းနိုင်ပါသည်။");
+      } else {
+        setAiError("AI ရှင်းပြချက် အချိန်ကြာနေသောကြောင့် ရပ်ထားပါသည်။ အောက်က ပြန်စမ်းရန်ကို နှိပ်နိုင်ပါသည်။");
+      }
       setAiLoading(false);
     };
     const interval = window.setInterval(recoverIfStuck, 1_000);
@@ -280,7 +312,7 @@ export default function DailySummaryPage() {
       window.removeEventListener("online", recoverIfStuck);
       document.removeEventListener("visibilitychange", recoverIfStuck);
     };
-  }, [aiLoading]);
+  }, [aiLoading, data, date]);
 
   useEffect(() => () => {
     aiAbortRef.current?.abort();
@@ -346,7 +378,18 @@ export default function DailySummaryPage() {
       }
       setAiError(body.warning || "");
     } catch (err) {
-      if (isCurrentRequest()) setAiError(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
+      if (isCurrentRequest()) {
+        const fallback = buildClientAutomaticExplanation(data, date);
+        if (fallback) {
+          setAiExplanation(fallback);
+          setAiFallback(true);
+          setAiStale(false);
+          setAiSource("automatic");
+          setAiError("AI provider ခဏမရသေးပါ။ စာရင်း data အပေါ်အခြေခံသော အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်။ AI ပြန်ရသောအခါ ပြန်စမ်းနိုင်ပါသည်။");
+        } else {
+          setAiError(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
+        }
+      }
     } finally {
       if (aiAbortRef.current === requestController) {
         aiAbortRef.current = null;
