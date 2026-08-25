@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
-import { getOldestUnpaidCreditDate } from "@/lib/debt-utils";
+import { getLatestTransactionDate, getMyanmarDateAgeInDays } from "@/lib/debt-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -26,27 +26,21 @@ export async function GET() {
       },
     });
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const fifteenDaysAgo = new Date(today);
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
     const overdueDebts = customers
       .map((customer) => {
-        const oldestUnpaidDate = getOldestUnpaidCreditDate(customer.ledgers);
-        if (!oldestUnpaidDate) return null;
+        const latestTransactionDate = getLatestTransactionDate(customer.ledgers);
+        if (!latestTransactionDate) return null;
 
-        const creditDate = new Date(oldestUnpaidDate);
-        creditDate.setHours(0, 0, 0, 0);
-        if (creditDate > fifteenDaysAgo) return null;
+        const daysOverdue = getMyanmarDateAgeInDays(latestTransactionDate);
+        if (daysOverdue === null || daysOverdue < 15) return null;
 
         return {
           customerId: customer.id,
           customerName: customer.name,
           customerPhone: customer.phone,
           balance: customer.current_balance,
-          lastCreditDate: creditDate.toISOString(),
-          daysOverdue: Math.floor((today - creditDate) / (1000 * 60 * 60 * 24)),
+          lastCreditDate: latestTransactionDate.toISOString(),
+          daysOverdue,
           totalDebt: customer.current_balance,
         };
       })
