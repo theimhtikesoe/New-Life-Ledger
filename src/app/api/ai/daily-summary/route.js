@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { decodeActorHeader } from "@/lib/actor-header";
 import {
+  buildRuleBasedExplanation,
   explainAiDailySummary,
   findAiExplanationCache,
   findLatestAiExplanationCache,
@@ -103,7 +104,20 @@ export async function GET(request) {
           warning: "ဒီရက်စာရင်း ပြောင်းထားသော်လည်း AI အသစ်ရှင်းပြချက် မရသေးပါ။ သိမ်းထားသော အဟောင်းကို ပြထားပါသည်။",
         });
       }
-      throw error;
+      const fallbackExplanation = buildRuleBasedExplanation(payload);
+      return NextResponse.json({
+        ok: true,
+        data: {
+          date: requestedDate,
+          explanation: fallbackExplanation,
+          cached: false,
+          stale: false,
+          fallback: true,
+          dataChanged: false,
+          generatedAt: new Date().toISOString(),
+        },
+        warning: "AI service ခဏမရသေးပါ။ စာရင်း data အပေါ်အခြေခံသော အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်။ AI ပြန်ရသောအခါ ပြန်စမ်းနိုင်ပါသည်။",
+      });
     }
   } catch (error) {
     console.error("AI Daily Summary explanation failed", error);

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   getAiDailySummaryFingerprint: vi.fn(),
   findAiExplanationCache: vi.fn(),
   findLatestAiExplanationCache: vi.fn(),
+  buildRuleBasedExplanation: vi.fn(),
   explainAiDailySummary: vi.fn(),
   saveAiExplanationCache: vi.fn(),
 }));
@@ -16,6 +17,7 @@ vi.mock("@/lib/ai-daily-summary", () => ({
   getAiDailySummaryFingerprint: mocks.getAiDailySummaryFingerprint,
   findAiExplanationCache: mocks.findAiExplanationCache,
   findLatestAiExplanationCache: mocks.findLatestAiExplanationCache,
+  buildRuleBasedExplanation: mocks.buildRuleBasedExplanation,
   explainAiDailySummary: mocks.explainAiDailySummary,
   saveAiExplanationCache: mocks.saveAiExplanationCache,
 }));
@@ -44,6 +46,7 @@ describe("Daily Summary AI cache route", () => {
     mocks.getAiDailySummaryFingerprint.mockReset().mockReturnValue("fingerprint-1");
     mocks.findAiExplanationCache.mockReset().mockResolvedValue(null);
     mocks.findLatestAiExplanationCache.mockReset().mockResolvedValue(null);
+    mocks.buildRuleBasedExplanation.mockReset().mockReturnValue({ overview: "အလိုအလျောက်အနှစ်ချုပ်", findings: [], checks: [], caution: "AI မရသေးပါ။" });
     mocks.explainAiDailySummary.mockReset();
     mocks.saveAiExplanationCache.mockReset().mockResolvedValue({ updatedAt: "2026-08-24T12:30:00.000Z" });
     delete process.env.MANUS_API_KEY;
@@ -97,13 +100,15 @@ describe("Daily Summary AI cache route", () => {
     expect(mocks.saveAiExplanationCache).not.toHaveBeenCalled();
   });
 
-  it("returns a recoverable error when AI fails and there is no previous explanation", async () => {
+  it("returns a safe automatic summary when AI fails and there is no previous explanation", async () => {
     mocks.explainAiDailySummary.mockRejectedValue(Object.assign(new Error("Manus AI service ကို ယခုချိန်တွင် မရရှိနိုင်ပါ။"), { code: "MANUS_SERVICE" }));
     const response = await GET(request());
     const body = await response.json();
-    expect(response.status).toBe(503);
-    expect(body.ok).toBe(false);
-    expect(body.error).toContain("service");
+    expect(response.status).toBe(200);
+    expect(body).toEqual(expect.objectContaining({ ok: true, warning: expect.stringContaining("အလိုအလျောက်") }));
+    expect(body.data).toEqual(expect.objectContaining({ date, fallback: true, cached: false, stale: false }));
+    expect(body.data.explanation).toEqual({ overview: "အလိုအလျောက်အနှစ်ချုပ်", findings: [], checks: [], caution: "AI မရသေးပါ။" });
+    expect(mocks.buildRuleBasedExplanation).toHaveBeenCalledWith(payload);
     expect(mocks.saveAiExplanationCache).not.toHaveBeenCalled();
   });
 

@@ -2,6 +2,9 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createOrderDraft: vi.fn(),
+  createCustomerForOrder: vi.fn(),
+  getOrderCustomerCandidates: vi.fn(),
+  linkOrderCustomer: vi.fn(),
   getOrderById: vi.fn(),
   getOrderBySourceUpdateId: vi.fn(),
   refreshOrderFromAi: vi.fn(),
@@ -10,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   extractOrderFromText: vi.fn(),
   buildOrderDraftKeyboard: vi.fn(),
   buildOrderActionKeyboard: vi.fn(),
+  buildOrderCustomerCandidatesKeyboard: vi.fn(),
+  buildOrderMoreKeyboard: vi.fn(),
   buildOrderRetryKeyboard: vi.fn(),
   sendTelegramTextToChat: vi.fn(),
   answerTelegramCallbackQuery: vi.fn(),
@@ -23,9 +28,9 @@ const mocks = vi.hoisted(() => ({
   sendFactoryNotificationForOrder: vi.fn(),
 }));
 
-vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
+vi.mock("@/lib/order-service", () => ({ createCustomerForOrder: mocks.createCustomerForOrder, createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderCustomerCandidates: mocks.getOrderCustomerCandidates, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, linkOrderCustomer: mocks.linkOrderCustomer, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
-vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderActionKeyboard: mocks.buildOrderActionKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
+vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderActionKeyboard: mocks.buildOrderActionKeyboard, buildOrderCustomerCandidatesKeyboard: mocks.buildOrderCustomerCandidatesKeyboard, buildOrderMoreKeyboard: mocks.buildOrderMoreKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage, buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction, isFallbackExtractionUsable: mocks.isFallbackExtractionUsable }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 
@@ -63,7 +68,10 @@ describe("Telegram order webhook safety gates", () => {
     process.env.TELEGRAM_ORDER_GROUP_CHAT_ID = chatId;
     process.env.NEXT_PUBLIC_APP_URL = "https://example.test";
     delete process.env.TELEGRAM_ORDER_ADMIN_IDS;
+    mocks.createCustomerForOrder.mockReset();
     mocks.createOrderDraft.mockReset();
+    mocks.getOrderCustomerCandidates.mockReset();
+    mocks.linkOrderCustomer.mockReset();
     mocks.getOrderById.mockReset();
     mocks.getOrderBySourceUpdateId.mockReset().mockResolvedValue(null);
     mocks.refreshOrderFromAi.mockReset().mockResolvedValue(order);
@@ -72,6 +80,8 @@ describe("Telegram order webhook safety gates", () => {
     mocks.extractOrderFromText.mockReset().mockResolvedValue({});
     mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
     mocks.buildOrderActionKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
+    mocks.buildOrderCustomerCandidatesKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
+    mocks.buildOrderMoreKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
     mocks.buildOrderRetryKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "retry" }]] });
     mocks.sendTelegramTextToChat.mockReset().mockResolvedValue({ messageId: 99 });
     mocks.answerTelegramCallbackQuery.mockReset().mockResolvedValue({ ok: true });
@@ -207,6 +217,47 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
     expect(mocks.sendFactoryNotificationForOrder).not.toHaveBeenCalled();
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 95 }));
+  });
+
+  it("lets a verified administrator open More actions without queuing the batch", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    mocks.getOrderById.mockResolvedValue(order);
+    const update = { update_id: 19, callback_query: { id: "callback-menu", data: "order|menu|I|11111111-1111-4111-8111-111111111111", message: { message_id: 96, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("menu_opened");
+    expect(mocks.buildOrderMoreKeyboard).toHaveBeenCalledWith(order);
+    expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 96, replyMarkup: { inline_keyboard: [] } }));
+  });
+
+  it("lets a verified administrator choose and link an existing Customer", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_CUSTOMER", customer: null, customerId: null, draftCustomerName: "3ဘီး", missingFields: ["Customer"] };
+    const linked = { ...order, status: "DRAFT", customer: { id: "33333333-3333-4333-8333-333333333333", name: "3 ဘီး (ဟိုပုံး)" }, customerId: "33333333-3333-4333-8333-333333333333" };
+    mocks.getOrderCustomerCandidates.mockResolvedValue({ order: pending, candidates: [{ id: linked.customer.id, name: linked.customer.name }] });
+    mocks.linkOrderCustomer.mockResolvedValue(linked);
+    const update = { update_id: 20, callback_query: { id: "callback-link", data: `order|link|I|${order.id}|${linked.customer.id}`, message: { message_id: 97, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("customer_linked");
+    expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: linked.customer.id, actorName: "Staff" });
+    expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(linked, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true });
+    expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
+  });
+
+  it("lets a verified administrator create a new Customer from the Telegram Draft", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_CUSTOMER", customer: null, customerId: null, draftCustomerName: "Customer အသစ်", draftCustomerPhone: "0912345678" };
+    const created = { ...order, status: "DRAFT", customer: { id: "44444444-4444-4444-8444-444444444444", name: "Customer အသစ်" }, customerId: "44444444-4444-4444-8444-444444444444" };
+    mocks.getOrderById.mockResolvedValue(pending);
+    mocks.createCustomerForOrder.mockResolvedValue(created);
+    const update = { update_id: 21, callback_query: { id: "callback-create-customer", data: `order|customer_create|I|${order.id}`, message: { message_id: 98, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("customer_created");
+    expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "Customer အသစ်", phone: "0912345678", actorName: "Staff" });
+    expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(created, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true });
   });
 
   it("lets a verified administrator cancel directly and edits the original draft message", async () => {

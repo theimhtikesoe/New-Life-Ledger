@@ -11,7 +11,7 @@ import {
   resolveOrderDate,
   toLatinDigits,
 } from "@/lib/order-utils";
-import { buildOrderActionKeyboard, buildOrderDraftKeyboard, isTelegramOrderAdminStatus } from "@/lib/telegram";
+import { buildOrderActionKeyboard, buildOrderDraftKeyboard, buildOrderMoreKeyboard, isTelegramOrderAdminStatus } from "@/lib/telegram";
 
 const baseOrder = {
   id: "order-test-1",
@@ -137,16 +137,19 @@ describe("multi-line order totals and cap rules", () => {
       confidence: "medium",
       notes: null,
     }, "");
-    const message = formatOrderDraftMessage({ ...normalized, status: "NEEDS_REVIEW", sourceText: "/order ကံလီ" }, { includeActions: false });
+    const message = formatOrderDraftMessage({ ...normalized, status: "NEEDS_REVIEW", sourceText: "/order ကံလီ" }, { includeActions: false, includeSource: true });
     expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
     expect(message).not.toContain("အဖုံးပုံမှန်စုစုပေါင်း: 8,000 pcs");
     expect(message).not.toContain("အဖုံးအပိုစုစုပေါင်း: 0 pcs");
     expect(message).not.toContain("အဖုံးတောင်းဆိုချက်စုစုပေါင်း");
+    expect(message).not.toContain("မျှော်မှန်း 8,000");
+    expect(message).not.toContain("ကွာ 0 pcs");
     expect(message).not.toContain("ပြန်ဖြည့်ရန်");
     expect(message).not.toContain("phone");
     expect(message).not.toContain("အဖုံးစာရင်း:\nမသတ်မှတ်ရသေး");
     expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
-    expect(message).not.toContain("မူရင်းမှာယူစာ:");
+    expect(message).toContain("မူရင်းမှာယူစာ:");
+    expect(message).toContain("```\n/order ကံလီ\n```");
   });
 
   it("omits the cap section when no cap type or quantity was provided", () => {
@@ -166,22 +169,19 @@ describe("missing-field and schema safeguards", () => {
     expect(normalized.missingFields).toEqual(expect.arrayContaining(["Customer အမည်", "ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"]));
   });
 
-  it("shows Confirm controls only for a linked complete Draft", () => {
-    const keyboard = buildOrderActionKeyboard({ id: "11111111-1111-4111-8111-111111111111", status: "DRAFT", customer: { id: "customer-1" }, missingFields: [] });
-    expect(keyboard.inline_keyboard[0]).toEqual([
-      { text: "✅ Confirm", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" },
-      { text: "📦 08:10 Batch", callback_data: "order|confirm|B|11111111-1111-4111-8111-111111111111" },
-    ]);
-    expect(keyboard.inline_keyboard[1][0].text).toBe("❌ Cancel");
-    expect(buildOrderActionKeyboard({ id: "11111111-1111-4111-8111-111111111111", status: "NEEDS_CUSTOMER", customer: null, missingFields: [], sourceText: "မွာယူမှု" }, "", { allowRetry: true }).inline_keyboard[0][0].text).toBe("🔄 AI ပြန်စမ်းရန်");
+  it("shows Confirm and Cancel for a linked complete Draft and keeps Batch under More actions", () => {
+    const order = { id: "11111111-1111-4111-8111-111111111111", status: "DRAFT", customer: { id: "customer-1" }, missingFields: [] };
+    const keyboard = buildOrderActionKeyboard(order);
+    expect(keyboard.inline_keyboard[0]).toEqual([{ text: "✅ Confirm", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" }]);
+    expect(keyboard.inline_keyboard[1]).toEqual([{ text: "❌ Cancel", callback_data: "order|cancel|I|11111111-1111-4111-8111-111111111111" }]);
+    expect(keyboard.inline_keyboard[2]).toEqual([{ text: "⋯ အခြားလုပ်ဆောင်ချက်များ", callback_data: "order|menu|I|11111111-1111-4111-8111-111111111111" }]);
+    expect(buildOrderMoreKeyboard(order).inline_keyboard[0]).toEqual([{ text: "📦 08:10 Batch ထည့်ရန်", callback_data: "order|confirm|B|11111111-1111-4111-8111-111111111111" }]);
+    expect(buildOrderActionKeyboard({ ...order, status: "NEEDS_CUSTOMER", customer: null, missingFields: [], sourceText: "မှာယူမှု" }, "", { allowRetry: true }).inline_keyboard[0][0].text).toBe("👤 ရှိပြီးသား Customer ချိတ်ရန်");
   });
 
   it("builds direct callback controls and recognizes only Telegram admin statuses", () => {
-    const keyboard = buildOrderDraftKeyboard({ id: "11111111-1111-4111-8111-111111111111" }, "https://example.test");
-    expect(keyboard.inline_keyboard[0]).toEqual(expect.arrayContaining([
-      { text: "✅ Confirm (ချက်ချင်း)", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" },
-      { text: "📦 08:10 Batch", callback_data: "order|confirm|B|11111111-1111-4111-8111-111111111111" },
-    ]));
+    const keyboard = buildOrderDraftKeyboard({ id: "11111111-1111-4111-8111-111111111111", status: "DRAFT", customer: { id: "customer-1" }, missingFields: [] }, "https://example.test");
+    expect(keyboard.inline_keyboard[0]).toEqual([{ text: "✅ Confirm", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" }]);
     expect(keyboard.inline_keyboard[1][0].callback_data).toBe("order|cancel|I|11111111-1111-4111-8111-111111111111");
     expect(isTelegramOrderAdminStatus("administrator")).toBe(true);
     expect(isTelegramOrderAdminStatus("creator")).toBe(true);

@@ -162,6 +162,9 @@ export default function OrdersPage() {
   const [candidateLoadingId, setCandidateLoadingId] = useState("");
   const [detailEdits, setDetailEdits] = useState({});
   const [editingDetailsId, setEditingDetailsId] = useState("");
+  const [showGuide, setShowGuide] = useState(false);
+  const [showBatchPanel, setShowBatchPanel] = useState(false);
+  const [expandedActionId, setExpandedActionId] = useState("");
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -331,13 +334,16 @@ export default function OrdersPage() {
         {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div> : null}
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : null}
 
-        <section id="telegram-order-guide" className="rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><p className="text-xs font-bold uppercase tracking-wider text-cyan-700">Telegram Order Guide</p><h2 className="mt-1 text-lg font-bold text-slate-900">Group ထဲမှာ Order ရေးရန်</h2><p className="mt-1 text-sm text-slate-600">စာအစမှာ <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">မှာယူမှု</code> သို့မဟုတ် <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">/order</code> ထည့်ရေးပါ။</p></div>
-            <div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800">ပုံမှန်စကားများ မဖမ်းပါ</span><button type="button" onClick={publishTelegramGuide} disabled={publishingGuide} className="rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800 hover:bg-cyan-100 disabled:opacity-50">{publishingGuide ? "ပို့နေသည်..." : "📌 Group ထဲ Guide တင်ရန်"}</button></div>
+        <section id="telegram-order-guide" className="order-20 rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><p className="text-xs font-bold uppercase tracking-wider text-cyan-700">Telegram Order Guide</p><h2 className="mt-1 text-lg font-bold text-slate-900">Group ထဲမှာ Order ရေးရန်</h2></div>
+            <button type="button" aria-expanded={showGuide} onClick={() => setShowGuide((current) => !current)} className="rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800 hover:bg-cyan-100">{showGuide ? "Guide ဖျောက်ရန်" : "Guide ပြရန်"}</button>
           </div>
-          <pre className="mt-4 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-cyan-50">မှာယူမှု ကံလီ{`\n`}0.3 Liter အပြာ{`\n`}400 ဆံ့ 20 ကဒ်{`\n`}အဖုံးပြာ 5000 pcs + အပို 20{`\n`}ပုလဲဂိတ်{`\n`}မနက်ဖြန်</pre>
-          <p className="mt-3 text-xs text-slate-500">AI စစ်ပြီး Draft ပြန်ပေးပါမယ်။ Confirm/Cancel ခလုတ်ကို group admin သာ သုံးနိုင်ပါမယ်။</p>
+          {showGuide ? <>
+            <div className="mt-3 flex flex-wrap items-start justify-between gap-3"><p className="text-sm text-slate-600">စာအစမှာ <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">မှာယူမှု</code> သို့မဟုတ် <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">/order</code> ထည့်ရေးပါ။</p><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800">ပုံမှန်စကားများ မဖမ်းပါ</span><button type="button" onClick={publishTelegramGuide} disabled={publishingGuide} className="rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800 hover:bg-cyan-100 disabled:opacity-50">{publishingGuide ? "ပို့နေသည်..." : "📌 Group ထဲ Guide တင်ရန်"}</button></div></div>
+            <pre className="mt-4 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-cyan-50">မှာယူမှု ကံလီ{`\n`}0.3 Liter အပြာ{`\n`}400 ဆံ့ 20 ကဒ်{`\n`}အဖုံးပြာ 5000 pcs + အပို 20{`\n`}ပုလဲဂိတ်{`\n`}မနက်ဖြန်</pre>
+            <p className="mt-3 text-xs text-slate-500">AI စစ်ပြီး Draft ပြန်ပေးပါမယ်။ Confirm/Cancel ခလုတ်ကို group admin သာ သုံးနိုင်ပါမယ်။</p>
+          </> : <p className="mt-2 text-xs text-slate-500">Order စာရေးနည်းနှင့် Guide ကို လိုအပ်သည့်အခါမှ ဖွင့်ကြည့်နိုင်ပါသည်။</p>}
         </section>
 
         {viewMode === "ACTIVE" ? <section id="customer-orders" className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-sm sm:px-5">
@@ -358,14 +364,9 @@ export default function OrdersPage() {
         </section>
 
         {viewMode === "ACTIVE" ? <>
-          <section className="flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <div>
-              <h2 className="font-semibold text-violet-950">မနက် batch ပို့ခြင်း</h2>
-              <p className="mt-1 text-sm text-violet-800">Daily Report ပြီး ၁၀ မိနစ်အကြာ၊ Myanmar Time 08:10 တွင် batch queue ထဲက Confirmed Order များကို စက်ရုံ group သို့ ပို့ပါမယ်။ Notification ကို default ဖွင့်ထားပြီး လိုအပ်ရင် ဒီနေရာမှာ ပိတ်နိုင်ပါတယ်။</p>
-            </div>
-            <button type="button" onClick={() => saveAutomation(!automation.morningBatchEnabled)} disabled={savingAutomation} className={`shrink-0 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm ${automation.morningBatchEnabled ? "bg-violet-700 hover:bg-violet-800" : "bg-slate-700 hover:bg-slate-800"}`}>
-              {savingAutomation ? "သိမ်းနေသည်..." : automation.morningBatchEnabled ? "Batch ဖွင့်ထားသည်" : "Batch ပိတ်ထားသည်"}
-            </button>
+          <section className="order-21 rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-violet-700">မနက် batch setting</p><h2 className="mt-1 font-semibold text-violet-950">08:10 Batch ပို့ခြင်း</h2></div><button type="button" aria-expanded={showBatchPanel} onClick={() => setShowBatchPanel((current) => !current)} className="rounded-lg border border-violet-300 bg-white px-3 py-2 text-xs font-bold text-violet-800 hover:bg-violet-100">{showBatchPanel ? "Batch setting ဖျောက်ရန်" : "Batch setting ပြရန်"}</button></div>
+            {showBatchPanel ? <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm text-violet-800">Daily Report ပြီး ၁၀ မိနစ်အကြာ၊ Myanmar Time 08:10 တွင် queue ထဲထည့်ထားသော Order များကို စက်ရုံ group သို့ ပို့ပါမယ်။ ပုံမှန် Confirm လုပ်ရာတွင် Batch မထည့်ပါ။</p><button type="button" onClick={() => saveAutomation(!automation.morningBatchEnabled)} disabled={savingAutomation} className={`shrink-0 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm ${automation.morningBatchEnabled ? "bg-violet-700 hover:bg-violet-800" : "bg-slate-700 hover:bg-slate-800"}`}>{savingAutomation ? "သိမ်းနေသည်..." : automation.morningBatchEnabled ? "Batch ဖွင့်ထားသည်" : "Batch ပိတ်ထားသည်"}</button></div> : null}
           </section>
         </> : viewMode === "TRASH" ? <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 sm:p-5"><h2 className="font-semibold text-rose-950">အမှိုက်ပုံး — Cancelled Orders</h2><p className="mt-1 text-sm text-rose-800">Cancel လုပ်ထားသော Order များကို ဒီနေရာမှာ ၁၅ ရက်အထိ ထိန်းသိမ်းထားပါမယ်။ Cancel လုပ်တဲ့ရက်ကနေ ၁၅ ရက်အတွင်း Restore လုပ်နိုင်ပြီး သက်တမ်းကျော်ပါက auto clear လုပ်ပါမယ်။</p></section> : <section className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5"><h2 className="font-semibold text-indigo-950">Order History</h2><p className="mt-1 text-sm text-indigo-800">Order စမ်းသပ်မှတ်တမ်းများ၊ Confirm မှတ်တမ်းများနှင့် History သို့ ရွှေ့ထားသော Order များကို ဒီနေရာမှာပဲ ကြည့်နိုင်ပါတယ်။ Activity History ထဲမှာ Order မှတ်တမ်းများ မထပ်ပြတော့ပါ။</p></section>}
 
@@ -390,6 +391,7 @@ export default function OrdersPage() {
             const details = detailEdits[order.id] || {};
             const archived = Boolean(order.archivedAt || order.isArchived);
             const canEditDetails = viewMode === "ACTIVE" && !archived && !["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(order.status);
+            const canConfirmOrder = viewMode === "ACTIVE" && !archived && ["DRAFT", "NEEDS_REVIEW"].includes(order.status) && !order.missingFields?.length && Boolean(order.customer?.id);
             const lifecycleLogs = orderLogsById.get(String(order.id)) || [];
             return (
               <article key={order.id} id={`order-${order.id}`} className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ${highlighted ? "border-emerald-500 ring-2 ring-emerald-200" : archived ? "border-indigo-200" : "border-slate-200"}`}>
@@ -440,7 +442,8 @@ export default function OrdersPage() {
 
                 {viewMode === "ACTIVE" && !archived ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
                   {canEditDetails ? <button type="button" onClick={() => setEditingDetailsId(editingDetailsId === order.id ? "" : order.id)} disabled={busy} className="rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100 disabled:opacity-50">{editingDetailsId === order.id ? "ပြင်ရန်ပိတ်မည်" : "အသေးစိတ်ပြင်ရန်"}</button> : null}
-                  {(order.status === "DRAFT" || order.status === "NEEDS_REVIEW") && !order.missingFields?.length ? <><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "IMMEDIATE" })} disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Confirm — ချက်ချင်းပို့</button><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "MORNING_BATCH" })} disabled={busy} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50">Confirm — မနက် batch</button></> : null}
+                  {canConfirmOrder ? <button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "IMMEDIATE" })} disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">✅ Confirm — ချက်ချင်းပို့</button> : null}
+                  {canConfirmOrder ? (expandedActionId === order.id ? <><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "MORNING_BATCH" })} disabled={busy} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50">08:10 Batch ထည့်ရန်</button><button type="button" onClick={() => setExpandedActionId("")} disabled={busy} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">အခြားလုပ်ဆောင်ချက်များ ဖျောက်ရန်</button></> : <button type="button" onClick={() => setExpandedActionId(order.id)} disabled={busy} className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-bold text-violet-800 hover:bg-violet-100 disabled:opacity-50">အခြားလုပ်ဆောင်ချက်များ</button>) : null}
                   {!["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(order.status) && order.sourceText ? <button type="button" onClick={() => patchOrder(order.id, "retry_ai")} disabled={busy} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-bold text-orange-800 hover:bg-orange-100 disabled:opacity-50">{busy ? "AI စစ်နေသည်..." : "AI ဖြင့် ပြန်စစ်ရန်"}</button> : null}
                   {(order.status === "CONFIRMED" || order.status === "BATCH_QUEUED") ? <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">Confirm ပြီးပါပြီ။ Factory notification state ကို စောင့်ကြည့်ပါ။</span> : null}
                   {order.status !== "CANCELLED" && order.status !== "FACTORY_NOTIFIED" && order.status !== "COMPLETED" ? <button type="button" onClick={() => patchOrder(order.id, "cancel")} disabled={busy} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50">Cancel</button> : null}

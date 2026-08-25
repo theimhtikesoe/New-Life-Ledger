@@ -509,6 +509,30 @@ async function explainWithOfficialManus(payload, apiKey) {
   throw lastError || providerError("MANUS_TIMEOUT", "AI ရှင်းပြချက် ရယူရန် အချိန်ကျော်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။");
 }
 
+export function buildRuleBasedExplanation(payload = {}) {
+  const summary = payload.summary || {};
+  const activity = payload.genuineActivity || {};
+  const customers = Array.isArray(payload.customers) ? payload.customers : [];
+  const totalTransactions = Number(summary.totalTransactions || 0);
+  const activityTotal = Number(activity.total || 0);
+  const findings = [
+    `${payload.date || "ရွေးထားသောရက်"} တွင် စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခု ရှိပါသည်။`,
+    `ငွေချေမှု ${Number(summary.paidCount || 0).toLocaleString("en-US")} ခု၊ အကြွေးတိုးမှု ${Number(summary.debtCount || 0).toLocaleString("en-US")} ခု ရှိပါသည်။`,
+  ];
+  const checks = [];
+  if (activityTotal !== totalTransactions) {
+    checks.push(`စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခုနှင့် လုပ်ဆောင်ချက်မှတ်တမ်း ${activityTotal.toLocaleString("en-US")} ခု မတူပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။`);
+  }
+  if (customers.length) findings.push(`Customer စာရင်း ${customers.length.toLocaleString("en-US")} ဦး ပါဝင်ပါသည်။`);
+  else findings.push("ဒီရက်အတွက် Customer အလိုက် စာရင်းမရှိပါ။");
+  return {
+    overview: `${payload.date || "ရွေးထားသောရက်"} အတွက် စာရင်းအချက်အလက်ကို အလိုအလျောက် အကျဉ်းချုပ်ပြထားပါသည်။ AI service ပြန်ကောင်းလာသောအခါ AI ဖြင့် အသေးစိတ် ပြန်ရှင်းနိုင်ပါသည်။`,
+    findings: findings.slice(0, 4),
+    checks: checks.slice(0, 4),
+    caution: "ဤအဖြေသည် AI မရသေးချိန်တွင် စာရင်း data အပေါ်အခြေခံ၍ အလိုအလျောက်ပြထားခြင်းသာ ဖြစ်ပါသည်။ အရေးကြီးသောစာရင်းကို Website တွင် ပြန်စစ်ပါ။",
+  };
+}
+
 export async function explainAiDailySummary(payload) {
   const officialManusApiKey = getManusApiKey();
   if (officialManusApiKey) return explainWithOfficialManus(payload, officialManusApiKey);
