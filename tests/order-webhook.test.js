@@ -231,6 +231,41 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 96, replyMarkup: { inline_keyboard: [] } }));
   });
 
+  it("shows existing Customer candidate buttons when the Telegram selection callback is pressed", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_CUSTOMER", customer: null, customerId: null, draftCustomerName: "3ဘီး", missingFields: ["Customer"] };
+    const candidate = { id: "33333333-3333-4333-8333-333333333333", name: "3 ဘီး (ဟိုပုံး)" };
+    mocks.getOrderCustomerCandidates.mockResolvedValue({ order: pending, candidates: [candidate] });
+    mocks.formatOrderDraftMessage.mockReturnValue("draft message");
+    const update = { update_id: 201, callback_query: { id: "callback-customer", data: `order|customer|I|${order.id}`, message: { message_id: 197, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.status).toBe("customer_candidates");
+    expect(body.candidateCount).toBe(1);
+    expect(mocks.getOrderCustomerCandidates).toHaveBeenCalledWith({ orderId: order.id });
+    expect(mocks.buildOrderCustomerCandidatesKeyboard).toHaveBeenCalledWith(pending, [candidate]);
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 197, parseMode: "Markdown" }));
+    expect(mocks.linkOrderCustomer).not.toHaveBeenCalled();
+    expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
+  });
+
+  it("retries Customer candidate message as plain text when Markdown editing fails", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_CUSTOMER", customer: null, customerId: null, draftCustomerName: "Customer_စမ်း", missingFields: ["Customer"] };
+    const candidate = { id: "33333333-3333-4333-8333-333333333333", name: "Customer_စမ်း" };
+    mocks.getOrderCustomerCandidates.mockResolvedValue({ order: pending, candidates: [candidate] });
+    mocks.formatOrderDraftMessage.mockReturnValue("draft ``` message");
+    mocks.editTelegramMessageText.mockRejectedValueOnce(new Error("can't parse Markdown")).mockResolvedValueOnce({ ok: true });
+    const update = { update_id: 202, callback_query: { id: "callback-customer-fallback", data: `order|customer|I|${order.id}`, message: { message_id: 198, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("customer_candidates");
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(2);
+    expect(mocks.editTelegramMessageText.mock.calls[1][0]).not.toHaveProperty("parseMode");
+    expect(mocks.editTelegramMessageText.mock.calls[1][0].text).not.toContain("```");
+  });
+
   it("lets a verified administrator choose and link an existing Customer", async () => {
     mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
     const pending = { ...order, status: "NEEDS_CUSTOMER", customer: null, customerId: null, draftCustomerName: "3ဘီး", missingFields: ["Customer"] };
