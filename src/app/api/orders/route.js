@@ -4,6 +4,7 @@ import { getActorName } from "@/lib/audit";
 import { sendFactoryNotificationForOrder } from "@/lib/order-delivery";
 import { syncTelegramOrderMessage } from "@/lib/order-channel-sync";
 import { extractOrderFromText } from "@/lib/order-ai";
+import { buildFallbackOrderExtraction, isFallbackExtractionUsable } from "@/lib/order-utils";
 import {
   createCustomerForOrder,
   createOrderDraft,
@@ -98,7 +99,8 @@ export async function PATCH(request) {
     if (action === "retry_ai") {
       const current = await getOrderById(orderId);
       if (!current) return errorResponse(new Error("Order မတွေ့ပါ။"), 400);
-      const extracted = await extractOrderFromText(current.sourceText);
+      const fallbackExtraction = buildFallbackOrderExtraction(current.sourceText);
+      const extracted = isFallbackExtractionUsable(fallbackExtraction) ? fallbackExtraction : await extractOrderFromText(current.sourceText);
       const data = await refreshOrderFromAi({ orderId, extracted, actorName });
       let warning = "";
       try {
