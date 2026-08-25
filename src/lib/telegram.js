@@ -204,3 +204,25 @@ export function getTelegramOrderConfig() {
   const { token, orderChatId, factoryChatId } = getTelegramConfig();
   return { token, orderChatId, factoryChatId };
 }
+
+export async function setTelegramOrderWebhook({ url, secretToken } = {}) {
+  const { token } = getTelegramConfig();
+  if (!token || !url || !secretToken) throw new Error("Telegram webhook configuration မပြည့်စုံသေးပါ။");
+  return telegramRequest({
+    token,
+    method: "setWebhook",
+    payload: {
+      url: String(url),
+      secret_token: String(secretToken),
+      allowed_updates: ["message", "callback_query"],
+      drop_pending_updates: false,
+    },
+  });
+}
+
+export async function getTelegramWebhookInfo() {
+  const { token } = getTelegramConfig();
+  if (!token) throw new Error("Telegram token မပြည့်စုံသေးပါ။");
+  const body = await telegramRequest({ token, method: "getWebhookInfo", payload: {} });
+  return body.result || {};
+}
