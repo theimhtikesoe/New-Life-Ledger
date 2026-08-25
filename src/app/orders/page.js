@@ -84,7 +84,7 @@ export default function OrdersPage() {
   const [workingId, setWorkingId] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [automation, setAutomation] = useState({ morningBatchEnabled: false, morningBatchTime: "08:10" });
+  const [automation, setAutomation] = useState({ morningBatchEnabled: true, morningBatchTime: "08:10" });
   const [savingAutomation, setSavingAutomation] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [draftCustomers, setDraftCustomers] = useState({});
@@ -213,7 +213,7 @@ export default function OrdersPage() {
         <section className="flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div>
             <h2 className="font-semibold text-violet-950">🕗 မနက် batch ပို့ခြင်း</h2>
-            <p className="mt-1 text-sm text-violet-800">Daily Report ပြီး ၁၀ မိနစ်အကြာ၊ Myanmar Time 08:10 တွင် batch queue ထဲက Confirmed Order များကို စက်ရုံ group သို့ ပို့ပါမယ်။ Website မှ ဖွင့်ထားမှသာ ပို့ပါမယ်။</p>
+            <p className="mt-1 text-sm text-violet-800">Daily Report ပြီး ၁၀ မိနစ်အကြာ၊ Myanmar Time 08:10 တွင် batch queue ထဲက Confirmed Order များကို စက်ရုံ group သို့ ပို့ပါမယ်။ Notification ကို default ဖွင့်ထားပြီး လိုအပ်ရင် ဒီနေရာမှာ ပိတ်နိုင်ပါတယ်။</p>
           </div>
           <button type="button" onClick={() => saveAutomation(!automation.morningBatchEnabled)} disabled={savingAutomation} className={`shrink-0 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm ${automation.morningBatchEnabled ? "bg-violet-700 hover:bg-violet-800" : "bg-slate-700 hover:bg-slate-800"}`}>
             {savingAutomation ? "သိမ်းနေသည်..." : automation.morningBatchEnabled ? "Batch ဖွင့်ထားသည်" : "Batch ပိတ်ထားသည်"}

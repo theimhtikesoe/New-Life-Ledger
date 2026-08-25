@@ -127,7 +127,7 @@ After Confirm, the system will offer two separate actions:
 - **Send to factory now:** sends the confirmed order immediately and marks the factory notification as sent.
 - **Add to morning batch:** keeps the order confirmed but queues it for the selected morning batch time.
 
-The same order may be included in the morning batch only once. The batch message will group confirmed orders by requested production date and include totals by bottle line and cap color/type. The exact morning batch time is still to be selected.
+The same order may be included in the morning batch only once. The batch message will group confirmed orders by requested production date and include totals by bottle line and cap color/type. The approved morning batch time is 08:10 Myanmar time, and its Telegram notification is enabled by default; staff may turn it off from the website when necessary.
 
 ## Telegram group setup checklist
 
@@ -155,7 +155,7 @@ The first build will add `Order`, `OrderLine`, `OrderCap`, `OrderDelivery`, and 
 
 ### Notification timing
 
-Immediate delivery sends after Confirm. Morning batch delivery runs at Myanmar 08:10, ten minutes after the existing report schedule, but only when the website batch setting is enabled. The setting defaults to disabled. A batch order remains queued when the setting is disabled and is not silently sent. A unique order/source identity and unique delivery record prevent repeated Confirm actions or webhook retries from creating duplicate order records or duplicate factory notifications.
+Immediate delivery sends after Confirm. Morning batch delivery runs at Myanmar 08:10, ten minutes after the existing report schedule, and the website batch setting defaults to enabled. A batch order remains queued only when staff deliberately turn the setting off; it is not sent while the setting is disabled. A unique order/source identity and unique delivery record prevent repeated Confirm actions or webhook retries from creating duplicate order records or duplicate factory notifications.
 
 ### Telegram configuration
 

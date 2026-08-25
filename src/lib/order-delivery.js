@@ -15,7 +15,7 @@ export async function getOrderAutomationSetting() {
   await ensureDatabase();
   return prisma.orderAutomationSetting.upsert({
     where: { id: 1 },
-    create: { id: 1, morningBatchEnabled: false, morningBatchTime: "08:10" },
+    create: { id: 1, morningBatchEnabled: true, morningBatchTime: "08:10" },
     update: { morningBatchTime: "08:10" },
   });
 }
