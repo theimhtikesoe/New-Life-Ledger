@@ -138,13 +138,25 @@ export function buildOrderDraftKeyboard(order, appUrl = "") {
 export function buildOrderRetryKeyboard(order, appUrl = "") {
   const id = String(order?.id || "");
   if (!id) return undefined;
-  const url = appUrl ? `${String(appUrl).replace(/\/$/, "")}/orders?orderId=${encodeURIComponent(id)}` : "";
   return {
-    inline_keyboard: [
-      [{ text: "🔄 AI ပြန်စမ်းရန်", callback_data: `order|retry|I|${id}` }],
-      ...(url ? [[{ text: "🌐 Website တွင် ပြန်စစ်/ပြင်ရန်", url }]] : []),
-    ],
+    inline_keyboard: [[{ text: "🔄 AI ပြန်စမ်းရန်", callback_data: `order|retry|I|${id}` }]],
   };
+}
+
+export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = false } = {}) {
+  const id = String(order?.id || "");
+  if (!id) return undefined;
+  const blocked = ["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(String(order?.status || ""));
+  const missingFields = Array.isArray(order?.missingFields) ? order.missingFields : [];
+  const canConfirm = !blocked && Boolean(order?.customer?.id) && missingFields.length === 0;
+  const rows = [];
+  if (canConfirm) {
+    rows.push([{ text: "✅ Confirm", callback_data: `order|confirm|I|${id}` }, { text: "📦 08:10 Batch", callback_data: `order|confirm|B|${id}` }]);
+    rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
+  } else if (allowRetry && !blocked && order?.sourceText) {
+    rows.push([{ text: "🔄 AI ပြန်စမ်းရန်", callback_data: `order|retry|I|${id}` }]);
+  }
+  return rows.length ? { inline_keyboard: rows } : undefined;
 }
 
 export function buildOrderDoneKeyboard(orderId) {

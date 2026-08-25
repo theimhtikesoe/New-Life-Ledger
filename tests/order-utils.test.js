@@ -11,7 +11,7 @@ import {
   resolveOrderDate,
   toLatinDigits,
 } from "@/lib/order-utils";
-import { buildOrderDraftKeyboard, isTelegramOrderAdminStatus } from "@/lib/telegram";
+import { buildOrderActionKeyboard, buildOrderDraftKeyboard, isTelegramOrderAdminStatus } from "@/lib/telegram";
 
 const baseOrder = {
   id: "order-test-1",
@@ -139,12 +139,14 @@ describe("multi-line order totals and cap rules", () => {
     }, "");
     const message = formatOrderDraftMessage({ ...normalized, status: "NEEDS_REVIEW", sourceText: "/order ကံလီ" }, { includeActions: false });
     expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
-    expect(message).toContain("အဖုံးပုံမှန်စုစုပေါင်း: 8,000 pcs");
-    expect(message).toContain("အဖုံးအပိုစုစုပေါင်း: 0 pcs");
+    expect(message).not.toContain("အဖုံးပုံမှန်စုစုပေါင်း: 8,000 pcs");
+    expect(message).not.toContain("အဖုံးအပိုစုစုပေါင်း: 0 pcs");
     expect(message).not.toContain("အဖုံးတောင်းဆိုချက်စုစုပေါင်း");
     expect(message).not.toContain("ပြန်ဖြည့်ရန်");
     expect(message).not.toContain("phone");
     expect(message).not.toContain("အဖုံးစာရင်း:\nမသတ်မှတ်ရသေး");
+    expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
+    expect(message).not.toContain("မူရင်းမှာယူစာ:");
   });
 
   it("omits the cap section when no cap type or quantity was provided", () => {
@@ -162,6 +164,16 @@ describe("missing-field and schema safeguards", () => {
     expect(normalized.requestedDate).toBeNull();
     expect(normalized.lines[0].totalBottles).toBeNull();
     expect(normalized.missingFields).toEqual(expect.arrayContaining(["Customer အမည်", "ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"]));
+  });
+
+  it("shows Confirm controls only for a linked complete Draft", () => {
+    const keyboard = buildOrderActionKeyboard({ id: "11111111-1111-4111-8111-111111111111", status: "DRAFT", customer: { id: "customer-1" }, missingFields: [] });
+    expect(keyboard.inline_keyboard[0]).toEqual([
+      { text: "✅ Confirm", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" },
+      { text: "📦 08:10 Batch", callback_data: "order|confirm|B|11111111-1111-4111-8111-111111111111" },
+    ]);
+    expect(keyboard.inline_keyboard[1][0].text).toBe("❌ Cancel");
+    expect(buildOrderActionKeyboard({ id: "11111111-1111-4111-8111-111111111111", status: "NEEDS_CUSTOMER", customer: null, missingFields: [], sourceText: "မွာယူမှု" }, "", { allowRetry: true }).inline_keyboard[0][0].text).toBe("🔄 AI ပြန်စမ်းရန်");
   });
 
   it("builds direct callback controls and recognizes only Telegram admin statuses", () => {

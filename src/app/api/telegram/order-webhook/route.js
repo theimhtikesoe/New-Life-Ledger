@@ -3,7 +3,7 @@ import { createOrderDraft, getOrderById, getOrderBySourceUpdateId, refreshOrderF
 import { extractOrderFromText } from "@/lib/order-ai";
 import {
   answerTelegramCallbackQuery,
-  buildOrderDraftKeyboard,
+  buildOrderActionKeyboard,
   buildOrderRetryKeyboard,
   configuredTelegramOrderAdminIds,
   editTelegramMessageText,
@@ -106,7 +106,7 @@ async function handleCallback(update) {
         const refreshed = await refreshOrderFromAi({ orderId, extracted, actorName: "Staff" });
         await rememberCallbackMessage();
         await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။" });
-        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, replyMarkup: buildOrderDraftKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL) });
+        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
         return { ok: true, status: "ai_retried", orderId };
       } catch (retryError) {
         await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: safeErrorMessage(retryError), showAlert: true });
@@ -185,7 +185,7 @@ export async function POST(request) {
       const sentDraft = await sendTelegramTextToChat({
         chatId,
         text: formatOrderDraftMessage(pending.order),
-        replyMarkup: buildOrderDraftKeyboard(pending.order, process.env.NEXT_PUBLIC_APP_URL),
+        replyMarkup: buildOrderActionKeyboard(pending.order, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }),
         replyToMessageId: message.message_id,
       });
       if (sentDraft?.messageId) {
@@ -204,7 +204,7 @@ export async function POST(request) {
       const sentDraft = await sendTelegramTextToChat({
         chatId,
         text: formatOrderDraftMessage(order),
-        replyMarkup: buildOrderDraftKeyboard(order, process.env.NEXT_PUBLIC_APP_URL),
+        replyMarkup: buildOrderActionKeyboard(order, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }),
         replyToMessageId: message.message_id,
       });
       if (sentDraft?.messageId) {

@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   listOrders: vi.fn(),
+  createCustomerForOrder: vi.fn(),
+  linkOrderCustomer: vi.fn(),
   getOrderById: vi.fn(),
   extractOrderFromText: vi.fn(),
   refreshOrderFromAi: vi.fn(),
@@ -19,12 +21,12 @@ vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.
 vi.mock("@/lib/order-channel-sync", () => ({ syncTelegramOrderMessage: mocks.syncTelegramOrderMessage }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
 vi.mock("@/lib/order-service", () => ({
-  createCustomerForOrder: vi.fn(),
+  createCustomerForOrder: mocks.createCustomerForOrder,
   getOrderById: mocks.getOrderById,
   refreshOrderFromAi: mocks.refreshOrderFromAi,
   createOrderDraft: vi.fn(),
   updateOrderDetails: vi.fn(),
-  linkOrderCustomer: vi.fn(),
+  linkOrderCustomer: mocks.linkOrderCustomer,
   listOrders: mocks.listOrders,
   archiveOrder: mocks.archiveOrder,
   restoreOrder: mocks.restoreOrder,
@@ -48,6 +50,28 @@ describe("Website Orders API", () => {
     const response = await GET(new Request("http://localhost/api/orders?archived=only&limit=50"));
     expect(response.status).toBe(200);
     expect(mocks.listOrders).toHaveBeenCalledWith({ status: null, view: "active", includeArchived: false, archivedOnly: true, limit: "50" });
+  });
+
+  it("links an existing Customer and updates Telegram with action buttons", async () => {
+    const order = { id: "order-1", status: "DRAFT", customer: { id: "customer-1", name: "3 ဘီး (ဟိုပုံး)" }, missingFields: [], telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
+    mocks.linkOrderCustomer.mockResolvedValue(order);
+    mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
+    const response = await PATCH(request({ orderId: order.id, action: "link_customer", customerId: "customer-1" }));
+    expect(response.status).toBe(200);
+    expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: "customer-1", actorName: "Staff" });
+    expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(order, "🌐 Website မှ Customer ချိတ်ပြီးပါပြီ။", { includeActions: true });
+    expect((await response.json()).data).toEqual(order);
+  });
+
+  it("creates a new Customer for a draft and updates Telegram without touching Ledger", async () => {
+    const order = { id: "order-1", status: "DRAFT", customer: { id: "customer-1", name: "3ဘီး" }, missingFields: [], telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
+    mocks.createCustomerForOrder.mockResolvedValue(order);
+    mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
+    const response = await PATCH(request({ orderId: order.id, action: "create_customer", name: "3ဘီး" }));
+    expect(response.status).toBe(200);
+    expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "3ဘီး", phone: undefined, routeTag: undefined, actorName: "Staff" });
+    expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(order, "🌐 Website မှ Customer အသစ်ဖန်တီးပြီး ချိတ်ထားပါပြီ။", { includeActions: true });
+    expect((await response.json()).data).toEqual(order);
   });
 
   it("archives through a reversible action without using delete", async () => {

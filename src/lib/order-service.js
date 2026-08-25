@@ -20,6 +20,14 @@ function normalizeName(value) {
   return String(value || "").normalize("NFC").replace(/\s+/g, "").toLocaleLowerCase("my-MM");
 }
 
+function customerNameKeys(value) {
+  const normalized = normalizeName(value);
+  if (!normalized) return [];
+  const withoutParenthetical = normalized.replace(/\([^)]*\)/g, "");
+  const base = normalized.replace(/[()\[\]{}]/g, "");
+  return Array.from(new Set([normalized, withoutParenthetical, base].map((item) => item.trim()).filter(Boolean)));
+}
+
 function normalizePhone(value) {
   return String(value || "").replace(/[^\d၀-၉+]/g, "").replace(/[၀-၉]/g, (digit) => String("၀၁၂၃၄၅၆၇၈၉".indexOf(digit))).replace(/^\+95/, "0");
 }
@@ -63,25 +71,27 @@ async function findCustomerMatch({ name, phone }) {
   const trimmedName = String(name || "").trim();
   const trimmedPhone = String(phone || "").trim();
   if (!trimmedName && !trimmedPhone) return { customer: null, candidates: [] };
+  const nameKeys = customerNameKeys(trimmedName);
+  const nameSearchTerms = Array.from(new Set([trimmedName, nameKeys[0], Array.from(trimmedName).slice(0, 1).join("")].filter(Boolean)));
   const candidates = await prisma.customer.findMany({
     where: {
       deletedAt: null,
       OR: [
-        ...(trimmedName ? [
-          { name: { equals: trimmedName, mode: "insensitive" } },
-          { name: { contains: trimmedName, mode: "insensitive" } },
-        ] : []),
+        ...nameSearchTerms.flatMap((term) => [
+          { name: { equals: term, mode: "insensitive" } },
+          { name: { contains: term, mode: "insensitive" } },
+        ]),
         ...(trimmedPhone ? [{ phone: { contains: trimmedPhone, mode: "insensitive" } }] : []),
       ],
     },
     select: { id: true, name: true, phone: true, routeTag: true, deletedAt: true },
     orderBy: [{ name: "asc" }, { id: "asc" }],
-    take: 20,
+    take: 50,
   });
-  const normalizedInputName = normalizeName(trimmedName);
   const normalizedInputPhone = normalizePhone(trimmedPhone);
   const exactMatches = candidates.filter((candidate) => {
-    const nameMatch = normalizedInputName && normalizeName(candidate.name) === normalizedInputName;
+    const candidateNameKeys = customerNameKeys(candidate.name);
+    const nameMatch = nameKeys.length > 0 && nameKeys.some((key) => candidateNameKeys.includes(key));
     const phoneMatch = normalizedInputPhone && normalizePhone(candidate.phone) === normalizedInputPhone;
     return nameMatch || phoneMatch;
   });

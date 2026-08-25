@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   editTelegramMessageText: vi.fn(),
-  buildOrderDraftKeyboard: vi.fn(),
+  buildOrderActionKeyboard: vi.fn(),
   formatOrderDraftMessage: vi.fn(),
 }));
 
-vi.mock("@/lib/telegram", () => ({ editTelegramMessageText: mocks.editTelegramMessageText, buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard }));
+vi.mock("@/lib/telegram", () => ({ editTelegramMessageText: mocks.editTelegramMessageText, buildOrderActionKeyboard: mocks.buildOrderActionKeyboard }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage }));
 
 import { syncTelegramOrderMessage } from "@/lib/order-channel-sync";
@@ -20,7 +20,7 @@ describe("Telegram order message synchronization", () => {
 
   beforeEach(() => {
     mocks.editTelegramMessageText.mockReset();
-    mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "retry" }]] });
+    mocks.buildOrderActionKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "retry" }]] });
     mocks.formatOrderDraftMessage.mockReset();
   });
 
@@ -43,7 +43,7 @@ describe("Telegram order message synchronization", () => {
     mocks.formatOrderDraftMessage.mockReturnValue("🟡 Order — Draft");
     const order = { id: "order-1", status: "DRAFT", telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
     await syncTelegramOrderMessage(order, "🔄 retried", { includeActions: true });
-    expect(mocks.buildOrderDraftKeyboard).toHaveBeenCalledWith(order, undefined);
+    expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(order, undefined, { allowRetry: true });
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ replyMarkup: { inline_keyboard: [[{ text: "retry" }]] } }));
   });
 });

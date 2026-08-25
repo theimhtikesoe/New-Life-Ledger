@@ -319,51 +319,49 @@ function formatDateLabel(value) {
   return `${day}/${month}/${year}`;
 }
 
-export function formatOrderDraftMessage(order, { includeActions = true } = {}) {
+export function formatOrderDraftMessage(order, { includeActions = true, includeSource = false } = {}) {
   const totals = calculateOrderTotals(order);
   const warnings = calculateCapWarnings(order).filter((cap) => cap.warningText);
-  const status = order.status === "CONFIRMED"
-    ? "Confirmed — စက်ရုံပို့ရန်"
+  const heading = order.status === "CONFIRMED"
+    ? "✅ Order အတည်ပြုပြီး"
     : order.status === "BATCH_QUEUED"
-      ? "08:10 Batch ထဲ ထည့်ပြီး"
+      ? "📦 Order ကို 08:10 Batch ထဲ ထည့်ပြီး"
       : order.status === "FACTORY_NOTIFIED"
-        ? "စက်ရုံသို့ ပို့ပြီး"
+        ? "✅ Order ကို စက်ရုံသို့ ပို့ပြီး"
         : order.status === "CANCELLED"
-          ? "Cancel ပြီး"
-          : "";
+          ? "❌ Order Cancel ပြီး"
+          : "🟡 New Life Order";
   const lines = (order.lines || []).map((line, index) => {
     const capacity = line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "မသတ်မှတ်ရသေး");
     const cards = line.cardCount ? line.cardCount.toLocaleString() : "မသတ်မှတ်ရသေး";
     const perCard = line.bottlesPerCard ? line.bottlesPerCard.toLocaleString() : "မသတ်မှတ်ရသေး";
     const bottles = line.totalBottles ? line.totalBottles.toLocaleString() : "မတွက်နိုင်သေး";
-    return `${index + 1}. ${line.bottleType || "ဘူး"} — ${capacity}\n   ${cards} ကဒ် × တစ်ကဒ် ${perCard} ဘူး = ${bottles} ဘူး`;
+    return `${index + 1}. ${line.bottleType || "ဘူး"} — ${capacity}\n   ${cards} ကဒ် × ${perCard} ဘူး = ${bottles} ဘူး`;
   });
   const caps = (order.caps || []).map((cap) => `- ${cap.capType}: ပုံမှန် ${(cap.normalPcs || 0).toLocaleString()} pcs + အပို ${(cap.extraPcs || 0).toLocaleString()} pcs`);
-  const capSection = caps.length
-    ? ["", "အဖုံးစာရင်း:", ...caps, `အဖုံးပုံမှန်စုစုပေါင်း: ${totals.totalNormalCaps.toLocaleString()} pcs`, `အဖုံးအပိုစုစုပေါင်း: ${totals.totalExtraCaps.toLocaleString()} pcs`]
-    : [];
-  const warningText = warnings.length ? `\n\n⚠️ အဖုံးသတိပေးချက်\n${warnings.map((cap) => `- ${cap.warningText}`).join("\n")}\n(သတိပေးချက်သာဖြစ်ပြီး အော်ဒါကို မပြောင်းပါ။)` : "";
-  const actionText = includeActions ? "\n\nအောက်က ခလုတ်များထဲမှ တစ်ခုရွေးပါ။" : "";
-  const sourcePreview = String(order.sourceText || "").trim().slice(0, 1200);
+  const pickupTime = String(order.aiNotes || "").match(/လာယူချိန်\s*[:：]\s*(.+)$/u)?.[1]?.trim() || "";
+  const warningLines = warnings.map((cap) => {
+    const requested = Number(cap.requestedTotalPcs || 0);
+    const expected = Number(cap.expectedPcs || totals.totalBottles || 0);
+    const difference = Math.abs(requested - expected).toLocaleString();
+    return `⚠️ ${cap.capType}: ${requested.toLocaleString()} pcs (မျှော်မှန်း ${expected.toLocaleString()}၊ ကွာ ${difference} pcs — သတိပေးချက်သာ)`;
+  });
+  const sourcePreview = includeSource ? String(order.sourceText || "").trim().slice(0, 1200) : "";
   return [
-    `🟡 New Life Order —${status ? ` ${status}` : ""}`,
+    heading,
     `Customer: ${order.customer?.name || order.draftCustomerName || "မတွေ့သေးပါ"}`,
-    order.customer?.phone || order.customerPhone ? `ဖုန်း: ${order.customer?.phone || order.customerPhone}` : null,
-    `ထုတ်ရမည့်ရက်: ${formatDateLabel(order.requestedDate)}`,
-    `ကားဂိတ်/နေရာ: ${order.destination || "မသတ်မှတ်ရသေး"}`,
-    order.aiNotes ? `မှတ်ချက်: ${order.aiNotes}` : null,
+    `ရက်: ${formatDateLabel(order.requestedDate)}`,
+    `နေရာ: ${order.destination || "မသတ်မှတ်ရသေး"}`,
+    pickupTime ? `လာယူချိန်: ${pickupTime}` : null,
     "",
-    "ဘူးစာရင်း:",
+    "ဘူး:",
     ...(lines.length ? lines : ["မသတ်မှတ်ရသေး"]),
-    "",
-    `စုစုပေါင်းကဒ်: ${totals.totalCards.toLocaleString()}`,
-    `စုစုပေါင်းဘူး: ${totals.totalBottles.toLocaleString()}`,
-    "",
-    ...capSection,
-    warningText,
-    sourcePreview ? `မူရင်းမှာယူစာ:\n${sourcePreview}` : null,
-    actionText,
-  ].filter((line) => line !== null && line !== undefined).join("\n").trim();
+    `စုစုပေါင်း: ${totals.totalCards.toLocaleString()} ကဒ် / ${totals.totalBottles.toLocaleString()} ဘူး`,
+    caps.length ? ["", "အဖုံး:", ...caps] : [],
+    warningLines.length ? ["", ...warningLines] : [],
+    sourcePreview ? ["", "မူရင်းမှာယူစာ:", sourcePreview] : [],
+    includeActions ? ["", "အောက်က ခလုတ်ကို အသုံးပြုပါ။"] : [],
+  ].flat(Infinity).filter((line) => line !== null && line !== undefined && line !== "").join("\n").trim();
 }
 
 export function formatFactoryOrderMessage(order, { batch = false } = {}) {

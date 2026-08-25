@@ -68,13 +68,25 @@ function actorHeaders() {
 }
 
 async function requestJson(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...actorHeaders(), ...(options.headers || {}) },
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || body.ok === false) throw new Error(body.error || "Order request မအောင်မြင်ပါ။");
-  return body;
+  const { timeoutMs = 15000, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(path, {
+      ...fetchOptions,
+      signal: controller.signal,
+      headers: { ...(fetchOptions.body ? { "Content-Type": "application/json" } : {}), ...actorHeaders(), ...(fetchOptions.headers || {}) },
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || body.ok === false) throw new Error(body.error || `Order request မအောင်မြင်ပါ (${response.status})။`);
+    return body;
+  } catch (error) {
+    if (error?.name === "AbortError") throw new Error("Order data ရယူရန် အချိန်ကျော်ပါပြီ။ ခဏနေရင် ပြန်စမ်းပါ။");
+    if (!error?.message) throw new Error("Order data ရယူရာတွင် အဆင်မပြေပါ။");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 function OrderLines({ order }) {
@@ -149,6 +161,7 @@ export default function OrdersPage() {
   const [candidateMap, setCandidateMap] = useState({});
   const [candidateLoadingId, setCandidateLoadingId] = useState("");
   const [detailEdits, setDetailEdits] = useState({});
+  const [editingDetailsId, setEditingDetailsId] = useState("");
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -159,17 +172,24 @@ export default function OrdersPage() {
         : viewMode === "HISTORY"
           ? "/api/orders?view=history&limit=200"
           : "/api/orders?limit=200";
-      const [ordersBody, settingBody, historyBody, trashBody] = await Promise.all([
+      const [ordersResult, settingResult, historyResult, trashResult] = await Promise.allSettled([
         requestJson(orderQuery),
         viewMode === "ACTIVE" ? requestJson("/api/order-automation") : Promise.resolve(null),
         viewMode !== "ACTIVE" ? requestJson("/api/audit-logs?includeOrders=true&limit=500") : Promise.resolve(null),
         viewMode === "TRASH" ? Promise.resolve(null) : requestJson("/api/orders?view=trash&limit=200"),
       ]);
+      if (ordersResult.status !== "fulfilled") throw ordersResult.reason;
+      const ordersBody = ordersResult.value;
+      const settingBody = settingResult.status === "fulfilled" ? settingResult.value : null;
+      const historyBody = historyResult.status === "fulfilled" ? historyResult.value : null;
+      const trashBody = trashResult.status === "fulfilled" ? trashResult.value : null;
       const nextOrders = Array.isArray(ordersBody.data) ? ordersBody.data : [];
       setOrders(nextOrders);
       setTrashCount(viewMode === "TRASH" ? nextOrders.length : Array.isArray(trashBody?.data) ? trashBody.data.length : 0);
       setOrderLogs(viewMode !== "ACTIVE" && Array.isArray(historyBody?.data) ? historyBody.data.filter((log) => log.entityType === "Order") : []);
       if (settingBody?.data) setAutomation({ morningBatchEnabled: Boolean(settingBody.data.morningBatchEnabled), morningBatchTime: settingBody.data.morningBatchTime || "08:10" });
+      const auxiliaryFailed = [settingResult, historyResult, trashResult].some((result) => result.status === "rejected");
+      if (auxiliaryFailed) setMessage("Order စာရင်းကို ပြထားပါပြီ။ အချို့အချက်အလက်များ မရသေးပါ၊ ခဏနေရင် ပြန်စစ်ပါမယ်။");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -214,7 +234,7 @@ export default function OrdersPage() {
     setError("");
     setMessage("");
     try {
-      const body = await requestJson("/api/orders", { method: "PATCH", body: JSON.stringify({ orderId, action, ...payload }) });
+      const body = await requestJson("/api/orders", { method: "PATCH", body: JSON.stringify({ orderId, action, ...payload }), timeoutMs: action === "retry_ai" ? 55000 : 15000 });
       if (body.warning) setMessage(body.warning);
       else if (action === "archive") setMessage("Order ကို History ထဲ ရွှေ့ပြီးပါပြီ။ Data မဖျက်ထားပါ။");
       else if (action === "restore") setMessage("Order ကို History မှ ပြန်ယူပြီးပါပြီ။ မူရင်း status မပြောင်းပါ။");
@@ -248,6 +268,7 @@ export default function OrdersPage() {
       destination: details.destination ?? order.destination ?? "",
       customerPhone: details.customerPhone ?? order.customerPhone ?? "",
     });
+    setEditingDetailsId("");
   };
 
   const findCandidates = async (order) => {
@@ -294,11 +315,6 @@ export default function OrdersPage() {
     }
   };
 
-  const counts = orders.reduce((result, order) => {
-    result[order.status] = (result[order.status] || 0) + 1;
-    return result;
-  }, {});
-
   return (
     <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
@@ -324,31 +340,14 @@ export default function OrdersPage() {
           <p className="mt-3 text-xs text-slate-500">AI စစ်ပြီး Draft ပြန်ပေးပါမယ်။ Confirm/Cancel ခလုတ်ကို group admin သာ သုံးနိုင်ပါမယ်။</p>
         </section>
 
-        {viewMode === "ACTIVE" ? <section id="customer-orders" className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Customer Orders</p>
-              <h2 className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">Telegram မှာဝင်လာသော Customer Orders</h2>
-              <p className="mt-1 text-sm text-slate-600">မတွေ့သေးသော Customer နှင့် ပြန်စစ်ရန်လိုသော Draft Order များကို ဒီနေရာမှာ အရင်စစ်နိုင်ပါတယ်။</p>
-            </div>
+        {viewMode === "ACTIVE" ? <section id="customer-orders" className="rounded-2xl border border-emerald-200 bg-white px-4 py-3 shadow-sm sm:px-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div><p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Customer Orders</p><h2 className="mt-1 font-bold text-slate-900">စစ်ဆေးရန်လိုသော Order များ <span className="text-emerald-700">({customerOrderSummary.pendingOrders.length})</span></h2></div>
             <div className="flex flex-wrap gap-2 text-xs font-bold">
               <button type="button" onClick={() => setStatusFilter("NEEDS_CUSTOMER")} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800 hover:bg-amber-100">Customer မတွေ့သေး ({customerOrderSummary.needsCustomerCount})</button>
               <button type="button" onClick={() => setStatusFilter("NEEDS_REVIEW")} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-orange-800 hover:bg-orange-100">ပြန်စစ်ရန် ({customerOrderSummary.needsReviewCount})</button>
             </div>
           </div>
-          {customerOrderSummary.pendingOrders.length === 0 ? <p className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-5 text-center text-sm text-slate-500">စစ်ဆေးရန်လိုသော Customer Order မရှိသေးပါ။</p> : <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {customerOrderSummary.pendingOrders.slice(0, 6).map((order) => {
-              const orderHref = `/orders?status=${encodeURIComponent(order.status)}&orderId=${encodeURIComponent(order.id)}#order-${encodeURIComponent(order.id)}`;
-              const lineSummary = (order.lines || []).slice(0, 2).map((line) => `${line.bottleType || "ဘူး"} ${line.capacityLabel || ""} · ${line.cardCount || "?"} ကဒ်`).join("၊ ");
-              return <article key={order.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-                <div className="flex items-start justify-between gap-2"><h3 className="min-w-0 truncate font-bold text-slate-900">{order.customer?.name || order.draftCustomerName || "Customer မသတ်မှတ်ရသေး"}</h3><span className={`shrink-0 rounded-full border px-2 py-1 text-[11px] font-bold ${STATUS_STYLES[order.status] || STATUS_STYLES.DRAFT}`}>{STATUS_LABELS[order.status] || order.status}</span></div>
-                <p className="mt-2 text-xs text-slate-600">ထုတ်ရမည့်ရက်: {formatDate(order.requestedDate)}</p>
-                <p className="mt-1 truncate text-xs text-slate-600">နေရာ: {order.destination || "မသတ်မှတ်ရသေး"}</p>
-                {lineSummary ? <p className="mt-2 line-clamp-2 text-sm font-medium text-slate-800">{lineSummary}</p> : null}
-                <a href={orderHref} className="mt-3 inline-flex min-h-9 items-center rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100">{order.status === "NEEDS_CUSTOMER" ? "Customer ချိတ်ရန် / အသစ်ထည့်ရန် →" : "Order ပြန်စစ်ရန် →"}</a>
-              </article>;
-            })}
-          </div>}
         </section> : null}
 
         <section className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3">
@@ -359,13 +358,6 @@ export default function OrdersPage() {
         </section>
 
         {viewMode === "ACTIVE" ? <>
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-semibold text-amber-700">Customer မတွေ့သေး</p><p className="mt-1 text-2xl font-bold text-amber-900">{counts.NEEDS_CUSTOMER || 0}</p></div>
-            <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><p className="text-xs font-semibold text-orange-700">ပြန်စစ်ရန်</p><p className="mt-1 text-2xl font-bold text-orange-900">{counts.NEEDS_REVIEW || 0}</p></div>
-            <div className="rounded-xl border border-violet-200 bg-violet-50 p-4"><p className="text-xs font-semibold text-violet-700">မနက် batch queue</p><p className="mt-1 text-2xl font-bold text-violet-900">{counts.BATCH_QUEUED || 0}</p></div>
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4"><p className="text-xs font-semibold text-blue-700">အတည်ပြုပြီး</p><p className="mt-1 text-2xl font-bold text-blue-900">{(counts.CONFIRMED || 0) + (counts.FACTORY_NOTIFIED || 0)}</p></div>
-          </section>
-
           <section className="flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div>
               <h2 className="font-semibold text-violet-950">မနက် batch ပို့ခြင်း</h2>
@@ -379,7 +371,7 @@ export default function OrdersPage() {
 
         {viewMode !== "TRASH" ? <section className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-3">
           <p className="mr-2 flex items-center text-sm font-semibold text-slate-700">Filter:</p>
-          {["ALL", "NEEDS_CUSTOMER", "NEEDS_REVIEW", "DRAFT", "CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED"].map((status) => (
+          {["ALL", "NEEDS_CUSTOMER", "NEEDS_REVIEW", "DRAFT", "CONFIRMED", "BATCH_QUEUED"].map((status) => (
             <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${statusFilter === status ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>
               {status === "ALL" ? "အားလုံး" : STATUS_LABELS[status] || status}
             </button>
@@ -418,7 +410,7 @@ export default function OrdersPage() {
                   <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ထုတ်ရမည့်ရက်</p><p className="font-semibold text-slate-800">{formatDate(order.requestedDate)}</p></div>
                   <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ကားဂိတ်/နေရာ</p><p className="font-semibold text-slate-800">{order.destination || "မသတ်မှတ်ရသေး"}</p></div>
                 </div>
-                {canEditDetails ? <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 p-3">
+                {canEditDetails && editingDetailsId === order.id ? <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 p-3">
                   <p className="font-semibold text-cyan-950">Order အချက်အလက် ပြင်ရန်</p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-3">
                     <label className="text-xs font-semibold text-cyan-900">ထုတ်ရမည့်ရက်<input type="date" value={details.requestedDate ?? order.requestedDate ?? ""} onChange={(event) => setDetailField(order.id, "requestedDate", event.target.value)} className="mt-1 w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 text-sm font-normal text-slate-900" /></label>
@@ -447,6 +439,7 @@ export default function OrdersPage() {
                 ) : null}
 
                 {viewMode === "ACTIVE" && !archived ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                  {canEditDetails ? <button type="button" onClick={() => setEditingDetailsId(editingDetailsId === order.id ? "" : order.id)} disabled={busy} className="rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100 disabled:opacity-50">{editingDetailsId === order.id ? "ပြင်ရန်ပိတ်မည်" : "အသေးစိတ်ပြင်ရန်"}</button> : null}
                   {(order.status === "DRAFT" || order.status === "NEEDS_REVIEW") && !order.missingFields?.length ? <><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "IMMEDIATE" })} disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Confirm — ချက်ချင်းပို့</button><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "MORNING_BATCH" })} disabled={busy} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50">Confirm — မနက် batch</button></> : null}
                   {!["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(order.status) && order.sourceText ? <button type="button" onClick={() => patchOrder(order.id, "retry_ai")} disabled={busy} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-bold text-orange-800 hover:bg-orange-100 disabled:opacity-50">{busy ? "AI စစ်နေသည်..." : "AI ဖြင့် ပြန်စစ်ရန်"}</button> : null}
                   {(order.status === "CONFIRMED" || order.status === "BATCH_QUEUED") ? <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">Confirm ပြီးပါပြီ။ Factory notification state ကို စောင့်ကြည့်ပါ။</span> : null}
