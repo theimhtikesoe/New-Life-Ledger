@@ -138,18 +138,23 @@ export function normalizeExtractedOrder(value, rawText) {
         };
       }).filter((line) => line.bottleType || line.capacityLabel || line.bottlesPerCard || line.cardCount)
     : [];
+  const totalBottleCount = lines.reduce((sum, line) => sum + (Number(line.totalBottles) || 0), 0);
   const caps = Array.isArray(input.caps)
     ? input.caps.map((cap) => {
-        const normalPcs = positiveInteger(cap?.normalPcs) || 0;
+        const rawCapType = cleanText(cap?.capType);
+        const capType = rawCapType && !/^အဖုံး\s*မသတ်မှတ်ရသေး$/u.test(rawCapType) ? rawCapType : null;
+        const requestedNormalPcs = positiveInteger(cap?.normalPcs);
         const extraPcs = positiveInteger(cap?.extraPcs) || 0;
+        if (!capType && !requestedNormalPcs && !extraPcs) return null;
+        const normalPcs = requestedNormalPcs || totalBottleCount;
         return {
-          capType: cleanText(cap?.capType) || "အဖုံး မသတ်မှတ်ရသေး",
+          capType: capType || "အဖုံး မသတ်မှတ်ရသေး",
           normalPcs,
           extraPcs,
           requestedTotalPcs: normalPcs + extraPcs,
           notes: cleanText(cap?.notes),
         };
-      }).filter((cap) => cap.normalPcs || cap.extraPcs || cap.capType)
+      }).filter(Boolean)
     : [];
   const missingFields = new Set(Array.isArray(input.missingFields) ? input.missingFields.map((item) => String(item).trim()).filter(Boolean) : []);
   if (!cleanText(input.customerName)) missingFields.add("Customer အမည်");
@@ -209,19 +214,15 @@ function formatDateLabel(value) {
 export function formatOrderDraftMessage(order, { includeActions = true } = {}) {
   const totals = calculateOrderTotals(order);
   const warnings = calculateCapWarnings(order).filter((cap) => cap.warningText);
-  const status = order.status === "NEEDS_CUSTOMER"
-    ? "Customer match မတွေ့သေးပါ"
-    : order.status === "NEEDS_REVIEW"
-      ? "အချက်အလက် မပြည့်စုံသေးပါ"
-      : order.status === "CONFIRMED"
-        ? "Confirmed — စက်ရုံပို့ရန်"
-        : order.status === "BATCH_QUEUED"
-          ? "08:10 Batch ထဲ ထည့်ပြီး"
-          : order.status === "FACTORY_NOTIFIED"
-            ? "စက်ရုံသို့ ပို့ပြီး"
-            : order.status === "CANCELLED"
-              ? "Cancel ပြီး"
-              : "Draft — ပြန်စစ်ရန်";
+  const status = order.status === "CONFIRMED"
+    ? "Confirmed — စက်ရုံပို့ရန်"
+    : order.status === "BATCH_QUEUED"
+      ? "08:10 Batch ထဲ ထည့်ပြီး"
+      : order.status === "FACTORY_NOTIFIED"
+        ? "စက်ရုံသို့ ပို့ပြီး"
+        : order.status === "CANCELLED"
+          ? "Cancel ပြီး"
+          : "";
   const lines = (order.lines || []).map((line, index) => {
     const capacity = line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "မသတ်မှတ်ရသေး");
     const cards = line.cardCount ? line.cardCount.toLocaleString() : "မသတ်မှတ်ရသေး";
@@ -229,13 +230,15 @@ export function formatOrderDraftMessage(order, { includeActions = true } = {}) {
     const bottles = line.totalBottles ? line.totalBottles.toLocaleString() : "မတွက်နိုင်သေး";
     return `${index + 1}. ${line.bottleType || "ဘူး"} — ${capacity}\n   ${cards} ကဒ် × တစ်ကဒ် ${perCard} ဘူး = ${bottles} ဘူး`;
   });
-  const caps = (order.caps || []).map((cap) => `- ${cap.capType}: ပုံမှန် ${(cap.normalPcs || 0).toLocaleString()} pcs + အပို ${(cap.extraPcs || 0).toLocaleString()} pcs = ${(cap.requestedTotalPcs || 0).toLocaleString()} pcs`);
-  const missing = order.missingFields?.length ? `\nပြန်ဖြည့်ရန်: ${order.missingFields.join(", ")}` : "";
+  const caps = (order.caps || []).map((cap) => `- ${cap.capType}: ပုံမှန် ${(cap.normalPcs || 0).toLocaleString()} pcs + အပို ${(cap.extraPcs || 0).toLocaleString()} pcs`);
+  const capSection = caps.length
+    ? ["", "အဖုံးစာရင်း:", ...caps, `အဖုံးပုံမှန်စုစုပေါင်း: ${totals.totalNormalCaps.toLocaleString()} pcs`, `အဖုံးအပိုစုစုပေါင်း: ${totals.totalExtraCaps.toLocaleString()} pcs`]
+    : [];
   const warningText = warnings.length ? `\n\n⚠️ အဖုံးသတိပေးချက်\n${warnings.map((cap) => `- ${cap.warningText}`).join("\n")}\n(သတိပေးချက်သာဖြစ်ပြီး အော်ဒါကို မပြောင်းပါ။)` : "";
   const actionText = includeActions ? "\n\nအောက်က ခလုတ်များထဲမှ တစ်ခုရွေးပါ။" : "";
   const sourcePreview = String(order.sourceText || "").trim().slice(0, 1200);
   return [
-    `🟡 New Life Order — ${status}`,
+    `🟡 New Life Order —${status ? ` ${status}` : ""}`,
     `Customer: ${order.customer?.name || order.draftCustomerName || "မတွေ့သေးပါ"}`,
     order.customer?.phone || order.customerPhone ? `ဖုန်း: ${order.customer?.phone || order.customerPhone}` : null,
     `ထုတ်ရမည့်ရက်: ${formatDateLabel(order.requestedDate)}`,
@@ -247,12 +250,7 @@ export function formatOrderDraftMessage(order, { includeActions = true } = {}) {
     `စုစုပေါင်းကဒ်: ${totals.totalCards.toLocaleString()}`,
     `စုစုပေါင်းဘူး: ${totals.totalBottles.toLocaleString()}`,
     "",
-    "အဖုံးစာရင်း:",
-    ...(caps.length ? caps : ["မသတ်မှတ်ရသေး"]),
-    `အဖုံးပုံမှန်စုစုပေါင်း: ${totals.totalNormalCaps.toLocaleString()} pcs`,
-    `အဖုံးအပိုစုစုပေါင်း: ${totals.totalExtraCaps.toLocaleString()} pcs`,
-    `အဖုံးတောင်းဆိုချက်စုစုပေါင်း: ${totals.totalRequestedCaps.toLocaleString()} pcs`,
-    missing,
+    ...capSection,
     warningText,
     sourcePreview ? `မူရင်းမှာယူစာ:\n${sourcePreview}` : null,
     actionText,

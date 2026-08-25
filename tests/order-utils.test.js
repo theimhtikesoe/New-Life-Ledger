@@ -4,6 +4,7 @@ import {
   calculateCapWarnings,
   calculateOrderTotals,
   formatFactoryOrderMessage,
+  formatOrderDraftMessage,
   normalizeExtractedOrder,
   positiveInteger,
   resolveOrderDate,
@@ -76,6 +77,22 @@ describe("multi-line order totals and cap rules", () => {
     expect(normalized.missingFields).toEqual([]);
   });
 
+  it("defaults normal caps to total bottles when only a cap type is provided", () => {
+    const normalized = normalizeExtractedOrder({
+      customerName: "ကံလီ",
+      customerPhone: null,
+      requestedDate: "2026-08-26",
+      destination: "ပုလဲဂိတ်",
+      lines: [{ bottleType: "အပြာ", capacityMl: 300, capacityLabel: "0.3 Liter", bottlesPerCard: 400, cardCount: 20, notes: null }],
+      caps: [{ capType: "အဖုံးပြာ", normalPcs: null, extraPcs: 0, notes: null }],
+      missingFields: [],
+      confidence: "high",
+      notes: null,
+    }, "");
+    expect(normalized.caps).toEqual([expect.objectContaining({ capType: "အဖုံးပြာ", normalPcs: 8000, extraPcs: 0, requestedTotalPcs: 8000 })]);
+    expect(calculateCapWarnings(normalized)).toEqual([expect.objectContaining({ warningText: null })]);
+  });
+
   it("keeps normal caps plus extra caps exactly as requested and only warns on mismatch", () => {
     const order = {
       ...baseOrder,
@@ -86,6 +103,35 @@ describe("multi-line order totals and cap rules", () => {
     expect(warning.warningText).toContain("မှာထား 5,020 pcs");
     expect(calculateOrderTotals(order)).toMatchObject({ totalBottles: 1500, totalRequestedCaps: 5020 });
     expect(formatFactoryOrderMessage(order)).toContain("5,020");
+  });
+
+  it("formats the Telegram draft without internal missing fields or requested-cap total", () => {
+    const normalized = normalizeExtractedOrder({
+      customerName: "ကံလီ",
+      customerPhone: null,
+      requestedDate: "2026-08-26",
+      destination: "ပုလဲဂိတ်",
+      lines: [{ bottleType: "အပြာ", capacityMl: 300, capacityLabel: "0.3 Liter", bottlesPerCard: 400, cardCount: 20, notes: null }],
+      caps: [{ capType: "အဖုံးပြာ", normalPcs: null, extraPcs: 0, notes: null }],
+      missingFields: ["phone", "normalCapPcs"],
+      confidence: "medium",
+      notes: null,
+    }, "");
+    const message = formatOrderDraftMessage({ ...normalized, status: "NEEDS_REVIEW", sourceText: "/order ကံလီ" }, { includeActions: false });
+    expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
+    expect(message).toContain("အဖုံးပုံမှန်စုစုပေါင်း: 8,000 pcs");
+    expect(message).toContain("အဖုံးအပိုစုစုပေါင်း: 0 pcs");
+    expect(message).not.toContain("အဖုံးတောင်းဆိုချက်စုစုပေါင်း");
+    expect(message).not.toContain("ပြန်ဖြည့်ရန်");
+    expect(message).not.toContain("phone");
+    expect(message).not.toContain("အဖုံးစာရင်း:\nမသတ်မှတ်ရသေး");
+  });
+
+  it("omits the cap section when no cap type or quantity was provided", () => {
+    const normalized = normalizeExtractedOrder({ customerName: "ကံလီ", requestedDate: "2026-08-26", destination: "ပုလဲဂိတ်", lines: [{ bottleType: "အပြာ", capacityMl: 300, capacityLabel: "0.3 Liter", bottlesPerCard: 400, cardCount: 20 }], caps: [], missingFields: [], confidence: "high" }, "");
+    const message = formatOrderDraftMessage({ ...normalized, status: "DRAFT", sourceText: "/order ကံလီ" }, { includeActions: false });
+    expect(message).not.toContain("အဖုံးစာရင်း");
+    expect(message).not.toContain("အဖုံးပုံမှန်စုစုပေါင်း");
   });
 });
 
