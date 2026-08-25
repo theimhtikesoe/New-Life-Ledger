@@ -190,6 +190,14 @@ export default function OrdersPage() {
   }, [viewMode]);
 
   const filteredOrders = useMemo(() => statusFilter === "ALL" ? orders : orders.filter((order) => order.status === statusFilter), [orders, statusFilter]);
+  const customerOrderSummary = useMemo(() => {
+    const pendingOrders = orders.filter((order) => ["DRAFT", "NEEDS_CUSTOMER", "NEEDS_REVIEW"].includes(order.status));
+    return {
+      pendingOrders,
+      needsCustomerCount: pendingOrders.filter((order) => order.status === "NEEDS_CUSTOMER").length,
+      needsReviewCount: pendingOrders.filter((order) => ["DRAFT", "NEEDS_REVIEW"].includes(order.status)).length,
+    };
+  }, [orders]);
   const orderLogsById = useMemo(() => {
     const map = new Map();
     orderLogs.forEach((log) => {
@@ -313,6 +321,33 @@ export default function OrdersPage() {
           <pre className="mt-4 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-cyan-50">မှာယူမှု ကံလီ{`\n`}0.3 Liter အပြာ{`\n`}400 ဆံ့ 20 ကဒ်{`\n`}အဖုံးပြာ 5000 pcs + အပို 20{`\n`}ပုလဲဂိတ်{`\n`}မနက်ဖြန်</pre>
           <p className="mt-3 text-xs text-slate-500">AI စစ်ပြီး Draft ပြန်ပေးပါမယ်။ Confirm/Cancel ခလုတ်ကို group admin သာ သုံးနိုင်ပါမယ်။</p>
         </section>
+
+        {viewMode === "ACTIVE" ? <section id="customer-orders" className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Customer Orders</p>
+              <h2 className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">Telegram မှာဝင်လာသော Customer Orders</h2>
+              <p className="mt-1 text-sm text-slate-600">မတွေ့သေးသော Customer နှင့် ပြန်စစ်ရန်လိုသော Draft Order များကို ဒီနေရာမှာ အရင်စစ်နိုင်ပါတယ်။</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs font-bold">
+              <button type="button" onClick={() => setStatusFilter("NEEDS_CUSTOMER")} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800 hover:bg-amber-100">Customer မတွေ့သေး ({customerOrderSummary.needsCustomerCount})</button>
+              <button type="button" onClick={() => setStatusFilter("NEEDS_REVIEW")} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-orange-800 hover:bg-orange-100">ပြန်စစ်ရန် ({customerOrderSummary.needsReviewCount})</button>
+            </div>
+          </div>
+          {customerOrderSummary.pendingOrders.length === 0 ? <p className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-5 text-center text-sm text-slate-500">စစ်ဆေးရန်လိုသော Customer Order မရှိသေးပါ။</p> : <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {customerOrderSummary.pendingOrders.slice(0, 6).map((order) => {
+              const orderHref = `/orders?status=${encodeURIComponent(order.status)}&orderId=${encodeURIComponent(order.id)}#order-${encodeURIComponent(order.id)}`;
+              const lineSummary = (order.lines || []).slice(0, 2).map((line) => `${line.bottleType || "ဘူး"} ${line.capacityLabel || ""} · ${line.cardCount || "?"} ကဒ်`).join("၊ ");
+              return <article key={order.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                <div className="flex items-start justify-between gap-2"><h3 className="min-w-0 truncate font-bold text-slate-900">{order.customer?.name || order.draftCustomerName || "Customer မသတ်မှတ်ရသေး"}</h3><span className={`shrink-0 rounded-full border px-2 py-1 text-[11px] font-bold ${STATUS_STYLES[order.status] || STATUS_STYLES.DRAFT}`}>{STATUS_LABELS[order.status] || order.status}</span></div>
+                <p className="mt-2 text-xs text-slate-600">ထုတ်ရမည့်ရက်: {formatDate(order.requestedDate)}</p>
+                <p className="mt-1 truncate text-xs text-slate-600">နေရာ: {order.destination || "မသတ်မှတ်ရသေး"}</p>
+                {lineSummary ? <p className="mt-2 line-clamp-2 text-sm font-medium text-slate-800">{lineSummary}</p> : null}
+                <a href={orderHref} className="mt-3 inline-flex min-h-9 items-center rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100">{order.status === "NEEDS_CUSTOMER" ? "Customer ချိတ်ရန် / အသစ်ထည့်ရန် →" : "Order ပြန်စစ်ရန် →"}</a>
+              </article>;
+            })}
+          </div>}
+        </section> : null}
 
         <section className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-3">
           <button type="button" onClick={() => { setViewMode("ACTIVE"); setStatusFilter("ALL"); }} className={`rounded-xl border px-4 py-3 text-sm font-bold ${viewMode === "ACTIVE" ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>လက်ရှိ Orders</button>
