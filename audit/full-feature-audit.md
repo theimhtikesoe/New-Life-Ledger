@@ -78,9 +78,50 @@ Vercel ထဲတွင် `MANUS_API_KEY` အမည်ရှိရုံနှ�
 
 Feature branch တွင် `pnpm run build`, `pnpm run lint`, `git diff --check` အောင်မြင်သည်။ Local 375px Balance Detail check တွင် `bodyScrollWidth = viewportWidth = 375` ဖြစ်ပြီး formula၊ အကြွေး/ကြိုတင်ငွေချေ cards ပေါ်သည်၊ deleted customer မပေါ်ပါ။ Local route audit တွင် customer, daily summary, audit, backup, report, KPay နှင့် auto-report APIs များသည် session မရှိလျှင် HTTP 401 ပြန်ပြီး `/api/health` သည် HTTP 200 ပြန်သည်။ Production AI check သည် unauthorized Manus API key error ဖြင့်ပြီးဆုံးသည်။ Production data ကို ထည့်ခြင်း၊ ပြင်ခြင်း၊ ဖျက်ခြင်း၊ restore ပြုလုပ်ခြင်း သို့မဟုတ် Telegram message အသစ်ပို့ခြင်း မလုပ်ခဲ့ပါ။
 
+
+
+## နောက်ဆုံး Post-merge Production အတည်ပြုချက်
+
+**အတည်ပြုသည့်နေ့:** 2026-08-25
+
+အထက်ပါ pre-merge ခွဲခြားချက်များကို အောက်ပါအတည်ပြုချက်က အစားထိုးပါသည်။ PR #6 သည် merge commit `0d0367d0ed2c3b08a28f9a6a7bfbf9a76b015650` ဖြင့် `main` သို့ ဝင်ပြီး Production တွင် live ဖြစ်နေပါပြီ။ Code-only merge ဖြစ်သဖြင့် migration, restore, customer/ledger edit, delete, Telegram message, သို့မဟုတ် report send တစ်ခုမျှ မလုပ်ခဲ့ပါ။
+
+| စစ်ဆေးချက် | လက်ရှိ Production အဖြေ |
+|---|---|
+| Server-side security | Customers, backup, daily summary နှင့် auto-report status တို့ကို anonymous ခေါ်ရာ HTTP 401 ပြန်သည်။ Health သည် HTTP 200 ဖြစ်ပြီး anonymous session သည် `authenticated: false` ပြန်သည်။ |
+| Dashboard balance link | Net Receivable `16,093,800 Ks` ပြပြီး `/balance-detail` သို့ click လုပ်၍ သွားနိုင်သည်။ Active customers `162` ယောက်၊ overdue `5` ယောက် ပြသည်။ |
+| Balance Detail | Net `16,093,800 Ks`; လက်ကျန်အကြွေး `22,222,050 Ks` / 16 ယောက်; ကြိုတင်ငွေချေ `6,128,250 Ks` / 4 ယောက်; zero balance `142` ယောက်; active customer `162/162` ဖြစ်သည်။ |
+| Ledger deep link | Balance Detail မှ ပထမ `Ledger →` link သည် `Solo (ခိုလမ်)` customer ကိုဖွင့်ပြီး `5,112,500 Ks` နှင့် ရှိပြီးသား transaction `5/5` ကို ပြသည်။ |
+| AI Daily Summary | Key update/redeploy ပြီးနောက် အရင် `Manus API key မမှန်ကန်ပါ` error မပြန်တော့ပါ။ သို့သော် Manus task message polling အဆင့်တွင် generic API-setting error ဖြင့် မပြီးသေးပါ။ |
+
+### AI အတွက် လက်ရှိအဓိပ္ပာယ်
+
+လက်ရှိပြဿနာကို Daily Summary UI သို့မဟုတ် ledger data ပျက်နေသည်ဟု မသတ်မှတ်နိုင်ပါ။ Request သည် Manus integration ထဲသို့ ရောက်သော်လည်း task message polling အဆင့်တွင် အဖြေမရသေးခြင်းဖြစ်သည်။ Manus task polling endpoint/permission/response behavior ကို provider ဘက်တွင် ပြန်စစ်ရန်လိုပြီး API key တန်ဖိုးကို chat ထဲသို့ မပို့ရပါ။
+
+### နောက်ထပ်လုပ်စရာ ဦးစားပေး
+
+| ဦးစားပေး | လုပ်စရာ | အဓိကအကြောင်း |
+|---|---|---|
+| P0 | Manus task polling/API configuration ကို provider ဘက်နှင့် ပြန်စစ် | AI explanation အလုပ်လုပ်စေရန် |
+| P1 | KPay event idempotency/deduplication ထည့် | Notification ထပ်ရောက်လျှင် ledger နှစ်ကြိမ်မဝင်စေရန် |
+| P1 | Restore ကို staging/test database ဖြင့်သာ စမ်း | Production data overwrite မဖြစ်စေရန် |
+| P2 | Legacy schema အတွက် reviewed migration path ပြုလုပ် | Auto-DROP မရှိတော့သည့်အခြေအနေတွင် လုံခြုံစွာ upgrade လုပ်ရန် |
+
+Option A report schedule သည် မပြောင်းပါ။ Vercel Cron တစ်ကြိမ်တည်း `30 1 * * *` ဖြင့် မနေ့က Myanmar date report ကို ခန့်မှန်း 08:00 Myanmar အချိန်တွင် ပို့ပြီး report-date lock သုံးပါသည်။ 09:00/10:00 retry scheduler မထည့်ထားပါ။
+
+## 2026-08-25 Daily Summary Mobile UI ပြင်ဆင်ချက်
+
+User ပေးထားသော 750×6612 mobile screenshot ကို tile 12 ခုဖြင့် အပေါ်မှအောက် စစ်ဆေးရာ AI ရှင်းပြချက် panel သည် card များနှင့် padding များလွန်းပြီး page အလွန်ရှည်နေသည်ကို တွေ့ရသည်။ Findings/Checks များကို အမြဲဖွင့်ထားခြင်း၊ စာလုံးအရွယ်ကြီးခြင်းနှင့် Daily Summary KPI များကို screen အောက်သို့ အလွန်တွန်းပို့ခြင်းက အဓိက UI ပြဿနာများဖြစ်သည်။
+
+UI-only ပြင်ဆင်ချက်တွင် AI panel ကို white card + purple header အဖြစ် ပြန်စီပြီး overview ကို အပေါ်မှာ အတိုချုံးပြထားသည်။ Findings နှင့် Checks များကို အရေအတွက်ပြ summary bar နှင့် ဖွင့်ကြည့်နိုင်သော accordion အဖြစ် ပြောင်းထားသည်။ Mobile customer table ကို ဖတ်ရလွယ်သော customer cards အဖြစ်ပြပြီး desktop တွင် မူလ table ကို ဆက်ထားသည်။ Padding, gap, heading နှင့် body text အရွယ်များကို mobile-first အတိုင်း လျှော့ထားသည်။ AI payload, accounting formula, customer totals, database query, authentication နှင့် business data များကို မပြောင်းပါ။
+
+Read-only fixture validation တွင် 375px viewport အတွက် document/body width `375px`, horizontal overflow `false`, AI panel height `608px`, mobile customer cards `3` ခုနှင့် collapsed detail sections `2` ခု ရရှိသည်။ 1280px viewport တွင် width `1280px`, horizontal overflow `false`, AI panel height `528px` နှင့် desktop customer table ရှိနေသည်။ Temporary fixture သည် database နှင့် Manus provider ကို မခေါ်ဘဲ browser ထဲတွင်သာ အသုံးပြုခဲ့သည်။
+
 ## References
 
 [1]: https://github.com/theimhtikesoe/New-Life-Ledger/blob/main/src/app/api/ai/daily-summary/route.js "Daily Summary AI route"
-[2]: https://github.com/theimhtikesoe/New-Life-Ledger/blob/security-hardening/src/app/balance-detail/page.js "Balance Detail page on feature branch"
+[2]: https://github.com/theimhtikesoe/New-Life-Ledger/blob/main/src/app/balance-detail/page.js "Balance Detail page"
 [3]: https://github.com/theimhtikesoe/New-Life-Ledger/pull/6 "Security-hardening pull request"
 [4]: https://vercel.com/docs/cron-jobs/manage-cron-jobs "Vercel Cron job behavior"
+[5]: https://open.manus.ai/docs/v2/task-lifecycle "Manus API v2 task lifecycle"
+[6]: https://open.manus.ai/docs/v2/task.listMessages "Manus API v2 task.listMessages"

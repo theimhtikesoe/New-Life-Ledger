@@ -988,3 +988,37 @@ The approved accounting convention remains `CREDIT = debt increase` and `DEBIT =
 The current production Daily Summary AI button was tested once read-only. The request remained loading until completion and then returned `Manus API key မမှန်ကန်ပါ သို့မဟုတ် ခွင့်ပြုချက် မရှိပါ။` The user’s Vercel screenshot shows a `MANUS_API_KEY` variable, but the value is not visible and its presence does not prove validity or permission. The remaining AI deployment action is to replace or verify the Production `MANUS_API_KEY` in Vercel and redeploy, then retest a real report date. The source AI helper imports and calls `ensureDatabase` correctly in the feature branch.
 
 The feature branch also includes a read-only full-route audit. Customer, daily-summary, audit-log, backup, report, KPay, and auto-report APIs reject anonymous requests with HTTP 401; health remains HTTP 200 and unauthenticated session check remains available. `full-feature-audit.md` contains the detailed feature-by-feature review and prioritized remaining work.
+
+## 48. Post-merge Production Verification
+**Date:** 2026-08-25
+
+PR #6 was merged into `main` in merge commit `0d0367d0ed2c3b08a28f9a6a7bfbf9a76b015650`. The deployed application was checked again in read-only mode after the merge. The code-only merge did not run a migration, restore, delete, customer edit, ledger edit, Telegram send, or report send.
+
+| စစ်ဆေးသည့်အရာ | Production ရလဒ် |
+|---|---|
+| Anonymous protected APIs | Customers, backup, daily summary, and auto-report status returned HTTP 401 |
+| Public probes | `/api/health` returned HTTP 200; `/api/auth/session` returned `authenticated: false` anonymously |
+| Dashboard | Net Receivable card displayed `16,093,800 Ks` and linked to `/balance-detail`; 162 active customers and 5 overdue debts were shown |
+| Balance Detail | Net `16,093,800 Ks`; debt `22,222,050 Ks` across 16 customers; prepaid `6,128,250 Ks` across 4 customers; zero balance 142; active customers 162/162 |
+| Customer Ledger deep link | The first Balance Detail link opened `Solo (ခိုလမ်)` with `5,112,500 Ks` debt and 5/5 existing transactions loaded |
+| Daily Summary AI | After the reported key update and redeploy, the earlier explicit invalid-key message did not recur; the request now fails during Manus explanation polling with a generic API-setting error |
+
+The remaining AI issue is therefore not a confirmed Daily Summary UI or business-data problem. The Production request reaches the Manus integration but does not complete its task-message polling successfully. The next safe action is to verify the Manus API task polling permissions/endpoint behavior from the provider side without sharing the secret value. No API key, PIN, customer data, ledger data, or Telegram content was recorded in this report.
+
+Option A report scheduling remains unchanged: one Vercel Cron at `30 1 * * *`, approximately 08:00 Myanmar time, sends the previous Myanmar day’s report and uses a report-date lock to prevent duplicates. No 09:00/10:00 retry scheduler was added.
+
+| နောက်ဦးစားပေး | လုပ်စရာ |
+|---|---|
+| P0 | Diagnose and correct the Manus task polling/API configuration; do not paste or expose the key |
+| P1 | Add KPay event idempotency/deduplication so repeated notifications cannot create duplicate ledger entries |
+| P1 | Test restore only against a staging/test database |
+| P2 | Prepare a reviewed migration path for any future legacy schema upgrade |
+
+## 49. Daily Summary Mobile AI UI Refinement
+**Date:** 2026-08-25
+
+The owner reported that the AI explanation was working but the mobile Daily Summary presentation was visually too long and heavy. A provided 750×6612 screenshot was reviewed in 12 ordered overlapping tiles. The main issues were oversized repeated cards, excessive padding and line-height, always-visible findings/checks, and the normal Daily Summary totals being pushed too far below the AI explanation.
+
+The presentation-only fix in `src/app/daily-summary/page.js` keeps the existing AI payload, accounting logic, API calls, authentication, and data queries unchanged. The AI result now uses a compact white card with a purple header, a short overview, small findings/check counts, collapsible findings/checks sections, and a compact caution strip. On mobile, the customer summary uses stacked cards; on desktop, the existing table remains. KPI spacing and typography were tightened while retaining the existing color meaning.
+
+Read-only fixture validation passed at 375px and 1280px. The 375px check measured document/body width `375px`, no horizontal overflow, AI panel height `608px`, three mobile customer cards, and two collapsed detail sections. The 1280px check measured document/body width `1280px`, no horizontal overflow, AI panel height `528px`, and a visible desktop customer table. The fixture intercepted only browser responses and did not call the database or Manus provider. No customer, ledger, balance, audit, backup, restore, Telegram, or report data was changed.
