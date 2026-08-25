@@ -32,6 +32,11 @@ function money(value) {
 }
 
 export default function ActivityPage() {
+  const [returnToAi] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("from") === "ai" && /^\d{4}-\d{2}-\d{2}$/.test(params.get("date") || "");
+  });
   const [date, setDate] = useState(() => {
     if (typeof window !== "undefined") {
       const requestedDate = new URLSearchParams(window.location.search).get("date") || "";
@@ -63,7 +68,10 @@ export default function ActivityPage() {
     <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
         <header className="rounded-xl border border-slate-200 bg-white p-5">
-          <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
+          <div className="flex flex-wrap items-center gap-3">
+            <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
+            {returnToAi ? <a href={`/daily-summary?date=${encodeURIComponent(date)}#ai-explanation`} className="text-sm font-semibold text-violet-700">← AI ရှင်းပြချက်သို့ ပြန်သွားရန်</a> : null}
+          </div>
           <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div><h1 className="text-2xl font-bold text-slate-900">Activity History</h1><p className="mt-1 text-sm text-slate-600">အရင်စာရင်းများနှင့် လက်ရှိလုပ်ဆောင်ချက်များကို အသေးစိတ်ကြည့်ရန်</p></div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-slate-800" /><select value={actor} onChange={(e) => setActor(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800"><option value="">User အားလုံး</option>{ACTORS.map((item) => <option key={item} value={item}>{item}</option>)}</select><select value={action} onChange={(e) => setAction(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800"><option value="">Action အားလုံး</option>{ACTIONS.map((item) => <option key={item} value={item}>{actionLabel(item)}</option>)}</select></div>
@@ -71,7 +79,7 @@ export default function ActivityPage() {
         </header>
 
         {error && <p className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</p>}
-        <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+        <section id="activity-results" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold text-slate-900">{date} Activity</h2><p className="mt-1 text-xs text-slate-500">အရင်စာရင်းများတွင် လုပ်သူအမည်ကို မသိပါက အလွတ်ထားထားပါသည်။</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">{logs.length} actions</span></div>
           {loading ? <p className="py-10 text-center text-slate-500">မှတ်တမ်းများ ရယူနေသည်...</p> : <>
             <div className="space-y-3 md:hidden">{logs.length ? logs.map((log) => { const metadata = log.metadata || {}; const isLegacy = log.eventSource === "legacy"; return <article key={`mobile-${log.id}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-xs text-slate-500">{formatMyanmarDateTime(log.createdAt)}</p><p className="mt-1 font-medium text-slate-800">{log.actorName || ""}</p></div><span className={`rounded-full px-2 py-1 text-xs font-medium ${log.action === "PAYMENT" ? "bg-emerald-100 text-emerald-700" : log.action === "DEBT_INCREASE" ? "bg-rose-100 text-rose-700" : log.action.includes("DELETE") ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>{actionLabel(log.action)}</span></div><div className="mt-3 border-t border-slate-100 pt-3"><p className="font-medium text-slate-800">{log.entityLabel || ""}</p><p className="mt-1 text-sm text-slate-600">{log.summary}</p></div><div className="mt-3 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-xs"><div><p className="text-slate-500">ပမာဏ</p><p className="mt-1 font-medium text-slate-800">{money(metadata.amount) || "-"}</p></div><div><p className="text-slate-500">Payment</p><p className="mt-1 font-medium text-slate-800">{metadata.paymentType || "-"}</p></div></div><div className="mt-3 flex items-center justify-between gap-2 text-xs"><span className="text-slate-600">{metadata.note || ""}</span><span className={`rounded-full px-2 py-1 ${isLegacy ? "bg-slate-100 text-slate-600" : "bg-cyan-100 text-cyan-700"}`}>{isLegacy ? "အရင်စာရင်း" : "အသစ်မှတ်တမ်း"}</span></div></article>; }) : <div className="rounded-xl border border-slate-200 px-4 py-8 text-center text-sm text-slate-500">ဒီနေ့လုပ်ဆောင်ချက်မရှိသေးပါ။</div>}</div>
