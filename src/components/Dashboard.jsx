@@ -13,7 +13,7 @@ const today = new Date().toISOString().slice(0, 10);
 const AUTO_RETRY_DELAY_MS = 8000;
 const RESUME_REFRESH_AFTER_MS = 30000;
 const API_REQUEST_TIMEOUT_MS = 20000;
-const MAX_GET_ATTEMPTS = 3;
+const MAX_GET_ATTEMPTS = 2;
 const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
 
 function getDashboardDraftStorageKey(actorName) {
@@ -1363,16 +1363,13 @@ export default function Dashboard({ view = "overview" }) {
       )}
       {loading && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/25 px-4 backdrop-blur-[2px]"
+          className="pointer-events-none fixed right-3 top-3 z-[100] flex items-center gap-2 rounded-full border border-cyan-100 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur sm:right-5 sm:top-5"
           role="status"
           aria-live="polite"
           aria-label="အချက်အလက်များကို ရယူနေသည်"
         >
-          <div className="w-full max-w-xs rounded-2xl border border-white/70 bg-white/95 p-6 text-center shadow-2xl">
-            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-cyan-100 border-t-cyan-600" />
-            <p className="mt-4 text-base font-semibold text-slate-900">အချက်အလက်များ ရယူနေသည်...</p>
-            <p className="mt-1 text-sm text-slate-500">ခဏစောင့်ပါ</p>
-          </div>
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-100 border-t-cyan-600" aria-hidden="true" />
+          <span>အချက်အလက်များ ရယူနေသည်...</span>
         </div>
       )}
 
@@ -1515,7 +1512,7 @@ export default function Dashboard({ view = "overview" }) {
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-violet-200 bg-violet-50 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
-              <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary &amp; AI Check</p>
+              <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary &amp; AI</p>
               <p className="mt-1 text-xs text-violet-600">အသေးစိတ်ကြည့်ရန် →</p>
             </a>
 
