@@ -17,13 +17,14 @@ const mocks = vi.hoisted(() => ({
   isTelegramOrderAdminStatus: vi.fn(),
   configuredTelegramOrderAdminIds: vi.fn(),
   formatOrderDraftMessage: vi.fn(),
+  buildFallbackOrderExtraction: vi.fn(),
   sendFactoryNotificationForOrder: vi.fn(),
 }));
 
 vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
 vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
-vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage }));
+vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage, buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 
 import { POST } from "@/app/api/telegram/order-webhook/route";
@@ -77,6 +78,7 @@ describe("Telegram order webhook safety gates", () => {
     mocks.configuredTelegramOrderAdminIds.mockReset().mockImplementation(() => String(process.env.TELEGRAM_ORDER_ADMIN_IDS || "").split(",").map((value) => value.trim()).filter(Boolean));
     mocks.sendFactoryNotificationForOrder.mockReset();
     mocks.formatOrderDraftMessage.mockReset().mockReturnValue("Draft message");
+    mocks.buildFallbackOrderExtraction.mockReset().mockReturnValue({ customerName: "ကံလီ", customerPhone: null, requestedDate: "2026-08-26", destination: "စက်ရုံလာယူမည်", lines: [], caps: [], missingFields: [], confidence: "low", notes: "စက်ရုံလာယူမည် ၊ လာယူချိန်: မနက်ဖြန် မနက် ၇ နာရီ ခွဲ" });
   });
 
   afterEach(() => {
@@ -121,7 +123,10 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(messageUpdate(fallbackOrder.sourceText)));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("draft_ai_pending");
-    expect(mocks.createOrderDraft).toHaveBeenCalledWith(expect.objectContaining({ sourceText: fallbackOrder.sourceText, extracted: {} }));
+    expect(mocks.createOrderDraft).toHaveBeenCalledWith(expect.objectContaining({
+      sourceText: fallbackOrder.sourceText,
+      extracted: expect.objectContaining({ customerName: expect.any(String), requestedDate: expect.any(String), confidence: "low" }),
+    }));
     expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("မူရင်းမှာယူစာကို Draft အဖြစ်") }));
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: fallbackOrder.id, chatId, messageId: 99 });
   });

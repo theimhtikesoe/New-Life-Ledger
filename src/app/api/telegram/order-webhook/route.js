@@ -11,7 +11,7 @@ import {
   isTelegramOrderAdminStatus,
   sendTelegramTextToChat,
 } from "@/lib/telegram";
-import { formatOrderDraftMessage } from "@/lib/order-utils";
+import { buildFallbackOrderExtraction, formatOrderDraftMessage } from "@/lib/order-utils";
 import { sendFactoryNotificationForOrder } from "@/lib/order-delivery";
 
 export const dynamic = "force-dynamic";
@@ -181,7 +181,7 @@ export async function POST(request) {
           sourceMessageId: message.message_id,
           sourceUpdateId: update.update_id,
           sourceText: text,
-          extracted: {},
+          extracted: buildFallbackOrderExtraction(orderText),
         });
         const fallbackMessage = await sendTelegramTextToChat({
           chatId,
