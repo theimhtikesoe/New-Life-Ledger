@@ -44,6 +44,8 @@ model Order {
   notificationMode   String          @default("IMMEDIATE")
   confirmedBy        String?
   confirmedAt        DateTime?
+  cancelledAt        DateTime?
+  cancelledBy        String?
   archivedAt         DateTime?
   archivedBy         String?
   createdAt          DateTime        @default(now())
@@ -57,6 +59,7 @@ model Order {
   @@index([status])
   @@index([requestedDate])
   @@index([customerId])
+  @@index([cancelledAt])
   @@index([archivedAt])
 }
 

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   listOrders: vi.fn(),
   archiveOrder: vi.fn(),
   restoreOrder: vi.fn(),
+  restoreCancelledOrder: vi.fn(),
   updateOrderStatus: vi.fn(),
   sendFactoryNotificationForOrder: vi.fn(),
   syncTelegramOrderMessage: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("@/lib/order-service", () => ({
   listOrders: mocks.listOrders,
   archiveOrder: mocks.archiveOrder,
   restoreOrder: mocks.restoreOrder,
+  restoreCancelledOrder: mocks.restoreCancelledOrder,
   updateOrderStatus: mocks.updateOrderStatus,
 }));
 
@@ -39,7 +41,7 @@ describe("Website Orders API", () => {
     mocks.listOrders.mockResolvedValue([]);
     const response = await GET(new Request("http://localhost/api/orders?archived=only&limit=50"));
     expect(response.status).toBe(200);
-    expect(mocks.listOrders).toHaveBeenCalledWith({ status: null, includeArchived: false, archivedOnly: true, limit: "50" });
+    expect(mocks.listOrders).toHaveBeenCalledWith({ status: null, view: "active", includeArchived: false, archivedOnly: true, limit: "50" });
   });
 
   it("archives through a reversible action without using delete", async () => {
@@ -59,6 +61,15 @@ describe("Website Orders API", () => {
     expect(response.status).toBe(200);
     expect(mocks.restoreOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Staff" });
     expect((await response.json()).data.status).toBe("CANCELLED");
+  });
+
+  it("restores a Cancelled Order through the dedicated Trash action", async () => {
+    const order = { id: "order-1", status: "DRAFT", cancelledAt: null };
+    mocks.restoreCancelledOrder.mockResolvedValue(order);
+    const response = await PATCH(request({ orderId: order.id, action: "trash_restore" }));
+    expect(response.status).toBe(200);
+    expect(mocks.restoreCancelledOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Staff" });
+    expect((await response.json()).data.status).toBe("DRAFT");
   });
 
   it("updates the shared status first and then attempts nonfatal Telegram synchronization", async () => {

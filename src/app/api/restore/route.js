@@ -128,6 +128,8 @@ function normalize(workbook) {
     notificationMode: asText(row.notificationMode ?? row.NotificationMode, "IMMEDIATE") || "IMMEDIATE",
     confirmedBy: row.confirmedBy ?? row.ConfirmedBy ?? null,
     confirmedAt: row.confirmedAt || row.ConfirmedAt ? asDate(row.confirmedAt || row.ConfirmedAt) : null,
+    cancelledAt: row.cancelledAt || row.CancelledAt ? asDate(row.cancelledAt || row.CancelledAt) : null,
+    cancelledBy: row.cancelledBy ?? row.CancelledBy ?? null,
     archivedAt: row.archivedAt || row.ArchivedAt ? asDate(row.archivedAt || row.ArchivedAt) : null,
     archivedBy: row.archivedBy ?? row.ArchivedBy ?? null,
     createdAt: asDate(row.createdAt || row.CreatedAt) || new Date(),

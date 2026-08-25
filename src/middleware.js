@@ -11,6 +11,7 @@ const PUBLIC_API_PATHS = new Set([
   "/api/kpay-webhook/match",
   "/api/telegram/order-webhook",
   "/api/cron/order-batch",
+  "/api/cron/order-trash-cleanup",
 ]);
 
 export async function middleware(request) {

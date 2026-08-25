@@ -11,6 +11,7 @@ import {
   listOrders,
   archiveOrder,
   restoreOrder,
+  restoreCancelledOrder,
   updateOrderStatus,
 } from "@/lib/order-service";
 
@@ -27,10 +28,11 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status")?.trim() || null;
     const archivedMode = searchParams.get("archived");
+    const view = searchParams.get("view") === "trash" ? "trash" : searchParams.get("view") === "history" ? "history" : "active";
     const includeArchived = archivedMode === "include" || searchParams.get("includeArchived") === "true";
     const archivedOnly = archivedMode === "only" || searchParams.get("archivedOnly") === "true";
     const limit = searchParams.get("limit");
-    const orders = await listOrders({ status, includeArchived, archivedOnly, limit });
+    const orders = await listOrders({ status, view, includeArchived, archivedOnly, limit });
     return NextResponse.json({ ok: true, data: orders });
   } catch (error) {
     return errorResponse(error);
@@ -128,6 +130,10 @@ export async function PATCH(request) {
     }
     if (action === "restore") {
       const data = await restoreOrder({ orderId, actorName });
+      return NextResponse.json({ ok: true, data });
+    }
+    if (action === "trash_restore") {
+      const data = await restoreCancelledOrder({ orderId, actorName });
       return NextResponse.json({ ok: true, data });
     }
     return errorResponse(new Error("မသိသော order action ဖြစ်ပါသည်။"), 400);
