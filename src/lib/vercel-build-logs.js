@@ -55,15 +55,8 @@ function createQuery(params = {}) {
   return query.toString();
 }
 
-async function vercelFetch(path, params = {}) {
-  const { token, projectId, teamId } = getConfig();
-  if (!token || !projectId) {
-    const error = new Error("Vercel build logs အတွက် server setting မပြည့်စုံသေးပါ။");
-    error.code = "VERCEL_NOT_CONFIGURED";
-    throw error;
-  }
-
-  const query = createQuery({ ...params, teamId });
+async function requestVercel(path, params, token, includeTeamId) {
+  const query = createQuery(includeTeamId ? params : { ...params, teamId: undefined });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
@@ -81,6 +74,7 @@ async function vercelFetch(path, params = {}) {
         ? "Vercel build logs ကြည့်ရန် API ခွင့်ပြုချက် မရှိပါ။"
         : "Vercel build logs ရယူ၍ မရပါ။");
       error.code = response.status === 401 || response.status === 403 ? "VERCEL_AUTH" : "VERCEL_REQUEST";
+      error.status = response.status;
       throw error;
     }
     return body;
@@ -93,6 +87,24 @@ async function vercelFetch(path, params = {}) {
     throw error;
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+async function vercelFetch(path, params = {}) {
+  const { token, projectId, teamId } = getConfig();
+  if (!token || !projectId) {
+    const error = new Error("Vercel build logs အတွက် server setting မပြည့်စုံသေးပါ။");
+    error.code = "VERCEL_NOT_CONFIGURED";
+    throw error;
+  }
+
+  try {
+    // Project-scoped tokens infer their project/team and reject a redundant
+    // teamId query. Try that form first, then support full-account tokens.
+    return await requestVercel(path, params, token, false);
+  } catch (error) {
+    if (error?.code !== "VERCEL_AUTH" || !teamId) throw error;
+    return requestVercel(path, { ...params, teamId }, token, true);
   }
 }
 
@@ -160,7 +172,7 @@ export const VERCEL_BUILD_LOG_LIMITS = {
   maxEventTextLength: MAX_EVENT_TEXT_LENGTH,
 };
 
-export default {
+const vercelBuildLogApi = {
   getVercelBuildLogViewerConfig,
   isAllowedVercelBuildLogActor,
   listVercelDeployments,
@@ -168,3 +180,5 @@ export default {
   getSafeVercelError,
   redactBuildLogText,
 };
+
+export default vercelBuildLogApi;
