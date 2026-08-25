@@ -204,3 +204,13 @@ export function getTelegramOrderConfig() {
   const { token, orderChatId, factoryChatId } = getTelegramConfig();
   return { token, orderChatId, factoryChatId };
 }
+
+export async function pinTelegramMessage({ chatId, messageId, disableNotification = false } = {}) {
+  const { token } = getTelegramConfig();
+  if (!token || !chatId || !messageId) throw new Error("Telegram pin message အချက်အလက် မပြည့်စုံသေးပါ။");
+  return telegramRequest({
+    token,
+    method: "pinChatMessage",
+    payload: { chat_id: String(chatId), message_id: Number(messageId), disable_notification: Boolean(disableNotification) },
+  });
+}

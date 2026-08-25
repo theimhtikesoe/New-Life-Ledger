@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse } from "@/lib/database";
 import { getActorName } from "@/lib/audit";
 import { sendFactoryNotificationForOrder } from "@/lib/order-delivery";
+import { syncTelegramOrderMessage } from "@/lib/order-channel-sync";
 import {
   createCustomerForOrder,
   createOrderDraft,
   updateOrderDetails,
   linkOrderCustomer,
   listOrders,
+  archiveOrder,
+  restoreOrder,
+  restoreCancelledOrder,
   updateOrderStatus,
 } from "@/lib/order-service";
 
@@ -23,8 +27,12 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status")?.trim() || null;
+    const archivedMode = searchParams.get("archived");
+    const view = searchParams.get("view") === "trash" ? "trash" : searchParams.get("view") === "history" ? "history" : "active";
+    const includeArchived = archivedMode === "include" || searchParams.get("includeArchived") === "true";
+    const archivedOnly = archivedMode === "only" || searchParams.get("archivedOnly") === "true";
     const limit = searchParams.get("limit");
-    const orders = await listOrders({ status, limit });
+    const orders = await listOrders({ status, view, includeArchived, archivedOnly, limit });
     return NextResponse.json({ ok: true, data: orders });
   } catch (error) {
     return errorResponse(error);
@@ -73,23 +81,59 @@ export async function PATCH(request) {
       const mode = body.mode === "MORNING_BATCH" ? "MORNING_BATCH" : "IMMEDIATE";
       const data = await updateOrderStatus({ orderId, status: mode === "MORNING_BATCH" ? "BATCH_QUEUED" : "CONFIRMED", mode, actorName });
       if (mode === "IMMEDIATE") {
+        let finalOrder = data;
+        let warning = "";
+        let delivery = null;
         try {
-          const delivery = await sendFactoryNotificationForOrder(orderId, { actorName });
-          if (delivery.sent) return NextResponse.json({ ok: true, data: delivery.order || data, delivery: { sent: true, duplicate: Boolean(delivery.duplicate), messageId: delivery.messageId } });
-          return NextResponse.json({ ok: true, data: delivery.order || data, warning: "Order ကို Confirm လုပ်ပြီးပါပြီ။ Factory notification သည် ယခင် send လုပ်နေဆဲဖြစ်သောကြောင့် ထပ်မပို့ပါ။" });
+          delivery = await sendFactoryNotificationForOrder(orderId, { actorName });
+          finalOrder = delivery.order || data;
+          if (!delivery.sent) warning = "Order ကို Confirm လုပ်ပြီးပါပြီ။ Factory notification သည် ယခင် send လုပ်နေဆဲဖြစ်သောကြောင့် ထပ်မပို့ပါ။";
         } catch (deliveryError) {
           console.error("Immediate factory notification is pending", deliveryError);
-          return NextResponse.json({ ok: true, data, warning: "Order ကို Confirm လုပ်ပြီးပါပြီ။ Factory group မသတ်မှတ်ရသေးခြင်း သို့မဟုတ် ပို့ရာတွင်အခက်အခဲရှိသောကြောင့် notification ကို Pending ထားပါသည်။" });
+          warning = "Order ကို Confirm လုပ်ပြီးပါပြီ။ Factory group မသတ်မှတ်ရသေးခြင်း သို့မဟုတ် ပို့ရာတွင်အခက်အခဲရှိသောကြောင့် notification ကို Pending ထားပါသည်။";
         }
+        try {
+          await syncTelegramOrderMessage(finalOrder, warning ? "⚠️ Website မှ Confirm လုပ်ပြီးပါပြီ။ Factory notification Pending ဖြစ်နေပါသည်။" : "✅ Website မှ Confirm လုပ်ပြီး Factory group သို့ ပို့ပြီးပါပြီ။");
+        } catch (syncError) {
+          console.warn("Website confirm Telegram message sync failed", syncError);
+          warning = `${warning}${warning ? " " : ""}Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။`;
+        }
+        return NextResponse.json({ ok: true, data: finalOrder, delivery: delivery ? { sent: Boolean(delivery.sent), duplicate: Boolean(delivery.duplicate), messageId: delivery.messageId } : { sent: false, pending: true }, ...(warning ? { warning } : {}) });
       }
-      return NextResponse.json({ ok: true, data, warning: "Order ကို မနက် batch queue ထဲ ထည့်ပြီးပါပြီ။ Website setting ဖွင့်ထားမှ 08:10 တွင် စက်ရုံသို့ ပို့ပါမယ်။" });
+      let warning = "Order ကို မနက် batch queue ထဲ ထည့်ပြီးပါပြီ။ Website setting ဖွင့်ထားမှ 08:10 တွင် စက်ရုံသို့ ပို့ပါမယ်။";
+      try {
+        await syncTelegramOrderMessage(data, "📦 Website မှ 08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။");
+      } catch (syncError) {
+        console.warn("Website batch Telegram message sync failed", syncError);
+        warning = `${warning} Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။`;
+      }
+      return NextResponse.json({ ok: true, data, warning });
     }
     if (action === "cancel") {
       const data = await updateOrderStatus({ orderId, status: "CANCELLED", actorName });
-      return NextResponse.json({ ok: true, data });
+      let warning = "";
+      try {
+        await syncTelegramOrderMessage(data, "❌ Website မှ Cancel လုပ်ပြီးပါပြီ။");
+      } catch (syncError) {
+        console.warn("Website cancel Telegram message sync failed", syncError);
+        warning = "Order ကို Cancel လုပ်ပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+      }
+      return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }
     if (action === "reset_review") {
       const data = await updateOrderStatus({ orderId, status: "DRAFT", actorName });
+      return NextResponse.json({ ok: true, data });
+    }
+    if (action === "archive") {
+      const data = await archiveOrder({ orderId, actorName });
+      return NextResponse.json({ ok: true, data });
+    }
+    if (action === "restore") {
+      const data = await restoreOrder({ orderId, actorName });
+      return NextResponse.json({ ok: true, data });
+    }
+    if (action === "trash_restore") {
+      const data = await restoreCancelledOrder({ orderId, actorName });
       return NextResponse.json({ ok: true, data });
     }
     return errorResponse(new Error("မသိသော order action ဖြစ်ပါသည်။"), 400);

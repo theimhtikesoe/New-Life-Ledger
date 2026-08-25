@@ -29,6 +29,8 @@ model Order {
   sourceChatId       String?
   sourceMessageId    String?
   sourceUpdateId     String?
+  telegramDraftChatId    String?
+  telegramDraftMessageId String?
   sourceText         String          @db.Text
   customerId         String?         @db.Uuid
   customer           Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -42,6 +44,10 @@ model Order {
   notificationMode   String          @default("IMMEDIATE")
   confirmedBy        String?
   confirmedAt        DateTime?
+  cancelledAt        DateTime?
+  cancelledBy        String?
+  archivedAt         DateTime?
+  archivedBy         String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   lines              OrderLine[]
@@ -53,6 +59,8 @@ model Order {
   @@index([status])
   @@index([requestedDate])
   @@index([customerId])
+  @@index([cancelledAt])
+  @@index([archivedAt])
 }
 
 model OrderLine {

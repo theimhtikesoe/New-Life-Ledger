@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/order-batch",
       "schedule": "40 1 * * *"
+    },
+    {
+      "path": "/api/cron/order-trash-cleanup",
+      "schedule": "30 18 * * *"
     }
   ]
 }

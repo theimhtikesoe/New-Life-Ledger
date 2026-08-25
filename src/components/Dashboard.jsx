@@ -1477,7 +1477,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setShowRecycleBin(true)}
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
               >
-                🗑️ Recycle Bin
+                🗑️ Customer Recycle Bin
               </button>
               <a
                 href="/data-management"
@@ -1492,6 +1492,13 @@ export default function Dashboard({ view = "overview" }) {
                 title="Telegram Orders"
               >
                 📦 Orders
+              </a>
+              <a
+                href="/orders?view=trash"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 shadow-sm transition-colors hover:bg-rose-100"
+                title="Cancelled Order အမှိုက်ပုံး"
+              >
+                🗑️ Cancelled Order Trash
               </a>
               <a
                 href="/auto-report-status"

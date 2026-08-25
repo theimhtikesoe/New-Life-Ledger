@@ -3,6 +3,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   createOrderDraft: vi.fn(),
   getOrderBySourceUpdateId: vi.fn(),
+  saveTelegramDraftMessage: vi.fn(),
   updateOrderStatus: vi.fn(),
   extractOrderFromText: vi.fn(),
   buildOrderDraftKeyboard: vi.fn(),
@@ -16,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   sendFactoryNotificationForOrder: vi.fn(),
 }));
 
-vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, updateOrderStatus: mocks.updateOrderStatus }));
+vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
 vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage }));
@@ -58,6 +59,7 @@ describe("Telegram order webhook safety gates", () => {
     delete process.env.TELEGRAM_ORDER_ADMIN_IDS;
     mocks.createOrderDraft.mockReset();
     mocks.getOrderBySourceUpdateId.mockReset().mockResolvedValue(null);
+    mocks.saveTelegramDraftMessage.mockReset().mockResolvedValue(order);
     mocks.updateOrderStatus.mockReset();
     mocks.extractOrderFromText.mockReset().mockResolvedValue({});
     mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
@@ -103,6 +105,7 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.extractOrderFromText).toHaveBeenCalledWith(expect.stringContaining("မမိုး"));
     expect(mocks.createOrderDraft).toHaveBeenCalledWith(expect.objectContaining({ sourceChatId: chatId, sourceMessageId: 10, sourceUpdateId: 10 }));
     expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
+    expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: order.id, chatId, messageId: 99 });
   });
 
   it("does not create an order when AI extraction fails and sends one safe reply", async () => {
