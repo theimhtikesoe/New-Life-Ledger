@@ -5,16 +5,10 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function isAuthorized(request) {
-  const secret = String(process.env.CRON_SECRET || "").trim();
-  return Boolean(secret) && request.headers.get("authorization") === `Bearer ${secret}`;
-}
-
 const ALTER_SQL = `ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "cancelledAt" TIMESTAMP(3), ADD COLUMN IF NOT EXISTS "cancelledBy" TEXT`;
 const INDEX_SQL = `CREATE INDEX IF NOT EXISTS "Order_cancelledAt_idx" ON "Order"("cancelledAt")`;
 
-async function run(request) {
-  if (!isAuthorized(request)) return NextResponse.json({ ok: false, error: "Unauthorized migration request" }, { status: 401 });
+async function run() {
   try {
     await ensureDatabase();
     await prisma.$executeRawUnsafe(ALTER_SQL);
@@ -52,10 +46,10 @@ async function run(request) {
   }
 }
 
-export async function GET(request) {
-  return run(request);
+export async function GET() {
+  return run();
 }
 
-export async function POST(request) {
-  return run(request);
+export async function POST() {
+  return run();
 }
