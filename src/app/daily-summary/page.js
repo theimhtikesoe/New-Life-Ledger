@@ -28,6 +28,13 @@ function safeMyanmarDateLabel(value) {
   return isValidDateInput(value) ? formatMyanmarDateLabel(`${value}T00:00:00+06:30`) : "ရက်စွဲ မရွေးရသေးပါ";
 }
 
+function formatDateControlLabel(value) {
+  if (!isValidDateInput(value)) return "ရက်စွဲ မရွေးရသေးပါ";
+  const [year, month, day] = value.split("-");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${day} ${monthNames[Number(month) - 1]} ${year}`;
+}
+
 function cleanAiText(value) {
   return String(value || "")
     .replace(/^#{1,6}\s*/gm, "")
@@ -196,7 +203,11 @@ export default function DailySummaryPage() {
               <p className="mt-1 text-[11px] text-slate-500 sm:text-xs">Time Range: 00:00–23:59 (Myanmar Time)</p>
             </div>
             <div className="flex min-w-0 w-full max-w-full flex-col gap-2 sm:w-auto sm:min-w-56 sm:items-end">
-              <input type="date" value={date} onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="daily-summary-date-input block box-border min-h-11 min-w-0 w-full max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13px] text-slate-800 sm:w-auto sm:text-sm" />
+              <label htmlFor="report-date" className="relative flex min-h-11 min-w-0 w-full max-w-full items-center justify-between gap-3 overflow-hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 sm:w-56">
+                <span className="truncate">{formatDateControlLabel(date)}</span>
+                <span aria-hidden="true" className="shrink-0 text-slate-400">▣</span>
+                <input id="report-date" type="date" value={date} aria-label="Report Date" onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="daily-summary-date-input absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+              </label>
               <button type="button" onClick={handleAiExplain} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
                 {aiLoading ? "AI ရှင်းပြနေသည်..." : "AI ဖြင့် ရှင်းပြရန်"}
               </button>

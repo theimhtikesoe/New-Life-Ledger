@@ -1022,3 +1022,10 @@ The owner reported that the AI explanation was working but the mobile Daily Summ
 The presentation-only fix in `src/app/daily-summary/page.js` keeps the existing AI payload, accounting logic, API calls, authentication, and data queries unchanged. The AI result now uses a compact white card with a purple header, a short overview, small findings/check counts, collapsible findings/checks sections, and a compact caution strip. On mobile, the customer summary uses stacked cards; on desktop, the existing table remains. KPI spacing and typography were tightened while retaining the existing color meaning.
 
 Read-only fixture validation passed at 375px and 1280px. The 375px check measured document/body width `375px`, no horizontal overflow, AI panel height `608px`, three mobile customer cards, and two collapsed detail sections. The 1280px check measured document/body width `1280px`, no horizontal overflow, AI panel height `528px`, and a visible desktop customer table. The fixture intercepted only browser responses and did not call the database or Manus provider. No customer, ledger, balance, audit, backup, restore, Telegram, or report data was changed.
+
+## 50. Mobile Date Control Correction
+**Date:** 2026-08-25
+
+The owner reported that the Daily Summary date area looked outside the mobile header on iPhone. The underlying native `input[type=date]` was displaying a device-localized value such as `25 Aug BE 2569`, which made the control look inconsistent and crowded even when its bounding box was inside the header. The fix keeps the native date picker as the clickable input but hides its localized text and renders a contained, consistent `DD Mon YYYY` label above it.
+
+Read-only 375px validation measured a 351px header and 321px date control, with the control’s right edge inside the header. The visible label changed correctly from `25 Aug 2026` to `24 Aug 2026` after date selection, document width remained `375px`, and horizontal overflow was false. No database, customer, ledger, accounting, audit, backup, restore, Telegram, or report data was changed.
