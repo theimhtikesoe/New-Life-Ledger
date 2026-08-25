@@ -196,7 +196,6 @@ export default function OrdersPage() {
               <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Telegram Orders</h1>
               <p className="mt-1 text-sm text-slate-600">Orders of New Life group မှာယူမှုများကို Draft စစ်၊ Customer ချိတ်၊ Confirm လုပ်ရန်</p>
             </div>
-            <a href="/data-management" className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Data Management</a>
           </div>
         </header>
 

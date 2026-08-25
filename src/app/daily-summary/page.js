@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
+import {
+  consumeDailyAiUsage,
+  getAiActivityReviewHref,
+  getDailyAiUsage,
+  MAX_DAILY_AI_REQUESTS,
+  readAiExplanationCache,
+  saveAiExplanationCache,
+} from "@/lib/ai-explanation-storage";
 
 const money = new Intl.NumberFormat("en-US");
 
@@ -13,6 +21,12 @@ function formatMyanmarDateInputValue(value = new Date()) {
 }
 
 const today = formatMyanmarDateInputValue(new Date());
+
+function getInitialReportDate() {
+  if (typeof window === "undefined") return today;
+  const requestedDate = new URLSearchParams(window.location.search).get("date") || "";
+  return isValidDateInput(requestedDate) ? requestedDate : today;
+}
 
 function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
@@ -51,7 +65,7 @@ async function fetchJson(path) {
   return body.data;
 }
 
-function AiListItem({ item, index, tone }) {
+function AiListItem({ item, index, tone, date }) {
   const palette = tone === "amber"
     ? "border-amber-200 bg-amber-50/70 text-amber-950"
     : "border-emerald-200 bg-emerald-50/70 text-slate-700";
@@ -61,12 +75,22 @@ function AiListItem({ item, index, tone }) {
   return (
     <div className={`flex items-start gap-2 rounded-lg border p-2.5 ${palette}`}>
       <span className={`mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${badge}`}>{index + 1}</span>
-      <p className="min-w-0 text-[13px] leading-5 sm:text-sm sm:leading-6">{cleanAiText(item)}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] leading-5 sm:text-sm sm:leading-6">{cleanAiText(item)}</p>
+        {tone === "amber" ? (
+          <a
+            href={`${getAiActivityReviewHref(date)}#activity-results`}
+            className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-800 shadow-sm transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-300"
+          >
+            ပြန်စစ်ရန် ↗
+          </a>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-function AiDetailSection({ number, title, items, tone }) {
+function AiDetailSection({ number, title, items, tone, date }) {
   const isAmber = tone === "amber";
   return (
     <details className={`group overflow-hidden rounded-xl border bg-white ${isAmber ? "border-amber-200" : "border-emerald-200"}`}>
@@ -81,7 +105,8 @@ function AiDetailSection({ number, title, items, tone }) {
       </summary>
       <div className={`border-t p-3 sm:p-4 ${isAmber ? "border-amber-100" : "border-emerald-100"}`}>
         {items.length > 0 ? (
-          <div className="grid gap-2 sm:grid-cols-2">{items.map((item, index) => <AiListItem key={`${tone}-${index}`} item={item} index={index} tone={tone} />)}</div>
+          <div className="grid gap-2 sm:grid-cols-2">{items.map((item, index) => <AiListItem key={`${tone}-${index}`} item={item} index={index} tone={tone} date={date} />)}
+</div>
         ) : <p className="text-[13px] text-slate-500 sm:text-sm">မရှိပါ။</p>}
       </div>
     </details>
@@ -92,7 +117,7 @@ function AiExplanationPanel({ explanation, date }) {
   const findings = Array.isArray(explanation?.findings) ? explanation.findings : [];
   const checks = Array.isArray(explanation?.checks) ? explanation.checks : [];
   return (
-    <section className="rounded-2xl border border-violet-200 bg-white p-3 shadow-sm sm:p-5" aria-labelledby="ai-summary-title">
+    <section id="ai-explanation" className="rounded-2xl border border-violet-200 bg-white p-3 shadow-sm sm:p-5" aria-labelledby="ai-summary-title">
       <div className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-3 text-white sm:px-4 sm:py-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
@@ -102,7 +127,11 @@ function AiExplanationPanel({ explanation, date }) {
             </div>
             <p className="mt-1 text-[11px] leading-4 text-violet-100 sm:text-xs">နေ့စဉ်စာရင်းနှင့် လုပ်ဆောင်ချက်မှတ်တမ်းကို အကျဉ်းချုပ်ဖတ်ရှုထားခြင်း</p>
           </div>
-          <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{date}</span>
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{date}</span>
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">Browser ထဲသိမ်းထားသည်</span>
+              </div>
+
         </div>
       </div>
 
@@ -125,8 +154,8 @@ function AiExplanationPanel({ explanation, date }) {
         </div>
       </div>
 
-      {findings.length > 0 && <div className="mt-3"><AiDetailSection number="02" title="အဓိကတွေ့ရှိချက်များ" items={findings} tone="emerald" /></div>}
-      {checks.length > 0 && <div className="mt-2"><AiDetailSection number="03" title="ပြန်စစ်သင့်သည့်အချက်များ" items={checks} tone="amber" /></div>}
+      {findings.length > 0 && <div className="mt-3"><AiDetailSection number="02" title="အဓိကတွေ့ရှိချက်များ" items={findings} tone="emerald" date={date} /></div>}
+      {checks.length > 0 && <div className="mt-2"><AiDetailSection number="03" title="ပြန်စစ်သင့်သည့်အချက်များ" items={checks} tone="amber" date={date} /></div>}
 
       <div className="mt-3 flex items-start gap-2 rounded-xl border-l-4 border-slate-400 bg-slate-50 px-3 py-3 sm:px-4">
         <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">!</span>
@@ -140,13 +169,14 @@ function AiExplanationPanel({ explanation, date }) {
 }
 
 export default function DailySummaryPage() {
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(getInitialReportDate);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [aiExplanation, setAiExplanation] = useState(null);
   const [aiError, setAiError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiUsage, setAiUsage] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -166,23 +196,41 @@ export default function DailySummaryPage() {
   const paymentEntries = useMemo(() => Object.entries(data?.summary?.paymentTypes || {}), [data]);
 
   useEffect(() => {
-    setAiExplanation(null);
+    const actorName = localStorage.getItem("actorName") || "Staff";
+    setAiExplanation(readAiExplanationCache(date, actorName));
+    setAiUsage(getDailyAiUsage(actorName, date));
     setAiError("");
   }, [date]);
 
   const handleAiExplain = async () => {
     if (aiLoading) return;
+    const actorName = localStorage.getItem("actorName") || "Staff";
+    const cachedExplanation = readAiExplanationCache(date, actorName);
+    if (cachedExplanation) {
+      setAiExplanation(cachedExplanation);
+      setAiError("");
+      return;
+    }
+    const currentUsage = getDailyAiUsage(actorName, date);
+    if (currentUsage >= MAX_DAILY_AI_REQUESTS) {
+      setAiUsage(currentUsage);
+      setAiError(`ဒီရက်အတွက် AI ရှင်းပြချက်ကို ${MAX_DAILY_AI_REQUESTS} ကြိမ်အထိသာ ခေါ်နိုင်ပါသည်။ သိမ်းထားသော ရှင်းပြချက်ကို ပြန်ဖတ်နိုင်ပါသည်။`);
+      return;
+    }
+    const nextUsage = consumeDailyAiUsage(actorName, date);
+    setAiUsage(nextUsage);
     setAiLoading(true);
     setAiError("");
     try {
-      const actorName = localStorage.getItem("actorName") || "";
       const response = await fetch(`/api/ai/daily-summary?date=${encodeURIComponent(date)}`, {
         headers: { "x-actor-name": encodeActorHeader(actorName) },
         cache: "no-store",
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.ok) throw new Error(body.error || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
-      setAiExplanation(body.data?.explanation || null);
+      const explanation = body.data?.explanation || null;
+      setAiExplanation(explanation);
+      saveAiExplanationCache(date, explanation, actorName);
     } catch (err) {
       setAiError(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
     } finally {
@@ -209,8 +257,9 @@ export default function DailySummaryPage() {
                 <input id="report-date" type="date" value={date} aria-label="Report Date" onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="daily-summary-date-input absolute inset-0 h-full w-full cursor-pointer opacity-0" />
               </label>
               <button type="button" onClick={handleAiExplain} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
-                {aiLoading ? "AI ရှင်းပြနေသည်..." : "AI ဖြင့် ရှင်းပြရန်"}
+                {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanation ? "AI ရှင်းပြချက် ပြန်ကြည့်ရန်" : "AI ဖြင့် ရှင်းပြရန်"}
               </button>
+              <p className="text-right text-[11px] text-slate-500">ဒီရက် AI အသုံးပြုမှု {aiUsage}/{MAX_DAILY_AI_REQUESTS} ကြိမ်</p>
             </div>
           </div>
         </header>
