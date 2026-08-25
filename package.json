@@ -8,6 +8,7 @@
     "build": "DATABASE_URL=${DATABASE_URL:-'postgresql://dummy:dummy@localhost:5432/dummy'} DIRECT_URL=${DIRECT_URL:-$DATABASE_URL} prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
@@ -30,6 +31,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.18",
     "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.15"
+    "tailwindcss": "^3.4.15",
+    "vitest": "^4.1.11"
   }
 }

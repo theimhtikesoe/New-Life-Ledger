@@ -9,16 +9,124 @@ datasource db {
 }
 
 model Customer {
-  id               String           @id @default(uuid()) @db.Uuid
-  name             String
-  phone            String?
-  routeTag         String?
-  current_balance  Int              @default(0)
-  kpayAliases      KpayAlias[]
-  ledgers          Ledger[]
-  suggestedKpay    UnverifiedKpay[] @relation("KpaySuggestion")
-  createdAt        DateTime         @default(now())
-  deletedAt        DateTime?
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String
+  phone           String?
+  routeTag        String?
+  current_balance Int              @default(0)
+  kpayAliases     KpayAlias[]
+  ledgers         Ledger[]
+  suggestedKpay   UnverifiedKpay[] @relation("KpaySuggestion")
+  orders          Order[]
+  createdAt       DateTime         @default(now())
+  deletedAt       DateTime?
+}
+
+model Order {
+  id                 String          @id @default(uuid()) @db.Uuid
+  status             String          @default("DRAFT")
+  requestedDate      String          @default("")
+  sourceChatId       String?
+  sourceMessageId    String?
+  sourceUpdateId     String?
+  sourceText         String          @db.Text
+  customerId         String?         @db.Uuid
+  customer           Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  draftCustomerName  String?
+  draftCustomerPhone String?
+  customerPhone      String?
+  missingFields      Json?
+  aiConfidence       String?
+  aiNotes            String?
+  destination        String?
+  notificationMode   String          @default("IMMEDIATE")
+  confirmedBy        String?
+  confirmedAt        DateTime?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  lines              OrderLine[]
+  caps               OrderCap[]
+  deliveries         OrderDelivery[]
+
+  @@unique([sourceChatId, sourceMessageId])
+  @@unique([sourceUpdateId])
+  @@index([status])
+  @@index([requestedDate])
+  @@index([customerId])
+}
+
+model OrderLine {
+  id             String   @id @default(uuid()) @db.Uuid
+  orderId        String   @db.Uuid
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  lineNumber     Int
+  bottleType     String?
+  capacityMl     Int?
+  capacityLabel  String?
+  bottlesPerCard Int?
+  cardCount      Int?
+  totalBottles   Int?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@unique([orderId, lineNumber])
+  @@index([orderId])
+}
+
+model OrderCap {
+  id                String   @id @default(uuid()) @db.Uuid
+  orderId           String   @db.Uuid
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  capType           String
+  normalPcs         Int      @default(0)
+  extraPcs          Int      @default(0)
+  requestedTotalPcs Int      @default(0)
+  expectedPcs       Int?
+  warningText       String?
+  notes             String?
+  createdAt         DateTime @default(now())
+
+  @@unique([orderId, capType])
+  @@index([orderId])
+}
+
+model OrderDelivery {
+  id                String    @id @default(uuid()) @db.Uuid
+  orderId           String    @db.Uuid
+  order             Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  destinationType   String
+  mode              String
+  status            String    @default("PENDING")
+  telegramChatId    String?
+  telegramMessageId String?
+  sentAt            DateTime?
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([orderId, destinationType, mode])
+  @@index([status])
+  @@index([mode])
+}
+
+model OrderAutomationSetting {
+  id                  Int      @id @default(1)
+  morningBatchEnabled Boolean  @default(false)
+  morningBatchTime    String   @default("08:10")
+  updatedAt           DateTime @updatedAt
+}
+
+model OrderBatchRun {
+  id           String    @id @default(uuid()) @db.Uuid
+  batchDate    String
+  status       String    @default("RUNNING")
+  orderCount   Int       @default(0)
+  sentAt       DateTime?
+  errorMessage String?
+  createdAt    DateTime  @default(now())
+
+  @@unique([batchDate])
+  @@index([status])
 }
 
 model KpayAlias {
@@ -49,15 +157,15 @@ model Ledger {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  actorName  String
-  action     String
-  entityType String
-  entityId   String?
+  id          String   @id @default(uuid()) @db.Uuid
+  actorName   String
+  action      String
+  entityType  String
+  entityId    String?
   entityLabel String?
-  summary    String
-  metadata   Json?
-  createdAt  DateTime @default(now())
+  summary     String
+  metadata    Json?
+  createdAt   DateTime @default(now())
 
   @@index([createdAt])
   @@index([actorName])
@@ -66,16 +174,16 @@ model AuditLog {
 }
 
 model AutoReportRun {
-  id              String   @id @default(uuid()) @db.Uuid
-  status          String
-  trigger         String   @default("schedule")
-  reportDate      String?
-  periodLabel     String?
-  recipientCount  Int      @default(0)
-  counts          Json?
-  elapsedMs       Int?
-  errorMessage    String?
-  createdAt       DateTime @default(now())
+  id             String   @id @default(uuid()) @db.Uuid
+  status         String
+  trigger        String   @default("schedule")
+  reportDate     String?
+  periodLabel    String?
+  recipientCount Int      @default(0)
+  counts         Json?
+  elapsedMs      Int?
+  errorMessage   String?
+  createdAt      DateTime @default(now())
 
   @@index([createdAt])
   @@index([reportDate])

@@ -1,0 +1,299 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { encodeActorHeader } from "@/lib/actor-header";
+
+const STATUS_LABELS = {
+  DRAFT: "Draft ပြန်စစ်ရန်",
+  NEEDS_CUSTOMER: "Customer မတွေ့သေး",
+  NEEDS_REVIEW: "အချက်အလက် မပြည့်စုံ",
+  CONFIRMED: "အတည်ပြုပြီး",
+  BATCH_QUEUED: "မနက် batch စောင့်နေ",
+  FACTORY_NOTIFIED: "စက်ရုံသို့ ပို့ပြီး",
+  PREPARED: "ပြင်ဆင်ပြီး",
+  COMPLETED: "ပြီးစီးပြီး",
+  CANCELLED: "ပယ်ဖျက်ပြီး",
+};
+
+const STATUS_STYLES = {
+  NEEDS_CUSTOMER: "border-amber-200 bg-amber-50 text-amber-800",
+  NEEDS_REVIEW: "border-orange-200 bg-orange-50 text-orange-800",
+  CONFIRMED: "border-blue-200 bg-blue-50 text-blue-800",
+  BATCH_QUEUED: "border-violet-200 bg-violet-50 text-violet-800",
+  FACTORY_NOTIFIED: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  CANCELLED: "border-slate-200 bg-slate-100 text-slate-600",
+  DRAFT: "border-slate-200 bg-slate-50 text-slate-700",
+};
+
+function formatDate(value) {
+  if (!value) return "မသတ်မှတ်ရသေး";
+  const [year, month, day] = String(value).split("-");
+  return `${day}/${month}/${year}`;
+}
+
+function actorHeaders() {
+  if (typeof window === "undefined") return {};
+  return { "x-actor-name": encodeActorHeader(localStorage.getItem("actorName") || "Staff") };
+}
+
+async function requestJson(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...actorHeaders(), ...(options.headers || {}) },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok || body.ok === false) throw new Error(body.error || "Order request မအောင်မြင်ပါ။");
+  return body;
+}
+
+function OrderLines({ order }) {
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">ဘူးစာရင်း</p>
+      {(order.lines || []).map((line, index) => (
+        <div key={line.id || index} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">{index + 1}. {line.bottleType || "ဘူး"} · {line.capacityLabel || `${line.capacityMl || "?"} ml`}</p>
+          <p className="mt-1">{line.cardCount || "?"} ကဒ် × တစ်ကဒ် {line.bottlesPerCard || "?"} ဘူး = <strong>{line.totalBottles || "မတွက်နိုင်သေး"}</strong> ဘူး</p>
+          {line.notes ? <p className="mt-1 text-xs text-slate-500">မှတ်ချက်: {line.notes}</p> : null}
+        </div>
+      ))}
+      <p className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">စုစုပေါင်း — {order.totals?.totalCards || 0} ကဒ် / {order.totals?.totalBottles || 0} ဘူး</p>
+    </div>
+  );
+}
+
+function CapLines({ order }) {
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">အဖုံးစာရင်း</p>
+      {(order.caps || []).length ? order.caps.map((cap, index) => (
+        <div key={cap.id || index} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">{cap.capType}</p>
+          <p className="mt-1">ပုံမှန် {(cap.normalPcs || 0).toLocaleString()} pcs + အပို {(cap.extraPcs || 0).toLocaleString()} pcs = <strong>{(cap.requestedTotalPcs || 0).toLocaleString()}</strong> pcs</p>
+          {cap.warningText ? <p className="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800">⚠️ {cap.warningText} (သတိပေးချက်သာ)</p> : null}
+        </div>
+      )) : <p className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-500">အဖုံးအချက်အလက် မပါသေးပါ။</p>}
+    </div>
+  );
+}
+
+export default function OrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [loading, setLoading] = useState(true);
+  const [workingId, setWorkingId] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [automation, setAutomation] = useState({ morningBatchEnabled: true, morningBatchTime: "08:10" });
+  const [savingAutomation, setSavingAutomation] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState("");
+  const [draftCustomers, setDraftCustomers] = useState({});
+  const [candidateMap, setCandidateMap] = useState({});
+  const [candidateLoadingId, setCandidateLoadingId] = useState("");
+  const [detailEdits, setDetailEdits] = useState({});
+
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const [ordersBody, settingBody] = await Promise.all([
+        requestJson("/api/orders?limit=200"),
+        requestJson("/api/order-automation"),
+      ]);
+      setOrders(Array.isArray(ordersBody.data) ? ordersBody.data : []);
+      if (settingBody.data) setAutomation({ morningBatchEnabled: Boolean(settingBody.data.morningBatchEnabled), morningBatchTime: settingBody.data.morningBatchTime || "08:10" });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setSelectedOrderId(params.get("orderId") || "");
+    const requestedStatus = params.get("status");
+    if (["NEEDS_CUSTOMER", "NEEDS_REVIEW", "DRAFT", "CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "CANCELLED"].includes(requestedStatus)) setStatusFilter(requestedStatus);
+    load();
+  }, []);
+
+  const filteredOrders = useMemo(() => statusFilter === "ALL" ? orders : orders.filter((order) => order.status === statusFilter), [orders, statusFilter]);
+
+  const patchOrder = async (orderId, action, payload = {}) => {
+    setWorkingId(orderId);
+    setError("");
+    setMessage("");
+    try {
+      const body = await requestJson("/api/orders", { method: "PATCH", body: JSON.stringify({ orderId, action, ...payload }) });
+      if (body.warning) setMessage(body.warning);
+      else setMessage("Order ပြင်ဆင်မှု အောင်မြင်ပါပြီ။");
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setWorkingId("");
+    }
+  };
+
+  const setDraftField = (orderId, field, value) => {
+    setDraftCustomers((current) => ({ ...current, [orderId]: { ...(current[orderId] || {}), [field]: value } }));
+  };
+
+  const setDetailField = (orderId, field, value) => {
+    setDetailEdits((current) => ({ ...current, [orderId]: { ...(current[orderId] || {}), [field]: value } }));
+  };
+
+  const saveOrderDetails = async (order) => {
+    const details = detailEdits[order.id] || {};
+    await patchOrder(order.id, "update_details", {
+      requestedDate: details.requestedDate ?? order.requestedDate ?? "",
+      destination: details.destination ?? order.destination ?? "",
+      customerPhone: details.customerPhone ?? order.customerPhone ?? "",
+    });
+  };
+
+  const findCandidates = async (order) => {
+    setCandidateLoadingId(order.id);
+    setError("");
+    try {
+      const query = order.draftCustomerName || order.customerPhone || "";
+      const body = await requestJson(`/api/customers?q=${encodeURIComponent(query)}&includeLedgers=false`);
+      setCandidateMap((current) => ({ ...current, [order.id]: Array.isArray(body.data) ? body.data.slice(0, 8) : [] }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCandidateLoadingId("");
+    }
+  };
+
+  const saveAutomation = async (enabled) => {
+    setSavingAutomation(true);
+    setError("");
+    setMessage("");
+    try {
+      const body = await requestJson("/api/order-automation", { method: "PATCH", body: JSON.stringify({ morningBatchEnabled: enabled, morningBatchTime: "08:10" }) });
+      setAutomation({ morningBatchEnabled: Boolean(body.data.morningBatchEnabled), morningBatchTime: body.data.morningBatchTime || "08:10" });
+      setMessage(enabled ? "မနက် batch ကို Website မှ ဖွင့်ထားပါပြီ။ 08:10 Myanmar Time တွင်သာ ပို့ပါမယ်။" : "မနက် batch ကို ပိတ်ထားပါပြီ။ Queue ထဲက order များကို မပို့သေးပါ။");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingAutomation(false);
+    }
+  };
+
+  const counts = orders.reduce((result, order) => {
+    result[order.status] = (result[order.status] || 0) + 1;
+    return result;
+  }, {});
+
+  return (
+    <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+        <header className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <a href="/" className="text-sm font-semibold text-cyan-700">← Dashboard</a>
+              <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Telegram Orders</h1>
+              <p className="mt-1 text-sm text-slate-600">Orders of New Life group မှာယူမှုများကို Draft စစ်၊ Customer ချိတ်၊ Confirm လုပ်ရန်</p>
+            </div>
+            <a href="/data-management" className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Data Management</a>
+          </div>
+        </header>
+
+        {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div> : null}
+        {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : null}
+
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-semibold text-amber-700">Customer မတွေ့သေး</p><p className="mt-1 text-2xl font-bold text-amber-900">{counts.NEEDS_CUSTOMER || 0}</p></div>
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><p className="text-xs font-semibold text-orange-700">ပြန်စစ်ရန်</p><p className="mt-1 text-2xl font-bold text-orange-900">{counts.NEEDS_REVIEW || 0}</p></div>
+          <div className="rounded-xl border border-violet-200 bg-violet-50 p-4"><p className="text-xs font-semibold text-violet-700">မနက် batch queue</p><p className="mt-1 text-2xl font-bold text-violet-900">{counts.BATCH_QUEUED || 0}</p></div>
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4"><p className="text-xs font-semibold text-blue-700">အတည်ပြုပြီး</p><p className="mt-1 text-2xl font-bold text-blue-900">{(counts.CONFIRMED || 0) + (counts.FACTORY_NOTIFIED || 0)}</p></div>
+        </section>
+
+        <section className="flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div>
+            <h2 className="font-semibold text-violet-950">🕗 မနက် batch ပို့ခြင်း</h2>
+            <p className="mt-1 text-sm text-violet-800">Daily Report ပြီး ၁၀ မိနစ်အကြာ၊ Myanmar Time 08:10 တွင် batch queue ထဲက Confirmed Order များကို စက်ရုံ group သို့ ပို့ပါမယ်။ Notification ကို default ဖွင့်ထားပြီး လိုအပ်ရင် ဒီနေရာမှာ ပိတ်နိုင်ပါတယ်။</p>
+          </div>
+          <button type="button" onClick={() => saveAutomation(!automation.morningBatchEnabled)} disabled={savingAutomation} className={`shrink-0 rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm ${automation.morningBatchEnabled ? "bg-violet-700 hover:bg-violet-800" : "bg-slate-700 hover:bg-slate-800"}`}>
+            {savingAutomation ? "သိမ်းနေသည်..." : automation.morningBatchEnabled ? "Batch ဖွင့်ထားသည်" : "Batch ပိတ်ထားသည်"}
+          </button>
+        </section>
+
+        <section className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-3">
+          <p className="mr-2 flex items-center text-sm font-semibold text-slate-700">Filter:</p>
+          {["ALL", "NEEDS_CUSTOMER", "NEEDS_REVIEW", "DRAFT", "CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "CANCELLED"].map((status) => (
+            <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${statusFilter === status ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>
+              {status === "ALL" ? "အားလုံး" : STATUS_LABELS[status] || status}
+            </button>
+          ))}
+        </section>
+
+        {loading ? <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">Order များကို ရယူနေပါသည်...</section> : null}
+        {!loading && !filteredOrders.length ? <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">ဒီ filter အတွက် Order မရှိသေးပါ။</section> : null}
+
+        <section className="grid gap-4 xl:grid-cols-2">
+          {filteredOrders.map((order) => {
+            const draft = draftCustomers[order.id] || {};
+            const candidates = candidateMap[order.id] || [];
+            const highlighted = selectedOrderId === order.id;
+            const busy = workingId === order.id;
+            const details = detailEdits[order.id] || {};
+            const canEditDetails = !["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(order.status);
+            return (
+              <article key={order.id} id={`order-${order.id}`} className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ${highlighted ? "border-emerald-500 ring-2 ring-emerald-200" : "border-slate-200"}`}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Order #{String(order.id).slice(0, 8)}</p>
+                    <h2 className="mt-1 text-lg font-bold text-slate-900">{order.customer?.name || order.draftCustomerName || "Customer မသတ်မှတ်ရသေး"}</h2>
+                  </div>
+                  <span className={`rounded-full border px-3 py-1 text-xs font-bold ${STATUS_STYLES[order.status] || STATUS_STYLES.DRAFT}`}>{STATUS_LABELS[order.status] || order.status}</span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ထုတ်ရမည့်ရက်</p><p className="font-semibold text-slate-800">{formatDate(order.requestedDate)}</p></div>
+                  <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ကားဂိတ်/နေရာ</p><p className="font-semibold text-slate-800">{order.destination || "မသတ်မှတ်ရသေး"}</p></div>
+                </div>
+                {canEditDetails ? <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 p-3">
+                  <p className="font-semibold text-cyan-950">Order အချက်အလက် ပြင်ရန်</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                    <label className="text-xs font-semibold text-cyan-900">ထုတ်ရမည့်ရက်<input type="date" value={details.requestedDate ?? order.requestedDate ?? ""} onChange={(event) => setDetailField(order.id, "requestedDate", event.target.value)} className="mt-1 w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 text-sm font-normal text-slate-900" /></label>
+                    <label className="text-xs font-semibold text-cyan-900">ကားဂိတ်/နေရာ<input value={details.destination ?? order.destination ?? ""} onChange={(event) => setDetailField(order.id, "destination", event.target.value)} placeholder="နေရာ" className="mt-1 w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 text-sm font-normal text-slate-900" /></label>
+                    <label className="text-xs font-semibold text-cyan-900">ဖုန်း (ရှိလျှင်)<input value={details.customerPhone ?? order.customerPhone ?? ""} onChange={(event) => setDetailField(order.id, "customerPhone", event.target.value)} placeholder="ဖုန်းနံပါတ်" className="mt-1 w-full rounded-lg border border-cyan-300 bg-white px-3 py-2 text-sm font-normal text-slate-900" /></label>
+                  </div>
+                  <button type="button" onClick={() => saveOrderDetails(order)} disabled={busy} className="mt-3 rounded-lg border border-cyan-400 bg-white px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100 disabled:opacity-50">အချက်အလက် သိမ်းရန်</button>
+                </div> : null}
+                <OrderLines order={order} />
+                <CapLines order={order} />
+                {order.missingFields?.length ? <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-800"><strong>လိုနေသေးသည်:</strong> {order.missingFields.join(", ")}</div> : null}
+
+                {order.status === "NEEDS_CUSTOMER" ? (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="font-semibold text-amber-900">Customer အသစ်ထည့်ရန် / ရှိပြီးသားနှင့်ချိတ်ရန်</p>
+                    <p className="mt-1 text-xs text-amber-800">ဒီ Order ကို Customer match မတွေ့သေးသောကြောင့် Draft အဖြစ်သာထားပါသည်။</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <input value={draft.name ?? order.draftCustomerName ?? ""} onChange={(event) => setDraftField(order.id, "name", event.target.value)} placeholder="Customer အမည်" className="min-w-0 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900" />
+                      <input value={draft.phone ?? order.draftCustomerPhone ?? ""} onChange={(event) => setDraftField(order.id, "phone", event.target.value)} placeholder="ဖုန်းနံပါတ် (ရှိလျှင်)" className="min-w-0 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900" />
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => patchOrder(order.id, "create_customer", { name: draft.name ?? order.draftCustomerName, phone: draft.phone ?? order.draftCustomerPhone })} disabled={busy} className="rounded-lg bg-amber-700 px-3 py-2 text-sm font-bold text-white hover:bg-amber-800 disabled:opacity-50">Customer အသစ်ဖန်တီးရန်</button>
+                      <button type="button" onClick={() => findCandidates(order)} disabled={candidateLoadingId === order.id} className="rounded-lg border border-amber-400 bg-white px-3 py-2 text-sm font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-50">{candidateLoadingId === order.id ? "ရှာနေသည်..." : "ရှိပြီးသားရှာရန်"}</button>
+                    </div>
+                    {candidates.length ? <div className="mt-3 space-y-2">{candidates.map((candidate) => <button key={candidate.id} type="button" onClick={() => patchOrder(order.id, "link_customer", { customerId: candidate.id })} disabled={busy} className="flex w-full items-center justify-between rounded-lg border border-amber-200 bg-white px-3 py-2 text-left text-sm hover:bg-amber-100 disabled:opacity-50"><span><strong>{candidate.name}</strong>{candidate.phone ? ` · ${candidate.phone}` : ""}</span><span className="text-xs font-bold text-amber-800">ဒီ Customer ချိတ်ရန်</span></button>)}</div> : null}
+                  </div>
+                ) : null}
+
+                <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                  {(order.status === "DRAFT" || order.status === "NEEDS_REVIEW") && !order.missingFields?.length ? <><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "IMMEDIATE" })} disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">✅ Confirm — ချက်ချင်းပို့</button><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "MORNING_BATCH" })} disabled={busy} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50">🕗 Confirm — မနက် batch</button></> : null}
+                  {order.status === "DRAFT" && order.missingFields?.length ? <button type="button" onClick={() => patchOrder(order.id, "reset_review")} disabled={busy} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-bold text-orange-800 hover:bg-orange-100 disabled:opacity-50">ပြန်စစ်ရန်</button> : null}
+                  {(order.status === "CONFIRMED" || order.status === "BATCH_QUEUED") ? <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">Website မှ Confirm ပြီးပါပြီ။ Factory notification state ကို စောင့်ကြည့်ပါ။</span> : null}
+                  {order.status !== "CANCELLED" && order.status !== "FACTORY_NOTIFIED" && order.status !== "COMPLETED" ? <button type="button" onClick={() => patchOrder(order.id, "cancel")} disabled={busy} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50">Cancel</button> : null}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      </div>
+    </main>
+  );
+}

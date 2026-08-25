@@ -21,12 +21,23 @@ function downloadBackup(data) {
     ["kpayAliases", counts.kpayAliases || 0],
     ["unverifiedKpay", counts.unverifiedKpay || 0],
     ["auditLogs", counts.auditLogs || 0],
+    ["orders", counts.orders || 0],
+    ["orderLines", counts.orderLines || 0],
+    ["orderCaps", counts.orderCaps || 0],
+    ["orderDeliveries", counts.orderDeliveries || 0],
+    ["orderBatchRuns", counts.orderBatchRuns || 0],
   ];
   const customers = (data.customers || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), deletedAt: iso(item.deletedAt) }));
   const transactions = (data.transactions || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
   const kpayAliases = (data.kpayAliases || []).map((item) => ({ ...item }));
   const unverifiedKpay = (data.unverifiedKpay || []).map((item) => ({ ...item, createdAt: iso(item.createdAt) }));
   const auditLogs = (data.auditLogs || []).map((item) => ({ ...item, metadata: item.metadata ? JSON.stringify(item.metadata) : "", createdAt: iso(item.createdAt) }));
+  const orders = (data.orders || []).map((item) => ({ ...item, customer: item.customer ? JSON.stringify(item.customer) : "", missingFields: item.missingFields ? JSON.stringify(item.missingFields) : "", createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt), confirmedAt: iso(item.confirmedAt) }));
+  const orderLines = (data.orderLines || []).map((item) => ({ ...item, createdAt: iso(item.createdAt) }));
+  const orderCaps = (data.orderCaps || []).map((item) => ({ ...item, createdAt: iso(item.createdAt) }));
+  const orderDeliveries = (data.orderDeliveries || []).map((item) => ({ ...item, sentAt: iso(item.sentAt), createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt) }));
+  const orderAutomationSetting = data.orderAutomationSetting ? [{ ...data.orderAutomationSetting, updatedAt: iso(data.orderAutomationSetting.updatedAt) }] : [];
+  const orderBatchRuns = (data.orderBatchRuns || []).map((item) => ({ ...item, sentAt: iso(item.sentAt), createdAt: iso(item.createdAt) }));
   const integrityRows = Object.entries(data.integrity || {}).map(([key, value]) => [key, typeof value === "object" ? JSON.stringify(value) : value ?? ""]);
 
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(infoRows), "Backup Info");
@@ -35,6 +46,12 @@ function downloadBackup(data) {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(kpayAliases), "KPay Aliases");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(unverifiedKpay), "Pending KPay");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(auditLogs), "Audit History");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orders), "Orders");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderLines), "Order Lines");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderCaps), "Order Caps");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderDeliveries), "Order Deliveries");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderAutomationSetting), "Order Automation");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderBatchRuns), "Order Batch Runs");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["key", "value"], ...integrityRows]), "Integrity");
   workbook.Workbook = { Props: { Title: "New Life Ledger Backup", Subject: "Official restore backup with all entities and integrity checks" } };
   XLSX.writeFile(workbook, `New-Life-Ledger-Backup-v${data.version || 2}-${new Date().toISOString().slice(0, 10)}.xlsx`);

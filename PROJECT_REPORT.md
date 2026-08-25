@@ -1036,3 +1036,23 @@ Read-only 375px validation measured a 351px header and 321px date control, with 
 The owner requested that five minutes of inactivity should not force another PIN entry. The idle callback in `src/components/PINLogin.jsx` now preserves the server-side authenticated session, clears only the local actor attribution, and shows the actor chooser with the message `၅ မိနစ်အသုံးမပြုထားပါ။ အသုံးပြုသူကို ပြန်ရွေးပါ`. Selecting an actor restores normal page use through the existing actor-selected event and does not change the PIN or logout endpoints.
 
 A local read-only clock-forward test confirmed that after five idle minutes the PIN field is absent, the actor chooser is visible, and `/api/auth/session` remains authenticated. No customer, ledger, balance, database, audit, backup, restore, Telegram, or report data was changed.
+
+## 52. Telegram Order Workflow Foundation — Local Only
+**Date:** 2026-08-25
+
+The approved first-version order workflow was implemented locally on the `security-hardening` branch as an additive module. It accepts only messages beginning with `မှာယူမှု` or `/order`, uses Manus structured output to prepare a draft, requires one clear active Customer match or keeps the order as a Draft Customer Order, supports multiple bottle lines, records cap quantities as normal pcs plus extra pcs, and shows cap-versus-bottle differences as warnings only. Order confirmation is separate from `CREDIT`/`DEBIT` and does not change Customer balances or Ledger rows.
+
+The website now has an Orders page with draft review, requested-date and destination correction, Customer link/create controls, immediate confirmation, morning-batch queueing, cancellation, and a Website-controlled morning batch switch. The batch is scheduled for approximately 08:10 Myanmar time, ten minutes after the existing 08:00 report schedule, and its Telegram notification is enabled by default; staff can turn it off from the website when necessary. The immediate factory notification path creates a pending delivery when the factory group is not configured rather than sending anywhere else. The existing report group remains report-only. Telegram draft messages now include direct Confirm (immediate), 08:10 Batch, and Cancel buttons. The server checks the callback sender with Telegram `getChatMember` and accepts only `administrator` or `creator`/owner status; an optional server-side `TELEGRAM_ORDER_ADMIN_IDS` list can narrow the action to selected administrators. Every accepted callback still uses the same idempotent order/delivery path and records non-secret callback metadata.
+
+| စစ်ဆေးထားသည့်အရာ | ရလဒ် |
+|---|---|
+| Order number/date normalization | Myanmar digits, comma-separated quantities, today/tomorrow, and invalid/missing values are covered by local tests |
+| Mixed-language input | Burmese/English units and common forms such as `0.5L`, `500ml`, `cc`, `bpc`, `cards`, and `tmr` are normalized or left for review when unclear |
+| Multiple product lines | Per-card quantity, card count, line totals, and overall bottle/card totals are covered |
+| Cap handling | `ပုံမှန် + အပို = requested total` is preserved; mismatch is warning-only |
+| Webhook safety | Wrong secret, wrong chat, ordinary messages, bot messages, and replayed update IDs are rejected/ignored in mocked tests |
+| Telegram callback safety | Non-admin callbacks are rejected; verified admins can Confirm/Batch/Cancel; optional selected-admin allowlist is checked before Telegram member lookup |
+| Build safety | Prisma validation/generation, 17 local tests, lint, whitespace check, and Next production build passed |
+| Migration safety | The drafted migration contains only new Order tables/indexes/foreign keys and no standalone DROP, TRUNCATE, DELETE, or UPDATE statements |
+
+The Order workflow code is **still only on the security-hardening branch/Preview and is not yet in Production**. The approved additive database migration has now been applied through a temporary authenticated runner: all six new Order workflow tables were created, and the verification returned `customerLedgerRowsUnchanged: true`. The runner was then removed from the Production code. Order Telegram notifications remain configured to default ON in code, but the order webhook is not registered, no order workflow message has been sent, and no Factory notification has been sent. No production Customer, Ledger, balance, audit, backup, restore, Telegram, or report data was changed. Before live rollout, the security-hardening Order code must be reviewed/merged, the order webhook must be registered, and one controlled Telegram test must be separately approved. Viber remains the current operational channel until that test is complete.

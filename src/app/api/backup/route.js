@@ -12,7 +12,7 @@ export async function GET() {
   try {
     await ensureDatabase();
 
-    const [customers, transactions, kpayAliases, unverifiedKpay, auditLogs] = await Promise.all([
+    const [customers, transactions, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns] = await Promise.all([
       prisma.customer.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -77,6 +77,12 @@ export async function GET() {
           createdAt: true,
         },
       }),
+      prisma.order.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }], include: { customer: { select: { id: true, name: true } } } }),
+      prisma.orderLine.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      prisma.orderCap.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      prisma.orderDelivery.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      prisma.orderAutomationSetting.findUnique({ where: { id: 1 } }),
+      prisma.orderBatchRun.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
     ]);
 
     const ledgerTotals = new Map();
@@ -107,7 +113,7 @@ export async function GET() {
     return NextResponse.json({
       data: {
         format: "new-life-ledger-backup",
-        version: 2,
+        version: 3,
         generatedAt: new Date().toISOString(),
         counts: {
           customers: customers.length,
@@ -115,6 +121,11 @@ export async function GET() {
           kpayAliases: kpayAliases.length,
           unverifiedKpay: unverifiedKpay.length,
           auditLogs: auditLogs.length,
+          orders: orders.length,
+          orderLines: orderLines.length,
+          orderCaps: orderCaps.length,
+          orderDeliveries: orderDeliveries.length,
+          orderBatchRuns: orderBatchRuns.length,
         },
         integrity: {
           algorithm: "Customer.current_balance = sum(CREDIT amounts) - sum(DEBIT amounts)",
@@ -131,6 +142,12 @@ export async function GET() {
         kpayAliases,
         unverifiedKpay,
         auditLogs,
+        orders,
+        orderLines,
+        orderCaps,
+        orderDeliveries,
+        orderAutomationSetting,
+        orderBatchRuns,
       },
     });
   } catch (error) {

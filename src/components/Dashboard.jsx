@@ -1435,6 +1435,13 @@ export default function Dashboard({ view = "overview" }) {
                 🗂️ Data Management
               </a>
               <a
+                href="/orders"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
+                title="Telegram Orders"
+              >
+                📦 Orders
+              </a>
+              <a
                 href="/auto-report-status"
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 shadow-sm transition-colors hover:bg-amber-100"
                 title="Auto Report အခြေအနေ"
@@ -1549,6 +1556,11 @@ export default function Dashboard({ view = "overview" }) {
               {showAddCustomer ? "Hide" : "Add"}
             </span>
           </button>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+            <p className="text-sm text-amber-900">Telegram မှ Customer မတွေ့သေးသော Order များကို Draft အဖြစ် စစ်ရန်</p>
+            <a href="/orders?status=NEEDS_CUSTOMER" className="rounded-lg border border-amber-400 bg-white px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100">Draft Orders ကြည့်ရန်</a>
+          </div>
 
           {showAddCustomer ? (
             <form className="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4" onSubmit={createCustomer}>
