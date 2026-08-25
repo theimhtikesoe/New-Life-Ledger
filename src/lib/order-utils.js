@@ -357,9 +357,13 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
     return `⚠️ အဖုံး: ${requested.toLocaleString()} pcs`;
   });
   const sourcePreview = includeSource ? String(order.sourceText || "").trim().slice(0, 1200).replace(/```/g, "'''\n") : "";
+  const customerName = order.customer?.name || order.draftCustomerName || "မတွေ့သေးပါ";
+  const customerLine = order.customer?.id
+    ? `Customer: ${customerName} ✅ Website မှာရှိပြီးသား Customer နှင့် ချိတ်ထားပြီး`
+    : `Customer: ${customerName} ⚠️ Customer မချိတ်ရသေး`;
   return [
     heading,
-    `Customer: ${order.customer?.name || order.draftCustomerName || "မတွေ့သေးပါ"}`,
+    customerLine,
     `ရက်: ${formatDateLabel(order.requestedDate)}`,
     `နေရာ: ${order.destination || "မသတ်မှတ်ရသေး"}`,
     pickupTime ? `လာယူချိန်: ${pickupTime}` : null,

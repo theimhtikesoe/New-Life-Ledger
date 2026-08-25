@@ -160,6 +160,27 @@ describe("multi-line order totals and cap rules", () => {
     expect(message).toContain("```\n/order ကံလီ\n```");
   });
 
+  it("shows when Telegram Customer is already linked to the Website Customer record", () => {
+    const message = formatOrderDraftMessage({
+      ...baseOrder,
+      status: "DRAFT",
+      customer: { id: "customer-1", name: "ကံလီ" },
+      sourceText: "မှာယူမှု ကံလီ",
+    }, { includeActions: false, includeSource: false });
+    expect(message).toContain("Customer: ကံလီ ✅ Website မှာရှိပြီးသား Customer နှင့် ချိတ်ထားပြီး");
+  });
+
+  it("shows when Telegram Customer is not linked yet", () => {
+    const message = formatOrderDraftMessage({
+      ...baseOrder,
+      status: "NEEDS_CUSTOMER",
+      draftCustomerName: "မမိုး",
+      customer: null,
+      sourceText: "မှာယူမှု မမိုး",
+    }, { includeActions: false, includeSource: false });
+    expect(message).toContain("Customer: မမိုး ⚠️ Customer မချိတ်ရသေး");
+  });
+
   it("omits the cap section when no cap type or quantity was provided", () => {
     const normalized = normalizeExtractedOrder({ customerName: "ကံလီ", requestedDate: "2026-08-26", destination: "ပုလဲဂိတ်", lines: [{ bottleType: "အပြာ", capacityMl: 300, capacityLabel: "0.3 Liter", bottlesPerCard: 400, cardCount: 20 }], caps: [], missingFields: [], confidence: "high" }, "");
     const message = formatOrderDraftMessage({ ...normalized, status: "DRAFT", sourceText: "/order ကံလီ" }, { includeActions: false });
