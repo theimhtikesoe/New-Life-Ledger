@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   listOrders: vi.fn(),
@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   archiveOrder: vi.fn(),
   restoreOrder: vi.fn(),
   restoreCancelledOrder: vi.fn(),
+  deleteCancelledOrderPermanently: vi.fn(),
   updateOrderStatus: vi.fn(),
   sendFactoryNotificationForOrder: vi.fn(),
   syncTelegramOrderMessage: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock("@/lib/order-service", () => ({
   archiveOrder: mocks.archiveOrder,
   restoreOrder: mocks.restoreOrder,
   restoreCancelledOrder: mocks.restoreCancelledOrder,
+  deleteCancelledOrderPermanently: mocks.deleteCancelledOrderPermanently,
   updateOrderStatus: mocks.updateOrderStatus,
 }));
 
@@ -45,6 +47,15 @@ function request(body) {
 }
 
 describe("Website Orders API", () => {
+  beforeEach(() => {
+    mocks.archiveOrder.mockReset();
+    mocks.restoreOrder.mockReset();
+    mocks.restoreCancelledOrder.mockReset();
+    mocks.deleteCancelledOrderPermanently.mockReset();
+    mocks.updateOrderStatus.mockReset();
+    mocks.syncTelegramOrderMessage.mockReset();
+  });
+
   it("passes archived-only list intent to the order service", async () => {
     mocks.listOrders.mockResolvedValue([]);
     const response = await GET(new Request("http://localhost/api/orders?archived=only&limit=50"));
@@ -100,6 +111,17 @@ describe("Website Orders API", () => {
     expect(response.status).toBe(200);
     expect(mocks.restoreCancelledOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Staff" });
     expect((await response.json()).data.status).toBe("DRAFT");
+  });
+
+  it("permanently deletes only through the explicit Trash action", async () => {
+    const result = { id: "order-1", deleted: true };
+    mocks.deleteCancelledOrderPermanently.mockResolvedValue(result);
+    const response = await PATCH(request({ orderId: result.id, action: "trash_delete_permanently" }));
+    expect(response.status).toBe(200);
+    expect(mocks.deleteCancelledOrderPermanently).toHaveBeenCalledWith({ orderId: result.id, actorName: "Staff" });
+    expect((await response.json()).data).toEqual(result);
+    expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
+    expect(mocks.restoreCancelledOrder).not.toHaveBeenCalled();
   });
 
   it("retries AI extraction for a pending Order and syncs the result back to Telegram", async () => {

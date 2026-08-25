@@ -21,7 +21,7 @@ vi.mock("@/lib/order-utils", () => ({
   normalizeDateInput: vi.fn(),
 }));
 
-import { archiveOrder, listOrders, purgeExpiredCancelledOrders, restoreCancelledOrder, restoreOrder } from "@/lib/order-service";
+import { archiveOrder, deleteCancelledOrderPermanently, listOrders, purgeExpiredCancelledOrders, restoreCancelledOrder, restoreOrder } from "@/lib/order-service";
 
 const activeOrder = { id: "order-1", status: "NEEDS_REVIEW", archivedAt: null, lines: [], caps: [], deliveries: [], customer: null };
 
@@ -73,6 +73,22 @@ describe("Order archive service", () => {
     const result = await restoreCancelledOrder({ orderId: current.id, now: new Date("2026-08-25T00:00:00.000Z") });
     expect(result.status).toBe("DRAFT");
     expect(mocks.orderUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "DRAFT", cancelledAt: null, cancelledBy: null }) }));
+  });
+
+  it("permanently deletes a Cancelled Order and leaves Customer/Ledger untouched", async () => {
+    const current = { id: "cancelled-1", status: "CANCELLED", sourceMessageId: "77", customer: { id: "customer-1", name: "စမ်းသပ် Customer" } };
+    mocks.orderFindUnique.mockResolvedValue(current);
+    const result = await deleteCancelledOrderPermanently({ orderId: current.id, actorName: "Staff" });
+    expect(result).toEqual({ id: current.id, deleted: true });
+    expect(mocks.orderDelete).toHaveBeenCalledWith({ where: { id: current.id } });
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "ORDER_PERMANENT_DELETE", entityType: "Order", entityId: current.id }));
+  });
+
+  it("rejects permanent deletion unless the Order is Cancelled", async () => {
+    mocks.orderFindUnique.mockResolvedValue({ id: "draft-1", status: "DRAFT", customer: null });
+    await expect(deleteCancelledOrderPermanently({ orderId: "draft-1" })).rejects.toThrow("Cancelled Order သာ အပြီးဖျက်");
+    expect(mocks.orderDelete).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
   });
 
   it("auto-clears only expired Cancelled Orders and does not query Customer or Ledger", async () => {
