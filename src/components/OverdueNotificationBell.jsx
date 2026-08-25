@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { getOldestUnpaidCreditDate } from "@/lib/debt-utils";
+import { getLatestTransactionDate, getMyanmarDateAgeInDays } from "@/lib/debt-utils";
 
 /**
  * OverdueNotificationBell Component
@@ -25,37 +25,28 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
 
   // Calculate overdue debts (15+ days old)
   const calculatedOverdueDebts = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const fifteenDaysAgo = new Date(today);
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
     const overdue = [];
 
     customers.forEach((customer) => {
       // Skip if no balance or no ledgers
       if (customer.current_balance <= 0 || !customer.ledgers || customer.ledgers.length === 0) return;
 
-      // Use FIFO logic to find the oldest unpaid credit date
-      const oldestUnpaidDate = getOldestUnpaidCreditDate(customer.ledgers);
+      // Use the latest ledger transaction date for the reminder age and display.
+      const latestTransactionDate = getLatestTransactionDate(customer.ledgers);
 
-      if (oldestUnpaidDate) {
-        const creditDate = new Date(oldestUnpaidDate);
-        creditDate.setHours(0, 0, 0, 0);
+      if (latestTransactionDate) {
+        const daysOverdue = getMyanmarDateAgeInDays(latestTransactionDate);
+        if (daysOverdue === null || daysOverdue < 15) return;
 
-        if (creditDate <= fifteenDaysAgo) {
-          const daysOverdue = Math.floor((today - creditDate) / (1000 * 60 * 60 * 24));
-          
-          overdue.push({
-            customerId: customer.id,
-            customerName: customer.name,
-            customerPhone: customer.phone,
-            balance: customer.current_balance,
-            lastCreditDate: creditDate,
-            daysOverdue,
-            totalDebt: customer.current_balance,
-          });
-        }
+        overdue.push({
+          customerId: customer.id,
+          customerName: customer.name,
+          customerPhone: customer.phone,
+          balance: customer.current_balance,
+          lastCreditDate: latestTransactionDate,
+          daysOverdue,
+          totalDebt: customer.current_balance,
+        });
       }
     });
 
@@ -179,7 +170,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
                         )}
                         <div className="mt-2 space-y-1 text-xs text-slate-700">
                           <p>
-                            <span className="font-medium">နောက်ဆုံးအကြွေး ရက်စွဲ:</span>{" "}
+                            <span className="font-medium">နောက်ဆုံးစာရင်း ရက်စွဲ:</span>{" "}
                             {formatDate(debt.lastCreditDate)}
                           </p>
                           <p>
