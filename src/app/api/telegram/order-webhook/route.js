@@ -67,6 +67,27 @@ function callbackAuditMetadata(callback) {
   };
 }
 
+async function editTelegramOrderMessage({ chatId, messageId, text, replyMarkup } = {}) {
+  try {
+    return await editTelegramMessageText({ chatId, messageId, text, parseMode: "Markdown", replyMarkup });
+  } catch (error) {
+    console.warn("Telegram Order Markdown edit failed; retrying plain text", error);
+    return editTelegramMessageText({ chatId, messageId, text: String(text || "").replace(/```/g, ""), replyMarkup });
+  }
+}
+
+async function sendOrderProcessingNotice({ chatId, replyToMessageId } = {}) {
+  try {
+    await sendTelegramTextToChat({
+      chatId,
+      replyToMessageId,
+      text: "⏳ Order စာကို စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။ အဖြေကြာပါက မူရင်းစာကို Draft အဖြစ် မပျောက်အောင် သိမ်းထားပါမည်။",
+    });
+  } catch (noticeError) {
+    console.warn("Telegram Order processing notice failed", noticeError);
+  }
+}
+
 async function handleCallback(update) {
   const callback = update.callback_query;
   const chatId = String(callback?.message?.chat?.id || "");
@@ -160,15 +181,22 @@ async function handleCallback(update) {
         await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order မတွေ့ပါ။", showAlert: true });
         return { ok: true, status: "missing_order", orderId };
       }
+      const retryKeyboard = buildOrderRetryKeyboard(current, process.env.NEXT_PUBLIC_APP_URL);
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "AI ဖြင့် ပြန်စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။" });
+      try {
+        await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `⏳ AI ဖြင့် ပြန်စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။\n\n${formatOrderDraftMessage(current)}`, replyMarkup: retryKeyboard });
+      } catch (progressError) {
+        console.warn("Telegram AI retry progress message update failed", progressError);
+      }
       try {
         const extracted = await extractOrderFromText(current.sourceText);
         const refreshed = await refreshOrderFromAi({ orderId, extracted, actorName: "Staff" });
         await rememberCallbackMessage();
-        await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။" });
-        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
+        await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
         return { ok: true, status: "ai_retried", orderId };
       } catch (retryError) {
-        await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: safeErrorMessage(retryError), showAlert: true });
+        const retryMessage = `⚠️ AI ပြန်စစ်ရာတွင် အဆင်မပြေသေးပါ။ ခဏနားပြီး အောက်က ခလုတ်ကို ပြန်နှိပ်နိုင်ပါသည်။\n\n${formatOrderDraftMessage(current)}\n\n${safeErrorMessage(retryError)}`;
+        await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: retryMessage, replyMarkup: retryKeyboard });
         return { ok: true, status: "ai_retry_failed", orderId };
       }
     }
@@ -258,6 +286,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: true, status: "draft_created", orderId: pending.order.id, aiSkipped: true });
     }
 
+    await sendOrderProcessingNotice({ chatId, replyToMessageId: message.message_id });
     try {
       const extracted = await extractOrderFromText(orderText);
       const order = await refreshOrderFromAi({ orderId: pending.order.id, extracted, actorName: "Staff" });

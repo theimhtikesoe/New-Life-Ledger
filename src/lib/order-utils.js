@@ -76,21 +76,33 @@ export function positiveInteger(value) {
   return Math.round(parsed);
 }
 
-export function normalizeDateInput(value) {
+function normalizeExplicitDate(value) {
   const normalized = toLatinDigits(value).trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return null;
+  const isoMatch = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const separatedMatch = normalized.match(/(?:^|[^\d])(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})(?:$|[^\d])/);
+  const year = isoMatch ? Number(isoMatch[1]) : separatedMatch ? Number(separatedMatch[3]) : null;
+  const month = isoMatch ? Number(isoMatch[2]) : separatedMatch ? Number(separatedMatch[2]) : null;
+  const day = isoMatch ? Number(isoMatch[3]) : separatedMatch ? Number(separatedMatch[1]) : null;
+  if (![year, month, day].every((part) => Number.isInteger(part)) || year < 2000 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const candidate = `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   try {
-    getMyanmarDayRange(normalized);
-    return normalized;
+    getMyanmarDayRange(candidate);
+    return candidate;
   } catch {
     return null;
   }
 }
 
+export function normalizeDateInput(value) {
+  return normalizeExplicitDate(value);
+}
+
 export function resolveOrderDate(value, rawText = "") {
   const direct = normalizeDateInput(value);
   if (direct) return direct;
-  const text = String(rawText || "").toLowerCase();
+  const text = toLatinDigits(String(rawText || "")).toLowerCase();
+  const explicit = normalizeExplicitDate(text);
+  if (explicit) return explicit;
   const today = getMyanmarDateInputValue(new Date());
   if (text.includes("မနက်ဖြန်") || /\b(?:tomorrow|tmr|tmrw)\b/i.test(text)) {
     const range = getMyanmarDayRange(today);
@@ -224,7 +236,7 @@ export function buildFallbackOrderExtraction(rawText) {
   const firstLine = sourceLines[0] || "";
   const customerMatch = firstLine.match(/^(?:customer|ဖောက်သည်)\s*[:：-]\s*(.+)$/iu);
   const customerName = cleanText(customerMatch?.[1] || firstLine);
-  const dateLine = sourceLines.find((line) => /ဒီနေ့|ယနေ့|မနက်ဖြန်|today|tomorrow|tmr|tmrw/iu.test(line)) || "";
+  const dateLine = sourceLines.find((line) => /ဒီနေ့|ယနေ့|မနက်ဖြန်|today|tomorrow|tmr|tmrw/iu.test(line) || /(?:^|[^\d၀-၉])[0-9၀-၉]{1,2}\s*[./-]\s*[0-9၀-၉]{1,2}\s*[./-]\s*[0-9၀-၉]{4}(?:$|[^\d၀-၉])/u.test(line)) || "";
   const pickupLine = sourceLines.find((line) => /စက်ရုံ\s*(?:လာယူ|ယူ)|factory\s*pickup|pickup\s*at\s*factory/iu.test(line)) || "";
   const timeLine = sourceLines.find((line) => /(?:မနက်|နေ့လယ်|ညနေ|ည\s*ပိုင်း|[0-9၀-၉]{1,2}\s*နာရီ(?:\s*ခွဲ)?|[0-9၀-၉]{1,2}:[0-9၀-၉]{2}|[ap]m)/iu.test(line)) || "";
   const destinationLine = sourceLines.find((line) => /(?:ကားဂိတ်|ဂိတ်|gate|နေရာ|location|place)/iu.test(line)) || "";

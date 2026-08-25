@@ -126,7 +126,8 @@ describe("Telegram order webhook safety gates", () => {
     expect((await response.json()).status).toBe("draft_created");
     expect(mocks.extractOrderFromText).toHaveBeenCalledWith(expect.stringContaining("မမိုး"));
     expect(mocks.createOrderDraft).toHaveBeenCalledWith(expect.objectContaining({ sourceChatId: chatId, sourceMessageId: 10, sourceUpdateId: 10 }));
-    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(2);
+    expect(mocks.sendTelegramTextToChat).toHaveBeenNthCalledWith(1, expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order စာကို စစ်နေပါသည်") }));
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: order.id, chatId, messageId: 99 });
   });
 
@@ -165,6 +166,7 @@ describe("Telegram order webhook safety gates", () => {
       sourceText: fallbackOrder.sourceText,
       extracted: expect.objectContaining({ customerName: expect.any(String), requestedDate: expect.any(String), confidence: "low" }),
     }));
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order စာကို စစ်နေပါသည်") }));
     expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Draft အဖြစ် သိမ်းထားပါပြီ") }));
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: fallbackOrder.id, chatId, messageId: 99 });
   });
@@ -217,6 +219,23 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
     expect(mocks.sendFactoryNotificationForOrder).not.toHaveBeenCalled();
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 95 }));
+  });
+
+  it("keeps a visible retry action when AI retry fails", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_REVIEW", customer: null, sourceText: "/order မမိုး" };
+    mocks.getOrderById.mockResolvedValue(pending);
+    mocks.extractOrderFromText.mockRejectedValue(Object.assign(new Error("Order AI task မအောင်မြင်ပါ။"), { code: "MANUS_TASK" }));
+    const update = { update_id: 202, callback_query: { id: "callback-retry-failed", data: `order|retry|I|${order.id}`, message: { message_id: 196, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("ai_retry_failed");
+    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-retry-failed", text: "AI ဖြင့် ပြန်စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။" }));
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(2);
+    expect(mocks.editTelegramMessageText.mock.calls[0][0].text).toContain("AI ဖြင့် ပြန်စစ်နေပါသည်");
+    expect(mocks.editTelegramMessageText.mock.calls[1][0].text).toContain("AI ပြန်စစ်ရာတွင် အဆင်မပြေသေးပါ");
+    expect(mocks.buildOrderRetryKeyboard).toHaveBeenCalledWith(pending, process.env.NEXT_PUBLIC_APP_URL);
+    expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
   });
 
   it("lets a verified administrator open More actions without queuing the batch", async () => {
