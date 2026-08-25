@@ -22,10 +22,10 @@ function getConfig() {
   const token = String(process.env.VERCEL_API_TOKEN || "").trim();
   const projectId = String(process.env.VERCEL_PROJECT_ID || "").trim();
   const teamId = String(process.env.VERCEL_TEAM_ID || "").trim();
-  const viewerActors = String(process.env.VERCEL_BUILD_LOG_VIEWER_ACTORS || "ဖေဖေ")
-    .split(",")
-    .map((actor) => actor.trim())
-    .filter(Boolean);
+  const viewerActorSetting = String(process.env.VERCEL_BUILD_LOG_VIEWER_ACTORS || "").trim();
+  const viewerActors = viewerActorSetting
+    ? viewerActorSetting.split(",").map((actor) => actor.trim()).filter(Boolean)
+    : [];
   return { token, projectId, teamId, viewerActors };
 }
 
@@ -37,12 +37,14 @@ export function getVercelBuildLogViewerConfig() {
     hasProject: Boolean(projectId),
     teamConfigured: Boolean(teamId),
     viewerActors,
+    actorRestrictionEnabled: viewerActors.length > 0,
   };
 }
 
 export function isAllowedVercelBuildLogActor(actorName) {
   const { viewerActors } = getConfig();
-  return viewerActors.includes(String(actorName || "").trim());
+  const normalizedActor = String(actorName || "").trim();
+  return Boolean(normalizedActor) && (viewerActors.length === 0 || viewerActors.includes(normalizedActor));
 }
 
 function createQuery(params = {}) {

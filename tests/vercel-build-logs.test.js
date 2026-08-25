@@ -31,7 +31,10 @@ describe("Vercel build-log safety helpers", () => {
     expect(result).not.toContain("token-value");
   });
 
-  it("allows only configured viewer actors", () => {
+  it("allows signed-in actors by default and supports an explicit allowlist", () => {
+    delete process.env.VERCEL_BUILD_LOG_VIEWER_ACTORS;
+    expect(isAllowedVercelBuildLogActor("Staff")).toBe(true);
+    expect(isAllowedVercelBuildLogActor("")).toBe(false);
     process.env.VERCEL_BUILD_LOG_VIEWER_ACTORS = "ဖေဖေ, Staff";
     expect(isAllowedVercelBuildLogActor("ဖေဖေ")).toBe(true);
     expect(isAllowedVercelBuildLogActor("ပုံ့ပုံ့")).toBe(false);

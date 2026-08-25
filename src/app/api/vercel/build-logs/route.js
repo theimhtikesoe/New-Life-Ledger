@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request) {
   const actorName = decodeActorHeader(request.headers.get("x-actor-name") || "").trim();
   if (!isAllowedVercelBuildLogActor(actorName)) {
-    return NextResponse.json({ ok: false, error: "Vercel build logs ကို Owner အသုံးပြုသူသာ ကြည့်နိုင်ပါသည်။" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "Vercel build logs ကို ခွင့်ပြုထားသော signed-in အသုံးပြုသူသာ ကြည့်နိုင်ပါသည်။" }, { status: 403 });
   }
 
   try {
