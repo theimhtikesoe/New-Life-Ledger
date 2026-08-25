@@ -24,8 +24,16 @@ function publicInfo(info) {
 }
 
 export async function GET() {
+  const url = productionUrl();
+  const secretToken = String(process.env.TELEGRAM_ORDER_WEBHOOK_SECRET || "").trim();
+  const config = {
+    productionUrlConfigured: Boolean(url),
+    secretConfigured: Boolean(secretToken),
+    botTokenConfigured: Boolean(String(process.env.TELEGRAM_BOT_TOKEN || "").trim()),
+    productionEnvironment: String(process.env.VERCEL_ENV || "").toLowerCase() === "production",
+  };
   try {
-    return NextResponse.json({ ok: true, data: publicInfo(await getTelegramWebhookInfo()) });
+    return NextResponse.json({ ok: true, data: { config, webhook: publicInfo(await getTelegramWebhookInfo()) } });
   } catch (error) {
     console.error("Telegram webhook info failed", error);
     return NextResponse.json({ ok: false, error: "Telegram webhook status ကို ဖတ်မရသေးပါ။" }, { status: 502 });
@@ -39,7 +47,11 @@ export async function POST() {
   const url = productionUrl();
   const secretToken = String(process.env.TELEGRAM_ORDER_WEBHOOK_SECRET || "").trim();
   if (!url || !secretToken) {
-    return NextResponse.json({ ok: false, error: "Production webhook URL/secret မပြည့်စုံသေးပါ။" }, { status: 409 });
+    return NextResponse.json({
+      ok: false,
+      error: "Production webhook URL/secret မပြည့်စုံသေးပါ။",
+      missing: { productionUrl: !url, secret: !secretToken },
+    }, { status: 409 });
   }
   try {
     await setTelegramOrderWebhook({ url, secretToken });
