@@ -23,6 +23,24 @@ function publicInfo(info) {
   };
 }
 
+function isValidSecretToken(secretToken) {
+  return /^[A-Za-z0-9_-]{1,256}$/.test(String(secretToken || ""));
+}
+
+function isValidWebhookUrl(url) {
+  try {
+    const parsed = new URL(String(url || ""));
+    return parsed.protocol === "https:"
+      && !parsed.username
+      && !parsed.password
+      && !parsed.search
+      && !parsed.hash
+      && parsed.pathname === "/api/telegram/order-webhook";
+  } catch {
+    return false;
+  }
+}
+
 function safeFailureDiagnostic(error, stage) {
   const message = String(error?.message || "").toLowerCase();
   const statusMatch = message.match(/failed:\s+(\d{3})/);
@@ -48,7 +66,9 @@ export async function GET() {
   const secretToken = String(process.env.TELEGRAM_ORDER_WEBHOOK_SECRET || "").trim();
   const config = {
     productionUrlConfigured: Boolean(url),
+    productionUrlFormatValid: isValidWebhookUrl(url),
     secretConfigured: Boolean(secretToken),
+    secretFormatValid: isValidSecretToken(secretToken),
     botTokenConfigured: Boolean(String(process.env.TELEGRAM_BOT_TOKEN || "").trim()),
     productionEnvironment: String(process.env.VERCEL_ENV || "").toLowerCase() === "production",
   };
@@ -71,6 +91,13 @@ export async function POST() {
       ok: false,
       error: "Production webhook URL/secret မပြည့်စုံသေးပါ။",
       missing: { productionUrl: !url, secret: !secretToken },
+    }, { status: 409 });
+  }
+  if (!isValidWebhookUrl(url) || !isValidSecretToken(secretToken)) {
+    return NextResponse.json({
+      ok: false,
+      error: "Production webhook URL/secret format မမှန်သေးပါ။",
+      invalid: { productionUrl: !isValidWebhookUrl(url), secret: !isValidSecretToken(secretToken) },
     }, { status: 409 });
   }
   let stage = "setWebhook";
