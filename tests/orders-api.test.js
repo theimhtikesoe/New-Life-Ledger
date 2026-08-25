@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   updateOrderStatus: vi.fn(),
   sendFactoryNotificationForOrder: vi.fn(),
   syncTelegramOrderMessage: vi.fn(),
+  buildFallbackOrderExtraction: vi.fn(),
+  isFallbackExtractionUsable: vi.fn(),
 }));
 
 vi.mock("@/lib/database", () => ({ databaseErrorResponse: vi.fn((error) => ({ error: error?.message || "Database error" })) }));
@@ -21,6 +23,7 @@ vi.mock("@/lib/audit", () => ({ getActorName: vi.fn(() => "Staff") }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 vi.mock("@/lib/order-channel-sync", () => ({ syncTelegramOrderMessage: mocks.syncTelegramOrderMessage }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
+vi.mock("@/lib/order-utils", () => ({ buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction, isFallbackExtractionUsable: mocks.isFallbackExtractionUsable }));
 vi.mock("@/lib/order-service", () => ({
   createCustomerForOrder: mocks.createCustomerForOrder,
   getOrderById: mocks.getOrderById,
@@ -54,6 +57,8 @@ describe("Website Orders API", () => {
     mocks.deleteCancelledOrderPermanently.mockReset();
     mocks.updateOrderStatus.mockReset();
     mocks.syncTelegramOrderMessage.mockReset();
+    mocks.buildFallbackOrderExtraction.mockReset().mockReturnValue({});
+    mocks.isFallbackExtractionUsable.mockReset().mockReturnValue(false);
   });
 
   it("passes archived-only list intent to the order service", async () => {
@@ -122,6 +127,21 @@ describe("Website Orders API", () => {
     expect((await response.json()).data).toEqual(result);
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
     expect(mocks.restoreCancelledOrder).not.toHaveBeenCalled();
+  });
+
+  it("uses complete fallback data for Website retry without calling the provider", async () => {
+    const current = { id: "order-1", sourceText: "မှာယူမှု ကိုသိမ်း\\n0.3 Liter အဖြူ\\n100 ဆံ့ 20 ကဒ်\\nတောင်ပေါ်ဂိတ်\\n27.8.2026" };
+    const fallback = { customerName: "ကိုသိမ်း", requestedDate: "2026-08-27", destination: "တောင်ပေါ်ဂိတ်", lines: [{ bottleType: "အဖြူ", capacityMl: 300, bottlesPerCard: 100, cardCount: 20, totalBottles: 2000 }], caps: [], missingFields: [], confidence: "low" };
+    const refreshed = { id: current.id, status: "DRAFT", sourceText: current.sourceText };
+    mocks.getOrderById.mockResolvedValue(current);
+    mocks.buildFallbackOrderExtraction.mockReturnValue(fallback);
+    mocks.isFallbackExtractionUsable.mockReturnValue(true);
+    mocks.refreshOrderFromAi.mockResolvedValue(refreshed);
+    mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
+    const response = await PATCH(request({ orderId: current.id, action: "retry_ai" }));
+    expect(response.status).toBe(200);
+    expect(mocks.extractOrderFromText).not.toHaveBeenCalled();
+    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith({ orderId: current.id, extracted: fallback, actorName: "Staff" });
   });
 
   it("retries AI extraction for a pending Order and syncs the result back to Telegram", async () => {
