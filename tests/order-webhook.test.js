@@ -18,13 +18,14 @@ const mocks = vi.hoisted(() => ({
   configuredTelegramOrderAdminIds: vi.fn(),
   formatOrderDraftMessage: vi.fn(),
   buildFallbackOrderExtraction: vi.fn(),
+  isFallbackExtractionUsable: vi.fn(),
   sendFactoryNotificationForOrder: vi.fn(),
 }));
 
 vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
 vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
-vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage, buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction }));
+vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage, buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction, isFallbackExtractionUsable: mocks.isFallbackExtractionUsable }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 
 import { POST } from "@/app/api/telegram/order-webhook/route";
@@ -64,7 +65,7 @@ describe("Telegram order webhook safety gates", () => {
     mocks.createOrderDraft.mockReset();
     mocks.getOrderById.mockReset();
     mocks.getOrderBySourceUpdateId.mockReset().mockResolvedValue(null);
-    mocks.refreshOrderFromAi.mockReset();
+    mocks.refreshOrderFromAi.mockReset().mockResolvedValue(order);
     mocks.saveTelegramDraftMessage.mockReset().mockResolvedValue(order);
     mocks.updateOrderStatus.mockReset();
     mocks.extractOrderFromText.mockReset().mockResolvedValue({});
@@ -79,6 +80,7 @@ describe("Telegram order webhook safety gates", () => {
     mocks.sendFactoryNotificationForOrder.mockReset();
     mocks.formatOrderDraftMessage.mockReset().mockReturnValue("Draft message");
     mocks.buildFallbackOrderExtraction.mockReset().mockReturnValue({ customerName: "ကံလီ", customerPhone: null, requestedDate: "2026-08-26", destination: "စက်ရုံလာယူမည်", lines: [], caps: [], missingFields: [], confidence: "low", notes: "စက်ရုံလာယူမည် ၊ လာယူချိန်: မနက်ဖြန် မနက် ၇ နာရီ ခွဲ" });
+    mocks.isFallbackExtractionUsable.mockReset().mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -116,6 +118,30 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: order.id, chatId, messageId: 99 });
   });
 
+  it("skips the provider when the deterministic extraction already has complete order fields", async () => {
+    const completeFallback = {
+      customerName: "3ဘီး",
+      customerPhone: null,
+      requestedDate: "2026-08-26",
+      destination: "စက်ရုံလာယူမည်",
+      lines: [{ bottleType: "နွားနို့ကြီး အဖြူ", capacityMl: 300, capacityLabel: "0.3 Liter", bottlesPerCard: 100, cardCount: 30, totalBottles: 3000, notes: null }],
+      caps: [{ capType: "ရောင်စုံ", normalPcs: 3000, extraPcs: 15, requestedTotalPcs: 3015, notes: null }],
+      missingFields: [],
+      confidence: "low",
+      notes: "စက်ရုံလာယူမည် ၊ လာယူချိန်: မနက်ဖြန် မနက် ၇ နာရီ ခွဲ",
+    };
+    mocks.buildFallbackOrderExtraction.mockReturnValue(completeFallback);
+    mocks.isFallbackExtractionUsable.mockReturnValue(true);
+    mocks.createOrderDraft.mockResolvedValue({ order, duplicate: false });
+    const response = await POST(request(messageUpdate("မှာယူမှု 3ဘီး\\nနွားနို့ကြီး အဖြူ\\n0.3 Liter 100 ဆံ့ 30 ကဒ်", 16)));
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body).toEqual(expect.objectContaining({ status: "draft_created", aiSkipped: true }));
+    expect(mocks.extractOrderFromText).not.toHaveBeenCalled();
+    expect(mocks.refreshOrderFromAi).not.toHaveBeenCalled();
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
+  });
+
   it("stores the original Telegram text as a fallback Draft when AI extraction fails", async () => {
     mocks.extractOrderFromText.mockRejectedValue(Object.assign(new Error("Order AI task မအောင်မြင်ပါ။"), { code: "MANUS_TASK" }));
     const fallbackOrder = { ...order, status: "NEEDS_CUSTOMER", sourceText: "/order ကံလီ 0.3 L 400 ဆံ့ 50 ကဒ် ပုလဲဂိတ် မနက်ဖြန်", customer: null, draftCustomerName: null };
@@ -127,7 +153,7 @@ describe("Telegram order webhook safety gates", () => {
       sourceText: fallbackOrder.sourceText,
       extracted: expect.objectContaining({ customerName: expect.any(String), requestedDate: expect.any(String), confidence: "low" }),
     }));
-    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("မူရင်းမှာယူစာကို Draft အဖြစ်") }));
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Draft အဖြစ် သိမ်းထားပါပြီ") }));
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: fallbackOrder.id, chatId, messageId: 99 });
   });
 

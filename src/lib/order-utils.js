@@ -276,6 +276,17 @@ export function buildFallbackOrderExtraction(rawText) {
   };
 }
 
+export function isFallbackExtractionUsable(order) {
+  const lines = Array.isArray(order?.lines) ? order.lines : [];
+  return Boolean(
+    cleanText(order?.customerName)
+    && cleanText(order?.requestedDate)
+    && cleanText(order?.destination)
+    && lines.length > 0
+    && lines.every((line) => positiveInteger(line?.capacityMl) && positiveInteger(line?.bottlesPerCard) && positiveInteger(line?.cardCount))
+  );
+}
+
 export function calculateOrderTotals(order) {
   const lines = Array.isArray(order?.lines) ? order.lines : [];
   const caps = Array.isArray(order?.caps) ? order.caps : [];
