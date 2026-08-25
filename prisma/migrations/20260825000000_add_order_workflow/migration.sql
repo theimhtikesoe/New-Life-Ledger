@@ -86,7 +86,7 @@ CREATE INDEX IF NOT EXISTS "OrderDelivery_mode_idx" ON "OrderDelivery"("mode");
 
 CREATE TABLE IF NOT EXISTS "OrderAutomationSetting" (
   "id" INTEGER NOT NULL DEFAULT 1,
-  "morningBatchEnabled" BOOLEAN NOT NULL DEFAULT false,
+  "morningBatchEnabled" BOOLEAN NOT NULL DEFAULT true,
   "morningBatchTime" TEXT NOT NULL DEFAULT '08:10',
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "OrderAutomationSetting_pkey" PRIMARY KEY ("id")
