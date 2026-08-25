@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   listOrders: vi.fn(),
+  getOrderById: vi.fn(),
+  extractOrderFromText: vi.fn(),
+  refreshOrderFromAi: vi.fn(),
   archiveOrder: vi.fn(),
   restoreOrder: vi.fn(),
   restoreCancelledOrder: vi.fn(),
@@ -14,8 +17,11 @@ vi.mock("@/lib/database", () => ({ databaseErrorResponse: vi.fn((error) => ({ er
 vi.mock("@/lib/audit", () => ({ getActorName: vi.fn(() => "Staff") }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 vi.mock("@/lib/order-channel-sync", () => ({ syncTelegramOrderMessage: mocks.syncTelegramOrderMessage }));
+vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
 vi.mock("@/lib/order-service", () => ({
   createCustomerForOrder: vi.fn(),
+  getOrderById: mocks.getOrderById,
+  refreshOrderFromAi: mocks.refreshOrderFromAi,
   createOrderDraft: vi.fn(),
   updateOrderDetails: vi.fn(),
   linkOrderCustomer: vi.fn(),
@@ -70,6 +76,22 @@ describe("Website Orders API", () => {
     expect(response.status).toBe(200);
     expect(mocks.restoreCancelledOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Staff" });
     expect((await response.json()).data.status).toBe("DRAFT");
+  });
+
+  it("retries AI extraction for a pending Order and syncs the result back to Telegram", async () => {
+    const current = { id: "order-1", sourceText: "/order မမိုး" };
+    const refreshed = { id: "order-1", status: "DRAFT", telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
+    mocks.getOrderById.mockResolvedValue(current);
+    mocks.extractOrderFromText.mockResolvedValue({ customerName: "မမိုး" });
+    mocks.refreshOrderFromAi.mockResolvedValue(refreshed);
+    mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
+    const response = await PATCH(request({ orderId: current.id, action: "retry_ai" }));
+    expect(response.status).toBe(200);
+    expect(mocks.getOrderById).toHaveBeenCalledWith(current.id);
+    expect(mocks.extractOrderFromText).toHaveBeenCalledWith(current.sourceText);
+    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith(expect.objectContaining({ orderId: current.id, extracted: { customerName: "မမိုး" }, actorName: "Staff" }));
+    expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(refreshed, "🔄 Website မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။", { includeActions: true });
+    expect((await response.json()).data).toEqual(refreshed);
   });
 
   it("updates the shared status first and then attempts nonfatal Telegram synchronization", async () => {

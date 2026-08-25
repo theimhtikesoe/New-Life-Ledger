@@ -54,5 +54,29 @@ describe("Order AI provider polling", () => {
     expect(fetchMock.mock.calls[1][0]).toContain("task-1");
     expect(fetchMock.mock.calls[2][0]).toContain("task-1");
   });
+
+  it("retries a transient Manus service failure within the bounded attempt budget", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ ok: false, error: { code: "server_error" } }, 503))
+      .mockResolvedValueOnce(jsonResponse({ ok: true, task_id: "task-2" }))
+      .mockResolvedValueOnce(jsonResponse({
+        ok: true,
+        messages: [{ type: "structured_output_result", structured_output_result: { success: true, value: extractedValue } }],
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(extractOrderFromText("ကံလီ 0.3 Liter 400 ဆံ့ 20 ကဒ် ပုလဲဂိတ် မနက်ဖြန်"))
+      .resolves.toEqual(expect.objectContaining({ customerName: "ကံလီ", requestedDate: "2026-08-26" }));
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not retry authentication failures", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ ok: false, error: { code: "unauthorized" } }, 401));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(extractOrderFromText("ကံလီ order"))
+      .rejects.toMatchObject({ code: "MANUS_AUTH" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });
 

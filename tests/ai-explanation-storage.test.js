@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   consumeDailyAiUsage,
+  recordDailyAiSuccess,
+  resetDailyAiUsage,
   getAiActivityReviewHref,
   getDailyAiUsage,
   MAX_DAILY_AI_REQUESTS,
@@ -26,7 +28,16 @@ describe("AI explanation browser storage", () => {
     expect(readAiExplanationCache("2026-08-25", "Staff", storage)).toBeNull();
   });
 
-  it("tracks usage independently for each actor and report date", () => {
+  it("counts only successful answers and can reset a stuck old counter", () => {
+    const storage = createStorage();
+    expect(getDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
+    expect(recordDailyAiSuccess("Staff", "2026-08-24", storage)).toBe(1);
+    expect(recordDailyAiSuccess("Staff", "2026-08-24", storage)).toBe(2);
+    expect(resetDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
+    expect(getDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
+  });
+
+  it("keeps the legacy usage alias independent for each actor and report date", () => {
     const storage = createStorage();
     expect(getDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
     expect(consumeDailyAiUsage("Staff", "2026-08-24", storage)).toBe(1);

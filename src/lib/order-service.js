@@ -207,6 +207,87 @@ export async function createOrderDraft({
   return { order: serializeOrder(created), duplicate: false };
 }
 
+export async function refreshOrderFromAi({ orderId, extracted, actorName = "Staff" } = {}) {
+  await ensureDatabase();
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
+  if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (current.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို AI ဖြင့် ပြန်မစစ်နိုင်ပါ။ အရင် Restore လုပ်ပါ။");
+  if (["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(current.status)) {
+    throw new Error("ဒီ Order status မှာ AI ဖြင့် ပြန်စစ်၍မရပါ။");
+  }
+
+  const initial = normalizeExtractedOrder(extracted, current.sourceText);
+  const existingCustomer = current.customer?.deletedAt ? null : current.customer;
+  const normalized = normalizeExtractedOrder({
+    ...extracted,
+    customerName: initial.customerName || existingCustomer?.name || current.draftCustomerName,
+    customerPhone: initial.customerPhone || current.customerPhone,
+    requestedDate: initial.requestedDate || current.requestedDate,
+    destination: initial.destination || current.destination,
+    lines: initial.lines.length ? initial.lines : current.lines || [],
+    caps: initial.caps.length ? initial.caps : current.caps || [],
+    missingFields: [],
+    notes: initial.notes || current.aiNotes,
+  }, current.sourceText);
+  const { customer: matchedCustomer, candidates } = await findCustomerMatch({ name: normalized.customerName, phone: normalized.customerPhone });
+  const customer = matchedCustomer || existingCustomer;
+  const mergedCaps = mergeCaps(normalized.caps);
+  const withWarnings = { ...normalized, caps: mergedCaps };
+  const capWarnings = calculateCapWarnings(withWarnings);
+  const status = customer ? calculateMissingStatus({ ...normalized, customerId: customer.id }) : "NEEDS_CUSTOMER";
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.orderLine.deleteMany({ where: { orderId: current.id } });
+    await tx.orderCap.deleteMany({ where: { orderId: current.id } });
+    return tx.order.update({
+      where: { id: current.id },
+      data: {
+        status,
+        requestedDate: normalized.requestedDate || "",
+        customerId: customer?.id || null,
+        draftCustomerName: customer ? null : normalized.customerName,
+        draftCustomerPhone: customer ? null : normalized.customerPhone,
+        customerPhone: normalized.customerPhone,
+        missingFields: normalized.missingFields,
+        aiConfidence: normalized.confidence,
+        aiNotes: normalized.notes,
+        destination: normalized.destination,
+        lines: { create: normalized.lines.map((line, index) => ({
+          lineNumber: index + 1,
+          bottleType: line.bottleType,
+          capacityMl: line.capacityMl,
+          capacityLabel: line.capacityLabel,
+          bottlesPerCard: line.bottlesPerCard,
+          cardCount: line.cardCount,
+          totalBottles: line.totalBottles,
+          notes: line.notes,
+        })) },
+        caps: { create: capWarnings.map((cap) => ({
+          capType: cap.capType,
+          normalPcs: cap.normalPcs,
+          extraPcs: cap.extraPcs,
+          requestedTotalPcs: cap.requestedTotalPcs,
+          expectedPcs: cap.expectedPcs,
+          warningText: cap.warningText,
+          notes: cap.notes,
+        })) },
+      },
+      include: ORDER_INCLUDE,
+    });
+  });
+
+  await writeAuditLog({
+    actorName,
+    action: "ORDER_AI_RETRY",
+    entityType: "Order",
+    entityId: updated.id,
+    entityLabel: updated.customer?.name || updated.draftCustomerName || "Order",
+    summary: "Order ကို AI ဖြင့် ပြန်စစ်",
+    metadata: { candidateCount: candidates.length, matchedCustomer: Boolean(customer) },
+  });
+  return serializeOrder(updated);
+}
+
 async function withCancelledAuditDates(orders) {
   const cancelledOrders = orders.filter((order) => order.status === "CANCELLED" && !order.cancelledAt);
   if (!cancelledOrders.length) return orders;
