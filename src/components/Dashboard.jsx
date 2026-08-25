@@ -1445,6 +1445,13 @@ export default function Dashboard({ view = "overview" }) {
               >
                 Auto Report အခြေအနေ
               </a>
+              <a
+                href="/vercel-build-logs"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
+                title="Vercel Build Logs"
+              >
+                Build Logs
+              </a>
             </div>
           </div>
           {message ? (

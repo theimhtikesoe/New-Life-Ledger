@@ -59,7 +59,7 @@ function cleanAiText(value) {
     .trim();
 }
 
-function buildClientAutomaticExplanation(report, reportDate) {
+function buildCodeBasedExplanation(report, reportDate) {
   const summary = report?.summary;
   if (!summary) return null;
   const totalTransactions = Number(summary.totalTransactions || 0);
@@ -83,6 +83,19 @@ function buildClientAutomaticExplanation(report, reportDate) {
     ],
     checks,
     caution: "ဤအဖြေသည် AI မရသေးချိန်တွင် စာရင်း data အပေါ်အခြေခံ၍ အလိုအလျောက်ပြထားခြင်းသာ ဖြစ်ပါသည်။ အရေးကြီးသောစာရင်းကို Website တွင် ပြန်စစ်ပါ။",
+  };
+}
+
+function mergeExplanations(codeExplanation, aiExplanation) {
+  if (!codeExplanation) return aiExplanation || null;
+  if (!aiExplanation) return codeExplanation;
+  const unique = (items = []) => Array.from(new Set(items.map((item) => String(item || "").trim()).filter(Boolean)));
+  const aiOverview = cleanAiText(aiExplanation.overview);
+  return {
+    overview: [cleanAiText(codeExplanation.overview), aiOverview && `AI ထပ်ဖြည့်ရှင်းချက် — ${aiOverview}`].filter(Boolean).join("\n\n"),
+    findings: unique([...(codeExplanation.findings || []), ...(aiExplanation.findings || [])]),
+    checks: unique([...(codeExplanation.checks || []), ...(aiExplanation.checks || [])]),
+    caution: aiExplanation.caution || codeExplanation.caution,
   };
 }
 
@@ -202,7 +215,7 @@ function AiExplanationPanel({ explanation, date, source }) {
           </div>
                         <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{date}</span>
-                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{source === "database" ? "Database မှ ပြန်ပြ" : source === "database-stale" ? "Data ပြောင်းသဖြင့် အဟောင်း" : source === "fresh" ? "AI အသစ်ထုတ်ထားသည်" : source === "automatic" ? "AI မရသေးသဖြင့် အလိုအလျောက်" : "Browser မှ ပြန်ပြ"}</span>
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{source === "database" ? "Database မှ ပြန်ပြ" : source === "database-stale" ? "Data ပြောင်းသဖြင့် အဟောင်း" : source === "fresh" ? "AI အသစ်ထုတ်ထားသည်" : source === "automatic" ? "AI မရသေးသဖြင့် အလိုအလျောက်" : source === "code-first" ? "Code စစ်ချက်အရင်ပြ" : source === "code-first-cache" ? "Code + သိမ်းထားသော AI" : "Browser မှ ပြန်ပြ"}</span>
               </div>
 
         </div>
@@ -247,7 +260,7 @@ export default function DailySummaryPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [aiExplanation, setAiExplanation] = useState(null);
-  const [aiError, setAiError] = useState("");
+  const [aiRefreshMessage, setAiRefreshMessage] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiUsage, setAiUsage] = useState(0);
   const [aiStale, setAiStale] = useState(false);
@@ -284,7 +297,7 @@ export default function DailySummaryPage() {
     setAiUsage(getDailyAiUsage(actorName, date));
     setAiStale(false);
     setAiFallback(false);
-    setAiError("");
+    setAiRefreshMessage("");
     setAiLoading(false);
   }, [date]);
 
@@ -295,15 +308,15 @@ export default function DailySummaryPage() {
       aiAbortRef.current?.abort();
       aiAbortRef.current = null;
       aiRequestStartedAtRef.current = 0;
-      const fallback = buildClientAutomaticExplanation(data, date);
+      const fallback = buildCodeBasedExplanation(data, date);
       if (fallback) {
-        setAiExplanation(fallback);
+        setAiExplanation((current) => current || fallback);
         setAiFallback(true);
         setAiStale(false);
-        setAiSource("automatic");
-        setAiError("AI provider တုံ့ပြန်ရန် အချိန်ကြာသဖြင့် စာရင်း data အပေါ်အခြေခံသော အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်။ AI ပြန်ရသောအခါ ပြန်စမ်းနိုင်ပါသည်။");
+        setAiSource("code-first");
+        setAiRefreshMessage("AI provider တုံ့ပြန်ရန် အချိန်ကြာသဖြင့် စာရင်း data အပေါ်အခြေခံသော အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်။ AI ပြန်ရသောအခါ ပြန်စမ်းနိုင်ပါသည်။");
       } else {
-        setAiError("AI ရှင်းပြချက် အချိန်ကြာနေသောကြောင့် ရပ်ထားပါသည်။ အောက်က ပြန်စမ်းရန်ကို နှိပ်နိုင်ပါသည်။");
+        setAiRefreshMessage("AI ရှင်းပြချက် အချိန်ကြာနေသောကြောင့် ရပ်ထားပါသည်။ အောက်က ပြန်စမ်းရန်ကို နှိပ်နိုင်ပါသည်။");
       }
       setAiLoading(false);
     };
@@ -327,37 +340,44 @@ export default function DailySummaryPage() {
     if (aiLoading) return;
     const actorName = localStorage.getItem("actorName") || "Staff";
     const localExplanation = readAiExplanationCache(date, actorName);
-    if (localExplanation) setAiExplanation(localExplanation);
+    const codeExplanation = buildCodeBasedExplanation(data, date);
+    const immediateExplanation = codeExplanation ? mergeExplanations(codeExplanation, localExplanation) : localExplanation;
+    if (immediateExplanation) {
+      setAiExplanation(immediateExplanation);
+      setAiStale(false);
+      setAiFallback(Boolean(codeExplanation));
+      setAiSource(codeExplanation ? "code-first" : "browser");
+      setAiRefreshMessage("Code-based စစ်ချက်ကို အရင်ပြထားပြီး AI ကို နောက်ကွယ်မှာ စစ်ဆေးနေပါသည်။");
+    } else {
+      setAiRefreshMessage("စာရင်း data ရရှိပြီးမှ AI refresh လုပ်ပါမည်။");
+    }
     setAiLoading(true);
-    setAiError("");
     const requestController = new AbortController();
     aiAbortRef.current = requestController;
     aiRequestStartedAtRef.current = Date.now();
     const isCurrentRequest = () => aiAbortRef.current === requestController;
 
     try {
-      // Ask the server for the fingerprint-matched cache first. This prevents
-      // a provider call when the day's underlying data has not changed.
+      // The cache probe is intentionally after the immediate code-based render.
+      // It avoids a provider call when the underlying date data is unchanged.
       let cacheBody = null;
       try {
         cacheBody = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}&cacheOnly=1`, { timeoutMs: AI_CACHE_CHECK_TIMEOUT_MS, signal: requestController.signal });
       } catch (cacheError) {
         if (requestController.signal.aborted || !isCurrentRequest()) return;
-        // A cache probe is an optimization, not the explanation itself. If the
-        // PWA/network or a transient DB request prevents the probe, continue to
-        // the normal endpoint so its stale/fallback response can still help.
         console.warn("Daily Summary cache probe failed; continuing to explanation request", cacheError);
       }
       if (!isCurrentRequest()) return;
       const cacheData = cacheBody?.data || {};
       if (cacheData.explanation) {
-        setAiExplanation(cacheData.explanation);
+        const mergedCache = mergeExplanations(codeExplanation, cacheData.explanation);
+        setAiExplanation(mergedCache);
         setAiStale(Boolean(cacheData.stale));
-        setAiFallback(false);
-        setAiSource(cacheData.stale ? "database-stale" : "database");
+        setAiFallback(Boolean(codeExplanation));
+        setAiSource(cacheData.stale ? "database-stale" : codeExplanation ? "code-first-cache" : "database");
         saveAiExplanationCache(date, cacheData.explanation, actorName);
         if (!cacheData.stale) {
-          setAiError("");
+          setAiRefreshMessage("ရှိပြီးသား AI အဖြေကို Code-based စစ်ချက်နှင့် ပေါင်းပြီး ပြထားပါသည်။");
           return;
         }
       }
@@ -365,34 +385,34 @@ export default function DailySummaryPage() {
       const currentUsage = getDailyAiUsage(actorName, date);
       if (currentUsage >= MAX_DAILY_AI_REQUESTS && !bypassLimit) {
         setAiUsage(currentUsage);
-        setAiError(`ဒီ Browser မှာ ဒီရက်အတွက် အသစ်ထွက်ပြီး အောင်မြင်ထားသော AI အဖြေ ${MAX_DAILY_AI_REQUESTS} ကြိမ် ပြည့်နေပါသည်။ ဒါသည် Manus account limit မဟုတ်ပါ။ အောက်က ခလုတ်ဖြင့် ဒီ Browser ၏ local limit ကို ပြန်စတင်ပြီး တစ်ကြိမ်ပြန်စမ်းနိုင်ပါသည်။`);
+        setAiRefreshMessage(`Code-based စစ်ချက်ကို ပြထားပြီး ဒီ Browser ၏ အောင်မြင်သော AI အဖြေ ${MAX_DAILY_AI_REQUESTS} ကြိမ်ကန့်သတ်ချက်ကြောင့် AI အသစ်ကို မစစ်နိုင်သေးပါ။ ဒါသည် Manus account limit မဟုတ်ပါ။`);
         return;
       }
 
       const body = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}`, { signal: requestController.signal });
       if (!isCurrentRequest()) return;
       const explanation = body.data?.explanation || null;
-      if (!explanation) throw new Error("AI မှ ရှင်းပြချက် မရရှိပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
-      setAiExplanation(explanation);
+      if (!explanation) throw new Error("AI မှ ရှင်းပြချက် မရရှိပါ။");
+      setAiExplanation(mergeExplanations(codeExplanation, explanation));
       setAiStale(Boolean(body.data?.stale));
-      setAiFallback(Boolean(body.data?.fallback));
-      setAiSource(body.data?.stale ? "database-stale" : body.data?.cached ? "database" : body.data?.fallback ? "automatic" : "fresh");
+      setAiFallback(Boolean(body.data?.fallback) || Boolean(codeExplanation));
+      setAiSource(body.data?.stale ? "database-stale" : body.data?.cached ? (codeExplanation ? "code-first-cache" : "database") : body.data?.fallback ? "code-first" : "fresh");
       if (!body.data?.fallback) saveAiExplanationCache(date, explanation, actorName);
       if (!body.data?.cached && !body.data?.stale && !body.data?.fallback) {
         setAiUsage(recordDailyAiSuccess(actorName, date));
       }
-      setAiError(body.warning || "");
+      setAiRefreshMessage(body.data?.fallback ? "AI မရသေးပါ။ Code-based စစ်ချက်ကို မပျောက်ဘဲ အရင်အဖြေအဖြစ် ပြထားပါသည်။" : body.warning || "AI စစ်ဆေးချက်ကို Code-based စစ်ချက်နှင့် ပေါင်းပြီး ပြထားပါသည်။");
     } catch (err) {
       if (isCurrentRequest()) {
-        const fallback = buildClientAutomaticExplanation(data, date);
+        const fallback = codeExplanation || buildCodeBasedExplanation(data, date);
         if (fallback) {
-          setAiExplanation(fallback);
+          setAiExplanation((current) => current || fallback);
           setAiFallback(true);
           setAiStale(false);
-          setAiSource("automatic");
-          setAiError("AI provider ခဏမရသေးပါ။ စာရင်း data အပေါ်အခြေခံသော အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်။ AI ပြန်ရသောအခါ ပြန်စမ်းနိုင်ပါသည်။");
+          setAiSource("code-first");
+          setAiRefreshMessage("AI provider ခဏမရသေးပါ။ Code-based စစ်ချက်ကို မပျောက်ဘဲ ပြထားပါသည်။ နောက်မှ AI ပြန်စစ်နိုင်ပါသည်။");
         } else {
-          setAiError(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
+          setAiRefreshMessage(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
         }
       }
     } finally {
@@ -408,7 +428,7 @@ export default function DailySummaryPage() {
     const actorName = localStorage.getItem("actorName") || "Staff";
     resetDailyAiUsage(actorName, date);
     setAiUsage(0);
-    setAiError("");
+    setAiRefreshMessage("");
     await handleAiExplain({ bypassLimit: true });
   };
 
@@ -438,7 +458,7 @@ export default function DailySummaryPage() {
           </div>
         </header>
 
-        {aiError && <section role="alert" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale || aiFallback ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale || aiFallback ? "text-amber-900" : "text-rose-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : aiFallback ? "အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်" : "AI ရှင်းပြချက် အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale || aiFallback ? "text-amber-800" : "text-rose-800"}`}>{aiError}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">ဒီ Browser limit ပြန်စတင်ပြီး AI ပြန်စမ်းရန်</button>}<button type="button" onClick={() => setAiError("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
+        {aiRefreshMessage && <section role="status" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale || aiFallback ? "border-amber-200 bg-amber-50" : "border-violet-200 bg-violet-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale || aiFallback ? "text-amber-900" : "text-violet-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : aiFallback ? "Code-based အဖြေကို အရင်ပြထားပါသည်" : "AI background refresh အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale || aiFallback ? "text-amber-800" : "text-violet-800"}`}>{aiRefreshMessage}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">ဒီ Browser limit ပြန်စတင်ပြီး AI ပြန်စမ်းရန်</button>}<button type="button" onClick={() => setAiRefreshMessage("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
         {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} source={aiSource} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}

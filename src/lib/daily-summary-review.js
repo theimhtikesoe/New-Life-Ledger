@@ -33,14 +33,10 @@ function normalizeLedgerEvents(events = []) {
   ));
 }
 
-export function buildDailySummaryReviewChecks({ totalTransactions = 0, activityTotal = 0, events = [], summary = {}, customers = [] } = {}) {
+export function buildDailySummaryReviewChecks({ totalTransactions = 0, events = [], summary = {}, customers = [] } = {}) {
   const checks = [];
   const allEvents = Array.isArray(events) ? events : [];
   const total = Number(totalTransactions || 0);
-  const activities = Number(activityTotal || 0);
-  if (activities !== total) {
-    checks.push(`စာရင်းမှတ်တမ်း ${total.toLocaleString("en-US")} ခုနှင့် လုပ်ဆောင်ချက်မှတ်တမ်း ${activities.toLocaleString("en-US")} ခု မတူပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။`);
-  }
 
   const paymentTypes = summary?.paymentTypes && typeof summary.paymentTypes === "object" ? Object.values(summary.paymentTypes).reduce((sum, amount) => sum + Math.round(Number(amount || 0)), 0) : null;
   const paidAmount = Number(summary?.paidAmount ?? 0);

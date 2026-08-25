@@ -67,9 +67,9 @@ describe("Daily Summary automatic review rules", () => {
     expect(checks.some((check) => check.includes("Customer အမည်") && check.includes("ကံလီ"))).toBe(true);
   });
 
-  it("keeps activity mismatch as a review check", () => {
-    const checks = buildDailySummaryReviewChecks({ totalTransactions: 5, activityTotal: 4, events: [] });
-    expect(checks[0]).toContain("မတူပါ");
+  it("does not flag the intentionally different Activity and Ledger counts", () => {
+    const checks = buildDailySummaryReviewChecks({ totalTransactions: 5, events: [] });
+    expect(checks.some((check) => check.includes("လုပ်ဆောင်ချက်မှတ်တမ်း") && check.includes("မတူပါ"))).toBe(false);
   });
 
   it("converts raw Daily Summary transactions into review events", () => {
