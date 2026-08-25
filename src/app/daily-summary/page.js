@@ -174,7 +174,7 @@ function AiExplanationPanel({ explanation, date, source }) {
           </div>
                         <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{date}</span>
-                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{source === "database" ? "Database မှ ပြန်ပြ" : source === "database-stale" ? "Data ပြောင်းသဖြင့် အဟောင်း" : source === "fresh" ? "AI အသစ်ထုတ်ထားသည်" : "Browser မှ ပြန်ပြ"}</span>
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{source === "database" ? "Database မှ ပြန်ပြ" : source === "database-stale" ? "Data ပြောင်းသဖြင့် အဟောင်း" : source === "fresh" ? "AI အသစ်ထုတ်ထားသည်" : source === "automatic" ? "AI မရသေးသဖြင့် အလိုအလျောက်" : "Browser မှ ပြန်ပြ"}</span>
               </div>
 
         </div>
@@ -223,6 +223,7 @@ export default function DailySummaryPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiUsage, setAiUsage] = useState(0);
   const [aiStale, setAiStale] = useState(false);
+  const [aiFallback, setAiFallback] = useState(false);
   const [aiSource, setAiSource] = useState("");
   const aiAbortRef = useRef(null);
   const aiRequestStartedAtRef = useRef(0);
@@ -254,6 +255,7 @@ export default function DailySummaryPage() {
     setAiSource(localExplanation ? "browser" : "");
     setAiUsage(getDailyAiUsage(actorName, date));
     setAiStale(false);
+    setAiFallback(false);
     setAiError("");
     setAiLoading(false);
   }, [date]);
@@ -305,6 +307,7 @@ export default function DailySummaryPage() {
       if (cacheData.explanation) {
         setAiExplanation(cacheData.explanation);
         setAiStale(Boolean(cacheData.stale));
+        setAiFallback(false);
         setAiSource(cacheData.stale ? "database-stale" : "database");
         saveAiExplanationCache(date, cacheData.explanation, actorName);
         if (!cacheData.stale) {
@@ -326,9 +329,10 @@ export default function DailySummaryPage() {
       if (!explanation) throw new Error("AI မှ ရှင်းပြချက် မရရှိပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
       setAiExplanation(explanation);
       setAiStale(Boolean(body.data?.stale));
-      setAiSource(body.data?.stale ? "database-stale" : body.data?.cached ? "database" : "fresh");
-      saveAiExplanationCache(date, explanation, actorName);
-      if (!body.data?.cached && !body.data?.stale) {
+      setAiFallback(Boolean(body.data?.fallback));
+      setAiSource(body.data?.stale ? "database-stale" : body.data?.cached ? "database" : body.data?.fallback ? "automatic" : "fresh");
+      if (!body.data?.fallback) saveAiExplanationCache(date, explanation, actorName);
+      if (!body.data?.cached && !body.data?.stale && !body.data?.fallback) {
         setAiUsage(recordDailyAiSuccess(actorName, date));
       }
       setAiError(body.warning || "");
@@ -377,7 +381,7 @@ export default function DailySummaryPage() {
           </div>
         </header>
 
-        {aiError && <section role="alert" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale ? "text-amber-900" : "text-rose-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : "AI ရှင်းပြချက် အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale ? "text-amber-800" : "text-rose-800"}`}>{aiError}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန် limit ပြန်ဖွင့်ပါ</button>}<button type="button" onClick={() => setAiError("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
+        {aiError && <section role="alert" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale || aiFallback ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale || aiFallback ? "text-amber-900" : "text-rose-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : aiFallback ? "အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်" : "AI ရှင်းပြချက် အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale || aiFallback ? "text-amber-800" : "text-rose-800"}`}>{aiError}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန် limit ပြန်ဖွင့်ပါ</button>}<button type="button" onClick={() => setAiError("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
         {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} source={aiSource} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}

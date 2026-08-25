@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { createOrderDraft, getOrderById, getOrderBySourceUpdateId, refreshOrderFromAi, saveTelegramDraftMessage, updateOrderStatus } from "@/lib/order-service";
+import { createCustomerForOrder, createOrderDraft, getOrderById, getOrderBySourceUpdateId, getOrderCustomerCandidates, linkOrderCustomer, refreshOrderFromAi, saveTelegramDraftMessage, updateOrderStatus } from "@/lib/order-service";
 import { extractOrderFromText } from "@/lib/order-ai";
 import {
   answerTelegramCallbackQuery,
   buildOrderActionKeyboard,
+  buildOrderCustomerCandidatesKeyboard,
+  buildOrderMoreKeyboard,
   buildOrderRetryKeyboard,
   configuredTelegramOrderAdminIds,
   editTelegramMessageText,
@@ -80,12 +82,12 @@ async function handleCallback(update) {
     return { ok: true, ignored: "missing_callback_message" };
   }
   const data = String(callback?.data || "");
-  const match = data.match(/^order\|(confirm|cancel|retry)\|(I|B)\|([0-9a-f-]{36})$/i);
+  const match = data.match(/^order\|(confirm|cancel|retry|menu|back|customer|customer_create|link)\|(I|B)\|([0-9a-f-]{36})(?:\|([0-9a-f-]{36}))?$/i);
   if (!match) {
     await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order ခလုတ်အချက်အလက် မမှန်ပါ။", showAlert: true });
     return { ok: true, ignored: "unknown_callback" };
   }
-  const [, action, modeCode, orderId] = match;
+  const [, action, modeCode, orderId, candidateId] = match;
   const auditMetadata = callbackAuditMetadata(callback);
   const rememberCallbackMessage = async () => {
     try {
@@ -95,6 +97,52 @@ async function handleCallback(update) {
     }
   };
   try {
+    if (action.toLowerCase() === "menu") {
+      const order = await getOrderById(orderId);
+      if (!order) {
+        await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order မတွေ့ပါ။", showAlert: true });
+        return { ok: true, status: "missing_order", orderId };
+      }
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "အခြားလုပ်ဆောင်ချက်များကို ဖွင့်ပြီးပါပြီ။" });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: formatOrderDraftMessage(order), parseMode: "Markdown", replyMarkup: buildOrderMoreKeyboard(order) });
+      return { ok: true, status: "menu_opened", orderId };
+    }
+    if (action.toLowerCase() === "back") {
+      const order = await getOrderById(orderId);
+      if (!order) {
+        await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order မတွေ့ပါ။", showAlert: true });
+        return { ok: true, status: "missing_order", orderId };
+      }
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "မူလခလုတ်များကို ပြန်ဖွင့်ပြီးပါပြီ။" });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: formatOrderDraftMessage(order), parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(order, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
+      return { ok: true, status: "menu_closed", orderId };
+    }
+    if (action.toLowerCase() === "customer") {
+      const result = await getOrderCustomerCandidates({ orderId });
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: result.candidates.length ? "ရှိပြီးသား Customer ကို ရွေးပါ။" : "ဆင်တူ Customer မတွေ့သေးပါ။" });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(result.order)}\n\n👤 ချိတ်မည့် Customer ကို ရွေးပါ။`, parseMode: "Markdown", replyMarkup: buildOrderCustomerCandidatesKeyboard(result.order, result.candidates) });
+      return { ok: true, status: "customer_candidates", orderId, candidateCount: result.candidates.length };
+    }
+    if (action.toLowerCase() === "link") {
+      if (!candidateId) throw new Error("Customer ရွေးချယ်မှု မပြည့်စုံသေးပါ။");
+      const result = await getOrderCustomerCandidates({ orderId });
+      const candidate = result.candidates.find((item) => String(item.id) === String(candidateId));
+      if (!candidate) throw new Error("ရွေးထားသော Customer ကို မတွေ့ပါ။ ပြန်ရှာပြီး ရွေးပါ။");
+      const linked = await linkOrderCustomer({ orderId, customerId: candidate.id, actorName: "Staff" });
+      await rememberCallbackMessage();
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: `Customer ${candidate.name} နှင့် ချိတ်ပြီးပါပြီ။` });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(linked)}\n\n👤 Customer ချိတ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(linked, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
+      return { ok: true, status: "customer_linked", orderId, customerId: candidate.id };
+    }
+    if (action.toLowerCase() === "customer_create") {
+      const current = await getOrderById(orderId);
+      if (!current) throw new Error("Order မတွေ့ပါ။");
+      const created = await createCustomerForOrder({ orderId, name: current.draftCustomerName, phone: current.draftCustomerPhone, actorName: "Staff" });
+      await rememberCallbackMessage();
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Customer အသစ်ဖန်တီးပြီး Order နှင့် ချိတ်ပြီးပါပြီ။" });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(created)}\n\n👤 Customer အသစ်ဖန်တီးပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(created, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
+      return { ok: true, status: "customer_created", orderId, customerId: created.customer?.id || null };
+    }
     if (action.toLowerCase() === "retry") {
       const current = await getOrderById(orderId);
       if (!current) {

@@ -488,6 +488,16 @@ async function getActiveCustomer(customerId) {
   });
 }
 
+export async function getOrderCustomerCandidates({ orderId } = {}) {
+  await ensureDatabase();
+  const order = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
+  if (!order) throw new Error("Order မတွေ့ပါ။");
+  if (order.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။ အရင် Restore လုပ်ပါ။");
+  if (["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(order.status)) throw new Error("ပို့ပြီး/ပြီးစီး/ပယ်ဖျက်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။");
+  const { candidates } = await findCustomerMatch({ name: order.draftCustomerName || order.customer?.name, phone: order.draftCustomerPhone || order.customerPhone });
+  return { order: serializeOrder(order), candidates };
+}
+
 export async function linkOrderCustomer({ orderId, customerId, actorName = "Staff" } = {}) {
   await ensureDatabase();
   const customer = await getActiveCustomer(customerId);
@@ -524,6 +534,7 @@ export async function createCustomerForOrder({ orderId, name, phone = null, rout
   if (!order) throw new Error("Order မတွေ့ပါ။");
   if (order.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။ အရင် Restore လုပ်ပါ။");
   if (["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(order.status)) throw new Error("ပို့ပြီး/ပြီးစီး/ပယ်ဖျက်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။");
+  if (order.customerId && order.customer?.id && !order.customer.deletedAt) return serializeOrder(order);
   const customerName = String(name || order.draftCustomerName || "").trim();
   if (!customerName) throw new Error("Customer အမည် လိုအပ်ပါသည်။");
   const created = await prisma.$transaction(async (tx) => {
