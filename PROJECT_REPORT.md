@@ -1037,7 +1037,7 @@ The owner requested that five minutes of inactivity should not force another PIN
 
 A local read-only clock-forward test confirmed that after five idle minutes the PIN field is absent, the actor chooser is visible, and `/api/auth/session` remains authenticated. No customer, ledger, balance, database, audit, backup, restore, Telegram, or report data was changed.
 
-## 52. Telegram Order Workflow Foundation — Local Only
+## 52. Telegram Order Workflow Foundation
 **Date:** 2026-08-25
 
 The approved first-version order workflow was implemented locally on the `security-hardening` branch as an additive module. It accepts only messages beginning with `မှာယူမှု` or `/order`, uses Manus structured output to prepare a draft, requires one clear active Customer match or keeps the order as a Draft Customer Order, supports multiple bottle lines, records cap quantities as normal pcs plus extra pcs, and shows cap-versus-bottle differences as warnings only. Order confirmation is separate from `CREDIT`/`DEBIT` and does not change Customer balances or Ledger rows.
@@ -1055,7 +1055,8 @@ The website now has an Orders page with draft review, requested-date and destina
 | Build safety | Prisma validation/generation, 17 local tests, lint, whitespace check, and Next production build passed |
 | Migration safety | The drafted migration contains only new Order tables/indexes/foreign keys and no standalone DROP, TRUNCATE, DELETE, or UPDATE statements |
 
-The Order workflow code is **still only on the security-hardening branch/Preview and is not yet in Production**. The approved additive database migration has now been applied through a temporary authenticated runner: all six new Order workflow tables were created, and the verification returned `customerLedgerRowsUnchanged: true`. The runner was then removed from the Production code. Order Telegram notifications remain configured to default ON in code, but the order webhook is not registered, no order workflow message has been sent, and no Factory notification has been sent. No production Customer, Ledger, balance, audit, backup, restore, Telegram, or report data was changed. Before live rollout, the security-hardening Order code must be reviewed/merged, the order webhook must be registered, and one controlled Telegram test must be separately approved. Viber remains the current operational channel until that test is complete.
+This section records the initial Order workflow foundation. The workflow was subsequently reviewed, merged, migrated, registered, and promoted to Production; the current Production state is recorded in Sections 53 and 54 below.
+
 
 ## 53. Telegram Order Webhook Registered and Temporary Helper Removed
 
@@ -1081,5 +1082,25 @@ The Telegram Bot API documents `secret_token` as a 1–256 character value restr
 | Current operational channel | Viber remains in use until controlled Telegram testing is separately approved |
 
 The next step requires separate owner approval for one clearly marked, draft-only `/order` or `မှာယူမှု` message in the Orders of New Life group. That test will create one real Order draft and may use the configured AI extractor, but it must not Confirm, Batch, Cancel, or send anything to the Factory group until those actions are separately approved.
+
+## 54. Order History, Cancelled Trash, Cross-channel Sync, and Home UX
+
+**Date:** 2026-08-25
+
+The Order workflow is now live in Production. Website and Telegram Confirm/Cancel actions use the shared Order status service. New Telegram draft bot-message identifiers are stored on each new Order so a Website status action can update the original bot draft message and lock its inline controls; older Orders without identifiers are handled without sending a replacement message. The Orders page refreshes read-only state periodically so Telegram changes appear without a manual reload. No real Confirm, Cancel, morning batch, or Factory notification test was performed as part of this verification.
+
+Order lifecycle audit records are excluded from general Activity History by default. They are shown only in the Orders page's Order History/Trash timelines. The normal Orders list excludes Cancelled Orders. Cancelled Orders are kept in a separate Trash for 15 days from `cancelledAt`, can be restored as safe Drafts during that period, and are removed by a guarded daily cron after expiry. The cleanup only removes the Cancelled Order and its Order-owned lines/caps/deliveries; it does not delete Customer or Ledger rows or recalculate balances. The separate reversible History archive remains available for safe terminal Orders.
+
+The additive `cancelledAt`/`cancelledBy` migration was applied through a temporary protected runner. Production verification returned both expected columns and `Order_cancelledAt_idx`, with counts of 2 Orders, 173 Customers, and 1,249 Ledger rows at the verification time. The runner was removed immediately afterward. The Home page now keeps only the Orders shortcut and Customer Recycle Bin; the full Customer Orders workflow is located on the Orders page below the Telegram Order Guide, and the duplicate Home Cancelled Order Trash shortcut was removed.
+
+| Verification | Result |
+|---|---|
+| Local tests | 47 tests passed; Prisma validation/generation, lint, build, and `git diff --check` passed |
+| Production Home | Customer Orders full card removed; duplicate Cancelled Order Trash shortcut removed; Orders shortcut remains |
+| Production Orders | Telegram guide, Customer Orders summary, Active/Order History/အမှိုက်ပုံး navigation visible |
+| Production Activity History | Order lifecycle rows excluded; Customer/Ledger actions remain |
+| Production Trash | Two existing Cancelled Orders visible with cancel time/by, 15-day restore notice, and Order timeline; no restore/cancel/confirm action performed |
+| Accounting safety | Customer/Ledger/DEBIT/CREDIT/balance data was not changed by migration or read-only verification |
+| Telegram group guide | Website action and pinned-message content are implemented; actual group publish was not re-triggered after a prior browser timeout, so duplicate posting was avoided and publish remains to be confirmed in the group |
 
 [11]: https://core.telegram.org/bots/api#setwebhook — Telegram Bot API `setWebhook` documentation.
