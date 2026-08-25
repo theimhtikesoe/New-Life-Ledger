@@ -356,6 +356,14 @@ export default function Dashboard({ view = "overview" }) {
   }, []);
 
   useEffect(() => {
+    if (!isLedgerView || typeof window === "undefined") return;
+    const requestedCustomerId = new URLSearchParams(window.location.search).get("customerId");
+    if (!requestedCustomerId) return;
+    setSelectedCustomerId(requestedCustomerId);
+    setShowCustomerList(false);
+  }, [isLedgerView]);
+
+  useEffect(() => {
     if (!dashboardDraftRestoredRef.current) return;
     if (dashboardDraftWriteSkipRef.current) {
       dashboardDraftWriteSkipRef.current = false;
@@ -1468,11 +1476,15 @@ export default function Dashboard({ view = "overview" }) {
             <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {/* Total Balance */}
-            <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm hover:shadow-md transition-shadow">
-              <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">အသားတင်ရရန်လက်ကျန်</p>
+            <a
+              href="/balance-detail"
+              aria-label="အသားတင်ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
+              className="block rounded-lg border border-rose-200 bg-rose-50 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-rose-600">အသားတင်ရရန်လက်ကျန်</p>
               <p className="mt-2 text-2xl font-bold text-rose-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : formatMoney(totalBalance)}</p>
-              <p className="mt-1 text-xs text-rose-500">Net Receivable Balance</p>
-            </div>
+              <p className="mt-1 text-xs text-rose-500">Net Receivable Balance · အသေးစိတ်ကြည့်ရန် →</p>
+            </a>
 
             {/* Customer Count */}
             <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm hover:shadow-md transition-shadow">
