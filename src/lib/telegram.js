@@ -19,30 +19,6 @@ async function telegramRequest({ token, method, payload }) {
   return body;
 }
 
-async function telegramRequest({ token, method, payload }) {
-  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || !body.ok) {
-    throw new Error(`Telegram ${method} failed: ${response.status} ${body.description || "unknown error"}`);
-  }
-  return body;
-}
-
-export async function getTelegramPendingUpdates() {
-  const { token } = getTelegramConfig();
-  if (!token) throw new Error("Telegram token မပြည့်စုံသေးပါ။");
-  const body = await telegramRequest({
-    token,
-    method: "getUpdates",
-    payload: { limit: 100, timeout: 0, allowed_updates: ["message", "my_chat_member", "chat_member", "callback_query"] },
-  });
-  return Array.isArray(body.result) ? body.result : [];
-}
-
 async function sendTelegramFile({ token, chatId, method, buffer, filename, mimeType, caption }) {
   const form = new FormData();
   form.append("chat_id", chatId);
