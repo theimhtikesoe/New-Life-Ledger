@@ -1479,7 +1479,7 @@ export default function Dashboard({ view = "overview" }) {
             <a
               href="/balance-detail"
               aria-label="အသားတင်ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
-              className="block rounded-lg border border-rose-200 bg-rose-50 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-rose-200 bg-rose-50 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-rose-600">အသားတင်ရရန်လက်ကျန်</p>
               <p className="mt-2 text-2xl font-bold text-rose-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : formatMoney(totalBalance)}</p>
@@ -1487,7 +1487,7 @@ export default function Dashboard({ view = "overview" }) {
             </a>
 
             {/* Customer Count */}
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-blue-200 bg-blue-50 p-4 text-left hover:shadow-md transition-shadow sm:min-h-[158px]">
               <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Customer အရေအတွက်</p>
               <p className="mt-2 text-2xl font-bold text-blue-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : customerCount}</p>
               <p className="mt-1 text-xs text-blue-500">Total Customers</p>
@@ -1496,7 +1496,7 @@ export default function Dashboard({ view = "overview" }) {
             {/* Today&apos;s Transactions */}
             <button
               onClick={() => setShowTodayPaymentsModal(true)}
-              className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer text-left"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer sm:min-h-[158px]"
             >
               <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">ယနေ့ ငွေချေမှုများ</p>
               <p className="mt-2 text-2xl font-bold text-emerald-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : todayTransactions}</p>
@@ -1505,7 +1505,7 @@ export default function Dashboard({ view = "overview" }) {
 
             <a
               href="/daily-summary"
-              className="rounded-lg border border-violet-200 bg-violet-50 p-4 shadow-sm transition-all hover:border-violet-300 hover:shadow-md"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-violet-200 bg-violet-50 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
               <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary</p>
@@ -1514,7 +1514,7 @@ export default function Dashboard({ view = "overview" }) {
 
             <a
               href="/activity"
-              className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm transition-all hover:border-amber-300 hover:shadow-md"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition-all hover:border-amber-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-amber-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p>
               <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
@@ -1523,7 +1523,7 @@ export default function Dashboard({ view = "overview" }) {
 
             <a
               href="/ledger"
-              className="rounded-lg border border-cyan-200 bg-cyan-50 p-4 shadow-sm transition-all hover:border-cyan-300 hover:shadow-md"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-left shadow-sm transition-all hover:border-cyan-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Customer စာရင်း</p>
               <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>

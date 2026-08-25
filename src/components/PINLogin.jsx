@@ -14,11 +14,13 @@ export default function PINLogin({ onSuccess }) {
   const lastActivityAtRef = useRef(Date.now());
 
   const lockActorSelection = useCallback(() => {
-    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    // Keep the server session alive; only clear the local actor attribution.
+    // After five idle minutes, the next action must choose the active user again
+    // without forcing the owner to enter the PIN a second time.
     localStorage.removeItem("actorName");
     setActorLocked(true);
-    setSelectingActor(false);
-    setIsAuthenticated(false);
+    setSelectingActor(true);
+    setIsAuthenticated(true);
     setError("");
   }, []);
 
@@ -138,7 +140,7 @@ export default function PINLogin({ onSuccess }) {
           <h1 className="mb-2 text-3xl font-bold text-gray-800">New Life Ledger</h1>
           <p className="text-gray-600">
             {actorLocked
-              ? "၅ မိနစ်အသုံးမပြုထားပါ။ PIN ပြန်ထည့်ပြီး အသုံးပြုသူကို ရွေးပါ"
+              ? "၅ မိနစ်အသုံးမပြုထားပါ။ အသုံးပြုသူကို ပြန်ရွေးပါ"
               : selectingActor
                 ? "ဘယ်သူအသုံးပြုနေပါသလဲ ရွေးပါ"
                 : "PIN code ထည့်သွင်းပါ"}
