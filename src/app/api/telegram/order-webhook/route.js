@@ -165,7 +165,7 @@ async function handleCallback(update) {
       const order = await updateOrderStatus({ orderId, status: "CANCELLED", actorName: "Staff", auditMetadata });
       await rememberCallbackMessage();
       await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order ကို Cancel လုပ်ပြီးပါပြီ။" });
-      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(order)}\n\n❌ Telegram admin မှ Cancel လုပ်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(order)}\n\n❌ Telegram admin မှ Cancel လုပ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: { inline_keyboard: [] } });
       return { ok: true, status: "cancelled", orderId };
     }
 
@@ -175,7 +175,7 @@ async function handleCallback(update) {
     await rememberCallbackMessage();
     if (isBatch) {
       await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။" });
-      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(statusOrder)}\n\n📦 Telegram admin မှ 08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(statusOrder)}\n\n📦 Telegram admin မှ 08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: { inline_keyboard: [] } });
       return { ok: true, status: "batch_queued", orderId };
     }
 
@@ -190,7 +190,7 @@ async function handleCallback(update) {
       deliveryWarning = "\n\n⚠️ Order Confirm ဖြစ်ပါပြီ။ Factory group မသတ်မှတ်ရသေးခြင်း သို့မဟုတ် ပို့ရာတွင် အခက်အခဲရှိသောကြောင့် notification ကို Pending ထားပါသည်။";
     }
     await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: deliveryWarning ? "Confirm ပြီးပါပြီ။ Factory notification Pending ဖြစ်နေပါသည်။" : "Confirm ပြီး Factory group သို့ ပို့ပြီးပါပြီ။" });
-    await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(finalOrder)}\n\n✅ Telegram admin မှ Confirm လုပ်ပြီးပါပြီ။${deliveryWarning}`, replyMarkup: { inline_keyboard: [] } });
+    await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(finalOrder)}\n\n✅ Telegram admin မှ Confirm လုပ်ပြီးပါပြီ။${deliveryWarning}`, parseMode: "Markdown", replyMarkup: { inline_keyboard: [] } });
     return { ok: true, status: "confirmed", orderId, deliveryPending: Boolean(deliveryWarning) };
   } catch (error) {
     await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: safeErrorMessage(error), showAlert: true });
