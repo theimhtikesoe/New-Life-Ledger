@@ -967,18 +967,25 @@ export default function Dashboard({ view = "overview" }) {
     }
   }
 
-  const handlePinSubmit = (e) => {
+  const handlePinSubmit = async (e) => {
     e.preventDefault();
-    const CORRECT_PIN = "126365";
-    if (pinValue === CORRECT_PIN) {
-      setPinError("");
+    if (pinValue.length !== 6) return;
+    setPinError("");
+    try {
+      const response = await fetch("/api/auth/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinValue }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.error || "PIN အတည်ပြု၍ မရပါ။");
       setShowPinModal(false);
       setPinValue("");
       if (deletingTransaction) {
-        deleteTransaction(deletingTransaction.id);
+        await deleteTransaction(deletingTransaction.id);
       }
-    } else {
-      setPinError("PIN code မှားနေပါသည်။ ထပ်မံ ကြိုးစားကြည့်ပါ။");
+    } catch (error) {
+      setPinError(error.message || "PIN code မှားနေပါသည်။");
       setPinValue("");
     }
   };

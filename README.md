@@ -26,7 +26,7 @@ src/app/page.js                      Dashboard page
 - Prisma models use PascalCase: `Customer`, `LedgerTransaction`, `UnverifiedKpay`.
 - Database-style relation fields follow the requested names: `customer_id`, `current_balance`, `raw_text`.
 - API request JSON uses camelCase for action fields such as `unverifiedKpayId` and `customerId`.
-- Ledger meaning: `DEBIT` increases customer debt, `CREDIT` decreases customer debt.
+- Ledger meaning: `DEBIT` means customer payment and decreases the balance; `CREDIT` means debt increase and increases the balance.
 - `type` and `status` are stored as strings while the API enforces `DEBIT/CREDIT` and `PENDING/MATCHED`.
 
 ## Setup
@@ -43,7 +43,12 @@ Required `.env` values:
 DATABASE_URL="postgresql://postgres.qvanezzllbcrvmqexzoq:YOUR_DATABASE_PASSWORD@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres.qvanezzllbcrvmqexzoq:YOUR_DATABASE_PASSWORD@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
 TELEGRAM_BOT_TOKEN="your_bot_token"
-TELEGRAM_CHAT_ID="your_father_chat_id"
+TELEGRAM_GROUP_CHAT_ID="your_telegram_group_id"
+CRON_SECRET="random_cron_secret"
+MANUAL_REPORT_PIN="optional_manual_report_secret"
+APP_PIN="your_6_digit_app_pin"
+APP_SESSION_SECRET="random_long_session_secret"
+KPAY_WEBHOOK_SECRET="optional_random_webhook_secret"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
@@ -57,8 +62,9 @@ For Vercel production, SQLite is not suitable because serverless functions do no
 4. Action: `HTTP Request`.
 5. Method: `POST`.
 6. URL: `https://your-domain.com/api/kpay-webhook` or local tunnel URL during testing.
-7. Content Type: `application/json`.
-8. Body:
+7. If `KPAY_WEBHOOK_SECRET` is configured in Vercel, add header `x-kpay-webhook-secret` with the same value. Do not use the dashboard PIN as this header.
+8. Content Type: `application/json`.
+9. Body:
 
 ```json
 {
@@ -76,7 +82,9 @@ MacroDroid variable names can differ by version. If your app shows magic text ch
 }
 ```
 
-The webhook can parse Myanmar or English digits, for example `၁၅,၀၀၀ ကျပ် ဝင်ပါသည်` and `15,000 Ks received`.
+The webhook can parse Myanmar or English digits, for example `၁၅,၀၀၀ ကျပ် ဝင်ပါသည်` and `15,000 Ks received`. The webhook keeps working with the existing MacroDroid setup when no separate secret is configured; once `KPAY_WEBHOOK_SECRET` is added, the header above becomes required.
+
+The dashboard PIN is checked by the server at `/api/auth/login`. Set `APP_PIN` and a long random `APP_SESSION_SECRET` in the deployment environment; the PIN must not be committed to source code.
 
 ## API Examples
 

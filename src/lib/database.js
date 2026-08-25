@@ -113,11 +113,9 @@ export async function ensureDatabase() {
       `.catch(() => []);
 
       if (legacyCustomerId.length) {
-        await setupQuery(`DROP TABLE IF EXISTS "LedgerTransaction" CASCADE`);
-        await setupQuery(`DROP TABLE IF EXISTS "Ledger" CASCADE`);
-        await setupQuery(`DROP TABLE IF EXISTS "KpayAlias" CASCADE`);
-        await setupQuery(`DROP TABLE IF EXISTS "UnverifiedKpay" CASCADE`);
-        await setupQuery(`DROP TABLE IF EXISTS "Customer" CASCADE`);
+        throw new Error(
+          "Legacy database schema detected. Automatic table deletion is disabled; take a backup and run a reviewed migration before continuing.",
+        );
       }
 
       await setupQuery(`

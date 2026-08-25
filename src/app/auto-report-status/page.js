@@ -33,6 +33,13 @@ function statusInfo(status) {
       dotClassName: "bg-rose-500",
     };
   }
+  if (status === "RUNNING") {
+    return {
+      label: "ပို့နေဆဲဖြစ်ပါသည်",
+      className: "border-amber-200 bg-amber-50 text-amber-800",
+      dotClassName: "bg-amber-500",
+    };
+  }
   return {
     label: "မစစ်ရသေးပါ",
     className: "border-slate-200 bg-slate-50 text-slate-700",
