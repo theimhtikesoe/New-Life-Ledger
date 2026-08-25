@@ -86,6 +86,10 @@ The webhook can parse Myanmar or English digits, for example `၁၅,၀၀၀ �
 
 The dashboard PIN is checked by the server at `/api/auth/login`. Set `APP_PIN` and a long random `APP_SESSION_SECRET` in the deployment environment; the PIN must not be committed to source code.
 
+### Optional Vercel Build Logs viewer
+
+The session-protected `/vercel-build-logs` page can show recent Production deployments and redacted Vercel build events without reading or changing ledger data. To enable it, add `VERCEL_API_TOKEN` (a Vercel API token with the minimum deployment-read access needed), `VERCEL_PROJECT_ID` (the Vercel project ID or project name), and, for team projects, `VERCEL_TEAM_ID` in Vercel Project Settings → Environment Variables for Production. Keep all three server-only: never prefix them with `NEXT_PUBLIC_`, commit them, or place them in the browser. `VERCEL_BUILD_LOG_VIEWER_ACTORS` defaults to `ဖေဖေ` and accepts a comma-separated allowlist if another signed-in actor should view logs. The viewer uses Vercel's deployment list and deployment-events APIs, limits the number and size of returned events, and redacts common credentials before rendering. If the settings are absent, the page remains safe and displays a setup message instead of making an unauthenticated request.
+
 ## API Examples
 
 Create customer:
