@@ -57,13 +57,27 @@ export function getDailyAiUsage(actorName, currentDate, storage = getDefaultStor
   return Number.isFinite(Number(value)) ? Math.max(0, Number(value)) : 0;
 }
 
-export function consumeDailyAiUsage(actorName, currentDate, storage = getDefaultStorage()) {
+export function recordDailyAiSuccess(actorName, currentDate, storage = getDefaultStorage()) {
   if (!currentDate || !storage) return 0;
   const usage = readObject(storage, USAGE_KEY);
   const key = usageKey(actorName, currentDate);
   usage[key] = getDailyAiUsage(actorName, currentDate, storage) + 1;
   writeObject(storage, USAGE_KEY, usage);
   return usage[key];
+}
+
+// Kept as a compatibility alias for older callers. New callers should record
+// usage only after a fresh AI explanation has actually been returned.
+export function consumeDailyAiUsage(actorName, currentDate, storage = getDefaultStorage()) {
+  return recordDailyAiSuccess(actorName, currentDate, storage);
+}
+
+export function resetDailyAiUsage(actorName, currentDate, storage = getDefaultStorage()) {
+  if (!currentDate || !storage) return 0;
+  const usage = readObject(storage, USAGE_KEY);
+  delete usage[usageKey(actorName, currentDate)];
+  writeObject(storage, USAGE_KEY, usage);
+  return 0;
 }
 
 export function getAiActivityReviewHref(date) {

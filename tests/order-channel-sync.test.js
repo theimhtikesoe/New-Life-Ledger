@@ -1,11 +1,12 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   editTelegramMessageText: vi.fn(),
+  buildOrderDraftKeyboard: vi.fn(),
   formatOrderDraftMessage: vi.fn(),
 }));
 
-vi.mock("@/lib/telegram", () => ({ editTelegramMessageText: mocks.editTelegramMessageText }));
+vi.mock("@/lib/telegram", () => ({ editTelegramMessageText: mocks.editTelegramMessageText, buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage }));
 
 import { syncTelegramOrderMessage } from "@/lib/order-channel-sync";
@@ -15,6 +16,12 @@ describe("Telegram order message synchronization", () => {
     const result = await syncTelegramOrderMessage({ sourceChatId: "-100123", sourceMessageId: "44", status: "CANCELLED" }, "cancelled");
     expect(result).toEqual({ skipped: true, reason: "missing_bot_draft_message" });
     expect(mocks.editTelegramMessageText).not.toHaveBeenCalled();
+  });
+
+  beforeEach(() => {
+    mocks.editTelegramMessageText.mockReset();
+    mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "retry" }]] });
+    mocks.formatOrderDraftMessage.mockReset();
   });
 
   it("edits the persisted bot reply and removes the action keyboard", async () => {
@@ -30,5 +37,13 @@ describe("Telegram order message synchronization", () => {
       text: "🟡 Order — Cancel ပြီး\n\n❌ Website မှ Cancel လုပ်ပြီးပါပြီ။",
       replyMarkup: { inline_keyboard: [] },
     });
+  });
+
+  it("restores action buttons when a website AI retry succeeds", async () => {
+    mocks.formatOrderDraftMessage.mockReturnValue("🟡 Order — Draft");
+    const order = { id: "order-1", status: "DRAFT", telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
+    await syncTelegramOrderMessage(order, "🔄 retried", { includeActions: true });
+    expect(mocks.buildOrderDraftKeyboard).toHaveBeenCalledWith(order, undefined);
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ replyMarkup: { inline_keyboard: [[{ text: "retry" }]] } }));
   });
 });

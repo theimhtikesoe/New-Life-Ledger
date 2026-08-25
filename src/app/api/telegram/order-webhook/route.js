@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { createOrderDraft, getOrderBySourceUpdateId, saveTelegramDraftMessage, updateOrderStatus } from "@/lib/order-service";
+import { createOrderDraft, getOrderById, getOrderBySourceUpdateId, refreshOrderFromAi, saveTelegramDraftMessage, updateOrderStatus } from "@/lib/order-service";
 import { extractOrderFromText } from "@/lib/order-ai";
 import {
   answerTelegramCallbackQuery,
   buildOrderDraftKeyboard,
+  buildOrderRetryKeyboard,
   configuredTelegramOrderAdminIds,
   editTelegramMessageText,
   getTelegramChatMember,
@@ -79,7 +80,7 @@ async function handleCallback(update) {
     return { ok: true, ignored: "missing_callback_message" };
   }
   const data = String(callback?.data || "");
-  const match = data.match(/^order\|(confirm|cancel)\|(I|B)\|([0-9a-f-]{36})$/i);
+  const match = data.match(/^order\|(confirm|cancel|retry)\|(I|B)\|([0-9a-f-]{36})$/i);
   if (!match) {
     await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order ခလုတ်အချက်အလက် မမှန်ပါ။", showAlert: true });
     return { ok: true, ignored: "unknown_callback" };
@@ -94,6 +95,24 @@ async function handleCallback(update) {
     }
   };
   try {
+    if (action.toLowerCase() === "retry") {
+      const current = await getOrderById(orderId);
+      if (!current) {
+        await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order မတွေ့ပါ။", showAlert: true });
+        return { ok: true, status: "missing_order", orderId };
+      }
+      try {
+        const extracted = await extractOrderFromText(current.sourceText);
+        const refreshed = await refreshOrderFromAi({ orderId, extracted, actorName: "Staff" });
+        await rememberCallbackMessage();
+        await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။" });
+        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, replyMarkup: buildOrderDraftKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL) });
+        return { ok: true, status: "ai_retried", orderId };
+      } catch (retryError) {
+        await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: safeErrorMessage(retryError), showAlert: true });
+        return { ok: true, status: "ai_retry_failed", orderId };
+      }
+    }
     if (action.toLowerCase() === "cancel") {
       const order = await updateOrderStatus({ orderId, status: "CANCELLED", actorName: "Staff", auditMetadata });
       await rememberCallbackMessage();
@@ -156,8 +175,33 @@ export async function POST(request) {
     try {
       extracted = await extractOrderFromText(orderText);
     } catch (error) {
-      await sendTelegramTextToChat({ chatId, text: `⚠️ Order ကို AI နဲ့ ဖတ်မရသေးပါ။ ${safeErrorMessage(error)}`, replyToMessageId: message.message_id });
-      return NextResponse.json({ ok: true, status: "ai_failed" });
+      try {
+        const fallback = await createOrderDraft({
+          sourceChatId: chatId,
+          sourceMessageId: message.message_id,
+          sourceUpdateId: update.update_id,
+          sourceText: text,
+          extracted: {},
+        });
+        const fallbackMessage = await sendTelegramTextToChat({
+          chatId,
+          text: `⚠️ Order AI ခဏမရသေးပါ။ မူရင်းမှာယူစာကို Draft အဖြစ် မပျောက်အောင် သိမ်းထားပါပြီ။\n${safeErrorMessage(error)}\n\n${formatOrderDraftMessage(fallback.order, { includeActions: false })}\n\nအောက်က ခလုတ်ကိုနှိပ်ပြီး AI ကို ပြန်စမ်းနိုင်ပါတယ်။`,
+          replyMarkup: buildOrderRetryKeyboard(fallback.order, process.env.NEXT_PUBLIC_APP_URL),
+          replyToMessageId: message.message_id,
+        });
+        if (fallbackMessage?.messageId) {
+          try {
+            await saveTelegramDraftMessage({ orderId: fallback.order.id, chatId: fallbackMessage.chatId || chatId, messageId: fallbackMessage.messageId });
+          } catch (metadataError) {
+            console.warn("Telegram AI fallback message metadata save failed", metadataError);
+          }
+        }
+        return NextResponse.json({ ok: true, status: "draft_ai_pending", orderId: fallback.order.id });
+      } catch (fallbackError) {
+        console.error("Telegram order AI fallback draft failed", fallbackError);
+        await sendTelegramTextToChat({ chatId, text: `⚠️ Order ကို AI နဲ့ ဖတ်မရသေးပါ။ ${safeErrorMessage(error)}`, replyToMessageId: message.message_id });
+        return NextResponse.json({ ok: true, status: "ai_failed" });
+      }
     }
     const result = await createOrderDraft({
       sourceChatId: chatId,

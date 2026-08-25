@@ -2,11 +2,14 @@ import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   createOrderDraft: vi.fn(),
+  getOrderById: vi.fn(),
   getOrderBySourceUpdateId: vi.fn(),
+  refreshOrderFromAi: vi.fn(),
   saveTelegramDraftMessage: vi.fn(),
   updateOrderStatus: vi.fn(),
   extractOrderFromText: vi.fn(),
   buildOrderDraftKeyboard: vi.fn(),
+  buildOrderRetryKeyboard: vi.fn(),
   sendTelegramTextToChat: vi.fn(),
   answerTelegramCallbackQuery: vi.fn(),
   editTelegramMessageText: vi.fn(),
@@ -17,9 +20,9 @@ const mocks = vi.hoisted(() => ({
   sendFactoryNotificationForOrder: vi.fn(),
 }));
 
-vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
+vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
-vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
+vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 
@@ -58,11 +61,14 @@ describe("Telegram order webhook safety gates", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://example.test";
     delete process.env.TELEGRAM_ORDER_ADMIN_IDS;
     mocks.createOrderDraft.mockReset();
+    mocks.getOrderById.mockReset();
     mocks.getOrderBySourceUpdateId.mockReset().mockResolvedValue(null);
+    mocks.refreshOrderFromAi.mockReset();
     mocks.saveTelegramDraftMessage.mockReset().mockResolvedValue(order);
     mocks.updateOrderStatus.mockReset();
     mocks.extractOrderFromText.mockReset().mockResolvedValue({});
     mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
+    mocks.buildOrderRetryKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "retry" }]] });
     mocks.sendTelegramTextToChat.mockReset().mockResolvedValue({ messageId: 99 });
     mocks.answerTelegramCallbackQuery.mockReset().mockResolvedValue({ ok: true });
     mocks.editTelegramMessageText.mockReset().mockResolvedValue({ ok: true });
@@ -108,14 +114,16 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: order.id, chatId, messageId: 99 });
   });
 
-  it("does not create an order when AI extraction fails and sends one safe reply", async () => {
+  it("stores the original Telegram text as a fallback Draft when AI extraction fails", async () => {
     mocks.extractOrderFromText.mockRejectedValue(Object.assign(new Error("Order AI task မအောင်မြင်ပါ။"), { code: "MANUS_TASK" }));
-    const response = await POST(request(messageUpdate("/order ကံလီ 0.3 L 400 ဆံ့ 50 ကဒ် ပုလဲဂိတ် မနက်ဖြန်")));
+    const fallbackOrder = { ...order, status: "NEEDS_CUSTOMER", sourceText: "/order ကံလီ 0.3 L 400 ဆံ့ 50 ကဒ် ပုလဲဂိတ် မနက်ဖြန်", customer: null, draftCustomerName: null };
+    mocks.createOrderDraft.mockResolvedValue({ order: fallbackOrder, duplicate: false });
+    const response = await POST(request(messageUpdate(fallbackOrder.sourceText)));
     expect(response.status).toBe(200);
-    expect((await response.json()).status).toBe("ai_failed");
-    expect(mocks.createOrderDraft).not.toHaveBeenCalled();
-    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
-    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order AI task") }));
+    expect((await response.json()).status).toBe("draft_ai_pending");
+    expect(mocks.createOrderDraft).toHaveBeenCalledWith(expect.objectContaining({ sourceText: fallbackOrder.sourceText, extracted: {} }));
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("မူရင်းမှာယူစာကို Draft အဖြစ်") }));
+    expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: fallbackOrder.id, chatId, messageId: 99 });
   });
 
   it("does not invoke AI or send a second reply for a replayed update ID", async () => {
@@ -148,6 +156,24 @@ describe("Telegram order webhook safety gates", () => {
     expect((await response.json()).ignored).toBe("not_order_admin");
     expect(mocks.getTelegramChatMember).not.toHaveBeenCalled();
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
+  });
+
+  it("lets a verified administrator retry AI from the fallback Draft button", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_CUSTOMER", sourceText: "/order မမိုး၊ 1 Liter၊ 100 ဘူးဆံ့ 2 ကဒ်၊ ရန်ကုန်ကားဂိတ်၊ မနက်ဖြန်" };
+    const refreshed = { ...order, status: "DRAFT", sourceText: pending.sourceText };
+    mocks.getOrderById.mockResolvedValue(pending);
+    mocks.extractOrderFromText.mockResolvedValue({ customerName: "မမိုး" });
+    mocks.refreshOrderFromAi.mockResolvedValue(refreshed);
+    const update = { update_id: 18, callback_query: { id: "callback-retry", data: "order|retry|I|11111111-1111-4111-8111-111111111111", message: { message_id: 95, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("ai_retried");
+    expect(mocks.getOrderById).toHaveBeenCalledWith(order.id);
+    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, extracted: { customerName: "မမိုး" } }));
+    expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
+    expect(mocks.sendFactoryNotificationForOrder).not.toHaveBeenCalled();
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 95 }));
   });
 
   it("lets a verified administrator cancel directly and edits the original draft message", async () => {

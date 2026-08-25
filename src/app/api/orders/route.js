@@ -3,6 +3,7 @@ import { databaseErrorResponse } from "@/lib/database";
 import { getActorName } from "@/lib/audit";
 import { sendFactoryNotificationForOrder } from "@/lib/order-delivery";
 import { syncTelegramOrderMessage } from "@/lib/order-channel-sync";
+import { extractOrderFromText } from "@/lib/order-ai";
 import {
   createCustomerForOrder,
   createOrderDraft,
@@ -12,6 +13,8 @@ import {
   archiveOrder,
   restoreOrder,
   restoreCancelledOrder,
+  refreshOrderFromAi,
+  getOrderById,
   updateOrderStatus,
 } from "@/lib/order-service";
 
@@ -76,6 +79,20 @@ export async function PATCH(request) {
     if (action === "update_details") {
       const data = await updateOrderDetails({ orderId, requestedDate: body.requestedDate, destination: body.destination, customerPhone: body.customerPhone, actorName });
       return NextResponse.json({ ok: true, data });
+    }
+    if (action === "retry_ai") {
+      const current = await getOrderById(orderId);
+      if (!current) return errorResponse(new Error("Order မတွေ့ပါ။"), 400);
+      const extracted = await extractOrderFromText(current.sourceText);
+      const data = await refreshOrderFromAi({ orderId, extracted, actorName });
+      let warning = "";
+      try {
+        await syncTelegramOrderMessage(data, "🔄 Website မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။", { includeActions: true });
+      } catch (syncError) {
+        console.warn("Website AI retry Telegram message sync failed", syncError);
+        warning = "Website မှ AI ပြန်စစ်ပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+      }
+      return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }
     if (action === "confirm") {
       const mode = body.mode === "MORNING_BATCH" ? "MORNING_BATCH" : "IMMEDIATE";

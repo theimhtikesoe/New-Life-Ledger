@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 
@@ -41,6 +41,7 @@ const ORDER_HISTORY_ACTION_LABELS = {
   ORDER_TRASH_RESTORE: "အမှိုက်ပုံးမှ ပြန်ယူ",
   ORDER_AUTO_CLEAR: "သက်တမ်းကျော်၍ Auto Clear",
   ORDER_UPDATE: "Order ပြင်ဆင်",
+  ORDER_AI_RETRY: "AI ဖြင့် ပြန်စစ်",
 };
 
 const ARCHIVABLE_STATUSES = ["FACTORY_NOTIFIED", "PREPARED", "COMPLETED"];
@@ -149,7 +150,7 @@ export default function OrdersPage() {
   const [candidateLoadingId, setCandidateLoadingId] = useState("");
   const [detailEdits, setDetailEdits] = useState({});
 
-  const load = async ({ silent = false } = {}) => {
+  const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     setError("");
     try {
@@ -174,7 +175,7 @@ export default function OrdersPage() {
     } finally {
       if (!silent) setLoading(false);
     }
-  };
+  }, [viewMode]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -187,7 +188,7 @@ export default function OrdersPage() {
     load();
     const interval = window.setInterval(() => load({ silent: true }), 20000);
     return () => window.clearInterval(interval);
-  }, [viewMode]);
+  }, [load]);
 
   const filteredOrders = useMemo(() => statusFilter === "ALL" ? orders : orders.filter((order) => order.status === statusFilter), [orders, statusFilter]);
   const customerOrderSummary = useMemo(() => {
@@ -218,6 +219,7 @@ export default function OrdersPage() {
       else if (action === "archive") setMessage("Order ကို History ထဲ ရွှေ့ပြီးပါပြီ။ Data မဖျက်ထားပါ။");
       else if (action === "restore") setMessage("Order ကို History မှ ပြန်ယူပြီးပါပြီ။ မူရင်း status မပြောင်းပါ။");
       else if (action === "trash_restore") setMessage("Cancelled Order ကို Trash မှ ပြန်ယူပြီး Draft အဖြစ်ထားပါပြီ။");
+      else if (action === "retry_ai") setMessage(body.warning || "AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။ မူရင်း Order စာသားနှင့် Website/Telegram Draft ကို ထိန်းသိမ်းထားပါသည်။");
       else setMessage("Order ပြင်ဆင်မှု အောင်မြင်ပါပြီ။");
       await load();
     } catch (err) {
@@ -446,7 +448,7 @@ export default function OrdersPage() {
 
                 {viewMode === "ACTIVE" && !archived ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
                   {(order.status === "DRAFT" || order.status === "NEEDS_REVIEW") && !order.missingFields?.length ? <><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "IMMEDIATE" })} disabled={busy} className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Confirm — ချက်ချင်းပို့</button><button type="button" onClick={() => patchOrder(order.id, "confirm", { mode: "MORNING_BATCH" })} disabled={busy} className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50">Confirm — မနက် batch</button></> : null}
-                  {order.status === "DRAFT" && order.missingFields?.length ? <button type="button" onClick={() => patchOrder(order.id, "reset_review")} disabled={busy} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-bold text-orange-800 hover:bg-orange-100 disabled:opacity-50">ပြန်စစ်ရန်</button> : null}
+                  {!["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(order.status) && order.sourceText ? <button type="button" onClick={() => patchOrder(order.id, "retry_ai")} disabled={busy} className="rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 text-sm font-bold text-orange-800 hover:bg-orange-100 disabled:opacity-50">{busy ? "AI စစ်နေသည်..." : "AI ဖြင့် ပြန်စစ်ရန်"}</button> : null}
                   {(order.status === "CONFIRMED" || order.status === "BATCH_QUEUED") ? <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">Confirm ပြီးပါပြီ။ Factory notification state ကို စောင့်ကြည့်ပါ။</span> : null}
                   {order.status !== "CANCELLED" && order.status !== "FACTORY_NOTIFIED" && order.status !== "COMPLETED" ? <button type="button" onClick={() => patchOrder(order.id, "cancel")} disabled={busy} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50">Cancel</button> : null}
                   {ARCHIVABLE_STATUSES.includes(order.status) ? <button type="button" onClick={() => archive(order)} disabled={busy} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-bold text-indigo-800 hover:bg-indigo-100 disabled:opacity-50">History သို့ရွှေ့</button> : null}

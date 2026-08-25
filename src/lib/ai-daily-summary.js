@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
@@ -5,7 +6,13 @@ import { getMyanmarDayRange } from "@/lib/myanmar-time";
 const DEFAULT_MODEL = "gpt-5-mini";
 const MANUS_API_BASE = "https://api.manus.ai";
 const AI_TIMEOUT_MS = 45_000;
+const MANUS_ATTEMPT_TIMEOUT_MS = 22_000;
+const MANUS_MAX_ATTEMPTS = 2;
+const MANUS_RETRY_BACKOFF_MS = 700;
 const MANUS_POLL_INTERVAL_MS = 1_500;
+const MANUS_INITIAL_POLL_DELAY_MS = 750;
+const MAX_LIST_MESSAGES_NOT_FOUND_RETRIES = 4;
+export const AI_EXPLANATION_PROMPT_VERSION = "v2";
 
 function getLlmConfig() {
   const apiKey = process.env.MANUS_LLM_API_KEY || process.env.BUILT_IN_FORGE_API_KEY || process.env.OPENAI_API_KEY;
@@ -41,6 +48,83 @@ function actionLabel(action) {
     PERMANENT_DELETE: "Customer အပြီးဖျက်",
   };
   return labels[action] || action || "အခြားလုပ်ဆောင်ချက်";
+}
+
+export function getAiDailySummaryFingerprint(payload) {
+  return createHash("sha256")
+    .update(JSON.stringify(payload || {}))
+    .digest("hex");
+}
+
+function getAiExplanationCacheModel() {
+  return prisma.aiExplanationCache || null;
+}
+
+export async function findAiExplanationCache({ date, fingerprint } = {}) {
+  const model = getAiExplanationCacheModel();
+  if (!model || !date || !fingerprint) return null;
+  try {
+    return await model.findUnique({
+      where: {
+        reportDate_dataFingerprint_promptVersion: {
+          reportDate: String(date),
+          dataFingerprint: String(fingerprint),
+          promptVersion: AI_EXPLANATION_PROMPT_VERSION,
+        },
+      },
+    });
+  } catch (error) {
+    console.warn("AI explanation cache read failed; continuing without cache", error);
+    return null;
+  }
+}
+
+export async function findLatestAiExplanationCache(date) {
+  const model = getAiExplanationCacheModel();
+  if (!model || !date) return null;
+  try {
+    return await model.findFirst({
+      where: { reportDate: String(date) },
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    });
+  } catch (error) {
+    console.warn("AI explanation previous-cache read failed; continuing without cache", error);
+    return null;
+  }
+}
+
+export async function saveAiExplanationCache({ date, fingerprint, explanation, actorName = "Staff", provider = "MANUS_API", model = "manus-1.6-lite" } = {}) {
+  const cacheModel = getAiExplanationCacheModel();
+  if (!cacheModel || !date || !fingerprint || !explanation) return null;
+  try {
+    return await cacheModel.upsert({
+      where: {
+        reportDate_dataFingerprint_promptVersion: {
+          reportDate: String(date),
+          dataFingerprint: String(fingerprint),
+          promptVersion: AI_EXPLANATION_PROMPT_VERSION,
+        },
+      },
+      create: {
+        reportDate: String(date),
+        dataFingerprint: String(fingerprint),
+        promptVersion: AI_EXPLANATION_PROMPT_VERSION,
+        explanation,
+        generatedBy: String(actorName || "Staff").slice(0, 80),
+        provider: String(provider || "MANUS_API").slice(0, 80),
+        model: String(model || "manus-1.6-lite").slice(0, 120),
+      },
+      update: {
+        explanation,
+        generatedBy: String(actorName || "Staff").slice(0, 80),
+        provider: String(provider || "MANUS_API").slice(0, 80),
+        model: String(model || "manus-1.6-lite").slice(0, 120),
+      },
+    });
+  } catch (error) {
+    console.warn("AI explanation cache write failed; continuing without cache", error);
+    return null;
+  }
 }
 
 export async function getAiDailySummaryPayload(dateParam) {
@@ -268,10 +352,33 @@ function getManusApiKey() {
   return process.env.MANUS_API_KEY?.trim();
 }
 
-function providerError(code, message) {
+function providerError(code, message, metadata = {}) {
   const error = new Error(message);
   error.code = code;
+  error.provider = metadata;
   return error;
+}
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function sleepUntil(milliseconds, deadline) {
+  const delay = Math.min(milliseconds, Math.max(0, deadline - Date.now()));
+  if (delay > 0) await sleep(delay);
+}
+
+function isRetryableManusError(error) {
+  return ["MANUS_RATE_LIMIT", "MANUS_SERVICE", "MANUS_TIMEOUT", "MANUS_NETWORK", "MANUS_TRANSIENT_NOT_FOUND"].includes(error?.code) || error?.name === "TypeError";
+}
+
+async function fetchManus(url, options, operation) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    throw providerError("MANUS_NETWORK", `Manus AI ${operation} ချိတ်ဆက်မရပါ။`, { phase: operation, networkError: error?.name || "network" });
+  }
 }
 
 async function readManusJson(response, operation = "request") {
@@ -284,7 +391,14 @@ async function readManusJson(response, operation = "request") {
       throw providerError("MANUS_RATE_LIMIT", "Manus AI request အရေအတွက်ကန့်သတ်ချက် ရောက်နေပါသည်။ ခဏစောင့်ပြီး ပြန်စမ်းကြည့်ပါ။");
     }
     if (response.status >= 500) {
-      throw providerError("MANUS_SERVICE", "Manus AI service ကို ယခုချိန်တွင် မရရှိနိုင်ပါ။ ခဏစောင့်ပြီး ပြန်စမ်းကြည့်ပါ။");
+      throw providerError("MANUS_SERVICE", "Manus AI service ကို ယခုချိန်တွင် မရရှိနိုင်ပါ။ ခဏစောင့်ပြီး ပြန်စမ်းကြည့်ပါ။", { phase: operation, httpStatus: response.status });
+    }
+    const providerCode = body?.error?.code || body?.code;
+    if (response.status === 404 && providerCode === "not_found") {
+      throw providerError("MANUS_TRANSIENT_NOT_FOUND", `Manus AI ${operation} မတွေ့သေးပါ။`, { phase: operation, providerCode });
+    }
+    if (response.status === 408 || response.status === 425) {
+      throw providerError("MANUS_SERVICE", `Manus AI ${operation} ခဏမရသေးပါ။`, { phase: operation, httpStatus: response.status });
     }
     const operationMessage = operation === "create"
       ? "Manus AI task ဖန်တီးရာတွင် အဆင်မပြေပါ။"
@@ -296,11 +410,11 @@ async function readManusJson(response, operation = "request") {
   return body;
 }
 
-async function explainWithOfficialManus(payload, apiKey) {
+async function explainWithOfficialManusAttempt(payload, apiKey, attemptTimeoutMs) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), attemptTimeoutMs);
   try {
-    const createResponse = await fetch(`${MANUS_API_BASE}/v2/task.create`, {
+    const createResponse = await fetchManus(`${MANUS_API_BASE}/v2/task.create`, {
       method: "POST",
       signal: controller.signal,
       headers: {
@@ -315,19 +429,37 @@ async function explainWithOfficialManus(payload, apiKey) {
           content: buildExplanationPrompt(payload),
         },
       }),
-    });
+    }, "task ဖန်တီးခြင်း");
     const created = await readManusJson(createResponse, "create");
-    if (!created.task_id) throw new Error("Manus task ID မရရှိပါ။");
+    if (!created.task_id) throw providerError("MANUS_REQUEST", "Manus task ID မရရှိပါ။");
 
-    const deadline = Date.now() + AI_TIMEOUT_MS - 1_000;
+    const deadline = Date.now() + attemptTimeoutMs - 1_000;
+    let firstPoll = true;
+    let listMessagesNotFoundRetries = 0;
     while (Date.now() < deadline) {
+      if (firstPoll) {
+        firstPoll = false;
+        await sleepUntil(MANUS_INITIAL_POLL_DELAY_MS, deadline);
+      }
       const messageUrl = `${MANUS_API_BASE}/v2/task.listMessages?task_id=${encodeURIComponent(created.task_id)}&limit=100&order=desc`;
-      const messagesResponse = await fetch(messageUrl, {
+      const messagesResponse = await fetchManus(messageUrl, {
         method: "GET",
         signal: controller.signal,
         headers: { "x-manus-api-key": apiKey },
-      });
-      const messagesBody = await readManusJson(messagesResponse, "poll");
+      }, "အဖြေစစ်ဆေးခြင်း");
+      let messagesBody;
+      try {
+        messagesBody = await readManusJson(messagesResponse, "poll");
+        listMessagesNotFoundRetries = 0;
+      } catch (error) {
+        const isTransientNotFound = messagesResponse.status === 404 && error?.code === "MANUS_TRANSIENT_NOT_FOUND";
+        if (isTransientNotFound && listMessagesNotFoundRetries < MAX_LIST_MESSAGES_NOT_FOUND_RETRIES) {
+          listMessagesNotFoundRetries += 1;
+          await sleepUntil(MANUS_POLL_INTERVAL_MS, deadline);
+          continue;
+        }
+        throw error;
+      }
       const messages = Array.isArray(messagesBody.messages) ? messagesBody.messages : [];
       const errorEvent = messages.find((event) => event?.type === "error_message");
       if (errorEvent) throw providerError("MANUS_TASK", "Manus AI task မအောင်မြင်ပါ။");
@@ -345,16 +477,36 @@ async function explainWithOfficialManus(payload, apiKey) {
         if (normalizedText?.overview) return normalizedText;
         throw providerError("MANUS_EMPTY", "Manus AI မှ ရှင်းပြချက် မရရှိပါ။");
       }
-      if (status === "waiting") throw new Error("Manus AI task က ထပ်မံအတည်ပြုချက် စောင့်နေပါသည်။");
-      await new Promise((resolve) => setTimeout(resolve, MANUS_POLL_INTERVAL_MS));
+      if (status === "waiting") throw providerError("MANUS_TASK", "Manus AI task က ထပ်မံအတည်ပြုချက် စောင့်နေပါသည်။");
+      await sleepUntil(MANUS_POLL_INTERVAL_MS, deadline);
     }
-    throw new Error("AI ရှင်းပြချက် ရယူရန် အချိန်ကျော်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။");
+    throw providerError("MANUS_TIMEOUT", "AI ရှင်းပြချက် ရယူရန် အချိန်ကျော်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။");
   } catch (error) {
-    if (error?.name === "AbortError") throw new Error("AI ရှင်းပြချက် ရယူရန် အချိန်ကျော်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။");
+    if (error?.name === "AbortError") throw providerError("MANUS_TIMEOUT", "AI ရှင်းပြချက် ရယူရန် အချိန်ကျော်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။", { phase: "timeout" });
     throw error;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function explainWithOfficialManus(payload, apiKey) {
+  const startedAt = Date.now();
+  let lastError = null;
+  for (let attempt = 0; attempt < MANUS_MAX_ATTEMPTS; attempt += 1) {
+    const remainingMs = AI_TIMEOUT_MS - (Date.now() - startedAt);
+    if (remainingMs < 2_500) break;
+    const attemptTimeoutMs = Math.min(MANUS_ATTEMPT_TIMEOUT_MS, remainingMs - 900);
+    try {
+      return await explainWithOfficialManusAttempt(payload, apiKey, attemptTimeoutMs);
+    } catch (error) {
+      lastError = error;
+      const willRetry = attempt + 1 < MANUS_MAX_ATTEMPTS && isRetryableManusError(error) && Date.now() - startedAt < AI_TIMEOUT_MS - 1_500;
+      console.warn("Daily Summary official Manus failure", { code: error?.code || "UNKNOWN", attempt: attempt + 1, willRetry });
+      if (!willRetry) throw error;
+      await sleep(Math.min(MANUS_RETRY_BACKOFF_MS, Math.max(100, AI_TIMEOUT_MS - (Date.now() - startedAt) - 1_200)));
+    }
+  }
+  throw lastError || providerError("MANUS_TIMEOUT", "AI ရှင်းပြချက် ရယူရန် အချိန်ကျော်သွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။");
 }
 
 export async function explainAiDailySummary(payload) {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import {
-  consumeDailyAiUsage,
+  recordDailyAiSuccess,
+  resetDailyAiUsage,
   getAiActivityReviewHref,
   getDailyAiUsage,
   MAX_DAILY_AI_REQUESTS,
@@ -57,12 +58,56 @@ function cleanAiText(value) {
     .trim();
 }
 
-async function fetchJson(path) {
+const AI_CLIENT_TIMEOUT_MS = 50_000;
+const AI_CACHE_CHECK_TIMEOUT_MS = 10_000;
+
+async function fetchJson(path, { timeoutMs = 15_000 } = {}) {
   const actorName = localStorage.getItem("actorName") || "";
-  const response = await fetch(path, { headers: { "x-actor-name": encodeActorHeader(actorName) } });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.error || "Request failed");
-  return body.data;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(path, { headers: { "x-actor-name": encodeActorHeader(actorName) }, signal: controller.signal, cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || "Request မအောင်မြင်ပါ။ ပြန်စမ်းကြည့်ပါ။");
+    return body.data;
+  } catch (error) {
+    if (error?.name === "AbortError") throw new Error("စာရင်းရယူရန် အချိန်ကြာသွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function fetchAiJson(path, { timeoutMs = AI_CLIENT_TIMEOUT_MS, signal: externalSignal } = {}) {
+  const actorName = localStorage.getItem("actorName") || "";
+  const controller = new AbortController();
+  const abortFromOutside = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener("abort", abortFromOutside, { once: true });
+  }
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(path, {
+      headers: { "x-actor-name": encodeActorHeader(actorName) },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body.ok) {
+      const error = new Error(body.error || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
+      error.status = response.status;
+      throw error;
+    }
+    return body;
+  } catch (error) {
+    if (error?.name === "AbortError") throw new Error("AI ရှင်းပြချက် ရယူရန် အချိန်ကြာသွားပါပြီ။ ပြန်စမ်းရန်နှိပ်ပါ။");
+    if (!error?.message) throw new Error("AI ရှင်းပြချက် ရယူ၍ မရပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+    externalSignal?.removeEventListener("abort", abortFromOutside);
+  }
 }
 
 function AiListItem({ item, index, tone, date }) {
@@ -113,7 +158,7 @@ function AiDetailSection({ number, title, items, tone, date }) {
   );
 }
 
-function AiExplanationPanel({ explanation, date }) {
+function AiExplanationPanel({ explanation, date, source }) {
   const findings = Array.isArray(explanation?.findings) ? explanation.findings : [];
   const checks = Array.isArray(explanation?.checks) ? explanation.checks : [];
   return (
@@ -129,7 +174,7 @@ function AiExplanationPanel({ explanation, date }) {
           </div>
                         <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{date}</span>
-                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">Browser ထဲသိမ်းထားသည်</span>
+                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{source === "database" ? "Database မှ ပြန်ပြ" : source === "database-stale" ? "Data ပြောင်းသဖြင့် အဟောင်း" : source === "fresh" ? "AI အသစ်ထုတ်ထားသည်" : "Browser မှ ပြန်ပြ"}</span>
               </div>
 
         </div>
@@ -177,6 +222,10 @@ export default function DailySummaryPage() {
   const [aiError, setAiError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiUsage, setAiUsage] = useState(0);
+  const [aiStale, setAiStale] = useState(false);
+  const [aiSource, setAiSource] = useState("");
+  const aiAbortRef = useRef(null);
+  const aiRequestStartedAtRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -196,46 +245,110 @@ export default function DailySummaryPage() {
   const paymentEntries = useMemo(() => Object.entries(data?.summary?.paymentTypes || {}), [data]);
 
   useEffect(() => {
+    aiAbortRef.current?.abort();
+    aiAbortRef.current = null;
+    aiRequestStartedAtRef.current = 0;
     const actorName = localStorage.getItem("actorName") || "Staff";
-    setAiExplanation(readAiExplanationCache(date, actorName));
+    const localExplanation = readAiExplanationCache(date, actorName);
+    setAiExplanation(localExplanation);
+    setAiSource(localExplanation ? "browser" : "");
     setAiUsage(getDailyAiUsage(actorName, date));
+    setAiStale(false);
     setAiError("");
+    setAiLoading(false);
   }, [date]);
 
-  const handleAiExplain = async () => {
+  useEffect(() => {
+    const recoverIfStuck = () => {
+      if (!aiLoading || !aiRequestStartedAtRef.current) return;
+      if (Date.now() - aiRequestStartedAtRef.current <= AI_CLIENT_TIMEOUT_MS + 1_000) return;
+      aiAbortRef.current?.abort();
+      aiAbortRef.current = null;
+      aiRequestStartedAtRef.current = 0;
+      setAiError("AI ရှင်းပြချက် အချိန်ကြာနေသောကြောင့် ရပ်ထားပါသည်။ အောက်က ပြန်စမ်းရန်ကို နှိပ်နိုင်ပါသည်။");
+      setAiLoading(false);
+    };
+    const interval = window.setInterval(recoverIfStuck, 1_000);
+    window.addEventListener("pageshow", recoverIfStuck);
+    window.addEventListener("online", recoverIfStuck);
+    document.addEventListener("visibilitychange", recoverIfStuck);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("pageshow", recoverIfStuck);
+      window.removeEventListener("online", recoverIfStuck);
+      document.removeEventListener("visibilitychange", recoverIfStuck);
+    };
+  }, [aiLoading]);
+
+  useEffect(() => () => {
+    aiAbortRef.current?.abort();
+  }, []);
+
+  const handleAiExplain = async ({ bypassLimit = false } = {}) => {
     if (aiLoading) return;
     const actorName = localStorage.getItem("actorName") || "Staff";
-    const cachedExplanation = readAiExplanationCache(date, actorName);
-    if (cachedExplanation) {
-      setAiExplanation(cachedExplanation);
-      setAiError("");
-      return;
-    }
-    const currentUsage = getDailyAiUsage(actorName, date);
-    if (currentUsage >= MAX_DAILY_AI_REQUESTS) {
-      setAiUsage(currentUsage);
-      setAiError(`ဒီရက်အတွက် AI ရှင်းပြချက်ကို ${MAX_DAILY_AI_REQUESTS} ကြိမ်အထိသာ ခေါ်နိုင်ပါသည်။ သိမ်းထားသော ရှင်းပြချက်ကို ပြန်ဖတ်နိုင်ပါသည်။`);
-      return;
-    }
-    const nextUsage = consumeDailyAiUsage(actorName, date);
-    setAiUsage(nextUsage);
+    const localExplanation = readAiExplanationCache(date, actorName);
+    if (localExplanation) setAiExplanation(localExplanation);
     setAiLoading(true);
     setAiError("");
+    const requestController = new AbortController();
+    aiAbortRef.current = requestController;
+    aiRequestStartedAtRef.current = Date.now();
+    const isCurrentRequest = () => aiAbortRef.current === requestController;
+
     try {
-      const response = await fetch(`/api/ai/daily-summary?date=${encodeURIComponent(date)}`, {
-        headers: { "x-actor-name": encodeActorHeader(actorName) },
-        cache: "no-store",
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || !body.ok) throw new Error(body.error || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
+      // Ask the server for the fingerprint-matched cache first. This prevents
+      // a provider call when the day's underlying data has not changed.
+      const cacheBody = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}&cacheOnly=1`, { timeoutMs: AI_CACHE_CHECK_TIMEOUT_MS, signal: requestController.signal });
+      if (!isCurrentRequest()) return;
+      const cacheData = cacheBody.data || {};
+      if (cacheData.explanation) {
+        setAiExplanation(cacheData.explanation);
+        setAiStale(Boolean(cacheData.stale));
+        setAiSource(cacheData.stale ? "database-stale" : "database");
+        saveAiExplanationCache(date, cacheData.explanation, actorName);
+        if (!cacheData.stale) {
+          setAiError("");
+          return;
+        }
+      }
+
+      const currentUsage = getDailyAiUsage(actorName, date);
+      if (currentUsage >= MAX_DAILY_AI_REQUESTS && !bypassLimit) {
+        setAiUsage(currentUsage);
+        setAiError(`ဒီရက်မှာ အဖြေမထွက်သေးသော request များကြောင့် limit ပြည့်နေပါသည်။ အောက်က ပြန်ဖွင့်ရန်ကိုနှိပ်ပြီး AI ကို တစ်ကြိမ်ပြန်စမ်းနိုင်ပါသည်။`);
+        return;
+      }
+
+      const body = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}`, { signal: requestController.signal });
+      if (!isCurrentRequest()) return;
       const explanation = body.data?.explanation || null;
+      if (!explanation) throw new Error("AI မှ ရှင်းပြချက် မရရှိပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
       setAiExplanation(explanation);
+      setAiStale(Boolean(body.data?.stale));
+      setAiSource(body.data?.stale ? "database-stale" : body.data?.cached ? "database" : "fresh");
       saveAiExplanationCache(date, explanation, actorName);
+      if (!body.data?.cached && !body.data?.stale) {
+        setAiUsage(recordDailyAiSuccess(actorName, date));
+      }
+      setAiError(body.warning || "");
     } catch (err) {
-      setAiError(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
+      if (isCurrentRequest()) setAiError(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
     } finally {
-      setAiLoading(false);
+      if (aiAbortRef.current === requestController) {
+        aiAbortRef.current = null;
+        aiRequestStartedAtRef.current = 0;
+        setAiLoading(false);
+      }
     }
+  };
+
+  const handleResetAndRetry = async () => {
+    const actorName = localStorage.getItem("actorName") || "Staff";
+    resetDailyAiUsage(actorName, date);
+    setAiUsage(0);
+    setAiError("");
+    await handleAiExplain({ bypassLimit: true });
   };
 
   return (
@@ -256,16 +369,16 @@ export default function DailySummaryPage() {
                 <span aria-hidden="true" className="shrink-0 text-slate-400">▣</span>
                 <input id="report-date" type="date" value={date} aria-label="Report Date" onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="daily-summary-date-input absolute inset-0 h-full w-full cursor-pointer opacity-0" />
               </label>
-              <button type="button" onClick={handleAiExplain} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
+              <button type="button" onClick={() => handleAiExplain()} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
                 {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanation ? "AI ရှင်းပြချက် ပြန်ကြည့်ရန်" : "AI ဖြင့် ရှင်းပြရန်"}
               </button>
-              <p className="text-right text-[11px] text-slate-500">ဒီရက် AI အသုံးပြုမှု {aiUsage}/{MAX_DAILY_AI_REQUESTS} ကြိမ်</p>
+              <p className="text-right text-[11px] text-slate-500">အဖြေထွက်မှသာ AI အသုံးပြုမှု {aiUsage}/{MAX_DAILY_AI_REQUESTS} ကြိမ်</p>
             </div>
           </div>
         </header>
 
-        {aiError && <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 sm:p-4"><h2 className="text-sm font-semibold text-rose-900 sm:text-base">AI ရှင်းပြချက် အမှား</h2><p className="mt-1 text-[13px] leading-5 text-rose-800 sm:mt-2 sm:text-sm">{aiError}</p></section>}
-        {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} />}
+        {aiError && <section role="alert" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale ? "text-amber-900" : "text-rose-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : "AI ရှင်းပြချက် အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale ? "text-amber-800" : "text-rose-800"}`}>{aiError}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန် limit ပြန်ဖွင့်ပါ</button>}<button type="button" onClick={() => setAiError("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
+        {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} source={aiSource} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}
         {loading ? <div className="rounded-xl bg-white p-6 text-center text-[13px] text-slate-600 shadow-sm sm:p-8 sm:text-sm">Summary ရယူနေသည်...</div> : data && (

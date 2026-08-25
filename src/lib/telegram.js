@@ -135,6 +135,18 @@ export function buildOrderDraftKeyboard(order, appUrl = "") {
   };
 }
 
+export function buildOrderRetryKeyboard(order, appUrl = "") {
+  const id = String(order?.id || "");
+  if (!id) return undefined;
+  const url = appUrl ? `${String(appUrl).replace(/\/$/, "")}/orders?orderId=${encodeURIComponent(id)}` : "";
+  return {
+    inline_keyboard: [
+      [{ text: "🔄 AI ပြန်စမ်းရန်", callback_data: `order|retry|I|${id}` }],
+      ...(url ? [[{ text: "🌐 Website တွင် ပြန်စစ်/ပြင်ရန်", url }]] : []),
+    ],
+  };
+}
+
 export function buildOrderDoneKeyboard(orderId) {
   const appUrl = String(process.env.NEXT_PUBLIC_APP_URL || "").trim();
   if (!appUrl || !orderId) return undefined;

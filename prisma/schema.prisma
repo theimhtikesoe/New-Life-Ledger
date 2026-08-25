@@ -181,6 +181,23 @@ model AuditLog {
   @@index([entityType])
 }
 
+model AiExplanationCache {
+  id              String   @id @default(uuid()) @db.Uuid
+  reportDate      String
+  dataFingerprint String
+  promptVersion   String   @default("v2")
+  explanation     Json
+  generatedBy     String?
+  provider        String?
+  model           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([reportDate, dataFingerprint, promptVersion])
+  @@index([reportDate])
+  @@index([reportDate, updatedAt])
+}
+
 model AutoReportRun {
   id             String   @id @default(uuid()) @db.Uuid
   status         String
