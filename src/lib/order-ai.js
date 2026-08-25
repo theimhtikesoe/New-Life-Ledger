@@ -4,18 +4,31 @@ const MANUS_API_BASE = "https://api.manus.ai";
 const AI_TIMEOUT_MS = 45_000;
 const POLL_INTERVAL_MS = 1_500;
 
-function providerError(code, message) {
+function safeProviderValue(value) {
+  const normalized = String(value || "").trim().replace(/[^A-Za-z0-9_.-]/g, "_");
+  return normalized ? normalized.slice(0, 80) : null;
+}
+
+function providerError(code, message, metadata = {}) {
   const error = new Error(message);
   error.code = code;
+  error.provider = metadata;
   return error;
 }
 
 async function readJson(response, operation) {
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body?.ok === false) {
-    if (response.status === 401 || response.status === 403) throw providerError("MANUS_AUTH", "Order AI API key မမှန်ကန်ပါ သို့မဟုတ် ခွင့်ပြုချက် မရှိပါ။");
-    if (response.status === 429) throw providerError("MANUS_RATE_LIMIT", "Order AI request အရေအတွက် ကန့်သတ်ချက် ရောက်နေပါသည်။");
-    throw providerError("MANUS_REQUEST", `Order AI ${operation} မအောင်မြင်ပါ။`);
+    const metadata = {
+      phase: operation,
+      httpStatus: response.status,
+      providerCode: safeProviderValue(body?.error?.code || body?.code),
+      requestIdPresent: Boolean(body?.request_id),
+    };
+    if (response.status === 401 || response.status === 403) throw providerError("MANUS_AUTH", "Order AI API key မမှန်ကန်ပါ သို့မဟုတ် ခွင့်ပြုချက် မရှိပါ။", metadata);
+    if (response.status === 429) throw providerError("MANUS_RATE_LIMIT", "Order AI request အရေအတွက် ကန့်သတ်ချက် ရောက်နေပါသည်။", metadata);
+    if (response.status >= 500) throw providerError("MANUS_SERVICE", "Order AI service ကို ယခုချိန်တွင် မရရှိနိုင်ပါ။", metadata);
+    throw providerError("MANUS_REQUEST", `Order AI ${operation} မအောင်မြင်ပါ။`, metadata);
   }
   return body;
 }
@@ -58,21 +71,37 @@ export async function extractOrderFromText(sourceText) {
       const body = await readJson(response, "အဖြေစစ်ဆေးခြင်း");
       const messages = Array.isArray(body.messages) ? body.messages : [];
       const errorMessage = messages.find((item) => item?.type === "error_message");
-      if (errorMessage) throw providerError("MANUS_TASK", "Order AI task မအောင်မြင်ပါ။");
+      if (errorMessage) {
+        throw providerError("MANUS_TASK", "Order AI task မအောင်မြင်ပါ။", {
+          phase: "task_error",
+          providerErrorType: safeProviderValue(errorMessage?.error_message?.error_type),
+          providerContentPresent: Boolean(errorMessage?.error_message?.content),
+        });
+      }
       const structured = messages.find((item) => item?.type === "structured_output_result");
       if (structured) {
         const result = structured.structured_output_result;
-        if (!result?.success) throw providerError("MANUS_TASK", "Order AI က အချက်အလက်ကို မဖတ်နိုင်ပါ။");
+        if (!result?.success) {
+          throw providerError("MANUS_TASK", "Order AI က အချက်အလက်ကို မဖတ်နိုင်ပါ။", {
+            phase: "structured_output",
+            providerErrorPresent: Boolean(result?.error),
+          });
+        }
         return normalizeExtractedOrder(result.value, text);
       }
       const status = messages.find((item) => item?.type === "status_update")?.status_update?.agent_status;
-      if (status === "stopped") throw providerError("MANUS_EMPTY", "Order AI မှ အချက်အလက် မရရှိပါ။");
-      if (status === "waiting") throw providerError("MANUS_TASK", "Order AI က ထပ်မံအတည်ပြုချက် စောင့်နေပါသည်။");
+      if (status === "error") throw providerError("MANUS_TASK", "Order AI task မအောင်မြင်ပါ။", { phase: "status_error" });
+      if (status === "stopped") throw providerError("MANUS_EMPTY", "Order AI မှ အချက်အလက် မရရှိပါ။", { phase: "stopped_without_result" });
+      if (status === "waiting") throw providerError("MANUS_TASK", "Order AI က ထပ်မံအတည်ပြုချက် စောင့်နေပါသည်။", { phase: "waiting" });
       await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
     }
     throw providerError("MANUS_TIMEOUT", "Order AI အဖြေရရန် အချိန်ကျော်သွားပါပြီ။");
   } catch (error) {
-    if (error?.name === "AbortError") throw providerError("MANUS_TIMEOUT", "Order AI အဖြေရရန် အချိန်ကျော်သွားပါပြီ။");
+    if (error?.name === "AbortError") throw providerError("MANUS_TIMEOUT", "Order AI အဖြေရရန် အချိန်ကျော်သွားပါပြီ။", { phase: "timeout" });
+    console.error("Order AI extraction provider failure", {
+      code: error?.code || "UNKNOWN",
+      provider: error?.provider || null,
+    });
     throw error;
   } finally {
     clearTimeout(timeout);

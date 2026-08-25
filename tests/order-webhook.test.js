@@ -105,6 +105,16 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
   });
 
+  it("does not create an order when AI extraction fails and sends one safe reply", async () => {
+    mocks.extractOrderFromText.mockRejectedValue(Object.assign(new Error("Order AI task မအောင်မြင်ပါ။"), { code: "MANUS_TASK" }));
+    const response = await POST(request(messageUpdate("/order ကံလီ 0.3 L 400 ဆံ့ 50 ကဒ် ပုလဲဂိတ် မနက်ဖြန်")));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("ai_failed");
+    expect(mocks.createOrderDraft).not.toHaveBeenCalled();
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order AI task") }));
+  });
+
   it("does not invoke AI or send a second reply for a replayed update ID", async () => {
     mocks.getOrderBySourceUpdateId.mockResolvedValue(order);
     const response = await POST(request(messageUpdate("/order မမိုး", 12)));
