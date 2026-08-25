@@ -107,7 +107,7 @@ export function configuredTelegramOrderAdminIds() {
     .filter(Boolean);
 }
 
-export async function editTelegramMessageText({ chatId, messageId, text, replyMarkup = undefined } = {}) {
+export async function editTelegramMessageText({ chatId, messageId, text, replyMarkup = undefined, parseMode = undefined } = {}) {
   const { token } = getTelegramConfig();
   if (!token || !chatId || !messageId) throw new Error("Telegram edit message အချက်အလက် မပြည့်စုံသေးပါ။");
   return telegramRequest({
@@ -117,6 +117,7 @@ export async function editTelegramMessageText({ chatId, messageId, text, replyMa
       chat_id: String(chatId),
       message_id: Number(messageId),
       text: String(text || "").slice(0, 4000),
+      ...(parseMode ? { parse_mode: parseMode } : {}),
       ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
     },
   });

@@ -35,6 +35,7 @@ describe("Telegram order message synchronization", () => {
       chatId: "-100123",
       messageId: 88,
       text: "🟡 Order — Cancel ပြီး\n\n❌ Website မှ Cancel လုပ်ပြီးပါပြီ။",
+      parseMode: "Markdown",
       replyMarkup: { inline_keyboard: [] },
     });
   });

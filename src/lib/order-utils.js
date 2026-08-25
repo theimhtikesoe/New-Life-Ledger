@@ -319,7 +319,7 @@ function formatDateLabel(value) {
   return `${day}/${month}/${year}`;
 }
 
-export function formatOrderDraftMessage(order, { includeActions = true, includeSource = false } = {}) {
+export function formatOrderDraftMessage(order, { includeActions = true, includeSource = true } = {}) {
   const totals = calculateOrderTotals(order);
   const warnings = calculateCapWarnings(order).filter((cap) => cap.warningText);
   const heading = order.status === "CONFIRMED"
@@ -342,11 +342,9 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
   const pickupTime = String(order.aiNotes || "").match(/လာယူချိန်\s*[:：]\s*(.+)$/u)?.[1]?.trim() || "";
   const warningLines = warnings.map((cap) => {
     const requested = Number(cap.requestedTotalPcs || 0);
-    const expected = Number(cap.expectedPcs || totals.totalBottles || 0);
-    const difference = Math.abs(requested - expected).toLocaleString();
-    return `⚠️ ${cap.capType}: ${requested.toLocaleString()} pcs (မျှော်မှန်း ${expected.toLocaleString()}၊ ကွာ ${difference} pcs — သတိပေးချက်သာ)`;
+    return `⚠️ အဖုံး: ${requested.toLocaleString()} pcs`;
   });
-  const sourcePreview = includeSource ? String(order.sourceText || "").trim().slice(0, 1200) : "";
+  const sourcePreview = includeSource ? String(order.sourceText || "").trim().slice(0, 1200).replace(/```/g, "'''\n") : "";
   return [
     heading,
     `Customer: ${order.customer?.name || order.draftCustomerName || "မတွေ့သေးပါ"}`,
@@ -359,7 +357,7 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
     `စုစုပေါင်း: ${totals.totalCards.toLocaleString()} ကဒ် / ${totals.totalBottles.toLocaleString()} ဘူး`,
     caps.length ? ["", "အဖုံး:", ...caps] : [],
     warningLines.length ? ["", ...warningLines] : [],
-    sourcePreview ? ["", "မူရင်းမှာယူစာ:", sourcePreview] : [],
+    sourcePreview ? ["", "မူရင်းမှာယူစာ:", "```", sourcePreview, "```"] : [],
     includeActions ? ["", "အောက်က ခလုတ်ကို အသုံးပြုပါ။"] : [],
   ].flat(Infinity).filter((line) => line !== null && line !== undefined && line !== "").join("\n").trim();
 }

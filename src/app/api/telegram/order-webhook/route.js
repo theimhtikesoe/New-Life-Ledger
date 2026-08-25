@@ -106,7 +106,7 @@ async function handleCallback(update) {
         const refreshed = await refreshOrderFromAi({ orderId, extracted, actorName: "Staff" });
         await rememberCallbackMessage();
         await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။" });
-        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
+        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
         return { ok: true, status: "ai_retried", orderId };
       } catch (retryError) {
         await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: safeErrorMessage(retryError), showAlert: true });
@@ -185,6 +185,7 @@ export async function POST(request) {
       const sentDraft = await sendTelegramTextToChat({
         chatId,
         text: formatOrderDraftMessage(pending.order),
+        parseMode: "Markdown",
         replyMarkup: buildOrderActionKeyboard(pending.order, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }),
         replyToMessageId: message.message_id,
       });
@@ -204,6 +205,7 @@ export async function POST(request) {
       const sentDraft = await sendTelegramTextToChat({
         chatId,
         text: formatOrderDraftMessage(order),
+        parseMode: "Markdown",
         replyMarkup: buildOrderActionKeyboard(order, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }),
         replyToMessageId: message.message_id,
       });
@@ -218,7 +220,8 @@ export async function POST(request) {
     } catch (error) {
       const fallbackMessage = await sendTelegramTextToChat({
         chatId,
-        text: `⚠️ AI အဖြေ မရသေးပါ။ မူရင်းစာနှင့် ဖတ်မိသည့်အချက်များကို Draft အဖြစ် သိမ်းထားပါပြီ။\n${safeErrorMessage(error)}\n\n${formatOrderDraftMessage(pending.order, { includeActions: false })}\n\nအောက်က ခလုတ်ကိုနှိပ်ပြီး AI ကို ပြန်စမ်းနိုင်ပါတယ်။`,
+        text: `⚠️ AI အဖြေ မရသေးပါ။ မူရင်းစာနှင့် ဖတ်မိသည့်အချက်များကို Draft အဖြစ် သိမ်းထားပါပြီ။\n${safeErrorMessage(error)}\n\n${formatOrderDraftMessage(pending.order, { includeActions: false, includeSource: true })}\n\nအောက်က ခလုတ်ကိုနှိပ်ပြီး AI ကို ပြန်စမ်းနိုင်ပါတယ်။`,
+        parseMode: "Markdown",
         replyMarkup: buildOrderRetryKeyboard(pending.order, process.env.NEXT_PUBLIC_APP_URL),
         replyToMessageId: message.message_id,
       });

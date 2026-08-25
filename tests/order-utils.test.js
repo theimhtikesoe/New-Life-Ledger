@@ -137,16 +137,19 @@ describe("multi-line order totals and cap rules", () => {
       confidence: "medium",
       notes: null,
     }, "");
-    const message = formatOrderDraftMessage({ ...normalized, status: "NEEDS_REVIEW", sourceText: "/order ကံလီ" }, { includeActions: false });
+    const message = formatOrderDraftMessage({ ...normalized, status: "NEEDS_REVIEW", sourceText: "/order ကံလီ" }, { includeActions: false, includeSource: true });
     expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
     expect(message).not.toContain("အဖုံးပုံမှန်စုစုပေါင်း: 8,000 pcs");
     expect(message).not.toContain("အဖုံးအပိုစုစုပေါင်း: 0 pcs");
     expect(message).not.toContain("အဖုံးတောင်းဆိုချက်စုစုပေါင်း");
+    expect(message).not.toContain("မျှော်မှန်း 8,000");
+    expect(message).not.toContain("ကွာ 0 pcs");
     expect(message).not.toContain("ပြန်ဖြည့်ရန်");
     expect(message).not.toContain("phone");
     expect(message).not.toContain("အဖုံးစာရင်း:\nမသတ်မှတ်ရသေး");
     expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
-    expect(message).not.toContain("မူရင်းမှာယူစာ:");
+    expect(message).toContain("မူရင်းမှာယူစာ:");
+    expect(message).toContain("```\n/order ကံလီ\n```");
   });
 
   it("omits the cap section when no cap type or quantity was provided", () => {
