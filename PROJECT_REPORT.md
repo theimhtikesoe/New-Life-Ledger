@@ -1029,3 +1029,10 @@ Read-only fixture validation passed at 375px and 1280px. The 375px check measure
 The owner reported that the Daily Summary date area looked outside the mobile header on iPhone. The underlying native `input[type=date]` was displaying a device-localized value such as `25 Aug BE 2569`, which made the control look inconsistent and crowded even when its bounding box was inside the header. The fix keeps the native date picker as the clickable input but hides its localized text and renders a contained, consistent `DD Mon YYYY` label above it.
 
 Read-only 375px validation measured a 351px header and 321px date control, with the control’s right edge inside the header. The visible label changed correctly from `25 Aug 2026` to `24 Aug 2026` after date selection, document width remained `375px`, and horizontal overflow was false. No database, customer, ledger, accounting, audit, backup, restore, Telegram, or report data was changed.
+
+## 51. Five-minute Idle Actor Re-selection
+**Date:** 2026-08-25
+
+The owner requested that five minutes of inactivity should not force another PIN entry. The idle callback in `src/components/PINLogin.jsx` now preserves the server-side authenticated session, clears only the local actor attribution, and shows the actor chooser with the message `၅ မိနစ်အသုံးမပြုထားပါ။ အသုံးပြုသူကို ပြန်ရွေးပါ`. Selecting an actor restores normal page use through the existing actor-selected event and does not change the PIN or logout endpoints.
+
+A local read-only clock-forward test confirmed that after five idle minutes the PIN field is absent, the actor chooser is visible, and `/api/auth/session` remains authenticated. No customer, ledger, balance, database, audit, backup, restore, Telegram, or report data was changed.
