@@ -448,6 +448,35 @@ export async function restoreCancelledOrder({ orderId, actorName = "Staff", now 
   return serializeOrder(restored);
 }
 
+export async function deleteCancelledOrderPermanently({ orderId, actorName = "Staff" } = {}) {
+  await ensureDatabase();
+  const normalizedOrderId = String(orderId || "").trim();
+  if (!normalizedOrderId) throw new Error("Order ID လိုအပ်ပါသည်။");
+  const current = await prisma.order.findUnique({
+    where: { id: normalizedOrderId },
+    include: { customer: { select: { id: true, name: true } } },
+  });
+  if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (current.status !== "CANCELLED") throw new Error("Trash ထဲရှိ Cancelled Order သာ အပြီးဖျက်နိုင်ပါသည်။");
+
+  await prisma.$transaction(async (tx) => {
+    await writeAuditLog({
+      db: tx,
+      actorName,
+      action: "ORDER_PERMANENT_DELETE",
+      entityType: "Order",
+      entityId: current.id,
+      entityLabel: current.customer?.name || current.draftCustomerName || "Order",
+      summary: "Cancelled Order ကို Trash မှ အပြီးဖျက်",
+      metadata: { previousStatus: current.status, sourceMessageId: current.sourceMessageId || null },
+    });
+    // OrderLine, OrderCap, and OrderDelivery use onDelete: Cascade.
+    // Customer, Ledger, and balance rows are not touched by this delete.
+    await tx.order.delete({ where: { id: current.id } });
+  });
+  return { id: current.id, deleted: true };
+}
+
 export async function purgeExpiredCancelledOrders({ actorName = "System", now = new Date() } = {}) {
   await ensureDatabase();
   const candidates = await prisma.order.findMany({

@@ -13,6 +13,7 @@ import {
   archiveOrder,
   restoreOrder,
   restoreCancelledOrder,
+  deleteCancelledOrderPermanently,
   refreshOrderFromAi,
   getOrderById,
   updateOrderStatus,
@@ -167,8 +168,12 @@ export async function PATCH(request) {
       const data = await restoreCancelledOrder({ orderId, actorName });
       return NextResponse.json({ ok: true, data });
     }
+    if (action === "trash_delete_permanently") {
+      const data = await deleteCancelledOrderPermanently({ orderId, actorName });
+      return NextResponse.json({ ok: true, data });
+    }
     return errorResponse(new Error("မသိသော order action ဖြစ်ပါသည်။"), 400);
   } catch (error) {
-    return errorResponse(error, error?.message?.includes("မတွေ့") || error?.message?.includes("လိုအပ်") || error?.message?.includes("မမှန်") ? 400 : 500);
+    return errorResponse(error, error?.message?.includes("မတွေ့") || error?.message?.includes("လိုအပ်") || error?.message?.includes("မမှန်") || error?.message?.includes("Trash") ? 400 : 500);
   }
 }
