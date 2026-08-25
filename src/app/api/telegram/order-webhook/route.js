@@ -119,9 +119,20 @@ async function handleCallback(update) {
     }
     if (action.toLowerCase() === "customer") {
       const result = await getOrderCustomerCandidates({ orderId });
-      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: result.candidates.length ? "ရှိပြီးသား Customer ကို ရွေးပါ။" : "ဆင်တူ Customer မတွေ့သေးပါ။" });
-      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(result.order)}\n\n👤 ချိတ်မည့် Customer ကို ရွေးပါ။`, parseMode: "Markdown", replyMarkup: buildOrderCustomerCandidatesKeyboard(result.order, result.candidates) });
-      return { ok: true, status: "customer_candidates", orderId, candidateCount: result.candidates.length };
+      const candidateCount = result.candidates.length;
+      const selectionText = `${formatOrderDraftMessage(result.order)}\n\n${candidateCount ? "👤 ချိတ်မည့် Customer ကို ရွေးပါ။" : "⚠️ ဒီအမည်နှင့် ကိုက်ညီသော active Customer မတွေ့သေးပါ။ အောက်က Customer အသစ်ဖန်တီးရန်ကို ရွေးနိုင်ပါသည်။"}`;
+      const replyMarkup = buildOrderCustomerCandidatesKeyboard(result.order, result.candidates);
+      try {
+        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: selectionText, parseMode: "Markdown", replyMarkup });
+      } catch (editError) {
+        // Some existing messages can fail Markdown parsing because customer/order text
+        // contains Telegram-reserved characters. Retry the same callback without parse
+        // mode so the admin still receives selectable Customer buttons.
+        console.warn("Telegram Customer candidate Markdown edit failed; retrying plain text", editError);
+        await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: selectionText.replace(/```/g, ""), replyMarkup });
+      }
+      await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: candidateCount ? "ရှိပြီးသား Customer ကို ရွေးပါ။" : "ကိုက်ညီသော Customer မတွေ့သေးပါ။" });
+      return { ok: true, status: "customer_candidates", orderId, candidateCount };
     }
     if (action.toLowerCase() === "link") {
       if (!candidateId) throw new Error("Customer ရွေးချယ်မှု မပြည့်စုံသေးပါ။");
