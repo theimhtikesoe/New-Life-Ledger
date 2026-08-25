@@ -1056,3 +1056,30 @@ The website now has an Orders page with draft review, requested-date and destina
 | Migration safety | The drafted migration contains only new Order tables/indexes/foreign keys and no standalone DROP, TRUNCATE, DELETE, or UPDATE statements |
 
 The Order workflow code is **still only on the security-hardening branch/Preview and is not yet in Production**. The approved additive database migration has now been applied through a temporary authenticated runner: all six new Order workflow tables were created, and the verification returned `customerLedgerRowsUnchanged: true`. The runner was then removed from the Production code. Order Telegram notifications remain configured to default ON in code, but the order webhook is not registered, no order workflow message has been sent, and no Factory notification has been sent. No production Customer, Ledger, balance, audit, backup, restore, Telegram, or report data was changed. Before live rollout, the security-hardening Order code must be reviewed/merged, the order webhook must be registered, and one controlled Telegram test must be separately approved. Viber remains the current operational channel until that test is complete.
+
+## 53. Telegram Order Webhook Registered and Temporary Helper Removed
+
+**Date:** 2026-08-25
+**Relevant merges:** Order workflow PR #13; webhook registration/diagnostic work PRs #15–#19; cleanup PR #20 (`055b70f`)
+
+The approved Telegram Order webhook registration was completed after correcting the Production public URL and webhook-secret configuration. A safe Production preflight confirmed that the URL, secret, bot token, and Production environment were present; it also confirmed that the URL was HTTPS and that the secret used only the characters permitted by Telegram. The approved registration request returned HTTP 200 with `registered: true`, the intended Order webhook path, `allowed_updates` limited to `message` and `callback_query`, and no Telegram last-error message. The webhook was registered without sending an order message or a Factory notification.
+
+The temporary authenticated admin route used for registration and diagnosis was removed in cleanup PR #20. Local cleanup verification passed `git diff --check`, lint, the existing test suite, and the Next.js production build. On the authenticated browser session, the removed helper route returned HTTP 404 after the cleanup deployment. The public Order webhook route remained present, while the protected website Orders API continued to reject unauthenticated access as expected. The prior read-only webhook check confirmed the Telegram webhook remained registered before cleanup; cleanup did not call Telegram, change the webhook, or touch the database.
+
+The Telegram Bot API documents `secret_token` as a 1–256 character value restricted to `A–Z`, `a–z`, `0–9`, underscore, and hyphen, and sends it back in the `X-Telegram-Bot-Api-Secret-Token` header [11]. The deployed application uses that header to protect the public Order webhook.
+
+| Verification | Result |
+|---|---|
+| Production deployment | Latest cleanup commit `055b70f` deployed successfully and was shown as Production/Ready |
+| Webhook registration | Successful; no registration helper remains in the deployed application |
+| Existing Customer/Ledger/balance data | Not deleted, overwritten, restored, or recalculated |
+| New Order tables | Preserved; the additive migration created exactly six Order workflow tables |
+| Real Order message | Not sent yet |
+| AI draft reply | Not triggered yet |
+| Confirm/Batch/Cancel callback | Not tested against a real message yet |
+| Factory notification | Not sent yet |
+| Current operational channel | Viber remains in use until controlled Telegram testing is separately approved |
+
+The next step requires separate owner approval for one clearly marked, draft-only `/order` or `မှာယူမှု` message in the Orders of New Life group. That test will create one real Order draft and may use the configured AI extractor, but it must not Confirm, Batch, Cancel, or send anything to the Factory group until those actions are separately approved.
+
+[11]: https://core.telegram.org/bots/api#setwebhook — Telegram Bot API `setWebhook` documentation.
