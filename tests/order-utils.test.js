@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ORDER_STRUCTURED_OUTPUT_SCHEMA,
   calculateCapWarnings,
+  buildFallbackOrderExtraction,
   calculateOrderTotals,
   formatFactoryOrderMessage,
   formatOrderDraftMessage,
@@ -35,6 +36,25 @@ describe("order numeric and date normalization", () => {
     expect(resolveOrderDate(null, "ဒီနေ့ ပို့ပါမယ်")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(resolveOrderDate(null, "မနက်ဖြန် ထုတ်ပါမယ်")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(resolveOrderDate(null, "tmr ပို့ပါမယ်")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("keeps shorthand customer names, factory pickup, pickup time, and cap quantities in fallback extraction", () => {
+    const fallback = buildFallbackOrderExtraction(`3ဘီး\nနွားနို့ကြီး အဖြူ\n100 ဆံ့ 30 ကဒ်\nအဖုံး ရောင်စုံ 3000 pcs + အပို 15\nစက်ရုံလာယူမည်\nမနက်ဖြန် မနက် ၇ နာရီ ခွဲ`);
+    expect(fallback.customerName).toBe("3ဘီး");
+    expect(fallback.destination).toBe("စက်ရုံလာယူမည်");
+    expect(fallback.requestedDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(fallback.lines).toEqual([expect.objectContaining({ bottleType: "နွားနို့ကြီး အဖြူ", bottlesPerCard: 100, cardCount: 30, totalBottles: 3000 })]);
+    expect(fallback.caps).toEqual([expect.objectContaining({ capType: "ရောင်စုံ", normalPcs: 3000, extraPcs: 15 })]);
+    expect(fallback.notes).toContain("စက်ရုံလာယူမည်");
+    expect(fallback.notes).toContain("မနက်ဖြန် မနက် ၇ နာရီ ခွဲ");
+  });
+
+  it("parses a comma-separated order message without treating the customer number as card quantity", () => {
+    const fallback = buildFallbackOrderExtraction("မှာယူမှု 3ဘီး၊ နွားနို့ကြီး အဖြူ၊ 100 ဆံ့ 30 ကဒ်၊ အဖုံး ရောင်စုံ 3000 pcs + အပို 15၊ စက်ရုံလာယူမည်၊ မနက်ဖြန်");
+    expect(fallback.customerName).toBe("3ဘီး");
+    expect(fallback.lines).toEqual([expect.objectContaining({ bottleType: "နွားနို့ကြီး အဖြူ", bottlesPerCard: 100, cardCount: 30, totalBottles: 3000 })]);
+    expect(fallback.caps[0]).toEqual(expect.objectContaining({ capType: "ရောင်စုံ", normalPcs: 3000, extraPcs: 15 }));
+    expect(fallback.destination).toBe("စက်ရုံလာယူမည်");
   });
 
   it("normalizes mixed capacity and card abbreviations without guessing missing values", () => {
