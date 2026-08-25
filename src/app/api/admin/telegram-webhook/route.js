@@ -28,6 +28,11 @@ function safeFailureDiagnostic(error, stage) {
   const statusMatch = message.match(/failed:\s+(\d{3})/);
   let category = "unknown_telegram_failure";
   if (message.includes("unauthorized")) category = "telegram_token_rejected";
+  else if (message.includes("failed to resolve") || message.includes("resolve host") || message.includes("cannot resolve") || message.includes("could not resolve")) category = "webhook_host_unreachable";
+  else if (message.includes("bad webhook")) category = "bad_webhook_configuration";
+  else if (message.includes("certificate")) category = "webhook_certificate_problem";
+  else if (message.includes("https")) category = "webhook_https_required";
+  else if (message.includes("port")) category = "webhook_port_rejected";
   else if (message.includes("invalid webhook") || message.includes("webhook url")) category = "webhook_url_rejected";
   else if (message.includes("secret")) category = "webhook_secret_rejected";
   else if (message.includes("bad request")) category = "telegram_bad_request";
