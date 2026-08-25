@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createOrderDraft, getOrderBySourceUpdateId, updateOrderStatus } from "@/lib/order-service";
+import { createOrderDraft, getOrderBySourceUpdateId, saveTelegramDraftMessage, updateOrderStatus } from "@/lib/order-service";
 import { extractOrderFromText } from "@/lib/order-ai";
 import {
   answerTelegramCallbackQuery,
@@ -86,9 +86,17 @@ async function handleCallback(update) {
   }
   const [, action, modeCode, orderId] = match;
   const auditMetadata = callbackAuditMetadata(callback);
+  const rememberCallbackMessage = async () => {
+    try {
+      await saveTelegramDraftMessage({ orderId, chatId, messageId: callbackMessageId });
+    } catch (metadataError) {
+      console.warn("Telegram callback message metadata save failed", metadataError);
+    }
+  };
   try {
     if (action.toLowerCase() === "cancel") {
       const order = await updateOrderStatus({ orderId, status: "CANCELLED", actorName: "Staff", auditMetadata });
+      await rememberCallbackMessage();
       await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "Order ကို Cancel လုပ်ပြီးပါပြီ။" });
       await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(order)}\n\n❌ Telegram admin မှ Cancel လုပ်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
       return { ok: true, status: "cancelled", orderId };
@@ -97,6 +105,7 @@ async function handleCallback(update) {
     const isBatch = modeCode.toUpperCase() === "B";
     const status = isBatch ? "BATCH_QUEUED" : "CONFIRMED";
     const statusOrder = await updateOrderStatus({ orderId, status, mode: isBatch ? "MORNING_BATCH" : "IMMEDIATE", actorName: "Staff", auditMetadata });
+    await rememberCallbackMessage();
     if (isBatch) {
       await answerTelegramCallbackQuery({ callbackQueryId: callback?.id, text: "08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။" });
       await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(statusOrder)}\n\n📦 Telegram admin မှ 08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
@@ -158,12 +167,19 @@ export async function POST(request) {
       extracted,
     });
     const order = result.order;
-    await sendTelegramTextToChat({
+    const sentDraft = await sendTelegramTextToChat({
       chatId,
       text: result.duplicate ? `ℹ️ ဒီ Order ကို အရင်က Draft ဖန်တီးထားပြီးပါပြီ။\n\n${formatOrderDraftMessage(order)}` : formatOrderDraftMessage(order),
       replyMarkup: buildOrderDraftKeyboard(order, process.env.NEXT_PUBLIC_APP_URL),
       replyToMessageId: message.message_id,
     });
+    if (sentDraft?.messageId) {
+      try {
+        await saveTelegramDraftMessage({ orderId: order.id, chatId: sentDraft.chatId || chatId, messageId: sentDraft.messageId });
+      } catch (metadataError) {
+        console.warn("Telegram draft message metadata save failed", metadataError);
+      }
+    }
     return NextResponse.json({ ok: true, status: result.duplicate ? "duplicate" : "draft_created", orderId: order.id });
   } catch (error) {
     console.error("Telegram order webhook failed", error);

@@ -114,6 +114,8 @@ function normalize(workbook) {
     sourceChatId: row.sourceChatId ?? row.SourceChatId ?? null,
     sourceMessageId: row.sourceMessageId ?? row.SourceMessageId ?? null,
     sourceUpdateId: row.sourceUpdateId ?? row.SourceUpdateId ?? null,
+    telegramDraftChatId: row.telegramDraftChatId ?? row.TelegramDraftChatId ?? null,
+    telegramDraftMessageId: row.telegramDraftMessageId ?? row.TelegramDraftMessageId ?? null,
     sourceText: asText(row.sourceText ?? row.SourceText),
     customerId: asUuid(row.customerId || row.CustomerId),
     draftCustomerName: row.draftCustomerName ?? row.DraftCustomerName ?? null,
@@ -126,6 +128,8 @@ function normalize(workbook) {
     notificationMode: asText(row.notificationMode ?? row.NotificationMode, "IMMEDIATE") || "IMMEDIATE",
     confirmedBy: row.confirmedBy ?? row.ConfirmedBy ?? null,
     confirmedAt: row.confirmedAt || row.ConfirmedAt ? asDate(row.confirmedAt || row.ConfirmedAt) : null,
+    archivedAt: row.archivedAt || row.ArchivedAt ? asDate(row.archivedAt || row.ArchivedAt) : null,
+    archivedBy: row.archivedBy ?? row.ArchivedBy ?? null,
     createdAt: asDate(row.createdAt || row.CreatedAt) || new Date(),
     updatedAt: asDate(row.updatedAt || row.UpdatedAt) || asDate(row.createdAt || row.CreatedAt) || new Date(),
   }));

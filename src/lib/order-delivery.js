@@ -50,6 +50,7 @@ export async function sendFactoryNotificationForOrder(orderId, { actorName = "St
   if (!token || !factoryChatId) throw new Error("TELEGRAM_BOT_TOKEN နှင့် TELEGRAM_FACTORY_GROUP_CHAT_ID မပြည့်စုံသေးပါ။");
   const order = await getOrderById(orderId);
   if (!order) throw new Error("Order မတွေ့ပါ။");
+  if (order.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို စက်ရုံသို့ မပို့နိုင်ပါ။");
   if (order.status === "CANCELLED") throw new Error("Cancel လုပ်ပြီး Order ကို စက်ရုံသို့ မပို့နိုင်ပါ။");
   const delivery = order.deliveries?.find((item) => item.destinationType === "FACTORY" && item.mode === "IMMEDIATE")
     || await prisma.orderDelivery.findFirst({ where: { orderId: String(orderId), destinationType: "FACTORY", mode: "IMMEDIATE" } });

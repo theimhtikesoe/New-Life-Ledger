@@ -50,6 +50,7 @@ function serializeOrder(order) {
     lines,
     caps,
     customer: order.customer?.deletedAt ? null : order.customer,
+    isArchived: Boolean(order.archivedAt),
   };
   return {
     ...normalized,
@@ -206,11 +207,15 @@ export async function createOrderDraft({
   return { order: serializeOrder(created), duplicate: false };
 }
 
-export async function listOrders({ status = null, limit = 100 } = {}) {
+export async function listOrders({ status = null, includeArchived = false, archivedOnly = false, limit = 100 } = {}) {
   await ensureDatabase();
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+  const where = {
+    ...(status ? { status } : {}),
+    ...(archivedOnly ? { archivedAt: { not: null } } : !includeArchived ? { archivedAt: null } : {}),
+  };
   const orders = await prisma.order.findMany({
-    where: status ? { status } : {},
+    where,
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: safeLimit,
     include: ORDER_INCLUDE,
@@ -231,6 +236,69 @@ export async function getOrderBySourceUpdateId(sourceUpdateId) {
   return serializeOrder(order);
 }
 
+export async function saveTelegramDraftMessage({ orderId, chatId, messageId } = {}) {
+  await ensureDatabase();
+  const normalizedChatId = String(chatId || "").trim();
+  const normalizedMessageId = String(messageId || "").trim();
+  if (!orderId || !normalizedChatId || !normalizedMessageId) return null;
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
+  if (!current) return null;
+  if (current.telegramDraftChatId && current.telegramDraftMessageId) return serializeOrder(current);
+  const updated = await prisma.order.update({
+    where: { id: current.id },
+    data: { telegramDraftChatId: normalizedChatId, telegramDraftMessageId: normalizedMessageId },
+    include: ORDER_INCLUDE,
+  });
+  return serializeOrder(updated);
+}
+
+export async function archiveOrder({ orderId, actorName = "Staff" } = {}) {
+  await ensureDatabase();
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
+  if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (current.archivedAt) return serializeOrder(current);
+  if (!["CANCELLED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED"].includes(current.status)) {
+    throw new Error("Active သို့မဟုတ် ပို့ရန်စောင့်နေသော Order ကို တိုက်ရိုက်ဖျက်၍မရပါ။ အရင် Cancel လုပ်ပြီးမှ Archive လုပ်ပါ။");
+  }
+  const archived = await prisma.order.update({
+    where: { id: current.id },
+    data: { archivedAt: new Date(), archivedBy: actorName },
+    include: ORDER_INCLUDE,
+  });
+  await writeAuditLog({
+    actorName,
+    action: "ORDER_ARCHIVE",
+    entityType: "Order",
+    entityId: archived.id,
+    entityLabel: archived.customer?.name || archived.draftCustomerName || "Order",
+    summary: "Order ကို History ထဲ Archive လုပ်ပြီး",
+    metadata: { previousStatus: current.status },
+  });
+  return serializeOrder(archived);
+}
+
+export async function restoreOrder({ orderId, actorName = "Staff" } = {}) {
+  await ensureDatabase();
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
+  if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (!current.archivedAt) return serializeOrder(current);
+  const restored = await prisma.order.update({
+    where: { id: current.id },
+    data: { archivedAt: null, archivedBy: null },
+    include: ORDER_INCLUDE,
+  });
+  await writeAuditLog({
+    actorName,
+    action: "ORDER_RESTORE",
+    entityType: "Order",
+    entityId: restored.id,
+    entityLabel: restored.customer?.name || restored.draftCustomerName || "Order",
+    summary: "Order ကို History မှ ပြန်ယူပြီး",
+    metadata: { restoredStatus: restored.status },
+  });
+  return serializeOrder(restored);
+}
+
 async function getActiveCustomer(customerId) {
   if (!customerId) return null;
   return prisma.customer.findFirst({
@@ -243,8 +311,9 @@ export async function linkOrderCustomer({ orderId, customerId, actorName = "Staf
   await ensureDatabase();
   const customer = await getActiveCustomer(customerId);
   if (!customer) throw new Error("ရွေးထားသော active Customer မတွေ့ပါ။");
-  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, select: { id: true, status: true } });
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, select: { id: true, status: true, archivedAt: true } });
   if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (current.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို ပြန်ချိတ်၍မရပါ။ အရင် Restore လုပ်ပါ။");
   if (["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(current.status)) throw new Error("ပို့ပြီး/ပြီးစီး/ပယ်ဖျက်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။");
   const order = await prisma.order.update({
     where: { id: String(orderId) },
@@ -272,6 +341,7 @@ export async function createCustomerForOrder({ orderId, name, phone = null, rout
   await ensureDatabase();
   const order = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!order) throw new Error("Order မတွေ့ပါ။");
+  if (order.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။ အရင် Restore လုပ်ပါ။");
   if (["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(order.status)) throw new Error("ပို့ပြီး/ပြီးစီး/ပယ်ဖျက်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။");
   const customerName = String(name || order.draftCustomerName || "").trim();
   if (!customerName) throw new Error("Customer အမည် လိုအပ်ပါသည်။");
@@ -303,6 +373,7 @@ export async function updateOrderDetails({ orderId, requestedDate, destination, 
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (current.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို ပြင်၍မရပါ။ အရင် Restore လုပ်ပါ။");
   if (["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(current.status)) throw new Error("ပို့ပြီး/ပြီးစီး/ပယ်ဖျက်ပြီး Order ကို ပြင်၍မရပါ။");
   const nextDate = requestedDate === undefined ? current.requestedDate : (normalizeDateInput(requestedDate) || "");
   if (requestedDate !== undefined && !nextDate) throw new Error("ထုတ်ရမည့်ရက် မမှန်ကန်ပါ။");
@@ -330,6 +401,7 @@ export async function updateOrderStatus({ orderId, status, mode = null, actorNam
   if (!allowed.has(status)) throw new Error("Order status မမှန်ကန်ပါ။");
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (current.archivedAt) throw new Error("Archive လုပ်ပြီး Order တွင် status မပြောင်းနိုင်ပါ။ အရင် Restore လုပ်ပါ။");
   if (status === "CANCELLED" && current.status === "CANCELLED") return serializeOrder(current);
   if (status === "CANCELLED" && ["FACTORY_NOTIFIED", "COMPLETED"].includes(current.status)) throw new Error("ပို့ပြီး/ပြီးစီးပြီး Order ကို Cancel မလုပ်နိုင်ပါ။");
   if (status === "CANCELLED" && current.deliveries?.some((delivery) => delivery.destinationType === "FACTORY" && ["SENDING", "SENT"].includes(delivery.status))) throw new Error("Factory notification ပို့နေ/ပို့ပြီး Order ကို Cancel မလုပ်နိုင်ပါ။");
@@ -397,7 +469,7 @@ export async function setDeliveryResult({ deliveryId, status, telegramChatId = n
 export async function getQueuedOrdersForDate(date) {
   await ensureDatabase();
   const orders = await prisma.order.findMany({
-    where: { status: "BATCH_QUEUED", requestedDate: String(date), deliveries: { some: { mode: "MORNING_BATCH", destinationType: "FACTORY", status: "PENDING" } } },
+    where: { archivedAt: null, status: "BATCH_QUEUED", requestedDate: String(date), deliveries: { some: { mode: "MORNING_BATCH", destinationType: "FACTORY", status: "PENDING" } } },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     include: ORDER_INCLUDE,
   });

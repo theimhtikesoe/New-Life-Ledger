@@ -25,19 +25,23 @@ export async function GET(request) {
     const dateParam = searchParams.get("date");
     const actor = searchParams.get("actor");
     const action = searchParams.get("action");
+    const includeOrders = searchParams.get("includeOrders") === "true";
     const limitParam = Number(searchParams.get("limit") || 100);
     const limit = Math.min(Math.max(Number.isFinite(limitParam) ? Math.floor(limitParam) : 100, 1), 500);
     const range = dateRange(dateParam);
         const legacyAction = legacyActionFilter(action);
     const isHiddenReportAction = action === "DAILY_REPORT_SENT";
     const includeLegacy = !actor && (!action || Boolean(legacyAction));
+    const auditConditions = [
+      range ? { createdAt: range } : null,
+      ACTORS.includes(actor) ? { actorName: actor } : null,
+      isHiddenReportAction ? { action: "__HIDDEN_DAILY_REPORT_SENT__" } : action ? { action } : null,
+      !includeOrders ? { NOT: { entityType: "Order" } } : null,
+      !action && !isHiddenReportAction ? { NOT: { action: "DAILY_REPORT_SENT" } } : null,
+    ].filter(Boolean);
     const [auditLogs, legacyLedgers] = await Promise.all([
       prisma.auditLog.findMany({
-        where: {
-          ...(range ? { createdAt: range } : {}),
-          ...(ACTORS.includes(actor) ? { actorName: actor } : {}),
-          ...(isHiddenReportAction ? { action: "__HIDDEN_DAILY_REPORT_SENT__" } : action ? { action } : { NOT: { action: "DAILY_REPORT_SENT" } }),
-        },
+        where: { AND: auditConditions },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: limit,
       }),
