@@ -1,4 +1,4 @@
-import { buildOrderDraftKeyboard, editTelegramMessageText } from "@/lib/telegram";
+import { buildOrderActionKeyboard, editTelegramMessageText } from "@/lib/telegram";
 import { formatOrderDraftMessage } from "@/lib/order-utils";
 
 export async function syncTelegramOrderMessage(order, note = "", { includeActions = false } = {}) {
@@ -11,7 +11,7 @@ export async function syncTelegramOrderMessage(order, note = "", { includeAction
     chatId,
     messageId,
     text: `${formatOrderDraftMessage(order, { includeActions })}${suffix ? `\n\n${suffix}` : ""}`,
-    replyMarkup: includeActions ? buildOrderDraftKeyboard(order, process.env.NEXT_PUBLIC_APP_URL) : { inline_keyboard: [] },
+    replyMarkup: includeActions ? buildOrderActionKeyboard(order, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) : { inline_keyboard: [] },
   });
   return { synced: true, chatId, messageId };
 }

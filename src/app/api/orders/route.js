@@ -70,11 +70,25 @@ export async function PATCH(request) {
 
     if (action === "link_customer") {
       const data = await linkOrderCustomer({ orderId, customerId: body.customerId, actorName });
-      return NextResponse.json({ ok: true, data });
+      let warning = "";
+      try {
+        await syncTelegramOrderMessage(data, "🌐 Website မှ Customer ချိတ်ပြီးပါပြီ။", { includeActions: true });
+      } catch (syncError) {
+        console.warn("Customer link Telegram message sync failed", syncError);
+        warning = "Customer ချိတ်ပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+      }
+      return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }
     if (action === "create_customer") {
       const data = await createCustomerForOrder({ orderId, name: body.name, phone: body.phone, routeTag: body.routeTag, actorName });
-      return NextResponse.json({ ok: true, data });
+      let warning = "";
+      try {
+        await syncTelegramOrderMessage(data, "🌐 Website မှ Customer အသစ်ဖန်တီးပြီး ချိတ်ထားပါပြီ။", { includeActions: true });
+      } catch (syncError) {
+        console.warn("Customer creation Telegram message sync failed", syncError);
+        warning = "Customer အသစ်ဖန်တီးပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+      }
+      return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }
     if (action === "update_details") {
       const data = await updateOrderDetails({ orderId, requestedDate: body.requestedDate, destination: body.destination, customerPhone: body.customerPhone, actorName });

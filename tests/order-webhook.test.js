@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   updateOrderStatus: vi.fn(),
   extractOrderFromText: vi.fn(),
   buildOrderDraftKeyboard: vi.fn(),
+  buildOrderActionKeyboard: vi.fn(),
   buildOrderRetryKeyboard: vi.fn(),
   sendTelegramTextToChat: vi.fn(),
   answerTelegramCallbackQuery: vi.fn(),
@@ -24,7 +25,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/order-service", () => ({ createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
-vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
+vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderActionKeyboard: mocks.buildOrderActionKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage, buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction, isFallbackExtractionUsable: mocks.isFallbackExtractionUsable }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 
@@ -70,6 +71,7 @@ describe("Telegram order webhook safety gates", () => {
     mocks.updateOrderStatus.mockReset();
     mocks.extractOrderFromText.mockReset().mockResolvedValue({});
     mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
+    mocks.buildOrderActionKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
     mocks.buildOrderRetryKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "retry" }]] });
     mocks.sendTelegramTextToChat.mockReset().mockResolvedValue({ messageId: 99 });
     mocks.answerTelegramCallbackQuery.mockReset().mockResolvedValue({ ok: true });

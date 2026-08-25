@@ -11,6 +11,12 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();
+    const searchTerms = q ? Array.from(new Set([
+      q,
+      q.replace(/\s+/g, ""),
+      q.replace(/\([^)]*\)/g, "").replace(/\s+/g, ""),
+      Array.from(q.replace(/\s+/g, ""))[0],
+    ].filter(Boolean))) : [];
     const showDeleted = searchParams.get("deleted") === "true";
     const includeLedgers = searchParams.get("includeLedgers") !== "false";
 
@@ -49,8 +55,10 @@ export async function GET(request) {
           q
             ? {
                 OR: [
-                  { name: { startsWith: q, mode: "insensitive" } },
-                  { name: { contains: q, mode: "insensitive" } },
+                  ...searchTerms.flatMap((term) => [
+                    { name: { startsWith: term, mode: "insensitive" } },
+                    { name: { contains: term, mode: "insensitive" } },
+                  ]),
                   { phone: { contains: q, mode: "insensitive" } },
                   { routeTag: { contains: q, mode: "insensitive" } },
                 ],
