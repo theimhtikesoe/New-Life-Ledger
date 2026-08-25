@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 
 const numberFormat = new Intl.NumberFormat("en-US");
+const EMPTY_LIST = [];
 
 function formatDate(value) {
   if (!value) return "မရရှိသေးပါ";
@@ -57,8 +58,8 @@ export default function VercelBuildLogsPage() {
     loadLogs();
   }, [loadLogs]);
 
-  const deployments = data?.deployments || [];
-  const events = data?.events || [];
+  const deployments = data?.deployments || EMPTY_LIST;
+  const events = data?.events || EMPTY_LIST;
   const selectedDeployment = useMemo(() => deployments.find((deployment) => deployment.uid === selectedId) || null, [deployments, selectedId]);
 
   return (
