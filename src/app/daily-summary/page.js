@@ -301,9 +301,18 @@ export default function DailySummaryPage() {
     try {
       // Ask the server for the fingerprint-matched cache first. This prevents
       // a provider call when the day's underlying data has not changed.
-      const cacheBody = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}&cacheOnly=1`, { timeoutMs: AI_CACHE_CHECK_TIMEOUT_MS, signal: requestController.signal });
+      let cacheBody = null;
+      try {
+        cacheBody = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}&cacheOnly=1`, { timeoutMs: AI_CACHE_CHECK_TIMEOUT_MS, signal: requestController.signal });
+      } catch (cacheError) {
+        if (requestController.signal.aborted || !isCurrentRequest()) return;
+        // A cache probe is an optimization, not the explanation itself. If the
+        // PWA/network or a transient DB request prevents the probe, continue to
+        // the normal endpoint so its stale/fallback response can still help.
+        console.warn("Daily Summary cache probe failed; continuing to explanation request", cacheError);
+      }
       if (!isCurrentRequest()) return;
-      const cacheData = cacheBody.data || {};
+      const cacheData = cacheBody?.data || {};
       if (cacheData.explanation) {
         setAiExplanation(cacheData.explanation);
         setAiStale(Boolean(cacheData.stale));
@@ -319,7 +328,7 @@ export default function DailySummaryPage() {
       const currentUsage = getDailyAiUsage(actorName, date);
       if (currentUsage >= MAX_DAILY_AI_REQUESTS && !bypassLimit) {
         setAiUsage(currentUsage);
-        setAiError(`ဒီရက်မှာ အဖြေမထွက်သေးသော request များကြောင့် limit ပြည့်နေပါသည်။ အောက်က ပြန်ဖွင့်ရန်ကိုနှိပ်ပြီး AI ကို တစ်ကြိမ်ပြန်စမ်းနိုင်ပါသည်။`);
+        setAiError(`ဒီ Browser မှာ ဒီရက်အတွက် အသစ်ထွက်ပြီး အောင်မြင်ထားသော AI အဖြေ ${MAX_DAILY_AI_REQUESTS} ကြိမ် ပြည့်နေပါသည်။ ဒါသည် Manus account limit မဟုတ်ပါ။ အောက်က ခလုတ်ဖြင့် ဒီ Browser ၏ local limit ကို ပြန်စတင်ပြီး တစ်ကြိမ်ပြန်စမ်းနိုင်ပါသည်။`);
         return;
       }
 
@@ -376,12 +385,12 @@ export default function DailySummaryPage() {
               <button type="button" onClick={() => handleAiExplain()} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
                 {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanation ? "AI ရှင်းပြချက် ပြန်ကြည့်ရန်" : "AI ဖြင့် ရှင်းပြရန်"}
               </button>
-              <p className="text-right text-[11px] text-slate-500">အဖြေထွက်မှသာ AI အသုံးပြုမှု {aiUsage}/{MAX_DAILY_AI_REQUESTS} ကြိမ်</p>
+              <p className="text-right text-[11px] text-slate-500">ဒီ Browser မှာ အောင်မြင်သော AI အဖြေ {aiUsage}/{MAX_DAILY_AI_REQUESTS} ကြိမ် · Cache/Fallback မတွက်ပါ</p>
             </div>
           </div>
         </header>
 
-        {aiError && <section role="alert" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale || aiFallback ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale || aiFallback ? "text-amber-900" : "text-rose-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : aiFallback ? "အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်" : "AI ရှင်းပြချက် အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale || aiFallback ? "text-amber-800" : "text-rose-800"}`}>{aiError}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန် limit ပြန်ဖွင့်ပါ</button>}<button type="button" onClick={() => setAiError("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
+        {aiError && <section role="alert" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale || aiFallback ? "border-amber-200 bg-amber-50" : "border-rose-200 bg-rose-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale || aiFallback ? "text-amber-900" : "text-rose-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : aiFallback ? "အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်" : "AI ရှင်းပြချက် အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale || aiFallback ? "text-amber-800" : "text-rose-800"}`}>{aiError}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">ဒီ Browser limit ပြန်စတင်ပြီး AI ပြန်စမ်းရန်</button>}<button type="button" onClick={() => setAiError("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
         {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} source={aiSource} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}
