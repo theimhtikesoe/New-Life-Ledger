@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { buildDailySummaryReviewChecks } from "@/lib/daily-summary-review";
 
 const DEFAULT_MODEL = "gpt-5-mini";
 const MANUS_API_BASE = "https://api.manus.ai";
@@ -519,10 +520,13 @@ export function buildRuleBasedExplanation(payload = {}) {
     `${payload.date || "ရွေးထားသောရက်"} တွင် စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခု ရှိပါသည်။`,
     `ငွေချေမှု ${Number(summary.paidCount || 0).toLocaleString("en-US")} ခု၊ အကြွေးတိုးမှု ${Number(summary.debtCount || 0).toLocaleString("en-US")} ခု ရှိပါသည်။`,
   ];
-  const checks = [];
-  if (activityTotal !== totalTransactions) {
-    checks.push(`စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခုနှင့် လုပ်ဆောင်ချက်မှတ်တမ်း ${activityTotal.toLocaleString("en-US")} ခု မတူပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။`);
-  }
+  const checks = buildDailySummaryReviewChecks({
+    totalTransactions,
+    activityTotal,
+    events: Array.isArray(activity.events) ? activity.events : [],
+    summary,
+    customers,
+  });
   if (customers.length) findings.push(`Customer စာရင်း ${customers.length.toLocaleString("en-US")} ဦး ပါဝင်ပါသည်။`);
   else findings.push("ဒီရက်အတွက် Customer အလိုက် စာရင်းမရှိပါ။");
   return {

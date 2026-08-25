@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
+import { buildDailySummaryReviewChecks, transactionsToDailySummaryEvents } from "@/lib/daily-summary-review";
 import {
   recordDailyAiSuccess,
   resetDailyAiUsage,
@@ -66,9 +67,13 @@ function buildClientAutomaticExplanation(report, reportDate) {
   const debtCount = Number(summary.unpaidCount ?? summary.debtCount ?? 0);
   const activityCount = Number(summary.activityCount ?? summary.auditCount ?? 0);
   const customers = Array.isArray(report?.customers) ? report.customers : [];
-  const checks = activityCount !== totalTransactions
-    ? [`စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခုနှင့် လုပ်ဆောင်ချက်မှတ်တမ်း ${activityCount.toLocaleString("en-US")} ခု မတူပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။`]
-    : [];
+  const checks = buildDailySummaryReviewChecks({
+    totalTransactions,
+    activityTotal: activityCount,
+    events: transactionsToDailySummaryEvents(report?.transactions),
+    summary,
+    customers,
+  });
   return {
     overview: `${reportDate} အတွက် စာရင်းအချက်အလက်ကို အလိုအလျောက် အကျဉ်းချုပ်ပြထားပါသည်။ AI service ပြန်ကောင်းလာသောအခါ အသေးစိတ် ပြန်ရှင်းနိုင်ပါသည်။`,
     findings: [
