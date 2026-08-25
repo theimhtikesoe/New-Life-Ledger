@@ -1052,7 +1052,7 @@ The website now has an Orders page with draft review, requested-date and destina
 | Cap handling | `ပုံမှန် + အပို = requested total` is preserved; mismatch is warning-only |
 | Webhook safety | Wrong secret, wrong chat, ordinary messages, bot messages, and replayed update IDs are rejected/ignored in mocked tests |
 | Telegram callback safety | Non-admin callbacks are rejected; verified admins can Confirm/Batch/Cancel; optional selected-admin allowlist is checked before Telegram member lookup |
-| Build safety | Prisma validation/generation, 15 local tests, lint, whitespace check, and Next production build passed |
+| Build safety | Prisma validation/generation, 17 local tests, lint, whitespace check, and Next production build passed |
 | Migration safety | The drafted migration contains only new Order tables/indexes/foreign keys and no standalone DROP, TRUNCATE, DELETE, or UPDATE statements |
 
 This foundation is **not deployed, migrated, connected to Telegram, or sent to the factory**. The drafted Prisma migration has not been applied. No production Customer, Ledger, balance, audit, backup, restore, Telegram, or report data was changed. Before live rollout, the private Factory group must be created and configured, the bot must be made an administrator in the Order Intake group so `getChatMember` can be trusted, the order chat ID and webhook secret must be set server-side, the optional selected-admin list must be chosen if needed, the migration must be explicitly approved and applied, and one controlled Telegram test must be separately approved. Viber remains the current operational channel until that test is complete.
