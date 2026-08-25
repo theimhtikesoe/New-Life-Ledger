@@ -221,6 +221,23 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 95 }));
   });
 
+  it("uses complete deterministic data during retry without calling the provider", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_REVIEW", customer: null, sourceText: "မှာယူမှု ကိုသိမ်း\\n0.3 Liter အဖြူ\\n100 ဆံ့ 20 ကဒ်\\nတောင်ပေါ်ဂိတ်\\n27.8.2026" };
+    const completeFallback = { customerName: "ကိုသိမ်း", requestedDate: "2026-08-27", destination: "တောင်ပေါ်ဂိတ်", lines: [{ bottleType: "အဖြူ", capacityMl: 300, capacityLabel: "0.3 Liter", bottlesPerCard: 100, cardCount: 20, totalBottles: 2000 }], caps: [], missingFields: [], confidence: "low", notes: null };
+    const refreshed = { ...pending, status: "DRAFT", customer: null, missingFields: [] };
+    mocks.getOrderById.mockResolvedValue(pending);
+    mocks.buildFallbackOrderExtraction.mockReturnValue(completeFallback);
+    mocks.isFallbackExtractionUsable.mockReturnValue(true);
+    mocks.refreshOrderFromAi.mockResolvedValue(refreshed);
+    const update = { update_id: 203, callback_query: { id: "callback-retry-deterministic", data: `order|retry|I|${order.id}`, message: { message_id: 197, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("ai_retried");
+    expect(mocks.extractOrderFromText).not.toHaveBeenCalled();
+    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith({ orderId: order.id, extracted: completeFallback, actorName: "Staff" });
+  });
+
   it("keeps a visible retry action when AI retry fails", async () => {
     mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
     const pending = { ...order, status: "NEEDS_REVIEW", customer: null, sourceText: "/order မမိုး" };

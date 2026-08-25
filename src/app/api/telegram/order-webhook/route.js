@@ -189,7 +189,8 @@ async function handleCallback(update) {
         console.warn("Telegram AI retry progress message update failed", progressError);
       }
       try {
-        const extracted = await extractOrderFromText(current.sourceText);
+        const fallbackExtraction = buildFallbackOrderExtraction(current.sourceText);
+        const extracted = isFallbackExtractionUsable(fallbackExtraction) ? fallbackExtraction : await extractOrderFromText(current.sourceText);
         const refreshed = await refreshOrderFromAi({ orderId, extracted, actorName: "Staff" });
         await rememberCallbackMessage();
         await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(refreshed)}\n\n🔄 Telegram admin မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true }) });
