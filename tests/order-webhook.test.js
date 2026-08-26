@@ -167,7 +167,11 @@ describe("Telegram order webhook safety gates", () => {
       extracted: expect.objectContaining({ customerName: expect.any(String), requestedDate: expect.any(String), confidence: "low" }),
     }));
     expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order စာကို စစ်နေပါသည်") }));
-    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Draft အဖြစ် သိမ်းထားပါပြီ") }));
+    const fallbackCall = mocks.sendTelegramTextToChat.mock.calls.find(([payload]) => payload.replyToMessageId === 10 && payload.text.includes("Draft message"));
+    expect(fallbackCall?.[0]).toEqual(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Confirm သို့မဟုတ် Cancel") }));
+    expect(fallbackCall?.[0].text).not.toContain("AI ပြန်စမ်း");
+    expect(fallbackCall?.[0].replyMarkup).toEqual({ inline_keyboard: [] });
+    expect(mocks.buildOrderRetryKeyboard).not.toHaveBeenCalled();
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: fallbackOrder.id, chatId, messageId: 99 });
   });
 
@@ -238,7 +242,7 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith({ orderId: order.id, extracted: completeFallback, actorName: "Staff" });
   });
 
-  it("keeps a visible retry action when AI retry fails", async () => {
+  it("keeps the order actions without AI retry text when legacy AI retry fails", async () => {
     mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
     const pending = { ...order, status: "NEEDS_REVIEW", customer: null, sourceText: "/order မမိုး" };
     mocks.getOrderById.mockResolvedValue(pending);
@@ -247,11 +251,12 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("ai_retry_failed");
-    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-retry-failed", text: "AI ဖြင့် ပြန်စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။" }));
-    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(2);
-    expect(mocks.editTelegramMessageText.mock.calls[0][0].text).toContain("AI ဖြင့် ပြန်စစ်နေပါသည်");
-    expect(mocks.editTelegramMessageText.mock.calls[1][0].text).toContain("AI ပြန်စစ်ရာတွင် အဆင်မပြေသေးပါ");
-    expect(mocks.buildOrderRetryKeyboard).toHaveBeenCalledWith(pending, process.env.NEXT_PUBLIC_APP_URL);
+    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-retry-failed", text: "Order ကို ပြန်စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။" }));
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(1);
+    expect(mocks.editTelegramMessageText.mock.calls[0][0].text).toBe("Draft message");
+    expect(mocks.editTelegramMessageText.mock.calls[0][0].replyMarkup).toEqual({ inline_keyboard: [] });
+    expect(mocks.editTelegramMessageText.mock.calls[0][0].text).not.toContain("AI ပြန်စမ်း");
+    expect(mocks.buildOrderRetryKeyboard).not.toHaveBeenCalled();
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
   });
 
@@ -313,7 +318,7 @@ describe("Telegram order webhook safety gates", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("customer_linked");
     expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: linked.customer.id, actorName: "Staff" });
-    expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(linked, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true });
+    expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(linked, process.env.NEXT_PUBLIC_APP_URL);
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
   });
 
@@ -328,7 +333,7 @@ describe("Telegram order webhook safety gates", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("customer_created");
     expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "Customer အသစ်", phone: "0912345678", actorName: "Staff" });
-    expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(created, process.env.NEXT_PUBLIC_APP_URL, { allowRetry: true });
+    expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(created, process.env.NEXT_PUBLIC_APP_URL);
   });
 
   it("lets a verified administrator cancel directly and edits the original draft message", async () => {

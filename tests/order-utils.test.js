@@ -234,12 +234,12 @@ describe("missing-field and schema safeguards", () => {
     expect(normalized.missingFields).toEqual(expect.arrayContaining(["Customer အမည်", "ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"]));
   });
 
-  it("shows Confirm and Cancel for a linked complete Draft and keeps Batch under More actions", () => {
+  it("shows only Confirm and Cancel for a linked complete Draft and keeps Batch in More actions", () => {
     const order = { id: "11111111-1111-4111-8111-111111111111", status: "DRAFT", customer: { id: "customer-1" }, missingFields: [] };
     const keyboard = buildOrderActionKeyboard(order);
     expect(keyboard.inline_keyboard[0]).toEqual([{ text: "✅ Confirm", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" }]);
     expect(keyboard.inline_keyboard[1]).toEqual([{ text: "❌ Cancel", callback_data: "order|cancel|I|11111111-1111-4111-8111-111111111111" }]);
-    expect(keyboard.inline_keyboard[2]).toEqual([{ text: "⋯ အခြားလုပ်ဆောင်ချက်များ", callback_data: "order|menu|I|11111111-1111-4111-8111-111111111111" }]);
+    expect(keyboard.inline_keyboard).toHaveLength(2);
     expect(buildOrderMoreKeyboard(order).inline_keyboard[0]).toEqual([{ text: "📦 08:10 Batch ထည့်ရန်", callback_data: "order|confirm|B|11111111-1111-4111-8111-111111111111" }]);
     expect(buildOrderActionKeyboard({ ...order, status: "NEEDS_CUSTOMER", customer: null, missingFields: [], sourceText: "မှာယူမှု" }, "", { allowRetry: true }).inline_keyboard[0][0].text).toBe("👤 ရှိပြီးသား Customer ချိတ်ရန်");
   });
