@@ -193,42 +193,6 @@ export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-function CashSaleHistory({ cashSales = [] }) {
-  if (!cashSales.length) return null;
-  return (
-    <section className="mb-6 rounded-xl border border-cyan-200 bg-cyan-50/50 p-3 shadow-sm sm:p-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-base font-semibold text-cyan-950">လက်ငင်းရောင်းစာရင်း</h3>
-          <p className="mt-1 text-xs leading-5 text-cyan-800">ဒီစာရင်းသည် ရောင်းပြီးလက်ငင်းရှင်းထားသောမှတ်တမ်းဖြစ်ပြီး Customer လက်ကျန်ထဲ မဝင်ပါ။</p>
-        </div>
-        <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-bold text-cyan-900">{cashSales.length} ခု</span>
-      </div>
-      <div className="mt-3 space-y-2 md:hidden">
-        {cashSales.map((sale) => (
-          <article key={sale.id} className="rounded-lg border border-cyan-100 bg-white px-3 py-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-slate-500">{formatDate(sale.date)}</p>
-              <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-semibold text-cyan-900">လက်ငင်းရောင်း</span>
-            </div>
-            <p className="mt-1 text-lg font-bold text-cyan-800">{formatMoney(sale.amount)}</p>
-            <p className="mt-1 text-xs text-slate-600">ငွေပေးချေမှု: {sale.paymentType || "CASH"}</p>
-            {sale.note ? <p className="mt-1 text-xs text-slate-600">မှတ်ချက်: {sale.note}</p> : null}
-          </article>
-        ))}
-      </div>
-      <div className="mt-3 hidden overflow-x-auto rounded-lg border border-cyan-100 bg-white md:block">
-        <table className="w-full text-left text-sm text-slate-700">
-          <thead className="bg-cyan-50 text-xs text-cyan-950"><tr><th className="px-3 py-2">ရက်စွဲ</th><th className="px-3 py-2">အမျိုးအစား</th><th className="px-3 py-2 text-right">ပမာဏ</th><th className="px-3 py-2">ငွေပေးချေမှု</th><th className="px-3 py-2">မှတ်ချက်</th></tr></thead>
-          <tbody className="divide-y divide-cyan-100">
-            {cashSales.map((sale) => <tr key={sale.id}><td className="px-3 py-2 text-xs">{formatDate(sale.date)}</td><td className="px-3 py-2 text-xs font-semibold text-cyan-800">လက်ငင်းရောင်း</td><td className="px-3 py-2 text-right font-semibold text-cyan-800">{formatMoney(sale.amount)}</td><td className="px-3 py-2 text-xs">{sale.paymentType || "CASH"}</td><td className="max-w-[240px] truncate px-3 py-2 text-xs">{sale.note || "-"}</td></tr>)}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
 export default function Dashboard({ view = "overview" }) {
   const isLedgerView = view === "ledger";
   const [customers, setCustomers] = useState([]);
@@ -928,7 +892,7 @@ export default function Dashboard({ view = "overview" }) {
       });
       clearDashboardDraftFields(["ledgerForm"]);
       
-      showAlert(isCashSale ? "လက်ငင်းရောင်းစာရင်းကို သီးခြားသိမ်းဆည်းပြီးပါပြီ။ Customer လက်ကျန် မပြောင်းပါ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
+      showAlert(isCashSale ? "လက်ငင်း Transaction သိမ်းဆည်းပြီးပါပြီ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
       setMessage(error.message);
       showAlert(error.message, "error");
@@ -939,50 +903,76 @@ export default function Dashboard({ view = "overview" }) {
     }
   }
 
-  async function deleteTransaction(id) {
+  async function deleteTransaction(transaction) {
+    const id = typeof transaction === "string" ? transaction : transaction?.id;
+    const isCashSale = typeof transaction === "object" && transaction?.type === "CASH_SALE";
     if (!id || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
-      const result = await api(`/api/transactions/${id}`, {
-        method: "DELETE",
-      });
+      const result = await api(
+        isCashSale
+          ? `/api/customers/${selectedCustomerId}/cash-sales/${id}`
+          : `/api/transactions/${id}`,
+        { method: "DELETE" },
+      );
 
-      // Update balance and transaction list
       if (result) {
-        setSelectedCustomer((prev) => ({
-          ...prev,
-          current_balance: result.newBalance,
-          ledgers: prev.ledgers.filter((l) => l.id !== id),
-        }));
+        if (isCashSale) {
+          // CashSale is separate from Ledger and must never change the balance.
+          setSelectedCustomer((prev) => prev ? {
+            ...prev,
+            cashSales: (prev.cashSales || []).filter((sale) => sale.id !== id),
+          } : prev);
+          setCustomers((prev) => prev.map((customer) => (
+            customer.id === result.customerId
+              ? { ...customer, cashSales: (customer.cashSales || []).filter((sale) => sale.id !== id) }
+              : customer
+          )));
+          setAllCustomersForKPI((prev) => prev.map((customer) => (
+            customer.id === result.customerId
+              ? { ...customer, cashSales: (customer.cashSales || []).filter((sale) => sale.id !== id) }
+              : customer
+          )));
+        } else {
+          setSelectedCustomer((prev) => ({
+            ...prev,
+            current_balance: result.newBalance,
+            ledgers: prev.ledgers.filter((ledger) => ledger.id !== id),
+          }));
 
-        setCustomers((prev) =>
-          prev.map((c) =>
-            c.id === result.customerId
-              ? {
-                  ...c,
-                  current_balance: result.newBalance,
-                  ledgers: c.ledgers?.filter((l) => l.id !== id),
-                }
-              : c
-          )
-        );
-        
-        // Also update allCustomersForKPI to reflect in summary metrics
-        setAllCustomersForKPI(prev => 
-          prev.map(c => 
-            c.id === result.customerId 
-              ? { 
-                  ...c, 
-                  current_balance: result.newBalance,
-                  ledgers: c.ledgers?.filter(l => l.id !== id)
-                } 
-              : c
-          )
-        );
+          setCustomers((prev) =>
+            prev.map((customer) =>
+              customer.id === result.customerId
+                ? {
+                    ...customer,
+                    current_balance: result.newBalance,
+                    ledgers: customer.ledgers?.filter((ledger) => ledger.id !== id),
+                  }
+                : customer
+            )
+          );
+
+          setAllCustomersForKPI((prev) =>
+            prev.map((customer) =>
+              customer.id === result.customerId
+                ? {
+                    ...customer,
+                    current_balance: result.newBalance,
+                    ledgers: customer.ledgers?.filter((ledger) => ledger.id !== id),
+                  }
+                : customer
+            )
+          );
+        }
       }
 
-      showAlert("Transaction ကို ဖျက်ပြီးပါပြီ။", "success");
+      showAlert(
+        isCashSale
+          ? "လက်ငင်းမှတ်တမ်းကို ဖျက်ပြီးပါပြီ။ Customer လက်ကျန် မပြောင်းပါ။"
+          : "Transaction ကို ဖျက်ပြီးပါပြီ။",
+        "success",
+      );
       setDeletingTransaction(null);
     } catch (error) {
       showAlert(error.message, "error");
@@ -1006,7 +996,7 @@ export default function Dashboard({ view = "overview" }) {
       setShowPinModal(false);
       setPinValue("");
       if (deletingTransaction) {
-        await deleteTransaction(deletingTransaction.id);
+        await deleteTransaction(deletingTransaction);
       }
     } catch (error) {
       setPinError(error.message || "PIN code မှားနေပါသည်။");
@@ -1860,8 +1850,6 @@ export default function Dashboard({ view = "overview" }) {
                           လက်ငင်းရောင်း
                         </button>
                       </div>
-                      {ledgerForm.type === "CASH_SALE" ? <p className="-mt-1 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs leading-5 text-cyan-900">လက်ငင်းရောင်းကို သီးခြားစာရင်းအဖြစ် သိမ်းပါမည်။ အကြွေးလက်ကျန် မတိုး၊ ငွေချေမှတ်တမ်းလည်း ထပ်မရေးရပါ။</p> : null}
-
                       <div className="space-y-3">
                         <div className="space-y-1.5">
                           <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">ရက်စွဲ</label>
@@ -1927,8 +1915,6 @@ export default function Dashboard({ view = "overview" }) {
                   </div>
                 </div>
 
-                <CashSaleHistory cashSales={selectedCustomer.cashSales || []} />
-
                 <div className="mt-8">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းမှတ်တမ်း (Transactions)</h3>
@@ -1960,7 +1946,7 @@ export default function Dashboard({ view = "overview" }) {
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.paymentType || "-"}</p></div>
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
                       </div>
-                      {ledger.type === "CASH_SALE" ? <p className="mt-2 rounded-md bg-cyan-50 px-2 py-1.5 text-center text-xs font-medium text-cyan-700">လက်ငင်းရောင်း — လက်ကျန်မပြောင်း</p> : <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>}
+                      <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
                     </article>
                   )) : <div className="rounded-lg border border-slate-200 px-3 py-6 text-center text-sm text-slate-500">Transaction မရှိသေးပါ။</div>}</div>
 
@@ -2010,18 +1996,18 @@ export default function Dashboard({ view = "overview" }) {
                                 {ledger.note || "-"}
                               </td>
                               <td className="px-4 py-3 text-center">
-                                {ledger.type === "CASH_SALE" ? <span className="text-xs font-medium text-cyan-700">လက်ငင်း · လက်ကျန်မပြောင်း</span> : <button
+                                <button
                                   type="button"
                                   onClick={() => setDeletingTransaction(ledger)}
                                   className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-                                  title="Delete transaction"
+                                  title={ledger.type === "CASH_SALE" ? "Delete cash sale" : "Delete transaction"}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M3 6h18"></path>
                                     <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                                     <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                                   </svg>
-                                </button>}
+                                </button>
                               </td>
                             </tr>
                           ))
@@ -2602,8 +2588,8 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <div className="flex justify-between mb-1">
                 <span className="text-slate-500">Type:</span>
-                <span className={`font-medium ${deletingTransaction.type === 'CREDIT' ? 'text-rose-600' : 'text-emerald-600'}`}>
-                  {deletingTransaction.type === 'CREDIT' ? 'အကြွေးတိုး' : 'ငွေချေ'}
+                <span className={`font-medium ${deletingTransaction.type === 'CASH_SALE' ? 'text-cyan-600' : deletingTransaction.type === 'CREDIT' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  {deletingTransaction.type === 'CASH_SALE' ? 'လက်ငင်း' : deletingTransaction.type === 'CREDIT' ? 'အကြွေးတိုး' : 'ငွေချေ'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -2612,7 +2598,7 @@ export default function Dashboard({ view = "overview" }) {
               </div>
             </div>
             <p className="mt-4 text-sm text-slate-600">
-              ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။ စာရင်းဇယားများ ပြန်လည်ချိန်ညှိသွားပါမည်။
+              ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍မရပါ။ {deletingTransaction.type === 'CASH_SALE' ? 'လက်ငင်းမှတ်တမ်းကိုသာ ဖျက်ပြီး Customer လက်ကျန် မပြောင်းပါ။' : 'စာရင်းဇယားများ ပြန်လည်ချိန်ညှိသွားပါမည်။'}
             </p>
             <div className="mt-6 flex gap-3">
               <button
