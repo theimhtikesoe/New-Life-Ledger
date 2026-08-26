@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
+import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -75,7 +76,7 @@ export async function POST(request, { params }) {
       const cashSale = await tx.cashSale.create({
         data: {
           customerId: customer.id,
-          saleType: String(body.saleType || "RETAIL").trim() || "RETAIL",
+          saleType: normalizeCashSaleType(body.saleType),
           itemSize: body.itemSize?.trim() || null,
           cartons: parseOptionalInteger(body.cartons),
           rate: parseOptionalInteger(body.rate),
@@ -95,7 +96,7 @@ export async function POST(request, { params }) {
         entityId: cashSale.id,
         entityLabel: customer.name,
         summary: `${customer.name} လက်ငင်းရောင်း ${amount.toLocaleString()} Ks`,
-        metadata: { customerId: customer.id, amount, paymentType: cashSale.paymentType, note: cashSale.note, date: cashSale.date },
+        metadata: { customerId: customer.id, amount, paymentType: cashSale.paymentType, saleType: cashSale.saleType, note: cashSale.note, date: cashSale.date },
       });
       return { cashSale };
     });

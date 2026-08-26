@@ -69,6 +69,18 @@ describe("CashSale route", () => {
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "CASH_SALE", entityType: "CashSale", entityId: cashSale.id, entityLabel: customer.name }));
   });
 
+  it("normalizes and records the wholesale cash-sale type without touching balance", async () => {
+    const wholesale = { ...cashSale, saleType: "WHOLESALE" };
+    mocks.cashSaleCreate.mockResolvedValue(wholesale);
+    const response = await POST(request({ amount: 1000000, saleType: "wholesale", paymentType: "CASH", date: "2026-08-26" }), { params: { id: customer.id } });
+    const body = await response.json();
+    expect(response.status).toBe(201);
+    expect(body.data.cashSale.saleType).toBe("WHOLESALE");
+    expect(mocks.cashSaleCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ saleType: "WHOLESALE" }) }));
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ saleType: "WHOLESALE" }) }));
+    expect(mocks.customerUpdate).not.toHaveBeenCalled();
+  });
+
   it("lists cash-sale records separately", async () => {
     mocks.cashSaleFindMany.mockResolvedValue([cashSale]);
     mocks.cashSaleCount.mockResolvedValue(1);

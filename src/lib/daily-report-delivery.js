@@ -1,6 +1,7 @@
 import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailyActivityImage } from "@/lib/daily-report";
 import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 
 export async function runDailyReport({ date } = {}) {
   const startedAt = Date.now();
@@ -11,6 +12,9 @@ export async function runDailyReport({ date } = {}) {
     createDailyActivityImage(report),
   ]);
   const activityCount = (report.activityLogs || []).length;
+  const cashSaleTypeLines = Object.entries(report.summary.cashSaleTypes || {})
+    .filter(([, detail]) => Number(detail?.count || 0) > 0)
+    .map(([type, detail]) => `   • <b>${cashSaleTypeLabel(type)}</b> <code>${detail.count} ခု</code> <b>${Number(detail.amount || 0).toLocaleString()} ကျပ်</b>`);
   const caption = [
     "<b>NEW LIFE LEDGER</b>",
     "<b>နေ့စဉ် လုပ်ငန်းစာရင်းချုပ်</b>",
@@ -21,6 +25,7 @@ export async function runDailyReport({ date } = {}) {
     `🟢 <b>ငွေချေ</b>  <code>${report.summary.paidCount} ခု</code>  <b>${report.summary.paidAmount.toLocaleString()} ကျပ်</b>`,
     `🔴 <b>အကြွေးတိုး</b>  <code>${report.summary.debtCount} ခု</code>  <b>${report.summary.debtAmount.toLocaleString()} ကျပ်</b>`,
     `🟣 <b>လက်ငင်းရောင်း</b>  <code>${report.summary.cashCount || 0} ခု</code>  <b>${(report.summary.cashAmount || 0).toLocaleString()} ကျပ်</b>`,
+    ...cashSaleTypeLines,
     `🔵 <b>စုစုပေါင်းစာရင်း</b>  <code>${report.summary.totalTransactions} ခု</code>`,
     activityCount > 0 ? `🟣 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>  <code>${activityCount} ခု</code>` : null,
     "",
@@ -44,6 +49,7 @@ export async function runDailyReport({ date } = {}) {
       debtIncrease: report.summary.debtCount,
       cashSales: report.summary.cashCount || 0,
       cashAmount: report.summary.cashAmount || 0,
+      cashSaleTypes: report.summary.cashSaleTypes || {},
       transactions: report.summary.totalTransactions,
       auditActions: report.summary.auditCount,
       activityActions: activityCount,

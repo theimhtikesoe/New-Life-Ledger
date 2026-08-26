@@ -55,7 +55,8 @@ describe("Daily Summary activity count", () => {
     expect(body.data.summary.cashCount).toBe(1);
     expect(body.data.summary.cashAmount).toBe(50000);
     expect(body.data.summary.cashPaymentTypes).toEqual({ CASH: 50000 });
-    expect(body.data.customers[0]).toMatchObject({ cashCount: 1, cashAmount: 50000 });
+    expect(body.data.summary.cashSaleTypes).toEqual({ RETAIL: { count: 1, amount: 50000 }, WHOLESALE: { count: 0, amount: 0 } });
+    expect(body.data.customers[0]).toMatchObject({ cashCount: 1, cashAmount: 50000, cashRetailCount: 1, cashRetailAmount: 50000, cashWholesaleCount: 0, cashWholesaleAmount: 0 });
     const auditWhere = mocks.auditFindMany.mock.calls[0][0].where;
     expect(auditWhere.AND).toEqual(expect.arrayContaining([
       { NOT: { action: "DAILY_REPORT_SENT" } },

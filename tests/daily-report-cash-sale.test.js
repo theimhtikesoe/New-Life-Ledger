@@ -43,6 +43,7 @@ const ledger = {
 const cashSale = {
   id: "cash-sale-1",
   date: new Date("2026-08-25T09:00:00.000Z"),
+  saleType: "WHOLESALE",
   amount: 50000,
   paymentType: "KPay",
   customer: { id: "customer-2", name: "လက်ငင်း Customer" },
@@ -69,9 +70,10 @@ describe("Telegram daily report CashSale data", () => {
       cashAmount: 50000,
       totalTransactions: 1,
       cashPaymentTypes: { KPay: 50000 },
+      cashSaleTypes: { RETAIL: { count: 0, amount: 0 }, WHOLESALE: { count: 1, amount: 50000 } },
     });
     expect(report.customers).toEqual(expect.arrayContaining([
-      expect.objectContaining({ customerName: "လက်ငင်း Customer", paidCount: 0, debtCount: 0, cashCount: 1, cashAmount: 50000 }),
+      expect.objectContaining({ customerName: "လက်ငင်း Customer", paidCount: 0, debtCount: 0, cashCount: 1, cashAmount: 50000, cashRetailCount: 0, cashWholesaleCount: 1, cashWholesaleAmount: 50000 }),
     ]));
     expect(report.activityLogs.filter((log) => log.entityType === "CashSale")).toHaveLength(1);
     expect(report.activityLogs.find((log) => log.entityType === "CashSale")).toMatchObject({ action: "CASH_SALE", entityLabel: "လက်ငင်း Customer" });

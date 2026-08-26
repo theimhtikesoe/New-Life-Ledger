@@ -3,6 +3,7 @@ import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { buildDailySummaryReviewChecks } from "@/lib/daily-summary-review";
+import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
 
 const DEFAULT_MODEL = "gpt-5-mini";
 const MANUS_API_BASE = "https://api.manus.ai";
@@ -152,6 +153,7 @@ export async function getAiDailySummaryPayload(dateParam) {
       select: {
         id: true,
         date: true,
+        saleType: true,
         amount: true,
         paymentType: true,
         customer: { select: { name: true } },
@@ -189,6 +191,7 @@ export async function getAiDailySummaryPayload(dateParam) {
     totalTransactions: ledgers.length,
     paymentTypes: {},
     cashPaymentTypes: {},
+    cashSaleTypes: summarizeCashSalesByType(cashSales),
   };
   const customerMap = new Map();
   const ledgerById = new Map(ledgers.map((ledger) => [String(ledger.id), ledger]));
@@ -205,6 +208,10 @@ export async function getAiDailySummaryPayload(dateParam) {
       debtAmount: 0,
       cashCount: 0,
       cashAmount: 0,
+      cashRetailCount: 0,
+      cashRetailAmount: 0,
+      cashWholesaleCount: 0,
+      cashWholesaleAmount: 0,
     };
     if (ledger.type === "DEBIT") {
       summary.paidCount += 1;
@@ -233,9 +240,21 @@ export async function getAiDailySummaryPayload(dateParam) {
       debtAmount: 0,
       cashCount: 0,
       cashAmount: 0,
+      cashRetailCount: 0,
+      cashRetailAmount: 0,
+      cashWholesaleCount: 0,
+      cashWholesaleAmount: 0,
     };
+    const saleType = normalizeCashSaleType(cashSale.saleType);
     current.cashCount += 1;
     current.cashAmount += amount;
+    if (saleType === "WHOLESALE") {
+      current.cashWholesaleCount += 1;
+      current.cashWholesaleAmount += amount;
+    } else {
+      current.cashRetailCount += 1;
+      current.cashRetailAmount += amount;
+    }
     const paymentType = cashSale.paymentType || "CASH";
     summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + amount;
     customerMap.set(name, current);
@@ -255,10 +274,11 @@ export async function getAiDailySummaryPayload(dateParam) {
     const linkedLedger = log.entityType === "Ledger" ? ledgerById.get(String(log.entityId)) : null;
     const linkedCashSale = log.entityType === "CashSale" ? cashSaleById.get(String(log.entityId)) : null;
     return {
-      action: actionLabel(log.action),
+      action: linkedCashSale ? `လက်ငင်းရောင်း (${normalizeCashSaleType(linkedCashSale.saleType) === "WHOLESALE" ? "လက်ကား" : "လက်လီ"})` : actionLabel(log.action),
       entityType: safeName(log.entityType),
       customerName: safeName(log.entityLabel),
       amount: linkedLedger ? roundAmount(linkedLedger.amount) : linkedCashSale ? roundAmount(linkedCashSale.amount) : null,
+      saleType: linkedCashSale ? normalizeCashSaleType(linkedCashSale.saleType) : null,
       eventAt: new Date(log.createdAt).toISOString(),
       source: "audit",
     };
@@ -267,10 +287,11 @@ export async function getAiDailySummaryPayload(dateParam) {
   for (const cashSale of cashSales) {
     if (auditedCashSaleIds.has(String(cashSale.id))) continue;
     activities.push({
-      action: "လက်ငင်းရောင်း",
+      action: `လက်ငင်းရောင်း (${normalizeCashSaleType(cashSale.saleType) === "WHOLESALE" ? "လက်ကား" : "လက်လီ"})`,
       entityType: "CashSale",
       customerName: safeName(cashSale.customer?.name),
       amount: roundAmount(cashSale.amount),
+      saleType: normalizeCashSaleType(cashSale.saleType),
       eventAt: new Date(cashSale.date).toISOString(),
       source: "cash-sale",
     });
@@ -579,10 +600,15 @@ export function buildRuleBasedExplanation(payload = {}) {
   const customers = Array.isArray(payload.customers) ? payload.customers : [];
   const totalTransactions = Number(summary.totalTransactions || 0);
   const activityTotal = Number(activity.total || 0);
+  const cashTypeFinding = Object.entries(summary.cashSaleTypes || {})
+    .filter(([, detail]) => Number(detail?.count || 0) > 0)
+    .map(([type, detail]) => `${cashSaleTypeLabel(type)} ${Number(detail.count).toLocaleString("en-US")} ခု / ${Number(detail.amount || 0).toLocaleString("en-US")} ကျပ်`)
+    .join("၊ ");
   const findings = [
     `${payload.date || "ရွေးထားသောရက်"} တွင် စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခု ရှိပါသည်။`,
     `ငွေချေမှု ${Number(summary.paidCount || 0).toLocaleString("en-US")} ခု၊ အကြွေးတိုးမှု ${Number(summary.debtCount || 0).toLocaleString("en-US")} ခု ရှိပါသည်။`,
     Number(summary.cashCount || 0) > 0 ? `လက်ငင်းရောင်း ${Number(summary.cashCount).toLocaleString("en-US")} ခု၊ ${Number(summary.cashAmount || 0).toLocaleString("en-US")} ကျပ် ရှိပါသည်။` : null,
+    cashTypeFinding ? `လက်ငင်းအမျိုးအစား — ${cashTypeFinding}။` : null,
   ];
   const checks = buildDailySummaryReviewChecks({
     totalTransactions,
