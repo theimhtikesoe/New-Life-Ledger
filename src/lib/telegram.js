@@ -150,7 +150,9 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
   if (!id) return undefined;
   const blocked = ["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(String(order?.status || ""));
   const missingFields = Array.isArray(order?.missingFields) ? order.missingFields : [];
-  const canConfirm = !blocked && Boolean(order?.customer?.id) && missingFields.length === 0;
+  const blockingMissingFields = missingFields.filter((field) => !/^(?:Customer|ဖောက်သည်)/iu.test(String(field).trim()));
+  const hasCustomer = Boolean(order?.customer?.id || order?.customerId);
+  const canConfirm = !blocked && hasCustomer && blockingMissingFields.length === 0;
   const rows = [];
   if (canConfirm) {
     rows.push([{ text: "✅ Confirm", callback_data: `order|confirm|I|${id}` }]);

@@ -380,20 +380,21 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
           ? "❌ Order Cancel ပြီး"
           : "🟡 New Life Order";
   const lines = (order.lines || []).map((line, index) => {
-    const capacity = line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "မသတ်မှတ်ရသေး");
-    const cards = line.cardCount ? line.cardCount.toLocaleString() : "မသတ်မှတ်ရသေး";
-    const perCard = line.bottlesPerCard ? line.bottlesPerCard.toLocaleString() : "မသတ်မှတ်ရသေး";
-    const bottles = line.totalBottles ? line.totalBottles.toLocaleString() : "မတွက်နိုင်သေး";
+    const parts = [line.bottleType || "ဘူး", line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "")].filter(Boolean);
+    const quantity = [line.cardCount ? `${line.cardCount.toLocaleString()} ကဒ်` : "", line.bottlesPerCard ? `${line.bottlesPerCard.toLocaleString()} ဘူး` : ""].filter(Boolean).join(" × ");
+    const total = line.totalBottles ? ` = ${line.totalBottles.toLocaleString()} ဘူး` : "";
     const quotedAmount = line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : "";
-    return `${index + 1}. ${line.bottleType || "ဘူး"} — ${capacity}\n   ${cards} ကဒ် × ${perCard} ဘူး = ${bottles} ဘူး${quotedAmount}`;
+    return `${index + 1}. ${parts.join(" — ")}${quantity ? `\n   ${quantity}${total}` : ""}${quotedAmount}`;
   });
-  const caps = (order.caps || []).map((cap) => `- ${cap.capType}: ပုံမှန် ${(cap.normalPcs || 0).toLocaleString()} pcs + အပို ${(cap.extraPcs || 0).toLocaleString()} pcs`);
+  const caps = (order.caps || []).map((cap) => {
+    const normal = Number(cap.normalPcs || 0) > 0 ? `${Number(cap.normalPcs).toLocaleString()} pcs` : "";
+    const extra = Number(cap.extraPcs || 0) > 0 ? ` + အပို ${Number(cap.extraPcs).toLocaleString()} pcs` : "";
+    return `- ${cap.capType || "အဖုံး"}: ${normal}${extra}`.replace(/: $/u, ":");
+  });
   const pickupTime = String(order.aiNotes || "").match(/လာယူချိန်\s*[:：]\s*(.+)$/u)?.[1]?.trim() || "";
   const sourcePreview = includeSource ? String(order.sourceText || "").trim().slice(0, 1200).replace(/```/g, "'''\n") : "";
   const customerName = order.customer?.name || order.draftCustomerName || "မတွေ့သေးပါ";
-  const customerLine = order.customer?.id
-    ? `Customer: ${customerName} ✅ Website မှာရှိပြီးသား Customer နှင့် ချိတ်ထားပြီး`
-    : `Customer: ${customerName} ⚠️ Customer မချိတ်ရသေး`;
+  const customerLine = `Customer: ${customerName}`;
   return [
     heading,
     customerLine,
@@ -408,13 +409,12 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
     order.paymentType || order.paymentNote ? ["", `ငွေရှင်း: ${order.paymentType || order.paymentNote}`] : [],
     order.receiptNote ? [`ပြေစာ/ပစ္စည်းစာ: ${order.receiptNote}`] : [],
     sourcePreview ? ["", "မူရင်းမှာယူစာ:", "```", sourcePreview, "```"] : [],
-    includeActions ? ["", "အောက်က ခလုတ်ကို အသုံးပြုပါ။"] : [],
   ].flat(Infinity).filter((line) => line !== null && line !== undefined && line !== "").join("\n").trim();
 }
 
 export function formatFactoryOrderMessage(order, { batch = false, source = "WEBSITE" } = {}) {
   const totals = calculateOrderTotals(order);
-  const capLines = (order.caps || []).map((cap) => `- ${cap.capType}: ပုံမှန် ${(cap.normalPcs || 0).toLocaleString()} pcs + အပို ${(cap.extraPcs || 0).toLocaleString()} pcs = ${(cap.requestedTotalPcs || 0).toLocaleString()} pcs`);
+  const capLines = (order.caps || []).map((cap) => `- ${cap.capType || "အဖုံး"}: ${(cap.normalPcs || 0).toLocaleString()} pcs${Number(cap.extraPcs || 0) > 0 ? ` + အပို ${Number(cap.extraPcs).toLocaleString()} pcs` : ""} = ${(cap.requestedTotalPcs || 0).toLocaleString()} pcs`);
   const lineLines = (order.lines || []).map((line, index) => `${index + 1}. ${line.bottleType || "ဘူး"} / ${line.capacityLabel || `${line.capacityMl || "?"} ml`} / ${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`);
   const factoryNumber = Number.isInteger(order.factoryOrderNumber) && order.factoryOrderNumber > 0 ? ` ${order.factoryOrderNumber}` : "";
   const sourceLabel = source === "TELEGRAM"
@@ -475,7 +475,7 @@ export function formatFactoryBatchMessage(orders) {
     });
     lines.push(`   စုစုပေါင်း: ${totals.totalCards} ကဒ် / ${totals.totalBottles} ဘူး`);
     (order.caps || []).forEach((cap) => {
-      lines.push(`   • ${cap.capType}: ${cap.normalPcs || 0} pcs + အပို ${cap.extraPcs || 0} pcs = ${cap.requestedTotalPcs || 0} pcs`);
+      lines.push(`   • ${cap.capType || "အဖုံး"}: ${cap.normalPcs || 0} pcs${Number(cap.extraPcs || 0) > 0 ? ` + အပို ${Number(cap.extraPcs).toLocaleString()} pcs` : ""} = ${cap.requestedTotalPcs || 0} pcs`);
     });
     lines.push("");
   });
