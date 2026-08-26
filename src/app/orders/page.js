@@ -73,26 +73,47 @@ function actorHeaders() {
   return { "x-actor-name": encodeActorHeader(localStorage.getItem("actorName") || "Staff") };
 }
 
+function isTransientRequestError(error) {
+  const message = String(error?.message || "").trim();
+  return error?.name === "TypeError" || error?.name === "TimeoutError" || /^(Failed to fetch|NetworkError|Load failed|Request timed out|Type error)$/i.test(message);
+}
+
+function waitForRequestRetry(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
 async function requestJson(path, options = {}) {
   const { timeoutMs = 15000, ...fetchOptions } = options;
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(path, {
-      ...fetchOptions,
-      signal: controller.signal,
-      headers: { ...(fetchOptions.body ? { "Content-Type": "application/json" } : {}), ...actorHeaders(), ...(fetchOptions.headers || {}) },
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || body.ok === false) throw new Error(body.error || `Order request မအောင်မြင်ပါ (${response.status})။`);
-    return body;
-  } catch (error) {
-    if (error?.name === "AbortError") throw new Error("Order data ရယူရန် အချိန်ကျော်ပါပြီ။ ခဏနေရင် ပြန်စမ်းပါ။");
-    if (!error?.message) throw new Error("Order data ရယူရာတွင် အဆင်မပြေပါ။");
-    throw error;
-  } finally {
-    window.clearTimeout(timeout);
+  const canRetry = String(fetchOptions.method || "GET").toUpperCase() === "GET";
+  let lastError;
+  for (let attempt = 0; attempt < (canRetry ? 3 : 1); attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(path, {
+        ...fetchOptions,
+        signal: controller.signal,
+        cache: "no-store",
+        headers: { ...(fetchOptions.body ? { "Content-Type": "application/json" } : {}), ...actorHeaders(), ...(fetchOptions.headers || {}) },
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || body.ok === false) throw new Error(body.error || `Order request မအောင်မြင်ပါ (${response.status})။`);
+      return body;
+    } catch (error) {
+      lastError = error;
+      if (canRetry && attempt < 2 && isTransientRequestError(error)) {
+        await waitForRequestRetry(350 * (attempt + 1));
+        continue;
+      }
+      if (error?.name === "AbortError") throw new Error("Order data ရယူရန် အချိန်ကျော်ပါပြီ။ ခဏနေရင် ပြန်စမ်းပါ။");
+      if (isTransientRequestError(error)) throw new Error("Server connection ခဏမတည်ငြိမ်ပါ။ လက်ရှိစာရင်းကို ဆက်ပြထားပြီး နောက် refresh မှာ ပြန်စမ်းပါမယ်။");
+      if (!error?.message) throw new Error("Order data ရယူရာတွင် အဆင်မပြေပါ။");
+      throw error;
+    } finally {
+      window.clearTimeout(timeout);
+    }
   }
+  throw lastError || new Error("Order data ရယူရာတွင် အဆင်မပြေပါ။");
 }
 
 function OrderLines({ order }) {
@@ -251,8 +272,10 @@ export default function OrdersPage() {
 
   const load = useCallback(async ({ silent = false } = {}) => {
     const requestId = ++loadRequestRef.current;
-    if (!silent) setLoading(true);
-    setError("");
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const orderQuery = viewMode === "TRASH"
         ? "/api/orders?view=trash&limit=200"
@@ -279,7 +302,8 @@ export default function OrdersPage() {
       const auxiliaryFailed = [settingResult, historyResult, trashResult].some((result) => result.status === "rejected");
       if (auxiliaryFailed) setMessage("Order စာရင်းကို ပြထားပါပြီ။ အချို့အချက်အလက်များ မရသေးပါ၊ ခဏနေရင် ပြန်စစ်ပါမယ်။");
     } catch (err) {
-      setError(err.message);
+      if (!silent) setError(err.message);
+      else console.warn("Orders background refresh skipped:", err);
     } finally {
       if (!silent && requestId === loadRequestRef.current) setLoading(false);
     }
