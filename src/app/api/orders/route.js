@@ -15,6 +15,9 @@ import {
   restoreOrder,
   restoreCancelledOrder,
   deleteCancelledOrderPermanently,
+  moveHistoryOrderToTrash,
+  restoreHistoryTrashOrder,
+  deleteHistoryTrashOrderPermanently,
   refreshOrderFromAi,
   getOrderById,
   updateOrderStatus,
@@ -174,8 +177,20 @@ export async function PATCH(request) {
       const data = await deleteCancelledOrderPermanently({ orderId, actorName });
       return NextResponse.json({ ok: true, data });
     }
+    if (action === "history_trash") {
+      const data = await moveHistoryOrderToTrash({ orderId, actorName });
+      return NextResponse.json({ ok: true, data });
+    }
+    if (action === "history_trash_restore") {
+      const data = await restoreHistoryTrashOrder({ orderId, actorName });
+      return NextResponse.json({ ok: true, data });
+    }
+    if (action === "history_trash_delete_permanently") {
+      const data = await deleteHistoryTrashOrderPermanently({ orderId, actorName });
+      return NextResponse.json({ ok: true, data });
+    }
     return errorResponse(new Error("မသိသော order action ဖြစ်ပါသည်။"), 400);
   } catch (error) {
-    return errorResponse(error, error?.message?.includes("မတွေ့") || error?.message?.includes("လိုအပ်") || error?.message?.includes("မမှန်") || error?.message?.includes("Trash") ? 400 : 500);
+    return errorResponse(error, error?.message?.includes("မတွေ့") || error?.message?.includes("လိုအပ်") || error?.message?.includes("မမှန်") || error?.message?.includes("Trash") || error?.message?.includes("History") || error?.message?.includes("အမှိုက်ပုံး") ? 400 : 500);
   }
 }

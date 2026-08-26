@@ -1,6 +1,7 @@
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
+import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 import {
   calculateCapWarnings,
   calculateMissingStatus,
@@ -319,18 +320,29 @@ export async function listOrders({ status = null, includeArchived = false, archi
   const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
   const normalizedView = ["active", "history", "trash"].includes(view) ? view : "active";
   const where = {};
-  if (normalizedView === "trash" || status === "CANCELLED") {
+  if (normalizedView === "trash") {
+    if (status === "CANCELLED") where.status = "CANCELLED";
+    else where.OR = [
+      { status: "CANCELLED", historyTrashedAt: null },
+      { historyTrashedAt: { not: null } },
+    ];
+  } else if (status === "CANCELLED") {
     where.status = "CANCELLED";
+    where.historyTrashedAt = null;
   } else if (normalizedView === "history") {
     where.status = status || { not: "CANCELLED" };
     where.archivedAt = { not: null };
+    where.historyTrashedAt = null;
   } else if (archivedOnly) {
     where.archivedAt = { not: null };
+    where.historyTrashedAt = null;
     where.status = status || { not: "CANCELLED" };
   } else if (includeArchived) {
     where.status = status || { not: "CANCELLED" };
+    where.historyTrashedAt = null;
   } else {
     where.archivedAt = null;
+    where.historyTrashedAt = null;
     where.status = status || { not: "CANCELLED" };
   }
   const orders = await prisma.order.findMany({
@@ -394,6 +406,141 @@ export async function archiveOrder({ orderId, actorName = "Staff" } = {}) {
     metadata: { previousStatus: current.status },
   });
   return serializeOrder(archived);
+}
+
+export async function archiveExpiredOrders({ actorName = "System", now = new Date() } = {}) {
+  await ensureDatabase();
+  const today = getMyanmarDateInputValue(now);
+  const candidates = await prisma.order.findMany({
+    where: {
+      archivedAt: null,
+      historyTrashedAt: null,
+      status: { not: "CANCELLED" },
+      requestedDate: { not: null, lt: today },
+    },
+    select: { id: true, status: true, requestedDate: true, customer: { select: { name: true } }, draftCustomerName: true },
+    orderBy: [{ requestedDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+  });
+  if (!candidates.length) return { archivedCount: 0, skippedCount: 0, cutoffDate: today };
+  let archivedCount = 0;
+  await prisma.$transaction(async (tx) => {
+    for (const order of candidates) {
+      const archived = await tx.order.updateMany({
+        where: { id: order.id, archivedAt: null, historyTrashedAt: null, status: { not: "CANCELLED" } },
+        data: { archivedAt: now, archivedBy: actorName },
+      });
+      if (!archived.count) continue;
+      archivedCount += archived.count;
+      await writeAuditLog({
+        db: tx,
+        actorName,
+        action: "ORDER_AUTO_ARCHIVE",
+        entityType: "Order",
+        entityId: order.id,
+        entityLabel: order.customer?.name || order.draftCustomerName || "Order",
+        summary: "ထုတ်ရမည့်ရက်ကျော်ပြီး Order ကို History ထဲ အလိုအလျောက်ရွှေ့",
+        metadata: { requestedDate: order.requestedDate, cutoffDate: today, previousStatus: order.status },
+      });
+    }
+  });
+  return { archivedCount, skippedCount: candidates.length - archivedCount, cutoffDate: today };
+}
+
+export async function moveHistoryOrderToTrash({ orderId, actorName = "Staff", now = new Date() } = {}) {
+  await ensureDatabase();
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
+  if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (!current.archivedAt || current.status === "CANCELLED") throw new Error("History ထဲရှိ Order သာ အမှိုက်ပုံးသို့ ရွှေ့နိုင်ပါသည်။");
+  if (current.historyTrashedAt) return serializeOrder(current);
+  const trashed = await prisma.order.update({
+    where: { id: current.id },
+    data: { historyTrashedAt: now, historyTrashedBy: actorName },
+    include: ORDER_INCLUDE,
+  });
+  await writeAuditLog({
+    actorName,
+    action: "ORDER_HISTORY_TRASH",
+    entityType: "Order",
+    entityId: trashed.id,
+    entityLabel: trashed.customer?.name || trashed.draftCustomerName || "Order",
+    summary: "History Order ကို အမှိုက်ပုံးထဲ ရွှေ့",
+    metadata: { previousStatus: current.status, archivedAt: current.archivedAt },
+  });
+  return serializeOrder(trashed);
+}
+
+export async function restoreHistoryTrashOrder({ orderId, actorName = "Staff" } = {}) {
+  await ensureDatabase();
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
+  if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (!current.historyTrashedAt) return serializeOrder(current);
+  const restored = await prisma.order.update({
+    where: { id: current.id },
+    data: { historyTrashedAt: null, historyTrashedBy: null },
+    include: ORDER_INCLUDE,
+  });
+  await writeAuditLog({
+    actorName,
+    action: "ORDER_HISTORY_TRASH_RESTORE",
+    entityType: "Order",
+    entityId: restored.id,
+    entityLabel: restored.customer?.name || restored.draftCustomerName || "Order",
+    summary: "History Trash မှ Order ကို ပြန်ယူ",
+    metadata: { restoredStatus: restored.status },
+  });
+  return serializeOrder(restored);
+}
+
+export async function deleteHistoryTrashOrderPermanently({ orderId, actorName = "Staff" } = {}) {
+  await ensureDatabase();
+  const normalizedOrderId = String(orderId || "").trim();
+  if (!normalizedOrderId) throw new Error("Order ID လိုအပ်ပါသည်။");
+  const current = await prisma.order.findUnique({
+    where: { id: normalizedOrderId },
+    include: { customer: { select: { id: true, name: true } } },
+  });
+  if (!current) throw new Error("Order မတွေ့ပါ။");
+  if (!current.historyTrashedAt) throw new Error("History Trash ထဲရှိ Order သာ အပြီးဖျက်နိုင်ပါသည်။");
+  await prisma.$transaction(async (tx) => {
+    await writeAuditLog({
+      db: tx,
+      actorName,
+      action: "ORDER_HISTORY_TRASH_DELETE",
+      entityType: "Order",
+      entityId: current.id,
+      entityLabel: current.customer?.name || current.draftCustomerName || "Order",
+      summary: "History Trash ထဲရှိ Order ကို အပြီးဖျက်",
+      metadata: { previousStatus: current.status, archivedAt: current.archivedAt, historyTrashedAt: current.historyTrashedAt },
+    });
+    await tx.order.delete({ where: { id: current.id } });
+  });
+  return { id: current.id, deleted: true };
+}
+
+export async function purgeExpiredHistoryTrash({ actorName = "System", now = new Date() } = {}) {
+  await ensureDatabase();
+  const cutoff = new Date(now.getTime() - CANCELLED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  const expired = await prisma.order.findMany({
+    where: { historyTrashedAt: { not: null, lt: cutoff } },
+    select: { id: true, customer: { select: { name: true } }, draftCustomerName: true, historyTrashedAt: true },
+  });
+  if (!expired.length) return { deletedCount: 0 };
+  await prisma.$transaction(async (tx) => {
+    for (const order of expired) {
+      await writeAuditLog({
+        db: tx,
+        actorName,
+        action: "ORDER_HISTORY_TRASH_AUTO_CLEAR",
+        entityType: "Order",
+        entityId: order.id,
+        entityLabel: order.customer?.name || order.draftCustomerName || "Order",
+        summary: "History Trash ထဲရှိ Order ကို ၁၅ ရက်ကျော်၍ Auto Clear လုပ်",
+        metadata: { retentionDays: CANCELLED_RETENTION_DAYS, historyTrashedAt: order.historyTrashedAt },
+      });
+      await tx.order.delete({ where: { id: order.id } });
+    }
+  });
+  return { deletedCount: expired.length };
 }
 
 export async function restoreOrder({ orderId, actorName = "Staff" } = {}) {

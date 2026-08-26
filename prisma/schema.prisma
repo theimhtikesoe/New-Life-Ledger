@@ -50,6 +50,8 @@ model Order {
   cancelledBy        String?
   archivedAt         DateTime?
   archivedBy         String?
+  historyTrashedAt   DateTime?
+  historyTrashedBy   String?
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   lines              OrderLine[]
@@ -62,9 +64,9 @@ model Order {
   @@index([requestedDate])
   @@index([factoryOrderDate])
   @@unique([factoryOrderDate, factoryOrderNumber])
-  @@index([customerId])
-  @@index([cancelledAt])
   @@index([archivedAt])
+  @@index([historyTrashedAt])
+  @@index([cancelledAt])
 }
 
 model OrderLine {
