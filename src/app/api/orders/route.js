@@ -119,7 +119,7 @@ export async function PATCH(request) {
         let warning = "";
         let delivery = null;
         try {
-          delivery = await sendFactoryNotificationForOrder(orderId, { actorName });
+          delivery = await sendFactoryNotificationForOrder(orderId, { actorName, source: "WEBSITE" });
           finalOrder = delivery.order || data;
           if (!delivery.sent) warning = "Order ကို Confirm လုပ်ပြီးပါပြီ။ Factory notification သည် ယခင် send လုပ်နေဆဲဖြစ်သောကြောင့် ထပ်မပို့ပါ။";
         } catch (deliveryError) {

@@ -160,6 +160,18 @@ describe("Website Orders API", () => {
     expect((await response.json()).data).toEqual(refreshed);
   });
 
+  it("passes Website as the factory-message source for immediate Confirm", async () => {
+    const statusOrder = { id: "order-1", status: "CONFIRMED" };
+    const notifiedOrder = { id: "order-1", status: "FACTORY_NOTIFIED" };
+    mocks.updateOrderStatus.mockResolvedValue(statusOrder);
+    mocks.sendFactoryNotificationForOrder.mockResolvedValue({ sent: true, duplicate: false, messageId: 101, order: notifiedOrder });
+    mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
+    const response = await PATCH(request({ orderId: statusOrder.id, action: "confirm", mode: "IMMEDIATE" }));
+    expect(response.status).toBe(200);
+    expect(mocks.sendFactoryNotificationForOrder).toHaveBeenCalledWith(statusOrder.id, { actorName: "Staff", source: "WEBSITE" });
+    expect((await response.json()).data).toEqual(notifiedOrder);
+  });
+
   it("updates the shared status first and then attempts nonfatal Telegram synchronization", async () => {
     const order = { id: "order-1", status: "CANCELLED", telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
     mocks.updateOrderStatus.mockResolvedValue(order);
