@@ -6,6 +6,7 @@ import TransactionFilter from "./TransactionFilter";
 import OverdueNotificationBell from "./OverdueNotificationBell";
 import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
+import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -1283,10 +1284,11 @@ export default function Dashboard({ view = "overview" }) {
       return;
     }
 
-    const headers = ["Date", "Type", "Amount", "Payment Type", "Note"];
+    const headers = ["Date", "Type", "Sale Type", "Amount", "Payment Type", "Note"];
     const rows = transactionsToExport.map(transaction => [
       formatDate(transaction.date),
-      transaction.type === "CASH_SALE" ? "လက်ငင်း (Cash Sale)" : transaction.type === "CREDIT" ? "အကြွေးတိုး (Unpaid)" : "ငွေချေ (Paid)",
+      transaction.type === "CASH_SALE" ? `လက်ငင်း (${cashSaleTypeLabel(transaction.saleType)})` : transaction.type === "CREDIT" ? "အကြွေးတိုး (Unpaid)" : "ငွေချေ (Paid)",
+      transaction.type === "CASH_SALE" ? cashSaleTypeLabel(transaction.saleType) : "-",
       transaction.amount,
       transaction.paymentType || "-",
       transaction.note || "-",
@@ -1878,6 +1880,30 @@ export default function Dashboard({ view = "overview" }) {
                         </div>
                       </div>
 
+                      {ledgerForm.type === "CASH_SALE" && (
+                        <div className="space-y-1">
+                          <label className="text-xs text-slate-700 font-medium">လက်ငင်းရောင်းအမျိုးအစား</label>
+                          <div className="grid grid-cols-2 gap-2 rounded-lg border border-cyan-200 bg-cyan-50/60 p-1">
+                            <button
+                              type="button"
+                              className={`min-h-10 rounded-md px-3 py-2 text-sm font-semibold transition-all ${ledgerForm.saleType === "RETAIL" ? "bg-cyan-600 text-white shadow-sm" : "text-cyan-800 hover:bg-cyan-100"}`}
+                              onClick={() => setLedgerForm({ ...ledgerForm, saleType: "RETAIL" })}
+                              disabled={isSubmitting}
+                            >
+                              လက်လီ
+                            </button>
+                            <button
+                              type="button"
+                              className={`min-h-10 rounded-md px-3 py-2 text-sm font-semibold transition-all ${ledgerForm.saleType === "WHOLESALE" ? "bg-cyan-600 text-white shadow-sm" : "text-cyan-800 hover:bg-cyan-100"}`}
+                              onClick={() => setLedgerForm({ ...ledgerForm, saleType: "WHOLESALE" })}
+                              disabled={isSubmitting}
+                            >
+                              လက်ကား
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {(ledgerForm.type === "DEBIT" || ledgerForm.type === "CASH_SALE") && (
                         <div className="space-y-1">
                           <label className="text-xs text-slate-700 font-medium">{ledgerForm.type === "CASH_SALE" ? "လက်ငင်းငွေပေးချေမှုပုံစံ" : "ငွေပေးချေမှုပုံစံ"}</label>
@@ -1939,11 +1965,11 @@ export default function Dashboard({ view = "overview" }) {
                     <article key={`mobile-${ledger.id}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Date</p><p className="mt-0.5 truncate text-xs font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CASH_SALE" ? "bg-cyan-100 text-cyan-700" : ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CASH_SALE" ? "လက်ငင်း" : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CASH_SALE" ? "bg-cyan-100 text-cyan-700" : ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CASH_SALE" ? `လက်ငင်း · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
                       </div>
                       <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CASH_SALE" ? "text-cyan-600" : ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
                       <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[11px]">
-                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.paymentType || "-"}</p></div>
+                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.type === "CASH_SALE" ? `${ledger.paymentType || "CASH"} · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.paymentType || "-"}</p></div>
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
                       </div>
                       <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
@@ -1979,7 +2005,7 @@ export default function Dashboard({ view = "overview" }) {
                                         : "bg-emerald-100 text-emerald-700"
                                   }`}
                                 >
-                                  {ledger.type === "CASH_SALE" ? "လက်ငင်း" : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}
+                                  {ledger.type === "CASH_SALE" ? `လက်ငင်း · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}
                                 </span>
                               </td>
                               <td

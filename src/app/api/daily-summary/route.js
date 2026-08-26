@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,7 @@ export async function GET(request) {
       activityCount,
       paymentTypes: {},
       cashPaymentTypes: {},
+      cashSaleTypes: summarizeCashSalesByType(cashSales),
     };
     const customerMap = new Map();
 
@@ -106,6 +108,10 @@ export async function GET(request) {
         unpaidAmount: 0,
         cashCount: 0,
         cashAmount: 0,
+        cashRetailCount: 0,
+        cashRetailAmount: 0,
+        cashWholesaleCount: 0,
+        cashWholesaleAmount: 0,
       };
       if (isPaid) {
         current.paidCount += 1;
@@ -127,9 +133,22 @@ export async function GET(request) {
         unpaidAmount: 0,
         cashCount: 0,
         cashAmount: 0,
+        cashRetailCount: 0,
+        cashRetailAmount: 0,
+        cashWholesaleCount: 0,
+        cashWholesaleAmount: 0,
       };
+      const saleType = normalizeCashSaleType(cashSale.saleType);
+      const cashAmount = Number(cashSale.amount || 0);
       current.cashCount += 1;
-      current.cashAmount += Number(cashSale.amount || 0);
+      current.cashAmount += cashAmount;
+      if (saleType === "WHOLESALE") {
+        current.cashWholesaleCount += 1;
+        current.cashWholesaleAmount += cashAmount;
+      } else {
+        current.cashRetailCount += 1;
+        current.cashRetailAmount += cashAmount;
+      }
       const paymentType = cashSale.paymentType || "CASH";
       summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + Number(cashSale.amount || 0);
       customerMap.set(cashSale.customer.id, current);

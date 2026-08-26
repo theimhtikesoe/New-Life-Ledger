@@ -354,6 +354,25 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.sendFactoryNotificationForOrder).not.toHaveBeenCalled();
   });
 
+  it("acknowledges immediate confirmation before the factory work and retries the final source edit as plain text", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const confirmed = { ...order, status: "CONFIRMED", sourceText: "Customer_စမ်း" };
+    const notified = { ...confirmed, status: "FACTORY_NOTIFIED" };
+    mocks.updateOrderStatus.mockResolvedValue(confirmed);
+    mocks.sendFactoryNotificationForOrder.mockResolvedValue({ sent: true, duplicate: false, order: notified });
+    mocks.formatOrderDraftMessage.mockReturnValue("Order Customer_စမ်း ```source```");
+    mocks.editTelegramMessageText.mockRejectedValueOnce(new Error("can't parse Markdown")).mockResolvedValueOnce({ ok: true });
+    const update = { update_id: 140, callback_query: { id: "callback-fallback", data: "order|confirm|I|11111111-1111-4111-8111-111111111111", message: { message_id: 191, chat: { id: chatId } }, from: { id: 7, username: "admin_user" } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("confirmed");
+    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-fallback", text: expect.stringContaining("Confirm ကို လက်ခံပါပြီ") }));
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(2);
+    expect(mocks.editTelegramMessageText.mock.calls[0][0]).toHaveProperty("parseMode", "Markdown");
+    expect(mocks.editTelegramMessageText.mock.calls[1][0]).not.toHaveProperty("parseMode");
+    expect(mocks.editTelegramMessageText.mock.calls[1][0].text).not.toContain("```");
+  });
+
   it("lets a verified group administrator confirm immediately and calls the factory delivery service", async () => {
     mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
     const confirmed = { ...order, status: "CONFIRMED" };

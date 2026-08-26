@@ -40,6 +40,17 @@ describe("Telegram order message synchronization", () => {
     });
   });
 
+  it("retries a status sync as plain text when Markdown parsing fails", async () => {
+    mocks.formatOrderDraftMessage.mockReturnValue("Order Customer_စမ်း ```source```");
+    mocks.editTelegramMessageText.mockRejectedValueOnce(new Error("can't parse Markdown")).mockResolvedValueOnce({ ok: true });
+    const order = { id: "order-1", status: "FACTORY_NOTIFIED", telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
+    const result = await syncTelegramOrderMessage(order, "✅ Website မှ Confirm လုပ်ပြီးပါပြီ။");
+    expect(result).toEqual({ synced: true, chatId: "-100123", messageId: 88 });
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(2);
+    expect(mocks.editTelegramMessageText.mock.calls[1][0]).not.toHaveProperty("parseMode");
+    expect(mocks.editTelegramMessageText.mock.calls[1][0].text).not.toContain("```");
+  });
+
   it("restores action buttons when a website AI retry succeeds", async () => {
     mocks.formatOrderDraftMessage.mockReturnValue("🟡 Order — Draft");
     const order = { id: "order-1", status: "DRAFT", telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };

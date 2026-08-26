@@ -24,6 +24,7 @@ export async function GET(request) {
           cashCount: report.summary.cashCount || 0,
           cashAmount: report.summary.cashAmount || 0,
           cashPaymentTypes: report.summary.cashPaymentTypes || {},
+          cashSaleTypes: report.summary.cashSaleTypes || {},
           totalTransactions: report.summary.totalTransactions,
           auditCount: report.summary.auditCount,
           activityCount: report.summary.activityCount ?? report.activityLogs.length,

@@ -3,6 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { ACTORS } from "@/lib/audit";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,13 @@ export async function GET(request) {
     ]);
 
     const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt);
+    const cashSaleIds = allAuditLogs
+      .filter((log) => log.entityType === "CashSale" && log.entityId)
+      .map((log) => String(log.entityId));
+    const cashSaleRows = cashSaleIds.length
+      ? await prisma.cashSale.findMany({ where: { id: { in: cashSaleIds } }, select: { id: true, saleType: true, amount: true, paymentType: true } })
+      : [];
+    const cashSaleById = new Map(cashSaleRows.map((sale) => [String(sale.id), sale]));
     const auditedLedgerIds = new Set(
       allAuditLogs
         .filter((log) => log.entityType === "Ledger" && log.entityId)
@@ -110,7 +118,20 @@ export async function GET(request) {
       };
       });
 
-    const currentLogs = auditLogs.map((log) => ({ ...log, eventSource: "audit" }));
+    const currentLogs = auditLogs.map((log) => {
+      const cashSale = log.entityType === "CashSale" ? cashSaleById.get(String(log.entityId)) : null;
+      if (!cashSale) return { ...log, eventSource: "audit" };
+      return {
+        ...log,
+        eventSource: "audit",
+        metadata: {
+          ...(log.metadata && typeof log.metadata === "object" ? log.metadata : {}),
+          amount: cashSale.amount,
+          paymentType: cashSale.paymentType || "CASH",
+          saleType: normalizeCashSaleType(cashSale.saleType),
+        },
+      };
+    });
     const logs = [...currentLogs, ...legacyLogs]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
