@@ -19,7 +19,7 @@ vi.mock("@/lib/order-utils", () => ({
   calculateMissingStatus: vi.fn(),
   calculateOrderTotals: vi.fn(() => ({ totalCards: 0, totalBottles: 0, totalNormalCaps: 0, totalExtraCaps: 0 })),
   normalizeExtractedOrder: vi.fn(),
-  normalizeDateInput: vi.fn(),
+  normalizeDateInput: vi.fn((value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? value : null),
 }));
 
 import { archiveExpiredOrders, archiveOrder, deleteCancelledOrderPermanently, deleteHistoryTrashOrderPermanently, listOrders, moveHistoryOrderToTrash, purgeExpiredCancelledOrders, purgeExpiredHistoryTrash, restoreCancelledOrder, restoreHistoryTrashOrder, restoreOrder } from "@/lib/order-service";
@@ -57,9 +57,21 @@ describe("Order archive service", () => {
     mocks.orderUpdateMany.mockResolvedValue({ count: 1 });
     const result = await archiveExpiredOrders({ now, actorName: "System" });
     expect(result).toEqual({ archivedCount: 1, skippedCount: 0, cutoffDate: "2026-08-26" });
-    expect(mocks.orderFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ archivedAt: null, historyTrashedAt: null, status: { not: "CANCELLED" }, requestedDate: { not: null, lt: "2026-08-26" } }) }));
+    expect(mocks.orderFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ archivedAt: null, historyTrashedAt: null, status: { not: "CANCELLED" }, requestedDate: { not: "", lt: "2026-08-26" } }) }));
     expect(mocks.orderUpdateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: "expired" }), data: { archivedAt: now, archivedBy: "System" } }));
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "ORDER_AUTO_ARCHIVE", entityId: "expired" }));
+  });
+
+  it("does not archive undated or invalid requested dates", async () => {
+    const now = new Date("2026-08-26T03:00:00.000Z");
+    mocks.orderFindMany.mockResolvedValue([
+      { id: "undated", status: "DRAFT", requestedDate: "", customer: null, draftCustomerName: "Undated" },
+      { id: "invalid", status: "DRAFT", requestedDate: "not-a-date", customer: null, draftCustomerName: "Invalid" },
+    ]);
+    const result = await archiveExpiredOrders({ now, actorName: "System" });
+    expect(result).toEqual({ archivedCount: 0, skippedCount: 0, cutoffDate: "2026-08-26" });
+    expect(mocks.orderUpdateMany).not.toHaveBeenCalled();
+    expect(mocks.orderFindMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ requestedDate: { not: "", lt: "2026-08-26" } }) }));
   });
 
   it("moves a History Order to reversible History Trash without touching Customer or Ledger", async () => {
