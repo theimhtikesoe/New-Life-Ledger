@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { buildFallbackOrderExtraction } from "@/lib/order-utils";
@@ -247,8 +247,10 @@ export default function OrdersPage() {
   const [manualOrderText, setManualOrderText] = useState("");
   const [manualOrderPreview, setManualOrderPreview] = useState(null);
   const [savingManualOrder, setSavingManualOrder] = useState(false);
+  const loadRequestRef = useRef(0);
 
   const load = useCallback(async ({ silent = false } = {}) => {
+    const requestId = ++loadRequestRef.current;
     if (!silent) setLoading(true);
     setError("");
     try {
@@ -268,6 +270,7 @@ export default function OrdersPage() {
       const settingBody = settingResult.status === "fulfilled" ? settingResult.value : null;
       const historyBody = historyResult.status === "fulfilled" ? historyResult.value : null;
       const trashBody = trashResult.status === "fulfilled" ? trashResult.value : null;
+      if (requestId !== loadRequestRef.current) return;
       const nextOrders = Array.isArray(ordersBody.data) ? ordersBody.data : [];
       setOrders(nextOrders);
       setTrashCount(viewMode === "TRASH" ? nextOrders.length : Array.isArray(trashBody?.data) ? trashBody.data.length : 0);
@@ -278,7 +281,7 @@ export default function OrdersPage() {
     } catch (err) {
       setError(err.message);
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && requestId === loadRequestRef.current) setLoading(false);
     }
   }, [viewMode]);
 
@@ -467,10 +470,9 @@ export default function OrdersPage() {
         {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div> : null}
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : null}
 
-        <section className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-3 shadow-sm sm:p-4" aria-labelledby="manual-order-title">
-          <button type="button" aria-expanded={showManualOrder} aria-controls="viber-copied-order-panel" onClick={() => setShowManualOrder((current) => !current)} className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-2 py-1 text-left transition hover:bg-white/70 active:scale-[0.99]">
-            <span className="min-w-0"><span className="block text-xs font-bold uppercase tracking-wide text-cyan-700">Viber / copied order</span><span id="manual-order-title" className="mt-1 block text-sm font-bold text-cyan-950 sm:text-base">Viber Order ထည့်ရန်</span></span>
-            <span className="shrink-0 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800">{showManualOrder ? "ပိတ်ရန်" : "ဖွင့်ရန်"}</span>
+        <section className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-2 shadow-sm sm:p-2.5" aria-labelledby="manual-order-title">
+          <button type="button" aria-expanded={showManualOrder} aria-controls="viber-copied-order-panel" onClick={() => setShowManualOrder((current) => !current)} className="inline-flex min-h-9 items-center rounded-lg border border-cyan-300 bg-white px-3 py-1.5 text-xs font-bold text-cyan-800 shadow-sm transition hover:bg-cyan-100 active:scale-[0.98]">
+            <span id="manual-order-title">Viber Order ထည့်ရန်</span>
           </button>
           {showManualOrder ? <div id="viber-copied-order-panel" className="mt-2 border-t border-cyan-200/80 pt-3">
           <p className="text-xs leading-5 text-cyan-900">Viber စာကို ကူးထည့်ပြီး Preview ကြည့်ကာ Draft အဖြစ် သိမ်းနိုင်ပါတယ်။</p>
@@ -535,7 +537,7 @@ export default function OrdersPage() {
         {loading ? <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">Order များကို ရယူနေပါသည်...</section> : null}
         {!loading && !filteredOrders.length ? <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">ဒီ filter အတွက် Order မရှိသေးပါ။</section> : null}
 
-        <section className="grid gap-4 xl:grid-cols-2">
+        {!loading ? <section className="grid gap-4 xl:grid-cols-2">
           {filteredOrders.map((order) => {
             const draft = draftCustomers[order.id] || {};
             const candidates = candidateMap[order.id] || [];
@@ -614,7 +616,7 @@ export default function OrdersPage() {
               </article>
             );
           })}
-        </section>
+        </section> : null}
       </div>
     </main>
   );

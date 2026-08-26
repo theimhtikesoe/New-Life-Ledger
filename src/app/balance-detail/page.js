@@ -27,7 +27,7 @@ async function fetchCustomers() {
   return Array.isArray(body.data) ? body.data.filter((customer) => !customer.deletedAt) : [];
 }
 
-function SummaryCard({ title, subtitle, value, count, tone }) {
+function SummaryCard({ title, subtitle, value, count, countLabel = "ယောက်", tone }) {
   const tones = {
     rose: "border-rose-200 bg-rose-50 text-rose-800",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
@@ -39,7 +39,7 @@ function SummaryCard({ title, subtitle, value, count, tone }) {
       <p className="text-sm font-semibold">{title}</p>
       <p className="mt-2 text-2xl font-bold">{value}</p>
       <p className="mt-1 text-xs opacity-80">{subtitle}</p>
-      {count !== undefined ? <p className="mt-3 text-sm font-semibold">{count} ယောက်</p> : null}
+      {count !== undefined ? <p className="mt-3 text-sm font-semibold">{count} {countLabel}</p> : null}
     </article>
   );
 }
@@ -76,8 +76,16 @@ function CustomerRow({ customer }) {
   );
 }
 
+async function fetchTodaySummary() {
+  const response = await fetch("/api/daily-summary", { cache: "no-store" });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || "နေ့စဉ်စာရင်း ရယူ၍ မရပါ။");
+  return body.data?.summary || {};
+}
+
 export default function BalanceDetailPage() {
   const [customers, setCustomers] = useState([]);
+  const [cashSummary, setCashSummary] = useState({ cashCount: 0, cashAmount: 0, cashSaleTypes: {} });
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sortBy, setSortBy] = useState("amount-desc");
@@ -87,13 +95,13 @@ export default function BalanceDetailPage() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    fetchCustomers()
-      .then((items) => {
+    Promise.allSettled([fetchCustomers(), fetchTodaySummary()])
+      .then(([customerResult, summaryResult]) => {
         if (!active) return;
-        setCustomers(items);
-        setError("");
+        if (customerResult.status === "fulfilled") setCustomers(customerResult.value);
+        else setError(customerResult.reason?.message || "Customer စာရင်း ရယူ၍ မရပါ။");
+        if (summaryResult.status === "fulfilled") setCashSummary(summaryResult.value);
       })
-      .catch((err) => active && setError(err.message || "Customer စာရင်း ရယူ၍ မရပါ။"))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, []);
@@ -162,17 +170,19 @@ export default function BalanceDetailPage() {
 
         {error ? <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">{error}</section> : null}
 
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <SummaryCard title="အသားတင်ရရန်လက်ကျန်" subtitle={netLabel} value={loading ? "ရယူနေသည်..." : formatMoney(Math.abs(netBalance))} tone={netTone} />
           <SummaryCard title="လက်ကျန်အကြွေးစုစုပေါင်း" subtitle="အနီရောင် balance များ" value={loading ? "ရယူနေသည်..." : formatMoney(totals.debtTotal)} count={totals.debtCustomers} tone="rose" />
           <SummaryCard title="လက်ကျန်ကြိုတင်ငွေချေ" subtitle="အစိမ်းရောင် balance များ" value={loading ? "ရယူနေသည်..." : formatMoney(totals.prepaidTotal)} count={totals.prepaidCustomers} tone="emerald" />
           <SummaryCard title="လက်ကျန်မရှိသူ" subtitle="လက်ရှိ balance = 0" value={loading ? "ရယူနေသည်..." : `${totals.zeroCustomers} ယောက်`} tone="blue" />
+          <SummaryCard title="ဒီနေ့ လက်ငင်းရောင်း" subtitle="လက်ကျန်အကြွေးထဲ မထည့်ပါ" value={loading ? "ရယူနေသည်..." : formatMoney(cashSummary.cashAmount)} count={cashSummary.cashCount || 0} countLabel="ခု" tone="blue" />
         </section>
 
         <section className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 sm:p-5">
           <h2 className="text-base font-bold text-cyan-950">ဒီလက်ကျန်ကို ဘယ်လိုတွက်ထားသလဲ</h2>
           <p className="mt-2 text-sm leading-6 text-cyan-950"><strong>အသားတင်ရရန် = လက်ကျန်အကြွေးစုစုပေါင်း − လက်ကျန်ကြိုတင်ငွေချေ</strong></p>
           <p className="mt-2 text-sm leading-6 text-cyan-900">ဥပမာ အကြွေး 300,000 Ks ရှိပြီး customer တချို့က 100,000 Ks ကြိုတင်ငွေချေထားရင် အသားတင်ရရန် 200,000 Ks ဖြစ်ပါတယ်။ အနီရောင်က customer ဆီက ရရန်ရှိတာ၊ အစိမ်းရောင်က customer က ပိုငွေချေထားတာကို ဆိုလိုပါတယ်။</p>
+          <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီနေ့ လက်ငင်းရောင်းမှာ လက်လီ {(cashSummary.cashSaleTypes?.RETAIL?.count || 0)} ခု၊ လက်ကား {(cashSummary.cashSaleTypes?.WHOLESALE?.count || 0)} ခု ပါဝင်ပါတယ်။ လက်ငင်းပမာဏကို အသားတင်ရရန်လက်ကျန်ထဲ မထည့်ပါ။</p>
           <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီစာမျက်နှာက လက်ရှိ active customer balance တွေကိုပဲ စုပါတယ်။ Recycle Bin ထဲက customer များ မပါဝင်ပါ။ ယခင်က အားလုံးပေးချေခဲ့သည့် သမိုင်းပမာဏကို ကြည့်လိုပါက Customer Ledger၊ Daily Summary နှင့် Activity History ကို သုံးပါ။</p>
         </section>
 

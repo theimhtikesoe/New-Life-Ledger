@@ -251,6 +251,7 @@ export default function Dashboard({ view = "overview" }) {
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState([]);
+  const [todayCashSales, setTodayCashSales] = useState([]);
   const [overdueDebts, setOverdueDebts] = useState(null);
   const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
   const [telegramReportStep, setTelegramReportStep] = useState("preview");
@@ -574,6 +575,7 @@ export default function Dashboard({ view = "overview" }) {
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
       setTodayPaymentsList([]);
+      setTodayCashSales([]);
       setOverdueDebts(null);
       setMessage("");
       setDataLoadError("");
@@ -599,6 +601,7 @@ export default function Dashboard({ view = "overview" }) {
             }))
             .sort((a, b) => new Date(b.date) - new Date(a.date));
           setTodayPaymentsList(payments);
+          setTodayCashSales(Array.isArray(summary.cashSales) ? summary.cashSales : []);
         })
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Today summary was not loaded:", error);
@@ -783,6 +786,9 @@ export default function Dashboard({ view = "overview" }) {
   );
 
     const todayTransactions = todayPaymentsList.length;
+  const todayCashAmount = useMemo(() => todayCashSales.reduce((sum, sale) => sum + Number(sale.amount || 0), 0), [todayCashSales]);
+  const todayCashRetail = useMemo(() => todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length, [todayCashSales]);
+  const todayCashWholesale = todayCashSales.length - todayCashRetail;
 
   // Pagination logic
   const paginatedCustomers = useMemo(() => {
@@ -1498,7 +1504,7 @@ export default function Dashboard({ view = "overview" }) {
           <>
             {/* Compact Summary Box */}
             <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
             {/* Total Balance */}
             <a
               href="/balance-detail"
@@ -1534,6 +1540,16 @@ export default function Dashboard({ view = "overview" }) {
               <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
               <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary &amp; AI</p>
               <p className="mt-1 text-xs text-violet-600">အသေးစိတ်ကြည့်ရန် →</p>
+            </a>
+
+            <a
+              href="/daily-summary"
+              aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-fuchsia-200 bg-fuchsia-50 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">ဒီနေ့ လက်ငင်းရောင်း</p>
+              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : formatMoney(todayCashAmount)}</p>
+              <p className="mt-1 text-xs text-fuchsia-700">{todayCashSales.length} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
             </a>
 
             <a
