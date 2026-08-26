@@ -306,41 +306,49 @@ export async function POST(request) {
       return NextResponse.json({ ok: true, status: "draft_created", orderId: pending.order.id, aiSkipped: true });
     }
 
-    await sendOrderProcessingNotice({ chatId, replyToMessageId: message.message_id });
+    // Always send the deterministic Draft first. AI enrichment must never block the
+    // Telegram user from seeing the parsed order and its available actions.
+    const sentDraft = await sendTelegramTextToChat({
+      chatId,
+      text: formatOrderDraftMessage(pending.order, { includeSource: true }),
+      parseMode: "Markdown",
+      replyMarkup: buildOrderActionKeyboard(pending.order, process.env.NEXT_PUBLIC_APP_URL),
+      replyToMessageId: message.message_id,
+    });
+    if (sentDraft?.messageId) {
+      try {
+        await saveTelegramDraftMessage({ orderId: pending.order.id, chatId: sentDraft.chatId || chatId, messageId: sentDraft.messageId });
+      } catch (metadataError) {
+        console.warn("Telegram draft message metadata save failed", metadataError);
+      }
+    }
+
     try {
       const extracted = await extractOrderFromText(orderText);
       const order = await refreshOrderFromAi({ orderId: pending.order.id, extracted, actorName: "Staff" });
-      const sentDraft = await sendTelegramTextToChat({
-        chatId,
-        text: formatOrderDraftMessage(order),
-        parseMode: "Markdown",
-        replyMarkup: buildOrderActionKeyboard(order, process.env.NEXT_PUBLIC_APP_URL),
-        replyToMessageId: message.message_id,
-      });
       if (sentDraft?.messageId) {
-        try {
-          await saveTelegramDraftMessage({ orderId: order.id, chatId: sentDraft.chatId || chatId, messageId: sentDraft.messageId });
-        } catch (metadataError) {
-          console.warn("Telegram draft message metadata save failed", metadataError);
-        }
+        await editTelegramOrderMessageOrReply({
+          chatId: sentDraft.chatId || chatId,
+          messageId: sentDraft.messageId,
+          replyToMessageId: message.message_id,
+          text: formatOrderDraftMessage(order, { includeSource: true }),
+          replyMarkup: buildOrderActionKeyboard(order, process.env.NEXT_PUBLIC_APP_URL),
+        });
+      } else {
+        await sendTelegramTextToChat({
+          chatId,
+          text: formatOrderDraftMessage(order, { includeSource: true }),
+          parseMode: "Markdown",
+          replyMarkup: buildOrderActionKeyboard(order, process.env.NEXT_PUBLIC_APP_URL),
+          replyToMessageId: message.message_id,
+        });
       }
-      return NextResponse.json({ ok: true, status: "draft_created", orderId: order.id });
+      return NextResponse.json({ ok: true, status: "draft_created", orderId: order.id, aiEnriched: true });
     } catch (error) {
-      const fallbackMessage = await sendTelegramTextToChat({
-        chatId,
-        text: formatOrderDraftMessage(pending.order, { includeActions: false, includeSource: true }),
-        parseMode: "Markdown",
-        replyMarkup: buildOrderActionKeyboard(pending.order, process.env.NEXT_PUBLIC_APP_URL),
-        replyToMessageId: message.message_id,
-      });
-      if (fallbackMessage?.messageId) {
-        try {
-          await saveTelegramDraftMessage({ orderId: pending.order.id, chatId: fallbackMessage.chatId || chatId, messageId: fallbackMessage.messageId });
-        } catch (metadataError) {
-          console.warn("Telegram AI fallback message metadata save failed", metadataError);
-        }
-      }
-      return NextResponse.json({ ok: true, status: "draft_ai_pending", orderId: pending.order.id });
+      // The deterministic Draft is already visible; leave it in place when AI is
+      // unavailable instead of sending a second warning/error message.
+      console.warn("Telegram Order AI enrichment skipped; deterministic Draft remains", safeErrorMessage(error));
+      return NextResponse.json({ ok: true, status: "draft_created", orderId: pending.order.id, aiEnriched: false });
     }
   } catch (error) {
     console.error("Telegram order webhook failed", error);
