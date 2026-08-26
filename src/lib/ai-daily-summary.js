@@ -134,13 +134,24 @@ export async function getAiDailySummaryPayload(dateParam) {
   const date = dateParam || getMyanmarDayRange().dateLabel;
   const { start, end } = getMyanmarDayRange(date);
 
-  const [ledgers, auditLogs] = await Promise.all([
+  const [ledgers, cashSales, allAuditLogs] = await Promise.all([
     prisma.ledger.findMany({
       where: { date: { gte: start, lt: end } },
       select: {
         id: true,
         date: true,
         type: true,
+        amount: true,
+        paymentType: true,
+        customer: { select: { name: true } },
+      },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
+    }),
+    prisma.cashSale.findMany({
+      where: { date: { gte: start, lt: end } },
+      select: {
+        id: true,
+        date: true,
         amount: true,
         paymentType: true,
         customer: { select: { name: true } },
@@ -161,21 +172,27 @@ export async function getAiDailySummaryPayload(dateParam) {
         entityId: true,
         entityLabel: true,
         createdAt: true,
+        hiddenAt: true,
       },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     }),
   ]);
 
+  const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt);
   const summary = {
     paidCount: 0,
     paidAmount: 0,
     debtCount: 0,
     debtAmount: 0,
+    cashCount: cashSales.length,
+    cashAmount: cashSales.reduce((total, sale) => total + roundAmount(sale.amount), 0),
     totalTransactions: ledgers.length,
     paymentTypes: {},
+    cashPaymentTypes: {},
   };
   const customerMap = new Map();
   const ledgerById = new Map(ledgers.map((ledger) => [String(ledger.id), ledger]));
+  const cashSaleById = new Map(cashSales.map((sale) => [String(sale.id), sale]));
 
   for (const ledger of ledgers) {
     const amount = roundAmount(ledger.amount);
@@ -186,6 +203,8 @@ export async function getAiDailySummaryPayload(dateParam) {
       paidAmount: 0,
       debtCount: 0,
       debtAmount: 0,
+      cashCount: 0,
+      cashAmount: 0,
     };
     if (ledger.type === "DEBIT") {
       summary.paidCount += 1;
@@ -203,22 +222,59 @@ export async function getAiDailySummaryPayload(dateParam) {
     customerMap.set(name, current);
   }
 
+  for (const cashSale of cashSales) {
+    const name = safeName(cashSale.customer?.name);
+    const amount = roundAmount(cashSale.amount);
+    const current = customerMap.get(name) || {
+      customerName: name,
+      paidCount: 0,
+      paidAmount: 0,
+      debtCount: 0,
+      debtAmount: 0,
+      cashCount: 0,
+      cashAmount: 0,
+    };
+    current.cashCount += 1;
+    current.cashAmount += amount;
+    const paymentType = cashSale.paymentType || "CASH";
+    summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + amount;
+    customerMap.set(name, current);
+  }
+
   const auditedLedgerIds = new Set(
-    auditLogs
+    allAuditLogs
       .filter((log) => log.entityType === "Ledger" && log.entityId)
+      .map((log) => String(log.entityId)),
+  );
+  const auditedCashSaleIds = new Set(
+    allAuditLogs
+      .filter((log) => log.entityType === "CashSale" && log.entityId)
       .map((log) => String(log.entityId)),
   );
   const activities = auditLogs.map((log) => {
     const linkedLedger = log.entityType === "Ledger" ? ledgerById.get(String(log.entityId)) : null;
+    const linkedCashSale = log.entityType === "CashSale" ? cashSaleById.get(String(log.entityId)) : null;
     return {
       action: actionLabel(log.action),
       entityType: safeName(log.entityType),
       customerName: safeName(log.entityLabel),
-      amount: linkedLedger ? roundAmount(linkedLedger.amount) : null,
+      amount: linkedLedger ? roundAmount(linkedLedger.amount) : linkedCashSale ? roundAmount(linkedCashSale.amount) : null,
       eventAt: new Date(log.createdAt).toISOString(),
       source: "audit",
     };
   });
+
+  for (const cashSale of cashSales) {
+    if (auditedCashSaleIds.has(String(cashSale.id))) continue;
+    activities.push({
+      action: "လက်ငင်းရောင်း",
+      entityType: "CashSale",
+      customerName: safeName(cashSale.customer?.name),
+      amount: roundAmount(cashSale.amount),
+      eventAt: new Date(cashSale.date).toISOString(),
+      source: "cash-sale",
+    });
+  }
 
   for (const ledger of ledgers) {
     if (auditedLedgerIds.has(String(ledger.id))) continue;
@@ -251,12 +307,12 @@ export async function getAiDailySummaryPayload(dateParam) {
       events: activities.slice(0, 500),
     },
     customers: Array.from(customerMap.values()).sort((a, b) =>
-      b.paidAmount + b.debtAmount - (a.paidAmount + a.debtAmount),
+      b.paidAmount + b.debtAmount + b.cashAmount - (a.paidAmount + a.debtAmount + a.cashAmount),
     ),
     sourceRules: [
       "Daily Report delivery actions are excluded.",
-      "Customer/Ledger actions only; no phone, KPay, database ID, secret, or raw note is included.",
-      "Legacy Ledger actions are added only when no matching audit Ledger action exists.",
+      "Customer/Ledger/CashSale actions only; no phone, KPay, database ID, secret, or raw note is included.",
+      "Legacy Ledger and CashSale actions are added only when no matching audit action exists.",
     ],
   };
 }
@@ -287,6 +343,9 @@ function sanitizeAiText(value) {
     .replace(/paidCount/gi, "ငွေချေသူအရေအတွက်")
     .replace(/debtCount/gi, "အကြွေးတိုးသူအရေအတွက်")
     .replace(/totalTransactions/gi, "စာရင်းစုစုပေါင်း")
+    .replace(/cashPaymentTypes/gi, "လက်ငင်းငွေပေးချေမှုအမျိုးအစား")
+    .replace(/cashAmount/gi, "လက်ငင်းရောင်းစုစုပေါင်း")
+    .replace(/cashCount/gi, "လက်ငင်းရောင်းအရေအတွက်")
     .replace(/paymentTypes/gi, "ငွေချေမှုအမျိုးအစား")
     .replace(/customerName/gi, "Customer အမည်")
     .replace(/entityType/gi, "လုပ်ဆောင်ချက်အမျိုးအစား")
@@ -523,6 +582,7 @@ export function buildRuleBasedExplanation(payload = {}) {
   const findings = [
     `${payload.date || "ရွေးထားသောရက်"} တွင် စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခု ရှိပါသည်။`,
     `ငွေချေမှု ${Number(summary.paidCount || 0).toLocaleString("en-US")} ခု၊ အကြွေးတိုးမှု ${Number(summary.debtCount || 0).toLocaleString("en-US")} ခု ရှိပါသည်။`,
+    Number(summary.cashCount || 0) > 0 ? `လက်ငင်းရောင်း ${Number(summary.cashCount).toLocaleString("en-US")} ခု၊ ${Number(summary.cashAmount || 0).toLocaleString("en-US")} ကျပ် ရှိပါသည်။` : null,
   ];
   const checks = buildDailySummaryReviewChecks({
     totalTransactions,
@@ -535,7 +595,7 @@ export function buildRuleBasedExplanation(payload = {}) {
   else findings.push("ဒီရက်အတွက် Customer အလိုက် စာရင်းမရှိပါ။");
   return {
     overview: `${payload.date || "ရွေးထားသောရက်"} အတွက် စာရင်းအချက်အလက်ကို အလိုအလျောက် အကျဉ်းချုပ်ပြထားပါသည်။ AI service ပြန်ကောင်းလာသောအခါ AI ဖြင့် အသေးစိတ် ပြန်ရှင်းနိုင်ပါသည်။`,
-    findings: findings.slice(0, 4),
+    findings: findings.filter(Boolean).slice(0, 4),
     checks: checks.slice(0, 4),
     caution: "ဤအဖြေသည် AI မရသေးချိန်တွင် စာရင်း data အပေါ်အခြေခံ၍ အလိုအလျောက်ပြထားခြင်းသာ ဖြစ်ပါသည်။ အရေးကြီးသောစာရင်းကို Website တွင် ပြန်စစ်ပါ။",
   };

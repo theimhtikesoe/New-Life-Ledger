@@ -20,6 +20,7 @@ export async function runDailyReport({ date } = {}) {
     "",
     `🟢 <b>ငွေချေ</b>  <code>${report.summary.paidCount} ခု</code>  <b>${report.summary.paidAmount.toLocaleString()} ကျပ်</b>`,
     `🔴 <b>အကြွေးတိုး</b>  <code>${report.summary.debtCount} ခု</code>  <b>${report.summary.debtAmount.toLocaleString()} ကျပ်</b>`,
+    `🟣 <b>လက်ငင်းရောင်း</b>  <code>${report.summary.cashCount || 0} ခု</code>  <b>${(report.summary.cashAmount || 0).toLocaleString()} ကျပ်</b>`,
     `🔵 <b>စုစုပေါင်းစာရင်း</b>  <code>${report.summary.totalTransactions} ခု</code>`,
     activityCount > 0 ? `🟣 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>  <code>${activityCount} ခု</code>` : null,
     "",
@@ -41,6 +42,8 @@ export async function runDailyReport({ date } = {}) {
     counts: {
       paid: report.summary.paidCount,
       debtIncrease: report.summary.debtCount,
+      cashSales: report.summary.cashCount || 0,
+      cashAmount: report.summary.cashAmount || 0,
       transactions: report.summary.totalTransactions,
       auditActions: report.summary.auditCount,
       activityActions: activityCount,

@@ -80,6 +80,9 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_actorName_idx" ON "AuditLog"("actorName")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_entityType_idx" ON "AuditLog"("entityType")`);
+        await setupQuery(`ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "hiddenAt" TIMESTAMP(3)`);
+        await setupQuery(`ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "hiddenBy" TEXT`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_hiddenAt_idx" ON "AuditLog"("hiddenAt")`);
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "AutoReportRun" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -276,6 +279,9 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_actorName_idx" ON "AuditLog"("actorName")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_entityType_idx" ON "AuditLog"("entityType")`);
+      await setupQuery(`ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "hiddenAt" TIMESTAMP(3)`);
+      await setupQuery(`ALTER TABLE "AuditLog" ADD COLUMN IF NOT EXISTS "hiddenBy" TEXT`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_hiddenAt_idx" ON "AuditLog"("hiddenAt")`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "AutoReportRun" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),

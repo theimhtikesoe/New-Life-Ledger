@@ -12,7 +12,7 @@ export async function GET(request) {
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
 
-    const [ledgers, auditLogs] = await Promise.all([
+    const [ledgers, cashSales, allAuditLogs] = await Promise.all([
       prisma.ledger.findMany({
         where: { date: { gte: start, lt: end } },
         select: {
@@ -22,6 +22,23 @@ export async function GET(request) {
           amount: true,
           paymentType: true,
           note: true,
+          customer: { select: { id: true, name: true } },
+        },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+      }),
+      prisma.cashSale.findMany({
+        where: { date: { gte: start, lt: end } },
+        select: {
+          id: true,
+          date: true,
+          saleType: true,
+          itemSize: true,
+          cartons: true,
+          rate: true,
+          deductions: true,
+          amount: true,
+          note: true,
+          paymentType: true,
           customer: { select: { id: true, name: true } },
         },
         orderBy: [{ date: "desc" }, { id: "desc" }],
@@ -37,12 +54,14 @@ export async function GET(request) {
         select: {
           entityType: true,
           entityId: true,
+          hiddenAt: true,
         },
       }),
     ]);
 
+    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt);
     const auditedLedgerIds = new Set(
-      auditLogs
+      allAuditLogs
         .filter((log) => log.entityType === "Ledger" && log.entityId)
         .map((log) => String(log.entityId)),
     );
@@ -53,10 +72,13 @@ export async function GET(request) {
       paidAmount: 0,
       unpaidCount: 0,
       unpaidAmount: 0,
+      cashCount: cashSales.length,
+      cashAmount: cashSales.reduce((total, sale) => total + Number(sale.amount || 0), 0),
       totalTransactions: ledgers.length,
       auditCount: auditLogs.length,
       activityCount,
       paymentTypes: {},
+      cashPaymentTypes: {},
     };
     const customerMap = new Map();
 
@@ -82,6 +104,8 @@ export async function GET(request) {
         paidAmount: 0,
         unpaidCount: 0,
         unpaidAmount: 0,
+        cashCount: 0,
+        cashAmount: 0,
       };
       if (isPaid) {
         current.paidCount += 1;
@@ -93,14 +117,33 @@ export async function GET(request) {
       customerMap.set(ledger.customer.id, current);
     }
 
+    for (const cashSale of cashSales) {
+      const current = customerMap.get(cashSale.customer.id) || {
+        customerId: cashSale.customer.id,
+        customerName: cashSale.customer.name,
+        paidCount: 0,
+        paidAmount: 0,
+        unpaidCount: 0,
+        unpaidAmount: 0,
+        cashCount: 0,
+        cashAmount: 0,
+      };
+      current.cashCount += 1;
+      current.cashAmount += Number(cashSale.amount || 0);
+      const paymentType = cashSale.paymentType || "CASH";
+      summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + Number(cashSale.amount || 0);
+      customerMap.set(cashSale.customer.id, current);
+    }
+
     return NextResponse.json({
       data: {
         date: dateParam,
         summary,
         customers: Array.from(customerMap.values()).sort((a, b) =>
-          b.paidAmount + b.unpaidAmount - (a.paidAmount + a.unpaidAmount),
+          b.paidAmount + b.unpaidAmount + b.cashAmount - (a.paidAmount + a.unpaidAmount + a.cashAmount),
         ),
         transactions: ledgers,
+        cashSales,
       },
     });
   } catch (error) {
