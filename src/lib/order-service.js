@@ -426,16 +426,16 @@ export async function archiveOrder({ orderId, actorName = "Staff" } = {}) {
 export async function archiveExpiredOrders({ actorName = "System", now = new Date() } = {}) {
   await ensureDatabase();
   const today = getMyanmarDateInputValue(now);
-  const candidates = await prisma.order.findMany({
+  const candidates = (await prisma.order.findMany({
     where: {
       archivedAt: null,
       historyTrashedAt: null,
       status: { not: "CANCELLED" },
-      requestedDate: { not: null, lt: today },
+      requestedDate: { not: "", lt: today },
     },
     select: { id: true, status: true, requestedDate: true, customer: { select: { name: true } }, draftCustomerName: true },
     orderBy: [{ requestedDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-  });
+  })).filter((order) => normalizeDateInput(order.requestedDate) === order.requestedDate && order.requestedDate < today);
   if (!candidates.length) return { archivedCount: 0, skippedCount: 0, cutoffDate: today };
   let archivedCount = 0;
   await prisma.$transaction(async (tx) => {
