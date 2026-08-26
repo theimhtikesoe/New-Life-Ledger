@@ -22,6 +22,7 @@ const baseOrder = {
     { bottleType: "ပလတ်စတစ်ဘူး", capacityLabel: "1 Liter", capacityMl: 1000, bottlesPerCard: 100, cardCount: 5, totalBottles: 500 },
   ],
   caps: [],
+  factoryOrderNumber: 7,
 };
 
 describe("order numeric and date normalization", () => {
@@ -130,7 +131,15 @@ describe("multi-line order totals and cap rules", () => {
     expect(warning.requestedTotalPcs).toBe(5020);
     expect(warning.warningText).toContain("မှာထား 5,020 pcs");
     expect(calculateOrderTotals(order)).toMatchObject({ totalBottles: 1500, totalRequestedCaps: 5020 });
-    expect(formatFactoryOrderMessage(order)).toContain("5,020");
+    const websiteMessage = formatFactoryOrderMessage(order, { source: "WEBSITE" });
+    expect(websiteMessage).toContain("🟢 စက်ရုံအတွက် Order 7");
+    expect(websiteMessage).toContain("Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။");
+    expect(websiteMessage).toContain("5,020");
+    expect(websiteMessage).not.toContain("အဖုံးကွာခြားချက် သတိပေးချက်သာ");
+    expect(websiteMessage).not.toContain("မျှော်မှန်း 1,500");
+    const telegramMessage = formatFactoryOrderMessage(order, { source: "TELEGRAM" });
+    expect(telegramMessage).toContain("Telegram မှ Confirm ပြီးသော order ဖြစ်ပါသည်။");
+    expect(telegramMessage).not.toContain("Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။");
   });
 
   it("formats the Telegram draft without internal missing fields or requested-cap total", () => {

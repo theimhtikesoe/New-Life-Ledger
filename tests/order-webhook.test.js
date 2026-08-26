@@ -365,7 +365,7 @@ describe("Telegram order webhook safety gates", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("confirmed");
     expect(mocks.updateOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, status: "CONFIRMED", mode: "IMMEDIATE", actorName: "Staff" }));
-    expect(mocks.sendFactoryNotificationForOrder).toHaveBeenCalledWith(order.id, { actorName: "Staff" });
+    expect(mocks.sendFactoryNotificationForOrder).toHaveBeenCalledWith(order.id, { actorName: "Staff", source: "TELEGRAM" });
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 91, replyMarkup: { inline_keyboard: [] } }));
   });
 });

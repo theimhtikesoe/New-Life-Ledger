@@ -378,13 +378,16 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
   ].flat(Infinity).filter((line) => line !== null && line !== undefined && line !== "").join("\n").trim();
 }
 
-export function formatFactoryOrderMessage(order, { batch = false } = {}) {
+export function formatFactoryOrderMessage(order, { batch = false, source = "WEBSITE" } = {}) {
   const totals = calculateOrderTotals(order);
-  const warnings = calculateCapWarnings(order).filter((cap) => cap.warningText);
   const capLines = (order.caps || []).map((cap) => `- ${cap.capType}: ပုံမှန် ${(cap.normalPcs || 0).toLocaleString()} pcs + အပို ${(cap.extraPcs || 0).toLocaleString()} pcs = ${(cap.requestedTotalPcs || 0).toLocaleString()} pcs`);
   const lineLines = (order.lines || []).map((line, index) => `${index + 1}. ${line.bottleType || "ဘူး"} / ${line.capacityLabel || `${line.capacityMl || "?"} ml`} / ${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး`);
+  const factoryNumber = Number.isInteger(order.factoryOrderNumber) && order.factoryOrderNumber > 0 ? ` ${order.factoryOrderNumber}` : "";
+  const sourceLabel = source === "TELEGRAM"
+    ? "Telegram မှ Confirm ပြီးသော order ဖြစ်ပါသည်။"
+    : "Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။";
   return [
-    batch ? "🟢 စက်ရုံ မနက်ပိုင်း Order စုစည်းချက်" : "🟢 စက်ရုံအတွက် Order အတည်ပြုချက်",
+    batch ? "🟢 စက်ရုံ မနက်ပိုင်း Order စုစည်းချက်" : `🟢 စက်ရုံအတွက် Order${factoryNumber}`,
     `Order ID: ${String(order.id).slice(0, 8)}`,
     `Customer: ${order.customer?.name || order.draftCustomerName || "မသတ်မှတ်ရသေး"}`,
     `ရက်: ${formatDateLabel(order.requestedDate)}`,
@@ -397,10 +400,9 @@ export function formatFactoryOrderMessage(order, { batch = false } = {}) {
     "",
     "အဖုံး:",
     ...(capLines.length ? capLines : ["မသတ်မှတ်ရသေး"]),
-    ...(warnings.length ? ["", "⚠️ အဖုံးကွာခြားချက် သတိပေးချက်သာ:", ...warnings.map((cap) => `- ${cap.warningText}`)] : []),
     "",
-    "Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။",
-  ].join("\n");
+    batch ? "Website မှ Batch ဖြင့် ပို့သော order ဖြစ်ပါသည်။" : sourceLabel,
+  ].filter((line) => line !== null).join("\n");
 }
 
 export function buildOrderExtractionPrompt(sourceText) {

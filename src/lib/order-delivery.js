@@ -30,21 +30,60 @@ export async function updateOrderAutomationSetting({ morningBatchEnabled } = {})
   });
 }
 
-async function claimDelivery(deliveryId) {
-  await ensureDatabase();
-  return prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`new-life-ledger-order-delivery:${deliveryId}`}))`;
-    const delivery = await tx.orderDelivery.findUnique({ where: { id: String(deliveryId) } });
-    if (!delivery) throw new Error("Order delivery record မတွေ့ပါ။");
-    if (delivery.status === "SENT") return { delivery, shouldSend: false, reason: "already_sent" };
-    if (delivery.status === "SENDING") return { delivery, shouldSend: false, reason: "already_sending" };
-    if (delivery.status === "CANCELLED") return { delivery, shouldSend: false, reason: "cancelled" };
-    const claimed = await tx.orderDelivery.update({ where: { id: delivery.id }, data: { status: "SENDING", errorMessage: null } });
-    return { delivery: claimed, shouldSend: true, reason: "claimed" };
+async function reserveFactoryOrderNumber(tx, order, factoryOrderDate, { sequenceLocked = false } = {}) {
+  if (!factoryOrderDate || (order.factoryOrderDate === factoryOrderDate && Number.isInteger(order.factoryOrderNumber))) return order;
+  if (!sequenceLocked) await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`new-life-ledger-factory-order-sequence:${factoryOrderDate}`}))`;
+  const currentMax = await tx.order.aggregate({
+    where: { factoryOrderDate, factoryOrderNumber: { not: null } },
+    _max: { factoryOrderNumber: true },
+  });
+  const nextNumber = Number(currentMax._max.factoryOrderNumber || 0) + 1;
+  return tx.order.update({
+    where: { id: order.id },
+    data: { factoryOrderDate, factoryOrderNumber: nextNumber },
+    select: { id: true, factoryOrderDate: true, factoryOrderNumber: true },
   });
 }
 
-export async function sendFactoryNotificationForOrder(orderId, { actorName = "Staff" } = {}) {
+async function numberOrdersForFactoryDate(orders, factoryOrderDate) {
+  if (!factoryOrderDate || !orders.length) return orders;
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`new-life-ledger-factory-order-sequence:${factoryOrderDate}`}))`;
+    let sequenceLocked = true;
+    const numbered = [];
+    for (const order of orders) {
+      const nextOrder = await reserveFactoryOrderNumber(tx, order, factoryOrderDate, { sequenceLocked });
+      sequenceLocked = true;
+      numbered.push({ ...order, ...nextOrder });
+    }
+    return numbered;
+  });
+}
+
+async function claimDelivery(deliveryId, { factoryOrderDate = null } = {}) {
+  await ensureDatabase();
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`new-life-ledger-order-delivery:${deliveryId}`}))`;
+    const delivery = await tx.orderDelivery.findUnique({
+      where: { id: String(deliveryId) },
+      include: { order: { select: { id: true, factoryOrderDate: true, factoryOrderNumber: true } } },
+    });
+    if (!delivery) throw new Error("Order delivery record မတွေ့ပါ။");
+    if (delivery.status === "SENT") return { delivery, order: delivery.order, shouldSend: false, reason: "already_sent" };
+    if (delivery.status === "SENDING") return { delivery, order: delivery.order, shouldSend: false, reason: "already_sending" };
+    if (delivery.status === "CANCELLED") return { delivery, order: delivery.order, shouldSend: false, reason: "cancelled" };
+
+    let order = delivery.order;
+    if (delivery.destinationType === "FACTORY" && delivery.mode === "IMMEDIATE") {
+      order = await reserveFactoryOrderNumber(tx, order, factoryOrderDate);
+    }
+
+    const claimed = await tx.orderDelivery.update({ where: { id: delivery.id }, data: { status: "SENDING", errorMessage: null } });
+    return { delivery: claimed, order, shouldSend: true, reason: "claimed" };
+  });
+}
+
+export async function sendFactoryNotificationForOrder(orderId, { actorName = "Staff", source = "WEBSITE" } = {}) {
   await ensureDatabase();
   const { token, factoryChatId } = getTelegramOrderConfig();
   if (!token || !factoryChatId) throw new Error("TELEGRAM_BOT_TOKEN နှင့် TELEGRAM_FACTORY_GROUP_CHAT_ID မပြည့်စုံသေးပါ။");
@@ -55,11 +94,13 @@ export async function sendFactoryNotificationForOrder(orderId, { actorName = "St
   const delivery = order.deliveries?.find((item) => item.destinationType === "FACTORY" && item.mode === "IMMEDIATE")
     || await prisma.orderDelivery.findFirst({ where: { orderId: String(orderId), destinationType: "FACTORY", mode: "IMMEDIATE" } });
   if (!delivery) throw new Error("Factory delivery record မတွေ့ပါ။");
-  const claim = await claimDelivery(delivery.id);
+  const factoryOrderDate = getMyanmarDateInputValue();
+  const claim = await claimDelivery(delivery.id, { factoryOrderDate });
   if (!claim.shouldSend) return { sent: claim.reason === "already_sent", duplicate: true, reason: claim.reason, order };
+  const claimedOrder = { ...order, ...(claim.order || {}) };
 
   try {
-    const result = await sendTelegramTextToChat({ chatId: factoryChatId, text: formatFactoryOrderMessage(order) });
+    const result = await sendTelegramTextToChat({ chatId: factoryChatId, text: formatFactoryOrderMessage(claimedOrder, { source }) });
     await setDeliveryResult({ deliveryId: delivery.id, status: "SENT", telegramChatId: factoryChatId, telegramMessageId: result.messageId });
     const updated = await prisma.order.update({ where: { id: String(orderId) }, data: { status: "FACTORY_NOTIFIED" }, include: { customer: true, lines: true, caps: true, deliveries: true } });
     await writeAuditLog({
@@ -99,12 +140,13 @@ export async function runMorningOrderBatch({ batchDate = null, actorName = "Staf
   });
   if (!claim.shouldRun) return { skipped: true, reason: claim.reason, batchDate: date };
 
-  const orders = await getQueuedOrdersForDate(date);
+    let orders = await getQueuedOrdersForDate(date);
   try {
     if (!orders.length) {
       await prisma.orderBatchRun.update({ where: { id: claim.run.id }, data: { status: "SUCCESS", orderCount: 0, sentAt: new Date() } });
       return { sent: false, empty: true, batchDate: date, orderCount: 0 };
     }
+    orders = await numberOrdersForFactoryDate(orders, getMyanmarDateInputValue());
     const result = await sendTelegramTextToChat({ chatId: factoryChatId, text: formatFactoryBatchMessage(orders) });
     await prisma.$transaction(async (tx) => {
       for (const order of orders) {

@@ -97,6 +97,17 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_createdAt_idx" ON "AutoReportRun"("createdAt")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_reportDate_idx" ON "AutoReportRun"("reportDate")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
+        const orderTableCheck = await prisma.$queryRaw`
+          SELECT count(*)
+          FROM information_schema.tables
+          WHERE table_name = 'Order'
+        `.catch(() => [{ count: 0 }]);
+        if (orderTableCheck[0]?.count > 0) {
+          await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderDate" TEXT`);
+          await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderNumber" INTEGER`);
+          await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_factoryOrderDate_idx" ON "Order"("factoryOrderDate")`);
+          await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Order_factoryOrderDate_factoryOrderNumber_key" ON "Order"("factoryOrderDate", "factoryOrderNumber")`);
+        }
         setupComplete = true;
         return;
       }
@@ -225,6 +236,17 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_createdAt_idx" ON "AutoReportRun"("createdAt")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_reportDate_idx" ON "AutoReportRun"("reportDate")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
+      const orderTableCheck = await prisma.$queryRaw`
+        SELECT count(*)
+        FROM information_schema.tables
+        WHERE table_name = 'Order'
+      `.catch(() => [{ count: 0 }]);
+      if (orderTableCheck[0]?.count > 0) {
+        await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderDate" TEXT`);
+        await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderNumber" INTEGER`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_factoryOrderDate_idx" ON "Order"("factoryOrderDate")`);
+        await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Order_factoryOrderDate_factoryOrderNumber_key" ON "Order"("factoryOrderDate", "factoryOrderNumber")`);
+      }
       
       // Mark setup as complete
       setupComplete = true;

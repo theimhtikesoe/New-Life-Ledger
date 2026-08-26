@@ -42,6 +42,8 @@ model Order {
   aiNotes            String?
   destination        String?
   notificationMode   String          @default("IMMEDIATE")
+  factoryOrderDate   String?
+  factoryOrderNumber Int?
   confirmedBy        String?
   confirmedAt        DateTime?
   cancelledAt        DateTime?
@@ -58,6 +60,8 @@ model Order {
   @@unique([sourceUpdateId])
   @@index([status])
   @@index([requestedDate])
+  @@index([factoryOrderDate])
+  @@unique([factoryOrderDate, factoryOrderNumber])
   @@index([customerId])
   @@index([cancelledAt])
   @@index([archivedAt])

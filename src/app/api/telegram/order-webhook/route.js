@@ -222,7 +222,7 @@ async function handleCallback(update) {
     let finalOrder = statusOrder;
     let deliveryWarning = "";
     try {
-      const delivery = await sendFactoryNotificationForOrder(orderId, { actorName: "Staff" });
+      const delivery = await sendFactoryNotificationForOrder(orderId, { actorName: "Staff", source: "TELEGRAM" });
       finalOrder = delivery.order || statusOrder;
       if (delivery.duplicate) deliveryWarning = "\n\nℹ️ Factory message ကို ထပ်မပို့ထားပါ။";
     } catch (deliveryError) {
