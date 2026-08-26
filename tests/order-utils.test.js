@@ -240,19 +240,20 @@ describe("missing-field and schema safeguards", () => {
     const order = { id: "11111111-1111-4111-8111-111111111111", status: "DRAFT", customer: { id: "customer-1" }, missingFields: [] };
     const keyboard = buildOrderActionKeyboard(order);
     expect(keyboard.inline_keyboard[0]).toEqual([{ text: "✅ Confirm", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" }]);
-    expect(keyboard.inline_keyboard[1]).toEqual([{ text: "❌ Cancel", callback_data: "order|cancel|I|11111111-1111-4111-8111-111111111111" }]);
-    expect(keyboard.inline_keyboard).toHaveLength(2);
+    expect(keyboard.inline_keyboard[1]).toEqual([{ text: "📋 အသေးစိတ်ကြည့်ရန်", callback_data: "order|menu|I|11111111-1111-4111-8111-111111111111" }]);
+    expect(keyboard.inline_keyboard[2]).toEqual([{ text: "❌ Cancel", callback_data: "order|cancel|I|11111111-1111-4111-8111-111111111111" }]);
+    expect(keyboard.inline_keyboard).toHaveLength(3);
     expect(buildOrderMoreKeyboard(order).inline_keyboard[0]).toEqual([{ text: "📦 08:10 Batch ထည့်ရန်", callback_data: "order|confirm|B|11111111-1111-4111-8111-111111111111" }]);
     expect(buildOrderActionKeyboard({ ...order, status: "NEEDS_CUSTOMER", customer: null, missingFields: [], sourceText: "မှာယူမှု" }, "", { allowRetry: true }).inline_keyboard[0][0].text).toBe("👤 ရှိပြီးသား Customer ချိတ်ရန်");
     const linkedWithLegacyCustomerFlag = buildOrderActionKeyboard({ ...order, missingFields: ["Customer အမည်"] });
-    expect(linkedWithLegacyCustomerFlag.inline_keyboard).toHaveLength(2);
+    expect(linkedWithLegacyCustomerFlag.inline_keyboard).toHaveLength(3);
     expect(linkedWithLegacyCustomerFlag.inline_keyboard[0][0].text).toBe("✅ Confirm");
   });
 
   it("builds direct callback controls and recognizes only Telegram admin statuses", () => {
     const keyboard = buildOrderDraftKeyboard({ id: "11111111-1111-4111-8111-111111111111", status: "DRAFT", customer: { id: "customer-1" }, missingFields: [] }, "https://example.test");
     expect(keyboard.inline_keyboard[0]).toEqual([{ text: "✅ Confirm", callback_data: "order|confirm|I|11111111-1111-4111-8111-111111111111" }]);
-    expect(keyboard.inline_keyboard[1][0].callback_data).toBe("order|cancel|I|11111111-1111-4111-8111-111111111111");
+    expect(keyboard.inline_keyboard[1][0].callback_data).toBe("order|menu|I|11111111-1111-4111-8111-111111111111");
     expect(isTelegramOrderAdminStatus("administrator")).toBe(true);
     expect(isTelegramOrderAdminStatus("creator")).toBe(true);
     expect(isTelegramOrderAdminStatus("member")).toBe(false);

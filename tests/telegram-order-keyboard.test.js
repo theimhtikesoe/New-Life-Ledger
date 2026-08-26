@@ -14,6 +14,7 @@ describe("Telegram order action keyboards", () => {
     const keyboard = buildOrderActionKeyboard(order, "https://example.test", { allowRetry: true });
     expect(keyboard.inline_keyboard).toEqual([
       [{ text: "✅ Confirm", callback_data: `order|confirm|I|${order.id}` }],
+      [{ text: "📋 အသေးစိတ်ကြည့်ရန်", callback_data: `order|menu|I|${order.id}` }],
       [{ text: "❌ Cancel", callback_data: `order|cancel|I|${order.id}` }],
     ]);
     expect(JSON.stringify(keyboard)).not.toContain("AI");

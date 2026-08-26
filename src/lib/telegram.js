@@ -156,6 +156,7 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
   const rows = [];
   if (canConfirm) {
     rows.push([{ text: "✅ Confirm", callback_data: `order|confirm|I|${id}` }]);
+    rows.push([{ text: "📋 အသေးစိတ်ကြည့်ရန်", callback_data: `order|menu|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
   } else if (!blocked) {
     rows.push([{ text: "👤 ရှိပြီးသား Customer ချိတ်ရန်", callback_data: `order|customer|I|${id}` }]);
@@ -166,6 +167,7 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
     if (hasDateMissing) rows.push([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${id}` }]);
     if (hasDestinationMissing) rows.push([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${id}` }]);
     if (hasPhoneMissing) rows.push([{ text: "☎️ ဖုန်း ဖြည့်ရန်", callback_data: `order|ask_phone|I|${id}` }]);
+    rows.push([{ text: "📋 အသေးစိတ်ကြည့်ရန်", callback_data: `order|menu|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
   }
   return rows.length ? { inline_keyboard: rows } : undefined;

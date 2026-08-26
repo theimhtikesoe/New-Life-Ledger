@@ -116,6 +116,9 @@ async function handleCallback(update) {
   };
   const chatId = String(callback?.message?.chat?.id || "");
   if (!configuredOrderChatId() || chatId !== configuredOrderChatId()) return { ok: true, ignored: "wrong_chat" };
+  // Acknowledge before the network-bound admin permission check so Telegram
+  // never keeps the button spinner running while getChatMember is pending.
+  await acknowledge({ callbackQueryId: callback?.id, text: "လုပ်ဆောင်နေပါသည်။ ခဏစောင့်ပါ။" });
   const callbackUserId = callback?.from?.id;
   if (!(await isAuthorizedOrderAdmin(chatId, callbackUserId))) {
     await acknowledge({ callbackQueryId: callback?.id, text: "Group admin သာ Order ခလုတ်နှိပ်နိုင်ပါသည်။", showAlert: true });
@@ -176,7 +179,7 @@ async function handleCallback(update) {
         console.warn("Telegram Customer candidate Markdown edit failed; retrying plain text", editError);
         await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: selectionText.replace(/```/g, ""), replyMarkup });
       }
-      await acknowledge({ callbackQueryId: callback?.id, text: candidateCount ? "ရှိပြီးသား Customer ကို ရွေးပါ။" : "ကိုက်ညီသော Customer မတွေ့သေးပါ။" });
+      // The callback was already acknowledged immediately above.
       return { ok: true, status: "customer_candidates", orderId, candidateCount };
     }
     if (action.toLowerCase() === "link") {
@@ -187,7 +190,7 @@ async function handleCallback(update) {
       if (!candidate) throw new Error("ရွေးထားသော Customer ကို မတွေ့ပါ။ ပြန်ရှာပြီး ရွေးပါ။");
       const linked = await linkOrderCustomer({ orderId, customerId: candidate.id, actorName: "Staff" });
       await rememberCallbackMessage();
-      await acknowledge({ callbackQueryId: callback?.id, text: `Customer ${candidate.name} နှင့် ချိတ်ပြီးပါပြီ။` });
+      // The callback was already acknowledged immediately above.
       await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(linked)}\n\n👤 Customer ချိတ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(linked, process.env.NEXT_PUBLIC_APP_URL) });
       return { ok: true, status: "customer_linked", orderId, customerId: candidate.id };
     }
@@ -197,7 +200,7 @@ async function handleCallback(update) {
         ask_destination: "📍 ကားဂိတ်/နေရာကို ရေးပြီး ဒီစာကို Reply ပြန်ပါ။ ဥပမာ — တောင်ပေါ်ဂိတ်",
         ask_phone: "☎️ Customer ဖုန်းနံပါတ်ကို ရေးပြီး ဒီစာကို Reply ပြန်ပါ။",
       };
-      await acknowledge({ callbackQueryId: callback?.id, text: "အောက်မှာမေးထားတဲ့အတိုင်း Reply ပြန်ရေးပါ။" });
+      // The callback was already acknowledged immediately above.
       await sendTelegramTextToChat({
         chatId,
         replyToMessageId: callbackMessageId,
@@ -221,7 +224,7 @@ async function handleCallback(update) {
         await acknowledge({ callbackQueryId: callback?.id, text: "Order မတွေ့ပါ။", showAlert: true });
         return { ok: true, status: "missing_order", orderId };
       }
-      await acknowledge({ callbackQueryId: callback?.id, text: "Order ကို ပြန်စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။" });
+      // The callback was already acknowledged immediately above.
       try {
         const fallbackExtraction = buildFallbackOrderExtraction(current.sourceText);
         const extracted = isFallbackExtractionUsable(fallbackExtraction) ? fallbackExtraction : await extractOrderFromText(current.sourceText);
@@ -238,24 +241,26 @@ async function handleCallback(update) {
     if (action.toLowerCase() === "cancel") {
       const order = await updateOrderStatus({ orderId, status: "CANCELLED", actorName: "Staff", auditMetadata });
       await rememberCallbackMessage();
-      await acknowledge({ callbackQueryId: callback?.id, text: "Order ကို Cancel လုပ်ပြီးပါပြီ။" });
+      // The callback was already acknowledged immediately above.
       await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(order)}\n\n❌ Telegram admin မှ Cancel လုပ်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
       return { ok: true, status: "cancelled", orderId };
     }
 
     const isBatch = modeCode.toUpperCase() === "B";
     const status = isBatch ? "BATCH_QUEUED" : "CONFIRMED";
-    await acknowledge({ callbackQueryId: callback?.id, text: isBatch ? "Batch ထဲထည့်ရန် လက်ခံပါပြီ။ စာရင်းသိမ်းနေပါသည်။" : "Confirm ကို လက်ခံပါပြီ။ Factory group သို့ စစ်ဆေး/ပို့နေပါသည်။" });
+    // Status transition continues after the immediate callback acknowledgement.
     const statusOrder = await updateOrderStatus({ orderId, status, mode: isBatch ? "MORNING_BATCH" : "IMMEDIATE", actorName: "Staff", auditMetadata });
     await rememberCallbackMessage();
     if (isBatch) {
-      await acknowledge({ callbackQueryId: callback?.id, text: "08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။" });
+      // The callback was already acknowledged immediately above.
       await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(statusOrder)}\n\n📦 Telegram admin မှ 08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
       return { ok: true, status: "batch_queued", orderId };
     }
 
     let finalOrder = statusOrder;
     let deliveryWarning = "";
+    // Reflect the durable Confirm state immediately; Factory delivery may be slower.
+    await editTelegramOrderMessageOrReply({ chatId, messageId: callbackMessageId, replyToMessageId: callbackMessageId, text: `${formatOrderDraftMessage(statusOrder)}\n\n⏳ Confirm ဖြစ်ပြီး Factory group သို့ ပို့နေပါသည်။`, replyMarkup: { inline_keyboard: [] } });
     try {
       const delivery = await sendFactoryNotificationForOrder(orderId, { actorName: "Staff", source: "TELEGRAM" });
       finalOrder = delivery.order || statusOrder;
@@ -264,7 +269,7 @@ async function handleCallback(update) {
       console.warn("Telegram admin immediate factory notification is pending", deliveryError);
       deliveryWarning = "\n\n⚠️ Order Confirm ဖြစ်ပါပြီ။ Factory group မသတ်မှတ်ရသေးခြင်း သို့မဟုတ် ပို့ရာတွင် အခက်အခဲရှိသောကြောင့် notification ကို Pending ထားပါသည်။";
     }
-    await acknowledge({ callbackQueryId: callback?.id, text: deliveryWarning ? "Confirm ပြီးပါပြီ။ Factory notification Pending ဖြစ်နေပါသည်။" : "Confirm ပြီး Factory group သို့ ပို့ပြီးပါပြီ။" });
+    // The callback was already acknowledged immediately above.
     await editTelegramOrderMessageOrReply({ chatId, messageId: callbackMessageId, replyToMessageId: callbackMessageId, text: `${formatOrderDraftMessage(finalOrder)}\n\n✅ Telegram admin မှ Confirm လုပ်ပြီးပါပြီ။${deliveryWarning}`, replyMarkup: { inline_keyboard: [] } });
     return { ok: true, status: "confirmed", orderId, deliveryPending: Boolean(deliveryWarning) };
   } catch (error) {

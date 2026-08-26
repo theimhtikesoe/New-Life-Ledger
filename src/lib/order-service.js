@@ -697,18 +697,27 @@ export async function linkOrderCustomer({ orderId, customerId, actorName = "Staf
   await ensureDatabase();
   const customer = await getActiveCustomer(customerId);
   if (!customer) throw new Error("ရွေးထားသော active Customer မတွေ့ပါ။");
-  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, select: { id: true, status: true, archivedAt: true } });
+  const current = await prisma.order.findUnique({ where: { id: String(orderId) }, select: { id: true, status: true, archivedAt: true, requestedDate: true, destination: true, customerPhone: true, missingFields: true } });
   if (!current) throw new Error("Order မတွေ့ပါ။");
   if (current.archivedAt) throw new Error("Archive လုပ်ပြီး Order ကို ပြန်ချိတ်၍မရပါ။ အရင် Restore လုပ်ပါ။");
   if (["FACTORY_NOTIFIED", "COMPLETED", "CANCELLED"].includes(current.status)) throw new Error("ပို့ပြီး/ပြီးစီး/ပယ်ဖျက်ပြီး Order ကို Customer ပြန်ချိတ်၍မရပါ။");
+  const missingSet = new Set(removeCustomerMissingFields(current.missingFields));
+  if (current.requestedDate) Array.from(missingSet).filter((item) => item.includes("ထုတ်ရမည့်ရက်")).forEach((item) => missingSet.delete(item));
+  else missingSet.add("ထုတ်ရမည့်ရက်");
+  if (current.destination) Array.from(missingSet).filter((item) => item.includes("ကားဂိတ်/နေရာ")).forEach((item) => missingSet.delete(item));
+  else missingSet.add("ကားဂိတ်/နေရာ");
+  const linkedPhone = String(customer.phone || current.customerPhone || "").trim() || null;
+  if (linkedPhone) Array.from(missingSet).filter((item) => /ဖုန်း|phone/i.test(item)).forEach((item) => missingSet.delete(item));
+  const remainingMissingFields = Array.from(missingSet);
   const order = await prisma.order.update({
     where: { id: String(orderId) },
     data: {
       customerId: customer.id,
       draftCustomerName: null,
       draftCustomerPhone: null,
-      missingFields: removeCustomerMissingFields(current.missingFields),
-      status: "DRAFT",
+      customerPhone: linkedPhone,
+      missingFields: remainingMissingFields,
+      status: remainingMissingFields.length ? "NEEDS_REVIEW" : "DRAFT",
     },
     include: ORDER_INCLUDE,
   });
@@ -772,6 +781,7 @@ export async function updateOrderDetails({ orderId, requestedDate, destination, 
   else missingSet.add("ထုတ်ရမည့်ရက်");
   if (nextDestination) Array.from(missingSet).filter((item) => item.includes("ကားဂိတ်/နေရာ")).forEach((item) => missingSet.delete(item));
   else missingSet.add("ကားဂိတ်/နေရာ");
+  if (nextPhone) Array.from(missingSet).filter((item) => /ဖုန်း|phone/i.test(item)).forEach((item) => missingSet.delete(item));
   const missing = Array.from(missingSet);
   const nextStatus = current.customerId ? (missing.length ? "NEEDS_REVIEW" : "DRAFT") : "NEEDS_CUSTOMER";
   const updated = await prisma.order.update({

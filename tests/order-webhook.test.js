@@ -197,7 +197,7 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
     expect(mocks.editTelegramMessageText).not.toHaveBeenCalled();
     expect(mocks.sendFactoryNotificationForOrder).not.toHaveBeenCalled();
-    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ showAlert: true }));
+    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-1", text: "လုပ်ဆောင်နေပါသည်။ ခဏစောင့်ပါ။" }));
   });
 
   it("can narrow permission to a selected admin allowlist before calling Telegram member lookup", async () => {
@@ -254,7 +254,7 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("ai_retry_failed");
-    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-retry-failed", text: "Order ကို ပြန်စစ်နေပါသည်။ ခဏစောင့်ပေးပါ။" }));
+    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-retry-failed", text: "လုပ်ဆောင်နေပါသည်။ ခဏစောင့်ပါ။" }));
     expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(1);
     expect(mocks.editTelegramMessageText.mock.calls[0][0].text).toBe("Draft message");
     expect(mocks.editTelegramMessageText.mock.calls[0][0].replyMarkup).toEqual({ inline_keyboard: [] });
@@ -394,8 +394,8 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("confirmed");
-    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-fallback", text: expect.stringContaining("Confirm ကို လက်ခံပါပြီ") }));
-    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(2);
+    expect(mocks.answerTelegramCallbackQuery).toHaveBeenCalledWith(expect.objectContaining({ callbackQueryId: "callback-fallback", text: "လုပ်ဆောင်နေပါသည်။ ခဏစောင့်ပါ။" }));
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledTimes(3);
     expect(mocks.editTelegramMessageText.mock.calls[0][0]).toHaveProperty("parseMode", "Markdown");
     expect(mocks.editTelegramMessageText.mock.calls[1][0]).not.toHaveProperty("parseMode");
     expect(mocks.editTelegramMessageText.mock.calls[1][0].text).not.toContain("```");
