@@ -19,6 +19,7 @@ export async function GET(request) {
     ].filter(Boolean))) : [];
     const showDeleted = searchParams.get("deleted") === "true";
     const includeLedgers = searchParams.get("includeLedgers") !== "false";
+    const includeCashSales = searchParams.get("includeCashSales") === "true";
 
     // Optimized: Select only necessary fields to reduce data transfer
     // Better search for Burmese: prioritize startsWith, then fallback to contains
@@ -41,6 +42,19 @@ export async function GET(request) {
           saleType: true,
           cartons: true,
           rate: true,
+          amount: true,
+          note: true,
+          paymentType: true,
+        },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+      };
+    }
+    if (includeCashSales) {
+      select.cashSales = {
+        select: {
+          id: true,
+          date: true,
+          saleType: true,
           amount: true,
           note: true,
           paymentType: true,

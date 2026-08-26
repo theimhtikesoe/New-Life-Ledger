@@ -19,6 +19,20 @@ const ledgerSelect = {
   paymentType: true,
 };
 
+const cashSaleSelect = {
+  id: true,
+  date: true,
+  saleType: true,
+  itemSize: true,
+  cartons: true,
+  rate: true,
+  deductions: true,
+  amount: true,
+  note: true,
+  paymentType: true,
+  createdAt: true,
+};
+
 export async function GET(request, { params }) {
   try {
     await ensureDatabase();
@@ -26,6 +40,7 @@ export async function GET(request, { params }) {
     const id = params.id;
     const { searchParams } = new URL(request.url);
     const includeLedgers = searchParams.get("includeLedgers") !== "false";
+    const includeCashSales = searchParams.get("includeCashSales") !== "false";
     const customer = await prisma.customer.findUnique({
       where: { id },
       select: {
@@ -40,10 +55,19 @@ export async function GET(request, { params }) {
           select: { id: true, kpayName: true },
           orderBy: { kpayName: "asc" },
         },
-        ...(includeLedgers
+          ...(includeLedgers
           ? {
               ledgers: {
                 select: ledgerSelect,
+                orderBy: [{ date: "desc" }, { id: "desc" }],
+                take: 50,
+              },
+            }
+          : {}),
+        ...(includeCashSales
+          ? {
+              cashSales: {
+                select: cashSaleSelect,
                 orderBy: [{ date: "desc" }, { id: "desc" }],
                 take: 50,
               },
@@ -91,6 +115,11 @@ export async function PATCH(request, { params }) {
         },
         ledgers: {
           select: ledgerSelect,
+          orderBy: [{ date: "desc" }, { id: "desc" }],
+          take: 50,
+        },
+        cashSales: {
+          select: cashSaleSelect,
           orderBy: [{ date: "desc" }, { id: "desc" }],
           take: 50,
         },

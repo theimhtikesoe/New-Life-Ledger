@@ -18,6 +18,7 @@ model Customer {
   ledgers         Ledger[]
   suggestedKpay   UnverifiedKpay[] @relation("KpaySuggestion")
   orders          Order[]
+  cashSales       CashSale[]
   createdAt       DateTime         @default(now())
   deletedAt       DateTime?
 }
@@ -161,6 +162,25 @@ model Ledger {
   customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   type        String
   saleType    String
+  itemSize    String?
+  cartons     Int?
+  rate        Int?
+  deductions  Int      @default(0)
+  amount      Int
+  note        String?
+  paymentType String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([customerId])
+  @@index([date])
+}
+
+model CashSale {
+  id          String   @id @default(uuid()) @db.Uuid
+  customerId  String   @db.Uuid
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  saleType    String   @default("RETAIL")
   itemSize    String?
   cartons     Int?
   rate        Int?

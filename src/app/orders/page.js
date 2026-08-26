@@ -119,7 +119,6 @@ function CapLines({ order }) {
         <div key={cap.id || index} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
           <p className="font-semibold text-slate-900">{cap.capType}</p>
           <p className="mt-1">ပုံမှန် {(cap.normalPcs || 0).toLocaleString()} pcs + အပို {(cap.extraPcs || 0).toLocaleString()} pcs = <strong>{(cap.requestedTotalPcs || 0).toLocaleString()}</strong> pcs</p>
-          {cap.warningText ? <p className="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800">⚠️ {cap.warningText} (သတိပေးချက်သာ)</p> : null}
         </div>
       )) : <p className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-500">အဖုံးအချက်အလက် မပါသေးပါ။</p>}
     </div>
@@ -150,6 +149,74 @@ function OrderHistoryTimeline({ logs }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function previewNumber(value, fallback = "မသတ်မှတ်ရသေး") {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number.toLocaleString() : fallback;
+}
+
+function previewQuotedRate(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "မပါသေးပါ";
+  return number >= 1000 && number % 1000 === 0 ? `${(number / 1000).toLocaleString()}k` : number.toLocaleString();
+}
+
+function ManualOrderPreviewDetails({ order }) {
+  const lines = Array.isArray(order?.lines) ? order.lines : [];
+  const caps = Array.isArray(order?.caps) ? order.caps : [];
+  const totalCards = lines.reduce((sum, line) => sum + (Number(line.cardCount) || 0), 0);
+  const totalBottles = lines.reduce((sum, line) => sum + (Number(line.totalBottles) || 0), 0);
+  const missingFields = Array.isArray(order?.missingFields) ? order.missingFields : [];
+  return (
+    <div className="mt-3 rounded-xl border border-cyan-200 bg-white p-3 text-sm text-slate-700 sm:p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-bold text-slate-900">ဖတ်မိသည့်အချက်များ — အသေးစိတ်</p>
+        <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-bold text-cyan-900">{lines.length} ဘူးလိုင်း</span>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <p className="rounded-lg bg-slate-50 px-3 py-2">Customer: <strong>{order?.customerName || "မသတ်မှတ်ရသေး"}</strong></p>
+        <p className="rounded-lg bg-slate-50 px-3 py-2">ထုတ်ရမည့်ရက်: <strong>{order?.requestedDate || "မသတ်မှတ်ရသေး"}</strong></p>
+        <p className="rounded-lg bg-slate-50 px-3 py-2">ကားဂိတ်/နေရာ: <strong>{order?.destination || "မသတ်မှတ်ရသေး"}</strong></p>
+        <p className="rounded-lg bg-slate-50 px-3 py-2">စုစုပေါင်း: <strong>{previewNumber(totalCards, "0")} ကဒ် / {previewNumber(totalBottles, "0")} ဘူး</strong></p>
+      </div>
+
+      <div className="mt-4">
+        <h4 className="font-bold text-slate-900">ဘူးစာရင်း အသေးစိတ်</h4>
+        <div className="mt-2 space-y-2">
+          {lines.length ? lines.map((line, index) => (
+            <article key={`${line.bottleType || "line"}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
+              <p className="font-semibold text-slate-900">{index + 1}. {line.bottleType || "ဘူးအမျိုးအစား မသတ်မှတ်ရသေး"}</p>
+              <div className="mt-1 grid gap-1 text-xs leading-5 text-slate-700 sm:grid-cols-2">
+                <p>အရွယ်အစား: <strong>{line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "မသတ်မှတ်ရသေး")}</strong></p>
+                <p>ကဒ်: <strong>{previewNumber(line.cardCount)}</strong></p>
+                <p>တစ်ကဒ်ဘူး: <strong>{previewNumber(line.bottlesPerCard)}</strong></p>
+                <p>စုစုပေါင်းဘူး: <strong>{previewNumber(line.totalBottles, "မတွက်နိုင်သေး")}</strong></p>
+                <p>ရေးထားသောနှုန်းထား: <strong>{previewQuotedRate(line.quotedRate)}</strong></p>
+                <p>ရေးထားသော line total: <strong>{line.quotedAmount ? `${Number(line.quotedAmount).toLocaleString()} Ks` : "မပါသေးပါ"}</strong></p>
+              </div>
+            </article>
+          )) : <p className="rounded-lg border border-dashed border-slate-300 px-3 py-3 text-xs text-slate-500">ဘူးလိုင်း မဖတ်နိုင်သေးပါ။</p>}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <h4 className="font-bold text-slate-900">အဖုံးစာရင်း အသေးစိတ်</h4>
+        <div className="mt-2 space-y-2">
+          {caps.length ? caps.map((cap, index) => <div key={`${cap.capType || "cap"}-${index}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"><p className="font-semibold text-slate-900">{cap.capType || "အဖုံးအမျိုးအစား မသတ်မှတ်ရသေး"}</p><p className="mt-1">ပုံမှန်: <strong>{previewNumber(cap.normalPcs, "0")} pcs</strong> · အပို: <strong>{previewNumber(cap.extraPcs, "0")} pcs</strong> · တောင်းထားစုစုပေါင်း: <strong>{previewNumber(cap.requestedTotalPcs, "0")} pcs</strong></p></div>) : <p className="rounded-lg border border-dashed border-slate-300 px-3 py-3 text-xs text-slate-500">အဖုံးအချက်အလက် မပါသေးပါ။</p>}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2.5 text-xs leading-5 text-cyan-950">
+        <p>ငွေရှင်းနည်း: <strong>{order?.paymentType || "မပါသေးပါ"}</strong></p>
+        <p>ငွေရှင်းမှတ်ချက်: <strong>{order?.paymentNote || "မပါသေးပါ"}</strong></p>
+        <p>ပြေစာ/ပစ္စည်းပို့မှတ်ချက်: <strong>{order?.receiptNote || "မပါသေးပါ"}</strong></p>
+      </div>
+      {order?.notes ? <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">အခြားမှတ်ချက်: <strong>{order.notes}</strong></p> : null}
+      {missingFields.length ? <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">မပြည့်စုံသေးသည်: <strong>{missingFields.join("၊ ")}</strong></p> : null}
+      <p className="mt-3 rounded-lg bg-slate-900 px-3 py-2 text-xs leading-5 text-white">ဒီ Preview သည် ဖတ်ရှုရန်သာ ဖြစ်ပါသည်။ ငွေ/ပြေစာအချက်အလက်ကို Ledger ထဲ မရေးပါ။ Draft သိမ်းပြီး Confirm မလုပ်မချင်း Factory ကို မပို့ပါ။</p>
     </div>
   );
 }
@@ -404,7 +471,7 @@ export default function OrdersPage() {
           </div>
           <textarea value={manualOrderText} onChange={(event) => { setManualOrderText(event.target.value); setManualOrderPreview(null); }} placeholder={`ဥပမာ\nဒို့ရှမ်းပုဂံ\nနွားသေး\n3ကဒ်x100ဘူးx380k\n=114,000 kyats\n(အဖုံးအဝါ)\nKpay နဲ့ရှင်းမည်\nပစ္စည်းပို့ပြေစာပဲ ပေးရန်`} className="mt-3 min-h-36 w-full rounded-xl border border-cyan-300 bg-white px-3 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400" />
           <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={previewManualOrder} className="rounded-lg border border-cyan-400 bg-white px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100">ဖတ်ပြီး Preview ပြရန်</button>{manualOrderPreview ? <button type="button" onClick={saveManualOrder} disabled={savingManualOrder} className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-bold text-white hover:bg-cyan-800 disabled:opacity-50">{savingManualOrder ? "Draft သိမ်းနေသည်..." : "Draft အဖြစ် သိမ်းရန်"}</button> : null}</div>
-          {manualOrderPreview ? <div className="mt-3 rounded-xl border border-cyan-200 bg-white p-3 text-sm text-slate-700"><p className="font-bold text-slate-900">ဖတ်မိသည့်အချက်များ</p><p className="mt-1">Customer: <strong>{manualOrderPreview.customerName || "မသတ်မှတ်ရသေး"}</strong></p><p>ဘူးလိုင်း: <strong>{manualOrderPreview.lines?.length || 0}</strong> လိုင်း · စုစုပေါင်းဘူး: <strong>{manualOrderPreview.lines?.reduce((sum, line) => sum + (Number(line.totalBottles) || 0), 0).toLocaleString()}</strong></p><p>ငွေရှင်း: <strong>{manualOrderPreview.paymentType || "မပါသေးပါ"}</strong>{manualOrderPreview.paymentNote ? ` (${manualOrderPreview.paymentNote})` : ""}</p><p>ပြေစာ/မှတ်ချက်: <strong>{manualOrderPreview.receiptNote || "မပါသေးပါ"}</strong></p><p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">Preview မှာ ငွေ/ပြေစာကို ဖတ်ပြသော်လည်း Draft သိမ်းခြင်းသည် Ledger payment မဟုတ်ပါ။ Confirm မလုပ်မချင်း Factory ကို မပို့ပါ။</p></div> : null}
+          {manualOrderPreview ? <ManualOrderPreviewDetails order={manualOrderPreview} /> : null}
         </section>
 
         <section aria-label="အကူအညီနှင့် Batch ခလုတ်များ" className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:justify-start sm:p-3">
