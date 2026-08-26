@@ -182,7 +182,7 @@ describe("multi-line order totals and cap rules", () => {
       notes: null,
     }, "");
     const message = formatOrderDraftMessage({ ...normalized, status: "NEEDS_REVIEW", sourceText: "/order ကံလီ" }, { includeActions: false, includeSource: true });
-    expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
+    expect(message).toContain("အဖုံးပြာ: 8,000 pcs");
     expect(message).not.toContain("အဖုံးပုံမှန်စုစုပေါင်း: 8,000 pcs");
     expect(message).not.toContain("အဖုံးအပိုစုစုပေါင်း: 0 pcs");
     expect(message).not.toContain("အဖုံးတောင်းဆိုချက်စုစုပေါင်း");
@@ -191,7 +191,7 @@ describe("multi-line order totals and cap rules", () => {
     expect(message).not.toContain("ပြန်ဖြည့်ရန်");
     expect(message).not.toContain("phone");
     expect(message).not.toContain("အဖုံးစာရင်း:\nမသတ်မှတ်ရသေး");
-    expect(message).toContain("အဖုံးပြာ: ပုံမှန် 8,000 pcs + အပို 0 pcs");
+    expect(message).toContain("အဖုံးပြာ: 8,000 pcs");
     expect(message).toContain("မူရင်းမှာယူစာ:");
     expect(message).toContain("```\n/order ကံလီ\n```");
   });
@@ -203,7 +203,8 @@ describe("multi-line order totals and cap rules", () => {
       customer: { id: "customer-1", name: "ကံလီ" },
       sourceText: "မှာယူမှု ကံလီ",
     }, { includeActions: false, includeSource: false });
-    expect(message).toContain("Customer: ကံလီ ✅ Website မှာရှိပြီးသား Customer နှင့် ချိတ်ထားပြီး");
+    expect(message).toContain("Customer: ကံလီ");
+    expect(message).not.toContain("Website မှာရှိပြီးသား");
   });
 
   it("shows when Telegram Customer is not linked yet", () => {
@@ -214,7 +215,8 @@ describe("multi-line order totals and cap rules", () => {
       customer: null,
       sourceText: "မှာယူမှု မမိုး",
     }, { includeActions: false, includeSource: false });
-    expect(message).toContain("Customer: မမိုး ⚠️ Customer မချိတ်ရသေး");
+    expect(message).toContain("Customer: မမိုး");
+    expect(message).not.toContain("Customer မချိတ်ရသေး");
   });
 
   it("omits the cap section when no cap type or quantity was provided", () => {
@@ -242,6 +244,9 @@ describe("missing-field and schema safeguards", () => {
     expect(keyboard.inline_keyboard).toHaveLength(2);
     expect(buildOrderMoreKeyboard(order).inline_keyboard[0]).toEqual([{ text: "📦 08:10 Batch ထည့်ရန်", callback_data: "order|confirm|B|11111111-1111-4111-8111-111111111111" }]);
     expect(buildOrderActionKeyboard({ ...order, status: "NEEDS_CUSTOMER", customer: null, missingFields: [], sourceText: "မှာယူမှု" }, "", { allowRetry: true }).inline_keyboard[0][0].text).toBe("👤 ရှိပြီးသား Customer ချိတ်ရန်");
+    const linkedWithLegacyCustomerFlag = buildOrderActionKeyboard({ ...order, missingFields: ["Customer အမည်"] });
+    expect(linkedWithLegacyCustomerFlag.inline_keyboard).toHaveLength(2);
+    expect(linkedWithLegacyCustomerFlag.inline_keyboard[0][0].text).toBe("✅ Confirm");
   });
 
   it("builds direct callback controls and recognizes only Telegram admin statuses", () => {

@@ -328,7 +328,7 @@ export async function POST(request) {
     } catch (error) {
       const fallbackMessage = await sendTelegramTextToChat({
         chatId,
-        text: `${formatOrderDraftMessage(pending.order, { includeActions: false, includeSource: true })}\n\nအောက်က ခလုတ်များဖြင့် Order ကို Confirm သို့မဟုတ် Cancel လုပ်နိုင်ပါသည်။`,
+        text: formatOrderDraftMessage(pending.order, { includeActions: false, includeSource: true }),
         parseMode: "Markdown",
         replyMarkup: buildOrderActionKeyboard(pending.order, process.env.NEXT_PUBLIC_APP_URL),
         replyToMessageId: message.message_id,

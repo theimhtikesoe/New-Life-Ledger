@@ -168,7 +168,7 @@ describe("Telegram order webhook safety gates", () => {
     }));
     expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order စာကို စစ်နေပါသည်") }));
     const fallbackCall = mocks.sendTelegramTextToChat.mock.calls.find(([payload]) => payload.replyToMessageId === 10 && payload.text.includes("Draft message"));
-    expect(fallbackCall?.[0]).toEqual(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Confirm သို့မဟုတ် Cancel") }));
+    expect(fallbackCall?.[0]).toEqual(expect.objectContaining({ chatId, replyToMessageId: 10, text: "Draft message" }));
     expect(fallbackCall?.[0].text).not.toContain("AI ပြန်စမ်း");
     expect(fallbackCall?.[0].replyMarkup).toEqual({ inline_keyboard: [] });
     expect(mocks.buildOrderRetryKeyboard).not.toHaveBeenCalled();

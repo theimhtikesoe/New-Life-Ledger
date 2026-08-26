@@ -37,6 +37,10 @@ function normalizeMissingFields(value) {
   return Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
 }
 
+function removeCustomerMissingFields(value) {
+  return normalizeMissingFields(value).filter((item) => !/^(?:Customer|ဖောက်သည်)/iu.test(item));
+}
+
 function serializeOrder(order) {
   if (!order) return null;
   const lines = (order.lines || []).map((line) => ({
@@ -703,6 +707,7 @@ export async function linkOrderCustomer({ orderId, customerId, actorName = "Staf
       customerId: customer.id,
       draftCustomerName: null,
       draftCustomerPhone: null,
+      missingFields: removeCustomerMissingFields(current.missingFields),
       status: "DRAFT",
     },
     include: ORDER_INCLUDE,
@@ -735,7 +740,7 @@ export async function createCustomerForOrder({ orderId, name, phone = null, rout
     });
     const updated = await tx.order.update({
       where: { id: order.id },
-      data: { customerId: customer.id, draftCustomerName: null, draftCustomerPhone: null, status: "DRAFT" },
+      data: { customerId: customer.id, draftCustomerName: null, draftCustomerPhone: null, missingFields: removeCustomerMissingFields(order.missingFields), status: "DRAFT" },
       include: ORDER_INCLUDE,
     });
     return { customer, order: updated };
@@ -762,7 +767,7 @@ export async function updateOrderDetails({ orderId, requestedDate, destination, 
   if (requestedDate !== undefined && !nextDate) throw new Error("ထုတ်ရမည့်ရက် မမှန်ကန်ပါ။");
   const nextDestination = destination === undefined ? current.destination : String(destination || "").trim() || null;
   const nextPhone = customerPhone === undefined ? current.customerPhone : String(customerPhone || "").trim() || null;
-  const missingSet = new Set(normalizeMissingFields(current.missingFields));
+  const missingSet = new Set(current.customerId ? removeCustomerMissingFields(current.missingFields) : normalizeMissingFields(current.missingFields));
   if (nextDate) Array.from(missingSet).filter((item) => item.includes("ထုတ်ရမည့်ရက်")).forEach((item) => missingSet.delete(item));
   else missingSet.add("ထုတ်ရမည့်ရက်");
   if (nextDestination) Array.from(missingSet).filter((item) => item.includes("ကားဂိတ်/နေရာ")).forEach((item) => missingSet.delete(item));
@@ -790,7 +795,7 @@ export async function updateOrderStatus({ orderId, status, mode = null, actorNam
   if (status === "CANCELLED" && current.deliveries?.some((delivery) => delivery.destinationType === "FACTORY" && ["SENDING", "SENT"].includes(delivery.status))) throw new Error("Factory notification ပို့နေ/ပို့ပြီး Order ကို Cancel မလုပ်နိုင်ပါ။");
   if (status === "CONFIRMED" || status === "BATCH_QUEUED") {
     if (!current.customerId || current.customer?.deletedAt) throw new Error("Active Customer မချိတ်ရသေးပါ။");
-    if (normalizeMissingFields(current.missingFields).length) throw new Error("Order အချက်အလက် မပြည့်စုံသေးပါ။");
+    if (removeCustomerMissingFields(current.missingFields).length) throw new Error("Order အချက်အလက် မပြည့်စုံသေးပါ။");
   }
   const nextMode = mode === "MORNING_BATCH" ? "MORNING_BATCH" : "IMMEDIATE";
   if (status === "CONFIRMED" || status === "BATCH_QUEUED") {
