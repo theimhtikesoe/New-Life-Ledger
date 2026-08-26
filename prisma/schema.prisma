@@ -41,6 +41,9 @@ model Order {
   aiConfidence       String?
   aiNotes            String?
   destination        String?
+  paymentType        String?
+  paymentNote        String?
+  receiptNote        String?
   notificationMode   String          @default("IMMEDIATE")
   factoryOrderDate   String?
   factoryOrderNumber Int?
@@ -80,6 +83,8 @@ model OrderLine {
   bottlesPerCard Int?
   cardCount      Int?
   totalBottles   Int?
+  quotedRate     Int?
+  quotedAmount   Int?
   notes          String?
   createdAt      DateTime @default(now())
 

@@ -80,6 +80,14 @@ export function resetDailyAiUsage(actorName, currentDate, storage = getDefaultSt
   return 0;
 }
 
-export function getAiActivityReviewHref(date) {
-  return `/activity?date=${encodeURIComponent(date || "")}&from=ai`;
+export function getAiActivityReviewHref(date, target = {}) {
+  const params = new URLSearchParams({ date: date || "", from: "ai" });
+  if (typeof target === "string" && target.trim()) params.set("targetText", target.trim().slice(0, 500));
+  if (target && typeof target === "object") {
+    if (target.customerName) params.set("customer", String(target.customerName).trim().slice(0, 120));
+    if (target.amount !== null && target.amount !== undefined && String(target.amount).trim()) params.set("amount", String(target.amount).replace(/,/g, "").trim());
+    if (target.action) params.set("action", String(target.action).trim().slice(0, 40));
+    if (target.targetText) params.set("targetText", String(target.targetText).trim().slice(0, 500));
+  }
+  return `/activity?${params.toString()}`;
 }

@@ -45,6 +45,8 @@ function serializeOrder(order) {
     bottlesPerCard: line.bottlesPerCard == null ? null : Number(line.bottlesPerCard),
     cardCount: line.cardCount == null ? null : Number(line.cardCount),
     totalBottles: line.totalBottles == null ? null : Number(line.totalBottles),
+    quotedRate: line.quotedRate == null ? null : Number(line.quotedRate),
+    quotedAmount: line.quotedAmount == null ? null : Number(line.quotedAmount),
   }));
   const caps = (order.caps || []).map((cap) => ({
     ...cap,
@@ -121,6 +123,7 @@ export async function createOrderDraft({
   sourceMessageId = null,
   sourceUpdateId = null,
   sourceText,
+  source = "telegram",
   extracted,
 } = {}) {
   if (!String(sourceText || "").trim()) throw new Error("Order စာသား မရှိသေးပါ။");
@@ -160,6 +163,9 @@ export async function createOrderDraft({
       aiConfidence: normalized.confidence,
       aiNotes: normalized.notes,
       destination: normalized.destination,
+      paymentType: normalized.paymentType,
+      paymentNote: normalized.paymentNote,
+      receiptNote: normalized.receiptNote,
       notificationMode: "IMMEDIATE",
       lines: {
         create: normalized.lines.map((line, index) => ({
@@ -170,6 +176,8 @@ export async function createOrderDraft({
           bottlesPerCard: line.bottlesPerCard,
           cardCount: line.cardCount,
           totalBottles: line.totalBottles,
+          quotedRate: line.quotedRate,
+          quotedAmount: line.quotedAmount,
           notes: line.notes,
         })),
       },
@@ -197,15 +205,17 @@ export async function createOrderDraft({
     throw error;
   }
 
+  const normalizedSource = String(source || "telegram").trim().toLowerCase();
+  const sourceLabel = normalizedSource === "viber" ? "Viber" : normalizedSource === "telegram" ? "Telegram" : "Manual";
   await writeAuditLog({
     actorName: "Staff",
     action: "ORDER_DRAFT",
     entityType: "Order",
     entityId: created.id,
     entityLabel: normalized.customerName || "Customer မသတ်မှတ်ရသေး",
-    summary: "Telegram order Draft ဖန်တီး",
+    summary: `${sourceLabel} order Draft ဖန်တီး`,
     metadata: {
-      source: "telegram",
+      source: normalizedSource,
       sourceChatId: sourceChatId == null ? null : String(sourceChatId),
       sourceMessageId: sourceMessageId == null ? null : String(sourceMessageId),
       lineCount: normalized.lines.length,
@@ -263,6 +273,9 @@ export async function refreshOrderFromAi({ orderId, extracted, actorName = "Staf
         aiConfidence: normalized.confidence,
         aiNotes: normalized.notes,
         destination: normalized.destination,
+        paymentType: normalized.paymentType,
+        paymentNote: normalized.paymentNote,
+        receiptNote: normalized.receiptNote,
         lines: { create: normalized.lines.map((line, index) => ({
           lineNumber: index + 1,
           bottleType: line.bottleType,
@@ -271,6 +284,8 @@ export async function refreshOrderFromAi({ orderId, extracted, actorName = "Staf
           bottlesPerCard: line.bottlesPerCard,
           cardCount: line.cardCount,
           totalBottles: line.totalBottles,
+          quotedRate: line.quotedRate,
+          quotedAmount: line.quotedAmount,
           notes: line.notes,
         })) },
         caps: { create: capWarnings.map((cap) => ({

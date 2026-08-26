@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
+import { buildFallbackOrderExtraction } from "@/lib/order-utils";
 
 const STATUS_LABELS = {
   DRAFT: "Draft ပြန်စစ်ရန်",
@@ -101,7 +102,7 @@ function OrderLines({ order }) {
       {(order.lines || []).map((line, index) => (
         <div key={line.id || index} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
           <p className="font-semibold text-slate-900">{index + 1}. {line.bottleType || "ဘူး"} · {line.capacityLabel || `${line.capacityMl || "?"} ml`}</p>
-          <p className="mt-1">{line.cardCount || "?"} ကဒ် × တစ်ကဒ် {line.bottlesPerCard || "?"} ဘူး = <strong>{line.totalBottles || "မတွက်နိုင်သေး"}</strong> ဘူး</p>
+          <p className="mt-1">{line.cardCount || "?"} ကဒ် × တစ်ကဒ် {line.bottlesPerCard || "?"} ဘူး = <strong>{line.totalBottles || "မတွက်နိုင်သေး"}</strong> ဘူး{line.quotedAmount ? ` · ${Number(line.quotedAmount).toLocaleString()} Ks` : ""}</p>
           {line.notes ? <p className="mt-1 text-xs text-slate-500">မှတ်ချက်: {line.notes}</p> : null}
         </div>
       ))}
@@ -123,6 +124,11 @@ function CapLines({ order }) {
       )) : <p className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-500">အဖုံးအချက်အလက် မပါသေးပါ။</p>}
     </div>
   );
+}
+
+function OrderCommercialNotes({ order }) {
+  if (!order.paymentType && !order.paymentNote && !order.receiptNote) return null;
+  return <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-3 text-sm text-cyan-950"><p className="font-semibold">ငွေ/ပြေစာ မှတ်ချက်</p>{order.paymentType || order.paymentNote ? <p className="mt-1">ငွေရှင်း: <strong>{order.paymentType || order.paymentNote}</strong>{order.paymentNote && order.paymentNote !== order.paymentType ? ` · ${order.paymentNote}` : ""}</p> : null}{order.receiptNote ? <p className="mt-1">ပြေစာ/ပစ္စည်းစာ: <strong>{order.receiptNote}</strong></p> : null}<p className="mt-2 text-xs text-cyan-800">ဤအချက်များသည် Order note သာဖြစ်ပြီး Ledger ငွေစာရင်းအဖြစ် မရေးသေးပါ။</p></div>;
 }
 
 function OrderHistoryTimeline({ logs }) {
@@ -170,6 +176,9 @@ export default function OrdersPage() {
   const [showGuide, setShowGuide] = useState(false);
   const [showBatchPanel, setShowBatchPanel] = useState(false);
   const [expandedActionId, setExpandedActionId] = useState("");
+  const [manualOrderText, setManualOrderText] = useState("");
+  const [manualOrderPreview, setManualOrderPreview] = useState(null);
+  const [savingManualOrder, setSavingManualOrder] = useState(false);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -310,6 +319,38 @@ export default function OrdersPage() {
     }
   };
 
+  const previewManualOrder = () => {
+    const text = manualOrderText.trim();
+    if (!text) {
+      setManualOrderPreview(null);
+      setError("Viber/Order စာသားကို အရင်ထည့်ပါ။");
+      return;
+    }
+    setError("");
+    setMessage("");
+    setManualOrderPreview(buildFallbackOrderExtraction(text));
+  };
+
+  const saveManualOrder = async () => {
+    const text = manualOrderText.trim();
+    const extracted = manualOrderPreview || buildFallbackOrderExtraction(text);
+    if (!text || !extracted) return;
+    setSavingManualOrder(true);
+    setError("");
+    setMessage("");
+    try {
+      const body = await requestJson("/api/orders", { method: "POST", body: JSON.stringify({ sourceText: text, source: "viber", extracted }), timeoutMs: 15000 });
+      setMessage(body.duplicate ? "ဒီစာသားနဲ့ Draft ရှိပြီးသားပါ။ ထပ်မဖန်တီးပါ။" : "Viber/Order စာကို Draft အဖြစ် သိမ်းပြီးပါပြီ။ Payment/ပြေစာကို Ledger ထဲ မရေးသေးပါ။");
+      setManualOrderText("");
+      setManualOrderPreview(null);
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingManualOrder(false);
+    }
+  };
+
   const publishTelegramGuide = async () => {
     if (!window.confirm("Telegram Order group ထဲမှာ Order ရေးနည်း guide message အသစ်တစ်စောင် ပို့ပြီး pin လုပ်မလား။")) return;
     setPublishingGuide(true);
@@ -355,6 +396,16 @@ export default function OrdersPage() {
 
         {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div> : null}
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : null}
+
+        <section className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4 shadow-sm sm:p-5" aria-labelledby="manual-order-title">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><p className="text-xs font-bold uppercase tracking-wide text-cyan-700">Viber / copied order</p><h2 id="manual-order-title" className="mt-1 text-lg font-bold text-cyan-950">Viber မှာရထားတဲ့ Order ကို ဒီမှာကူးထည့်ရန်</h2><p className="mt-1 text-sm leading-6 text-cyan-900">Viber Bot မရှိသေးသောအချိန်မှာ Viber စာကို ကူးထည့်ပြီး Draft အဖြစ် စစ်နိုင်ပါတယ်။ Order စာပုံစံနှင့် ငွေ/ပြေစာမှတ်ချက်ပါသည့် စာပုံစံ နှစ်မျိုးလုံးကို ဖတ်ပါမယ်။</p></div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-cyan-800">မူရင်းစာ မပျောက်ပါ</span>
+          </div>
+          <textarea value={manualOrderText} onChange={(event) => { setManualOrderText(event.target.value); setManualOrderPreview(null); }} placeholder={`ဥပမာ\nဒို့ရှမ်းပုဂံ\nနွားသေး\n3ကဒ်x100ဘူးx380k\n=114,000 kyats\n(အဖုံးအဝါ)\nKpay နဲ့ရှင်းမည်\nပစ္စည်းပို့ပြေစာပဲ ပေးရန်`} className="mt-3 min-h-36 w-full rounded-xl border border-cyan-300 bg-white px-3 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400" />
+          <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={previewManualOrder} className="rounded-lg border border-cyan-400 bg-white px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100">ဖတ်ပြီး Preview ပြရန်</button>{manualOrderPreview ? <button type="button" onClick={saveManualOrder} disabled={savingManualOrder} className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-bold text-white hover:bg-cyan-800 disabled:opacity-50">{savingManualOrder ? "Draft သိမ်းနေသည်..." : "Draft အဖြစ် သိမ်းရန်"}</button> : null}</div>
+          {manualOrderPreview ? <div className="mt-3 rounded-xl border border-cyan-200 bg-white p-3 text-sm text-slate-700"><p className="font-bold text-slate-900">ဖတ်မိသည့်အချက်များ</p><p className="mt-1">Customer: <strong>{manualOrderPreview.customerName || "မသတ်မှတ်ရသေး"}</strong></p><p>ဘူးလိုင်း: <strong>{manualOrderPreview.lines?.length || 0}</strong> လိုင်း · စုစုပေါင်းဘူး: <strong>{manualOrderPreview.lines?.reduce((sum, line) => sum + (Number(line.totalBottles) || 0), 0).toLocaleString()}</strong></p><p>ငွေရှင်း: <strong>{manualOrderPreview.paymentType || "မပါသေးပါ"}</strong>{manualOrderPreview.paymentNote ? ` (${manualOrderPreview.paymentNote})` : ""}</p><p>ပြေစာ/မှတ်ချက်: <strong>{manualOrderPreview.receiptNote || "မပါသေးပါ"}</strong></p><p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">Preview မှာ ငွေ/ပြေစာကို ဖတ်ပြသော်လည်း Draft သိမ်းခြင်းသည် Ledger payment မဟုတ်ပါ။ Confirm မလုပ်မချင်း Factory ကို မပို့ပါ။</p></div> : null}
+        </section>
 
         <section aria-label="အကူအညီနှင့် Batch ခလုတ်များ" className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:justify-start sm:p-3">
           <button type="button" aria-expanded={showGuide} aria-controls="telegram-order-guide-modal" onClick={() => { setShowGuide(true); setShowBatchPanel(false); }} className="min-h-10 flex-1 rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-800 hover:bg-cyan-100 active:scale-[0.98] sm:flex-none sm:px-4 sm:text-sm">Guide ပြရန်</button>
@@ -452,6 +503,7 @@ export default function OrdersPage() {
                 </div> : null}
                 <OrderLines order={order} />
                 <CapLines order={order} />
+                <OrderCommercialNotes order={order} />
 
                 {viewMode === "ACTIVE" && order.status === "NEEDS_CUSTOMER" && !archived ? (
                   <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">

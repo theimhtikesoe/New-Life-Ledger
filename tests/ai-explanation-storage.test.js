@@ -50,5 +50,13 @@ describe("AI explanation browser storage", () => {
   it("creates an activity link that preserves the selected date and AI return context", () => {
     expect(getAiActivityReviewHref("2026-08-24")).toBe("/activity?date=2026-08-24&from=ai");
   });
+
+  it("adds a safe customer, amount, and action target for Activity highlighting", () => {
+    const href = getAiActivityReviewHref("2026-08-24", { customerName: "Daw JoThiee", amount: "156,000", action: "DEBT_INCREASE" });
+    expect(href).toContain("date=2026-08-24");
+    expect(href).toContain("customer=Daw+JoThiee");
+    expect(href).toContain("amount=156000");
+    expect(href).toContain("action=DEBT_INCREASE");
+  });
 });
 
