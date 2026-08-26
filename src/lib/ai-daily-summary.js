@@ -149,8 +149,11 @@ export async function getAiDailySummaryPayload(dateParam) {
     }),
     prisma.auditLog.findMany({
       where: {
-        createdAt: { gte: start, lt: end },
-        NOT: { action: "DAILY_REPORT_SENT" },
+        AND: [
+          { createdAt: { gte: start, lt: end } },
+          { NOT: { action: "DAILY_REPORT_SENT" } },
+          { NOT: { entityType: "Order" } },
+        ],
       },
       select: {
         action: true,
