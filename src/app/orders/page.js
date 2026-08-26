@@ -243,6 +243,7 @@ export default function OrdersPage() {
   const [showGuide, setShowGuide] = useState(false);
   const [showBatchPanel, setShowBatchPanel] = useState(false);
   const [expandedActionId, setExpandedActionId] = useState("");
+  const [showManualOrder, setShowManualOrder] = useState(false);
   const [manualOrderText, setManualOrderText] = useState("");
   const [manualOrderPreview, setManualOrderPreview] = useState(null);
   const [savingManualOrder, setSavingManualOrder] = useState(false);
@@ -464,14 +465,18 @@ export default function OrdersPage() {
         {message ? <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{message}</div> : null}
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : null}
 
-        <section className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-4 shadow-sm sm:p-5" aria-labelledby="manual-order-title">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div><p className="text-xs font-bold uppercase tracking-wide text-cyan-700">Viber / copied order</p><h2 id="manual-order-title" className="mt-1 text-lg font-bold text-cyan-950">Viber မှာရထားတဲ့ Order ကို ဒီမှာကူးထည့်ရန်</h2><p className="mt-1 text-sm leading-6 text-cyan-900">Viber Bot မရှိသေးသောအချိန်မှာ Viber စာကို ကူးထည့်ပြီး Draft အဖြစ် စစ်နိုင်ပါတယ်။ Order စာပုံစံနှင့် ငွေ/ပြေစာမှတ်ချက်ပါသည့် စာပုံစံ နှစ်မျိုးလုံးကို ဖတ်ပါမယ်။</p></div>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-cyan-800">မူရင်းစာ မပျောက်ပါ</span>
-          </div>
+        <section className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-3 shadow-sm sm:p-4" aria-labelledby="manual-order-title">
+          <button type="button" aria-expanded={showManualOrder} aria-controls="viber-copied-order-panel" onClick={() => setShowManualOrder((current) => !current)} className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-2 py-1 text-left transition hover:bg-white/70 active:scale-[0.99]">
+            <span className="min-w-0"><span className="block text-xs font-bold uppercase tracking-wide text-cyan-700">Viber / copied order</span><span id="manual-order-title" className="mt-1 block text-base font-bold text-cyan-950 sm:text-lg">Viber မှာရထားတဲ့ Order ကို ဒီမှာကူးထည့်ရန်</span></span>
+            <span className="shrink-0 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800">{showManualOrder ? "ပိတ်ရန်" : "ဖွင့်ရန်"}</span>
+          </button>
+          {!showManualOrder ? <p className="px-2 pb-1 text-xs leading-5 text-cyan-900">Viber မှကူးထားသောစာကို ထည့်ရန် ခလုတ်နှိပ်ပါ။ မူရင်းစာ မပျောက်ပါ။</p> : null}
+          {showManualOrder ? <div id="viber-copied-order-panel" className="mt-2 border-t border-cyan-200/80 pt-3">
+          <p className="text-sm leading-6 text-cyan-900">Viber Bot မရှိသေးသောအချိန်မှာ Viber စာကို ကူးထည့်ပြီး Draft အဖြစ် စစ်နိုင်ပါတယ်။ Order စာပုံစံနှင့် ငွေ/ပြေစာမှတ်ချက်ပါသည့် စာပုံစံ နှစ်မျိုးလုံးကို ဖတ်ပါမယ်။ မူရင်းစာ မပျောက်ပါ။</p>
           <textarea value={manualOrderText} onChange={(event) => { setManualOrderText(event.target.value); setManualOrderPreview(null); }} placeholder={`ဥပမာ\nဒို့ရှမ်းပုဂံ\nနွားသေး\n3ကဒ်x100ဘူးx380k\n=114,000 kyats\n(အဖုံးအဝါ)\nKpay နဲ့ရှင်းမည်\nပစ္စည်းပို့ပြေစာပဲ ပေးရန်`} className="mt-3 min-h-36 w-full rounded-xl border border-cyan-300 bg-white px-3 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400" />
           <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={previewManualOrder} className="rounded-lg border border-cyan-400 bg-white px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100">ဖတ်ပြီး Preview ပြရန်</button>{manualOrderPreview ? <button type="button" onClick={saveManualOrder} disabled={savingManualOrder} className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-bold text-white hover:bg-cyan-800 disabled:opacity-50">{savingManualOrder ? "Draft သိမ်းနေသည်..." : "Draft အဖြစ် သိမ်းရန်"}</button> : null}</div>
           {manualOrderPreview ? <ManualOrderPreviewDetails order={manualOrderPreview} /> : null}
+          </div> : null}
         </section>
 
         <section aria-label="အကူအညီနှင့် Batch ခလုတ်များ" className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:justify-start sm:p-3">
