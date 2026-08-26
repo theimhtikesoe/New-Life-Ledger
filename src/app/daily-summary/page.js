@@ -60,6 +60,10 @@ function cleanAiText(value) {
     .trim();
 }
 
+function normalizeAiItems(items = []) {
+  return Array.from(new Set((Array.isArray(items) ? items : []).map((item) => cleanAiText(item)).filter(Boolean)));
+}
+
 function getReviewTarget(text) {
   const value = cleanAiText(text);
   const customerMatch = value.match(/Customer\s+(.+?)(?=\s*(?:၏|အတွက်|သည်|နှင့်|တွင်|ကို|တူ|ရှိ|အကြွေး|ငွေချေ|ငွေပြန်|payment)|\s+[0-9,]+\s*Ks|$)/iu);
@@ -94,13 +98,13 @@ function buildCodeBasedExplanation(report, reportDate) {
   });
   return {
     overview: `${reportDate} အတွက် စာရင်းအချက်အလက်ကို အလိုအလျောက် အကျဉ်းချုပ်ပြထားပါသည်။ AI service ပြန်ကောင်းလာသောအခါ အသေးစိတ် ပြန်ရှင်းနိုင်ပါသည်။`,
-    findings: [
+    findings: normalizeAiItems([
       `${reportDate} တွင် စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခု ရှိပါသည်။`,
       `ငွေချေမှု ${paidCount.toLocaleString("en-US")} ခု၊ အကြွေးတိုးမှု ${debtCount.toLocaleString("en-US")} ခု ရှိပါသည်။`,
       Number(summary.cashCount || 0) > 0 ? `လက်ငင်းရောင်း ${Number(summary.cashCount).toLocaleString("en-US")} ခု၊ ${formatMoney(summary.cashAmount)} ရှိပါသည်။` : null,
       cashTypeFinding ? `လက်ငင်းအမျိုးအစား — ${cashTypeFinding}။` : null,
       customers.length ? `Customer စာရင်း ${customers.length.toLocaleString("en-US")} ဦး ပါဝင်ပါသည်။` : "ဒီရက်အတွက် Customer အလိုက် စာရင်းမရှိပါ။",
-    ],
+    ]),
     checks,
     caution: "ဤအဖြေသည် AI မရသေးချိန်တွင် စာရင်း data အပေါ်အခြေခံ၍ အလိုအလျောက်ပြထားခြင်းသာ ဖြစ်ပါသည်။ အရေးကြီးသောစာရင်းကို Website တွင် ပြန်စစ်ပါ။",
   };
@@ -109,7 +113,7 @@ function buildCodeBasedExplanation(report, reportDate) {
 function mergeExplanations(codeExplanation, aiExplanation) {
   if (!codeExplanation) return aiExplanation || null;
   if (!aiExplanation) return codeExplanation;
-  const unique = (items = []) => Array.from(new Set(items.map((item) => String(item || "").trim()).filter(Boolean)));
+  const unique = (items = []) => normalizeAiItems(items);
   const aiOverview = cleanAiText(aiExplanation.overview);
   return {
     overview: [cleanAiText(codeExplanation.overview), aiOverview && `AI ထပ်ဖြည့်ရှင်းချက် — ${aiOverview}`].filter(Boolean).join("\n\n"),
@@ -220,8 +224,8 @@ function AiDetailSection({ number, title, items, tone, date }) {
 }
 
 function AiExplanationPanel({ explanation, date, source }) {
-  const findings = Array.isArray(explanation?.findings) ? explanation.findings : [];
-  const checks = Array.isArray(explanation?.checks) ? explanation.checks : [];
+  const findings = normalizeAiItems(explanation?.findings);
+  const checks = normalizeAiItems(explanation?.checks);
   return (
     <section id="ai-explanation" className="rounded-2xl border border-violet-200 bg-white p-3 shadow-sm sm:p-5" aria-labelledby="ai-summary-title">
       <div className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-3 text-white sm:px-4 sm:py-4">
