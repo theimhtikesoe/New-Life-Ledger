@@ -57,6 +57,7 @@ export async function POST(request) {
       sourceMessageId: body.sourceMessageId || null,
       sourceUpdateId: body.sourceUpdateId || null,
       sourceText,
+      source: body.source || "viber",
       extracted: body.extracted || {},
     });
     return NextResponse.json(result, { status: result.duplicate ? 200 : 201 });

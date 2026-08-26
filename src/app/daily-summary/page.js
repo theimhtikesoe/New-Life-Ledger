@@ -59,6 +59,19 @@ function cleanAiText(value) {
     .trim();
 }
 
+function getReviewTarget(text) {
+  const value = cleanAiText(text);
+  const customerMatch = value.match(/Customer\s+(.+?)(?=\s*(?:၏|အတွက်|သည်|နှင့်|တွင်|ကို|တူ|ရှိ|အကြွေး|ငွေချေ|ငွေပြန်|payment)|\s+[0-9,]+\s*Ks|$)/iu);
+  const amountMatch = value.match(/([0-9][0-9,]*)\s*Ks/iu);
+  const action = /ငွေချေ|ပေးချေ|ငွေပြန်/iu.test(value) ? "PAYMENT" : /အကြွေး/iu.test(value) ? "DEBT_INCREASE" : "";
+  return {
+    customerName: customerMatch?.[1]?.trim() || "",
+    amount: amountMatch?.[1] || "",
+    action,
+    targetText: value,
+  };
+}
+
 function buildCodeBasedExplanation(report, reportDate) {
   const summary = report?.summary;
   if (!summary) return null;
@@ -165,7 +178,7 @@ function AiListItem({ item, index, tone, date }) {
         <p className="text-[13px] leading-5 sm:text-sm sm:leading-6">{cleanAiText(item)}</p>
         {tone === "amber" ? (
           <a
-            href={`${getAiActivityReviewHref(date)}#activity-results`}
+            href={`${getAiActivityReviewHref(date, getReviewTarget(item))}#activity-results`}
             className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-800 shadow-sm transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-300"
           >
             ပြန်စစ်ရန် ↗

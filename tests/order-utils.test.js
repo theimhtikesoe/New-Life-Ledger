@@ -66,6 +66,33 @@ describe("order numeric and date normalization", () => {
     expect(fallback.destination).toBe("စက်ရုံလာယူမည်");
   });
 
+  it("captures Viber-style multi-line prices, KPay intent, receipt note, and separate cap lines", () => {
+    const fallback = buildFallbackOrderExtraction(`ဒို့ရှမ်းပုဂံ
+နွားသေး
+3ကဒ်x100ဘူးx380k
+=114,000 kyats
+(အဖုံးအဝါ)
+ရှစ်ဒေါင့်ဖြူ
+2ကဒ်x250ဘူးx235K
+=117,500 Kyats
+(အဖုံးအနီ)
+Kpay နဲ့ရှင်းမည်
+ပစ္စည်းပို့ပြေစာပဲ
+ပေးရန်`);
+    expect(fallback.customerName).toBe("ဒို့ရှမ်းပုဂံ");
+    expect(fallback.lines).toEqual([
+      expect.objectContaining({ bottleType: "နွားသေး", cardCount: 3, bottlesPerCard: 100, totalBottles: 300, quotedRate: 380000, quotedAmount: 114000 }),
+      expect.objectContaining({ bottleType: "ရှစ်ဒေါင့်ဖြူ", cardCount: 2, bottlesPerCard: 250, totalBottles: 500, quotedRate: 235000, quotedAmount: 117500 }),
+    ]);
+    expect(fallback.caps).toEqual([
+      expect.objectContaining({ capType: "အဝါ", normalPcs: 300, extraPcs: 0 }),
+      expect.objectContaining({ capType: "အနီ", normalPcs: 500, extraPcs: 0 }),
+    ]);
+    expect(fallback.paymentType).toBe("KPay");
+    expect(fallback.paymentNote).toBe("Kpay နဲ့ရှင်းမည်");
+    expect(fallback.receiptNote).toBe("ပစ္စည်းပို့ပြေစာပဲ ပေးရန်");
+  });
+
   it("normalizes mixed capacity and card abbreviations without guessing missing values", () => {
     const normalized = normalizeExtractedOrder({
       customerName: "မမိုး",

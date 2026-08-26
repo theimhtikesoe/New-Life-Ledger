@@ -107,6 +107,18 @@ export async function ensureDatabase() {
           await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderNumber" INTEGER`);
           await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedAt" TIMESTAMP(3)`);
           await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedBy" TEXT`);
+          await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paymentType" TEXT`);
+          await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paymentNote" TEXT`);
+          await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "receiptNote" TEXT`);
+          const orderLineTableCheck = await prisma.$queryRaw`
+            SELECT count(*)
+            FROM information_schema.tables
+            WHERE table_name = 'OrderLine'
+          `.catch(() => [{ count: 0 }]);
+          if (orderLineTableCheck[0]?.count > 0) {
+            await setupQuery(`ALTER TABLE "OrderLine" ADD COLUMN IF NOT EXISTS "quotedRate" INTEGER`);
+            await setupQuery(`ALTER TABLE "OrderLine" ADD COLUMN IF NOT EXISTS "quotedAmount" INTEGER`);
+          }
           await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_historyTrashedAt_idx" ON "Order"("historyTrashedAt")`);
           await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_factoryOrderDate_idx" ON "Order"("factoryOrderDate")`);
           await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Order_factoryOrderDate_factoryOrderNumber_key" ON "Order"("factoryOrderDate", "factoryOrderNumber")`);
@@ -249,6 +261,18 @@ export async function ensureDatabase() {
         await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderNumber" INTEGER`);
         await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedAt" TIMESTAMP(3)`);
         await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedBy" TEXT`);
+        await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paymentType" TEXT`);
+        await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "paymentNote" TEXT`);
+        await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "receiptNote" TEXT`);
+        const orderLineTableCheck = await prisma.$queryRaw`
+          SELECT count(*)
+          FROM information_schema.tables
+          WHERE table_name = 'OrderLine'
+        `.catch(() => [{ count: 0 }]);
+        if (orderLineTableCheck[0]?.count > 0) {
+          await setupQuery(`ALTER TABLE "OrderLine" ADD COLUMN IF NOT EXISTS "quotedRate" INTEGER`);
+          await setupQuery(`ALTER TABLE "OrderLine" ADD COLUMN IF NOT EXISTS "quotedAmount" INTEGER`);
+        }
         await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_historyTrashedAt_idx" ON "Order"("historyTrashedAt")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_factoryOrderDate_idx" ON "Order"("factoryOrderDate")`);
         await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Order_factoryOrderDate_factoryOrderNumber_key" ON "Order"("factoryOrderDate", "factoryOrderNumber")`);
