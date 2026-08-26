@@ -89,10 +89,10 @@ export async function PATCH(request) {
       const data = await createCustomerForOrder({ orderId, name: body.name, phone: body.phone, routeTag: body.routeTag, actorName });
       let warning = "";
       try {
-        await syncTelegramOrderMessage(data, "🌐 Website မှ Customer အသစ်ဖန်တီးပြီး ချိတ်ထားပါပြီ။", { includeActions: true });
+        await syncTelegramOrderMessage(data, "🌐 Website မှ Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းထားပါပြီ။ Main Customer/Ledger စာရင်းထဲ မထည့်ရသေးပါ။", { includeActions: true });
       } catch (syncError) {
         console.warn("Customer creation Telegram message sync failed", syncError);
-        warning = "Customer အသစ်ဖန်တီးပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+        warning = "Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
       }
       return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }

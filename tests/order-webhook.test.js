@@ -345,16 +345,16 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 99 }));
   });
 
-  it("lets a verified administrator create a new Customer from the Telegram Draft", async () => {
+  it("lets a verified administrator save an Order-only Customer draft without creating a Ledger Customer", async () => {
     mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
     const pending = { ...order, status: "NEEDS_CUSTOMER", customer: null, customerId: null, draftCustomerName: "Customer အသစ်", draftCustomerPhone: "0912345678" };
-    const created = { ...order, status: "DRAFT", customer: { id: "44444444-4444-4444-8444-444444444444", name: "Customer အသစ်" }, customerId: "44444444-4444-4444-8444-444444444444" };
+    const created = { ...order, status: "DRAFT", customer: null, customerId: null, draftCustomerName: "Customer အသစ်" };
     mocks.getOrderById.mockResolvedValue(pending);
     mocks.createCustomerForOrder.mockResolvedValue(created);
     const update = { update_id: 21, callback_query: { id: "callback-create-customer", data: `order|customer_create|I|${order.id}`, message: { message_id: 98, chat: { id: chatId } }, from: { id: 7 } } };
     const response = await POST(request(update));
     expect(response.status).toBe(200);
-    expect((await response.json()).status).toBe("customer_created");
+    expect((await response.json()).status).toBe("order_customer_draft_saved");
     expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "Customer အသစ်", phone: "0912345678", actorName: "Staff" });
     expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(created, process.env.NEXT_PUBLIC_APP_URL);
   });

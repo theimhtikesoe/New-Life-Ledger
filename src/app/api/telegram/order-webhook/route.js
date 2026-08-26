@@ -214,9 +214,8 @@ async function handleCallback(update) {
       if (!current) throw new Error("Order မတွေ့ပါ။");
       const created = await createCustomerForOrder({ orderId, name: current.draftCustomerName, phone: current.draftCustomerPhone, actorName: "Staff" });
       await rememberCallbackMessage();
-      await acknowledge({ callbackQueryId: callback?.id, text: "Customer အသစ်ဖန်တီးပြီး Order နှင့် ချိတ်ပြီးပါပြီ။" });
-      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(created)}\n\n👤 Customer အသစ်ဖန်တီးပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(created, process.env.NEXT_PUBLIC_APP_URL) });
-      return { ok: true, status: "customer_created", orderId, customerId: created.customer?.id || null };
+      await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(created)}\n\n📝 Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းထားပါပြီ။ Main Customer/Ledger စာရင်းထဲ မထည့်ရသေးပါ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(created, process.env.NEXT_PUBLIC_APP_URL) });
+      return { ok: true, status: "order_customer_draft_saved", orderId, customerId: null };
     }
     if (action.toLowerCase() === "retry") {
       const current = await getOrderById(orderId);

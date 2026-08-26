@@ -151,7 +151,7 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
   const blocked = ["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(String(order?.status || ""));
   const missingFields = Array.isArray(order?.missingFields) ? order.missingFields : [];
   const blockingMissingFields = missingFields.filter((field) => !/^(?:Customer|ဖောက်သည်)/iu.test(String(field).trim()));
-  const hasCustomer = Boolean(order?.customer?.id || order?.customerId);
+  const hasCustomer = Boolean(order?.customer?.id || order?.customerId || String(order?.draftCustomerName || "").trim());
   const canConfirm = !blocked && hasCustomer && blockingMissingFields.length === 0;
   const rows = [];
   if (canConfirm) {
@@ -160,7 +160,7 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
   } else if (!blocked) {
     rows.push([{ text: "👤 ရှိပြီးသား Customer ချိတ်ရန်", callback_data: `order|customer|I|${id}` }]);
-    rows.push([{ text: "➕ Customer အသစ်ဖန်တီးရန်", callback_data: `order|customer_create|I|${id}` }]);
+    rows.push([{ text: "➕ Order အတွက် Customer အသစ်ထားရန်", callback_data: `order|customer_create|I|${id}` }]);
     const hasDateMissing = missingFields.some((field) => /ရက်|date/i.test(String(field)));
     const hasDestinationMissing = missingFields.some((field) => /နေရာ|ကားဂိတ်|destination/i.test(String(field)));
     const hasPhoneMissing = missingFields.some((field) => /ဖုန်း|phone/i.test(String(field)));
@@ -177,7 +177,7 @@ export function buildOrderCustomerCandidatesKeyboard(order, candidates = []) {
   const id = String(order?.id || "");
   if (!id) return undefined;
   const rows = candidates.slice(0, 8).map((candidate, index) => [{ text: `👤 ${String(candidate.name || "Customer").slice(0, 42)}`, callback_data: `order|link|I|${id}|${index}` }]);
-  rows.push([{ text: "➕ Customer အသစ်ဖန်တီးရန်", callback_data: `order|customer_create|I|${id}` }]);
+  rows.push([{ text: "➕ Order အတွက် Customer အသစ်ထားရန်", callback_data: `order|customer_create|I|${id}` }]);
   rows.push([{ text: "⬅️ မူလခလုတ်များ", callback_data: `order|back|I|${id}` }]);
   return { inline_keyboard: rows };
 }

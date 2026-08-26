@@ -742,28 +742,37 @@ export async function createCustomerForOrder({ orderId, name, phone = null, rout
   if (order.customerId && order.customer?.id && !order.customer.deletedAt) return serializeOrder(order);
   const customerName = String(name || order.draftCustomerName || "").trim();
   if (!customerName) throw new Error("Customer အမည် လိုအပ်ပါသည်။");
-  const created = await prisma.$transaction(async (tx) => {
-    const customer = await tx.customer.create({
-      data: { name: customerName, phone: String(phone || order.draftCustomerPhone || "").trim() || null, routeTag: String(routeTag || "").trim() || null, current_balance: 0 },
-      select: { id: true, name: true, phone: true, routeTag: true, deletedAt: true },
-    });
-    const updated = await tx.order.update({
-      where: { id: order.id },
-      data: { customerId: customer.id, draftCustomerName: null, draftCustomerPhone: null, missingFields: removeCustomerMissingFields(order.missingFields), status: "DRAFT" },
-      include: ORDER_INCLUDE,
-    });
-    return { customer, order: updated };
+  // Keep Telegram-only names scoped to the Order. Do not create a row in the
+  // main Customer table until staff explicitly links an existing customer.
+  const draftPhone = String(phone || order.draftCustomerPhone || "").trim() || null;
+  const missingSet = new Set(removeCustomerMissingFields(order.missingFields));
+  if (order.requestedDate) Array.from(missingSet).filter((item) => item.includes("ထုတ်ရမည့်ရက်")).forEach((item) => missingSet.delete(item));
+  else missingSet.add("ထုတ်ရမည့်ရက်");
+  if (order.destination) Array.from(missingSet).filter((item) => item.includes("ကားဂိတ်/နေရာ")).forEach((item) => missingSet.delete(item));
+  else missingSet.add("ကားဂိတ်/နေရာ");
+  const remainingMissingFields = Array.from(missingSet);
+  const updated = await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      customerId: null,
+      draftCustomerName: customerName,
+      draftCustomerPhone: draftPhone,
+      customerPhone: draftPhone,
+      missingFields: remainingMissingFields,
+      status: remainingMissingFields.length ? "NEEDS_REVIEW" : "DRAFT",
+    },
+    include: ORDER_INCLUDE,
   });
   await writeAuditLog({
     actorName,
-    action: "ORDER_CUSTOMER_CREATE",
+    action: "ORDER_CUSTOMER_DRAFT",
     entityType: "Order",
-    entityId: created.order.id,
-    entityLabel: created.customer.name,
-    summary: `Order အတွက် Customer အသစ်ဖန်တီး: ${created.customer.name}`,
-    metadata: { customerId: created.customer.id },
+    entityId: updated.id,
+    entityLabel: customerName,
+    summary: `Order အတွက် Customer အမည်ကို သီးသန့်သိမ်း: ${customerName}`,
+    metadata: { orderCustomerOnly: true, hasPhone: Boolean(draftPhone), routeTag: routeTag || null },
   });
-  return serializeOrder(created.order);
+  return serializeOrder(updated);
 }
 
 export async function updateOrderDetails({ orderId, requestedDate, destination, customerPhone, actorName = "Staff" } = {}) {
@@ -804,7 +813,8 @@ export async function updateOrderStatus({ orderId, status, mode = null, actorNam
   if (status === "CANCELLED" && ["FACTORY_NOTIFIED", "COMPLETED"].includes(current.status)) throw new Error("ပို့ပြီး/ပြီးစီးပြီး Order ကို Cancel မလုပ်နိုင်ပါ။");
   if (status === "CANCELLED" && current.deliveries?.some((delivery) => delivery.destinationType === "FACTORY" && ["SENDING", "SENT"].includes(delivery.status))) throw new Error("Factory notification ပို့နေ/ပို့ပြီး Order ကို Cancel မလုပ်နိုင်ပါ။");
   if (status === "CONFIRMED" || status === "BATCH_QUEUED") {
-    if (!current.customerId || current.customer?.deletedAt) throw new Error("Active Customer မချိတ်ရသေးပါ။");
+    const hasOrderCustomer = Boolean((current.customerId && !current.customer?.deletedAt) || String(current.draftCustomerName || "").trim());
+    if (!hasOrderCustomer) throw new Error("Order Customer မသတ်မှတ်ရသေးပါ။");
     if (removeCustomerMissingFields(current.missingFields).length) throw new Error("Order အချက်အလက် မပြည့်စုံသေးပါ။");
   }
   const nextMode = mode === "MORNING_BATCH" ? "MORNING_BATCH" : "IMMEDIATE";

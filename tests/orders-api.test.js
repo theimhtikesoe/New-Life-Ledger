@@ -79,14 +79,14 @@ describe("Website Orders API", () => {
     expect((await response.json()).data).toEqual(order);
   });
 
-  it("creates a new Customer for a draft and updates Telegram without touching Ledger", async () => {
-    const order = { id: "order-1", status: "DRAFT", customer: { id: "customer-1", name: "3ဘီး" }, missingFields: [], telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
+  it("saves an Order-only Customer draft and updates Telegram without touching Ledger", async () => {
+    const order = { id: "order-1", status: "DRAFT", customer: null, customerId: null, draftCustomerName: "3ဘီး", missingFields: [], telegramDraftChatId: "-100123", telegramDraftMessageId: "88" };
     mocks.createCustomerForOrder.mockResolvedValue(order);
     mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
     const response = await PATCH(request({ orderId: order.id, action: "create_customer", name: "3ဘီး" }));
     expect(response.status).toBe(200);
     expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "3ဘီး", phone: undefined, routeTag: undefined, actorName: "Staff" });
-    expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(order, "🌐 Website မှ Customer အသစ်ဖန်တီးပြီး ချိတ်ထားပါပြီ။", { includeActions: true });
+    expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(order, "🌐 Website မှ Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းထားပါပြီ။ Main Customer/Ledger စာရင်းထဲ မထည့်ရသေးပါ။", { includeActions: true });
     expect((await response.json()).data).toEqual(order);
   });
 
