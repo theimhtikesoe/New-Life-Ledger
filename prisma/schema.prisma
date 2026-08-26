@@ -204,12 +204,15 @@ model AuditLog {
   entityLabel String?
   summary     String
   metadata    Json?
-  createdAt   DateTime @default(now())
+  hiddenAt    DateTime?
+  hiddenBy    String?
+  createdAt   DateTime         @default(now())
 
   @@index([createdAt])
   @@index([actorName])
   @@index([action])
   @@index([entityType])
+  @@index([hiddenAt])
 }
 
 model AiExplanationCache {

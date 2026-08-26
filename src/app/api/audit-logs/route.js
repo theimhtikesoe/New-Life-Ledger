@@ -39,7 +39,7 @@ export async function GET(request) {
       !includeOrders ? { NOT: { entityType: "Order" } } : null,
       !action && !isHiddenReportAction ? { NOT: { action: "DAILY_REPORT_SENT" } } : null,
     ].filter(Boolean);
-    const [auditLogs, legacyLedgers] = await Promise.all([
+    const [allAuditLogs, legacyLedgers] = await Promise.all([
       prisma.auditLog.findMany({
         where: { AND: auditConditions },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
@@ -72,7 +72,15 @@ export async function GET(request) {
         : [],
     ]);
 
-    const legacyLogs = legacyLedgers.map((ledger) => {
+    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt);
+    const auditedLedgerIds = new Set(
+      allAuditLogs
+        .filter((log) => log.entityType === "Ledger" && log.entityId)
+        .map((log) => String(log.entityId)),
+    );
+    const legacyLogs = legacyLedgers
+      .filter((ledger) => !auditedLedgerIds.has(String(ledger.id)))
+      .map((ledger) => {
       const isPaid = ledger.type === "DEBIT";
       const actionName = isPaid ? "PAYMENT" : "DEBT_INCREASE";
       return {
@@ -100,7 +108,7 @@ export async function GET(request) {
           enteredAt: ledger.createdAt,
         },
       };
-    });
+      });
 
     const currentLogs = auditLogs.map((log) => ({ ...log, eventSource: "audit" }));
     const logs = [...currentLogs, ...legacyLogs]
