@@ -158,6 +158,7 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
   } else if (!blocked) {
     rows.push([{ text: "👤 ရှိပြီးသား Customer ချိတ်ရန်", callback_data: `order|customer|I|${id}` }]);
     rows.push([{ text: "➕ Customer အသစ်ဖန်တီးရန်", callback_data: `order|customer_create|I|${id}` }]);
+    if (appUrl && missingFields.length) rows.push([{ text: "✏️ မသတ်မှတ်ရသေးတာ ဖြည့်ရန်", url: `${String(appUrl).replace(/\/$/, "")}/orders?orderId=${encodeURIComponent(id)}&edit=details` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
   }
   return rows.length ? { inline_keyboard: rows } : undefined;

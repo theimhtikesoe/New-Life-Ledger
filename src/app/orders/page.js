@@ -127,7 +127,7 @@ function CapLines({ order }) {
 
 function OrderCommercialNotes({ order }) {
   if (!order.paymentType && !order.paymentNote && !order.receiptNote) return null;
-  return <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-3 text-sm text-cyan-950"><p className="font-semibold">ငွေ/ပြေစာ မှတ်ချက်</p>{order.paymentType || order.paymentNote ? <p className="mt-1">ငွေရှင်း: <strong>{order.paymentType || order.paymentNote}</strong>{order.paymentNote && order.paymentNote !== order.paymentType ? ` · ${order.paymentNote}` : ""}</p> : null}{order.receiptNote ? <p className="mt-1">ပြေစာ/ပစ္စည်းစာ: <strong>{order.receiptNote}</strong></p> : null}<p className="mt-2 text-xs text-cyan-800">ဤအချက်များသည် Order note သာဖြစ်ပြီး Ledger ငွေစာရင်းအဖြစ် မရေးသေးပါ။</p></div>;
+  return <div className="mt-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-950"><p className="font-semibold">ငွေ/ပြေစာ မှတ်ချက်</p>{order.paymentType || order.paymentNote ? <p className="mt-1">ငွေရှင်း: <strong>{order.paymentType || order.paymentNote}</strong>{order.paymentNote && order.paymentNote !== order.paymentType ? ` · ${order.paymentNote}` : ""}</p> : null}{order.receiptNote ? <p className="mt-1">ပြေစာ/ပစ္စည်းစာ: <strong>{order.receiptNote}</strong></p> : null}</div>;
 }
 
 function OrderHistoryTimeline({ logs }) {
@@ -284,7 +284,9 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setSelectedOrderId(params.get("orderId") || "");
+    const requestedOrderId = params.get("orderId") || "";
+    setSelectedOrderId(requestedOrderId);
+    if (requestedOrderId && params.get("edit") === "details") setEditingDetailsId(requestedOrderId);
     const requestedStatus = params.get("status");
     const requestedView = params.get("view");
     if (requestedView === "trash" || requestedStatus === "CANCELLED") setViewMode("TRASH");
@@ -467,21 +469,20 @@ export default function OrdersPage() {
 
         <section className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-3 shadow-sm sm:p-4" aria-labelledby="manual-order-title">
           <button type="button" aria-expanded={showManualOrder} aria-controls="viber-copied-order-panel" onClick={() => setShowManualOrder((current) => !current)} className="flex min-h-12 w-full items-center justify-between gap-3 rounded-xl px-2 py-1 text-left transition hover:bg-white/70 active:scale-[0.99]">
-            <span className="min-w-0"><span className="block text-xs font-bold uppercase tracking-wide text-cyan-700">Viber / copied order</span><span id="manual-order-title" className="mt-1 block text-base font-bold text-cyan-950 sm:text-lg">Viber မှာရထားတဲ့ Order ကို ဒီမှာကူးထည့်ရန်</span></span>
+            <span className="min-w-0"><span className="block text-xs font-bold uppercase tracking-wide text-cyan-700">Viber / copied order</span><span id="manual-order-title" className="mt-1 block text-sm font-bold text-cyan-950 sm:text-base">Viber Order ထည့်ရန်</span></span>
             <span className="shrink-0 rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800">{showManualOrder ? "ပိတ်ရန်" : "ဖွင့်ရန်"}</span>
           </button>
-          {!showManualOrder ? <p className="px-2 pb-1 text-xs leading-5 text-cyan-900">Viber မှကူးထားသောစာကို ထည့်ရန် ခလုတ်နှိပ်ပါ။ မူရင်းစာ မပျောက်ပါ။</p> : null}
           {showManualOrder ? <div id="viber-copied-order-panel" className="mt-2 border-t border-cyan-200/80 pt-3">
-          <p className="text-sm leading-6 text-cyan-900">Viber Bot မရှိသေးသောအချိန်မှာ Viber စာကို ကူးထည့်ပြီး Draft အဖြစ် စစ်နိုင်ပါတယ်။ Order စာပုံစံနှင့် ငွေ/ပြေစာမှတ်ချက်ပါသည့် စာပုံစံ နှစ်မျိုးလုံးကို ဖတ်ပါမယ်။ မူရင်းစာ မပျောက်ပါ။</p>
+          <p className="text-xs leading-5 text-cyan-900">Viber စာကို ကူးထည့်ပြီး Preview ကြည့်ကာ Draft အဖြစ် သိမ်းနိုင်ပါတယ်။</p>
           <textarea value={manualOrderText} onChange={(event) => { setManualOrderText(event.target.value); setManualOrderPreview(null); }} placeholder={`ဥပမာ\nဒို့ရှမ်းပုဂံ\nနွားသေး\n3ကဒ်x100ဘူးx380k\n=114,000 kyats\n(အဖုံးအဝါ)\nKpay နဲ့ရှင်းမည်\nပစ္စည်းပို့ပြေစာပဲ ပေးရန်`} className="mt-3 min-h-36 w-full rounded-xl border border-cyan-300 bg-white px-3 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400" />
           <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={previewManualOrder} className="rounded-lg border border-cyan-400 bg-white px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100">ဖတ်ပြီး Preview ပြရန်</button>{manualOrderPreview ? <button type="button" onClick={saveManualOrder} disabled={savingManualOrder} className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-bold text-white hover:bg-cyan-800 disabled:opacity-50">{savingManualOrder ? "Draft သိမ်းနေသည်..." : "Draft အဖြစ် သိမ်းရန်"}</button> : null}</div>
           {manualOrderPreview ? <ManualOrderPreviewDetails order={manualOrderPreview} /> : null}
           </div> : null}
         </section>
 
-        <section aria-label="အကူအညီနှင့် Batch ခလုတ်များ" className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm sm:justify-start sm:p-3">
-          <button type="button" aria-expanded={showGuide} aria-controls="telegram-order-guide-modal" onClick={() => { setShowGuide(true); setShowBatchPanel(false); }} className="min-h-10 flex-1 rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-800 hover:bg-cyan-100 active:scale-[0.98] sm:flex-none sm:px-4 sm:text-sm">Guide ပြရန်</button>
-          {viewMode === "ACTIVE" ? <button type="button" aria-expanded={showBatchPanel} aria-controls="batch-setting-modal" onClick={() => { setShowBatchPanel(true); setShowGuide(false); }} className="min-h-10 flex-1 rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-800 hover:bg-violet-100 active:scale-[0.98] sm:flex-none sm:px-4 sm:text-sm">Batch setting ပြရန်</button> : null}
+        <section aria-label="အကူအညီနှင့် Batch ခလုတ်များ" className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:justify-start sm:p-2.5">
+          <button type="button" aria-expanded={showGuide} aria-controls="telegram-order-guide-modal" onClick={() => { setShowGuide(true); setShowBatchPanel(false); }} className="min-h-9 flex-1 rounded-lg border border-cyan-300 bg-cyan-50 px-2.5 py-1.5 text-xs font-bold text-cyan-800 hover:bg-cyan-100 active:scale-[0.98] sm:flex-none sm:px-3 sm:text-xs">Guide ပြရန်</button>
+          {viewMode === "ACTIVE" ? <button type="button" aria-expanded={showBatchPanel} aria-controls="batch-setting-modal" onClick={() => { setShowBatchPanel(true); setShowGuide(false); }} className="min-h-9 flex-1 rounded-lg border border-violet-300 bg-violet-50 px-2.5 py-1.5 text-xs font-bold text-violet-800 hover:bg-violet-100 active:scale-[0.98] sm:flex-none sm:px-3 sm:text-xs">Batch setting ပြရန်</button> : null}
         </section>
 
         {showGuide ? <div id="telegram-order-guide-modal" role="dialog" aria-modal="true" aria-labelledby="telegram-order-guide-title" className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-3 sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowGuide(false); }}>
@@ -510,7 +511,7 @@ export default function OrdersPage() {
           <button type="button" onClick={() => { setViewMode("ACTIVE"); setStatusFilter("ALL"); }} className={`rounded-xl border px-4 py-3 text-sm font-bold ${viewMode === "ACTIVE" ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>လက်ရှိ Orders</button>
           <button type="button" onClick={() => { setViewMode("HISTORY"); setStatusFilter("ALL"); }} className={`rounded-xl border px-4 py-3 text-sm font-bold ${viewMode === "HISTORY" ? "border-indigo-700 bg-indigo-700 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>Order History</button>
           <button type="button" onClick={() => { setViewMode("TRASH"); setStatusFilter("ALL"); }} className={`rounded-xl border px-4 py-3 text-sm font-bold ${viewMode === "TRASH" ? "border-rose-700 bg-rose-700 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>အမှိုက်ပုံး <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5">{trashCount}</span></button>
-          <p className="flex items-center px-2 text-xs text-slate-500">Order History နဲ့ အမှိုက်ပုံးက မဖျက်ဘဲ သီးခြားသိမ်းထားတဲ့ Order မှတ်တမ်းများ ဖြစ်ပါတယ်။</p>
+          <p className="flex items-center px-2 text-xs text-slate-500">Order များကို မဖျက်ဘဲ သီးခြားသိမ်းထားပါတယ်။</p>
         </section>
 
         {showBatchPanel ? <div id="batch-setting-modal" role="dialog" aria-modal="true" aria-labelledby="batch-setting-title" className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-3 sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowBatchPanel(false); }}>
@@ -546,7 +547,7 @@ export default function OrdersPage() {
             const canConfirmOrder = viewMode === "ACTIVE" && !archived && ["DRAFT", "NEEDS_REVIEW"].includes(order.status) && !order.missingFields?.length && Boolean(order.customer?.id);
             const lifecycleLogs = orderLogsById.get(String(order.id)) || [];
             return (
-              <article key={order.id} id={`order-${order.id}`} className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ${highlighted ? "border-emerald-500 ring-2 ring-emerald-200" : archived ? "border-indigo-200" : "border-slate-200"}`}>
+              <article key={order.id} id={`order-${order.id}`} className={`rounded-2xl border bg-white p-3 shadow-sm sm:p-4 ${highlighted ? "border-emerald-500 ring-2 ring-emerald-200" : archived ? "border-indigo-200" : "border-slate-200"}`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Order #{String(order.id).slice(0, 8)}</p>
@@ -560,9 +561,9 @@ export default function OrdersPage() {
 
                 {archived ? <p className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-800">History သို့ရွှေ့ချိန်: {formatMyanmarDateTime(order.archivedAt)} · လုပ်သူ: {order.archivedBy || "Staff"}</p> : null}
                 {viewMode === "TRASH" ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">{order.historyTrashedAt ? `History Trash ရွှေ့ချိန်: ${formatMyanmarDateTime(order.historyTrashedAt)} · လုပ်သူ: ${order.historyTrashedBy || "Staff"} · ${retentionLabel(order.historyTrashedAt, "History Trash")}` : `Cancel လုပ်ချိန်: ${order.cancelledAt ? formatMyanmarDateTime(order.cancelledAt) : "မသိရသေးပါ"} · လုပ်သူ: ${order.cancelledBy || "Staff"} · ${retentionLabel(order.cancelledAt)}`}</p> : null}
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ထုတ်ရမည့်ရက်</p><p className="font-semibold text-slate-800">{formatDate(order.requestedDate)}</p></div>
-                  <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ကားဂိတ်/နေရာ</p><p className="font-semibold text-slate-800">{order.destination || "မသတ်မှတ်ရသေး"}</p></div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ထုတ်ရမည့်ရက်</p>{canEditDetails && !order.requestedDate ? <button type="button" onClick={() => setEditingDetailsId(order.id)} className="font-semibold text-cyan-700 underline decoration-dotted underline-offset-2">မသတ်မှတ်ရသေး · ဖြည့်ရန်</button> : <p className="font-semibold text-slate-800">{formatDate(order.requestedDate)}</p>}</div>
+                  <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ကားဂိတ်/နေရာ</p>{canEditDetails && !order.destination ? <button type="button" onClick={() => setEditingDetailsId(order.id)} className="font-semibold text-cyan-700 underline decoration-dotted underline-offset-2">မသတ်မှတ်ရသေး · ဖြည့်ရန်</button> : <p className="font-semibold text-slate-800">{order.destination || "မသတ်မှတ်ရသေး"}</p>}</div>
                 </div>
                 {canEditDetails && editingDetailsId === order.id ? <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 p-3">
                   <p className="font-semibold text-cyan-950">Order အချက်အလက် ပြင်ရန်</p>
