@@ -124,7 +124,7 @@ export async function editTelegramMessageText({ chatId, messageId, text, replyMa
 }
 
 export function buildOrderDraftKeyboard(order, appUrl = "") {
-  return buildOrderActionKeyboard(order, appUrl, { allowRetry: true });
+  return buildOrderActionKeyboard(order, appUrl);
 }
 
 export function buildOrderRetryKeyboard(order, appUrl = "") {
@@ -141,7 +141,6 @@ export function buildOrderMoreKeyboard(order, { includeBack = true } = {}) {
   const blocked = ["CONFIRMED", "BATCH_QUEUED", "FACTORY_NOTIFIED", "PREPARED", "COMPLETED", "CANCELLED"].includes(String(order?.status || ""));
   const rows = [];
   if (!blocked) rows.push([{ text: "📦 08:10 Batch ထည့်ရန်", callback_data: `order|confirm|B|${id}` }]);
-  if (!blocked && order?.sourceText) rows.push([{ text: "🔄 AI ဖြင့် ပြန်စစ်ရန်", callback_data: `order|retry|I|${id}` }]);
   if (includeBack) rows.push([{ text: "⬅️ မူလခလုတ်များ", callback_data: `order|back|I|${id}` }]);
   return rows.length ? { inline_keyboard: rows } : undefined;
 }
@@ -156,11 +155,9 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
   if (canConfirm) {
     rows.push([{ text: "✅ Confirm", callback_data: `order|confirm|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
-    if (!blocked) rows.push([{ text: "⋯ အခြားလုပ်ဆောင်ချက်များ", callback_data: `order|menu|I|${id}` }]);
   } else if (!blocked) {
     rows.push([{ text: "👤 ရှိပြီးသား Customer ချိတ်ရန်", callback_data: `order|customer|I|${id}` }]);
     rows.push([{ text: "➕ Customer အသစ်ဖန်တီးရန်", callback_data: `order|customer_create|I|${id}` }]);
-    if (allowRetry && order?.sourceText) rows.push([{ text: "🔄 AI ဖြင့် ပြန်စစ်ရန်", callback_data: `order|retry|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
   }
   return rows.length ? { inline_keyboard: rows } : undefined;
