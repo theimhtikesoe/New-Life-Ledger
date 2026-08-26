@@ -7,9 +7,9 @@ import { getActorName, writeAuditLog } from "@/lib/audit";
 export const dynamic = "force-dynamic";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
-const SUPPORTED_BACKUP_VERSION = 3;
+const SUPPORTED_BACKUP_VERSION = 4;
 const REQUIRED_SHEETS = ["Backup Info", "Customers", "Transactions", "Audit History"];
-const OPTIONAL_SHEETS = ["KPay Aliases", "Pending KPay", "Integrity", "Orders", "Order Lines", "Order Caps", "Order Deliveries", "Order Automation", "Order Batch Runs"];
+const OPTIONAL_SHEETS = ["KPay Aliases", "Pending KPay", "Cash Sales", "Integrity", "Orders", "Order Lines", "Order Caps", "Order Deliveries", "Order Automation", "Order Batch Runs"];
 
 function rowsFromSheet(workbook, name) {
   const sheet = workbook.Sheets[name];
@@ -82,6 +82,20 @@ function normalize(workbook) {
       createdAt: asDate(row.createdAt || row.CreatedAt) || asDate(row.date || row.Date) || new Date(),
     };
   });
+  const cashSales = rowsFromSheet(workbook, "Cash Sales").map((row) => ({
+    id: asUuid(row.id || row.ID),
+    customerId: asUuid(row.customerId || row.CustomerId),
+    date: asDate(row.date || row.Date),
+    saleType: row.saleType || row.SaleType || "RETAIL",
+    itemSize: row.itemSize || row.ItemSize || null,
+    cartons: row.cartons == null || row.cartons === "" ? null : asNumber(row.cartons || row.Cartons),
+    rate: row.rate == null || row.rate === "" ? null : asNumber(row.rate || row.Rate),
+    deductions: asNumber(row.deductions ?? row.Deductions),
+    amount: asNumber(row.amount ?? row.Amount),
+    note: row.note ?? row.Note ?? null,
+    paymentType: row.paymentType ?? row.PaymentType ?? null,
+    createdAt: asDate(row.createdAt || row.CreatedAt) || asDate(row.date || row.Date) || new Date(),
+  }));
   const kpayAliases = rowsFromSheet(workbook, "KPay Aliases").map((row) => ({
     id: asUuid(row.id || row.ID),
     kpayName: asText(row.kpayName ?? row.KpayName),
@@ -195,7 +209,7 @@ function normalize(workbook) {
       .filter((row) => row.key || row.Key)
       .map((row) => [String(row.key || row.Key), parseJsonCell(row.value ?? row.Value)]),
   );
-  return { info, customers, transactions, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, integrity };
+  return { info, customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, integrity };
 }
 
 function computeIntegrity(data) {
@@ -251,6 +265,16 @@ function validate(data) {
     if (!transaction.date) errors.push(`Transactions row ${index + 2}: date မမှန်ပါ။`);
     if (transaction.type !== "CREDIT" && transaction.type !== "DEBIT") errors.push(`Transactions row ${index + 2}: type သည် CREDIT/DEBIT မဟုတ်ပါ။`);
     if (!transaction.amount || transaction.amount <= 0) errors.push(`Transactions row ${index + 2}: amount မမှန်ပါ။`);
+  });
+
+  const cashSaleIds = new Set();
+  data.cashSales.forEach((cashSale, index) => {
+    if (!cashSale.id) errors.push(`Cash Sales row ${index + 2}: valid id မရှိပါ။`);
+    if (cashSale.id && cashSaleIds.has(cashSale.id)) errors.push(`Cash Sales row ${index + 2}: duplicate id ဖြစ်နေပါသည်။`);
+    if (cashSale.id) cashSaleIds.add(cashSale.id);
+    if (!cashSale.customerId || !customerIds.has(cashSale.customerId)) errors.push(`Cash Sales row ${index + 2}: customerId မကိုက်ညီပါ။`);
+    if (!cashSale.date) errors.push(`Cash Sales row ${index + 2}: date မမှန်ပါ။`);
+    if (!cashSale.amount || cashSale.amount <= 0) errors.push(`Cash Sales row ${index + 2}: amount မမှန်ပါ။`);
   });
 
   const aliasIds = new Set();
@@ -373,9 +397,10 @@ export async function POST(request) {
       }, { status: 409 });
     }
 
-    const [existingCustomers, existingTransactions, existingAliases, existingPendingKpay, existingAuditLogs, existingOrders, existingOrderLines, existingOrderCaps, existingOrderDeliveries, existingAutomationSetting, existingBatchRuns] = await Promise.all([
+    const [existingCustomers, existingTransactions, existingCashSales, existingAliases, existingPendingKpay, existingAuditLogs, existingOrders, existingOrderLines, existingOrderCaps, existingOrderDeliveries, existingAutomationSetting, existingBatchRuns] = await Promise.all([
       prisma.customer.findMany({ select: { id: true, name: true, phone: true } }),
       prisma.ledger.findMany({ select: { id: true } }),
+      prisma.cashSale.findMany({ select: { id: true } }),
       prisma.kpayAlias.findMany({ select: { id: true, kpayName: true } }),
       prisma.unverifiedKpay.findMany({ select: { id: true } }),
       prisma.auditLog.findMany({ select: { id: true } }),
@@ -400,6 +425,7 @@ export async function POST(request) {
     }
 
     const existingTransactionIds = new Set(existingTransactions.map((item) => item.id));
+    const existingCashSaleIds = new Set(existingCashSales.map((item) => item.id));
     const existingAliasIds = new Set(existingAliases.map((item) => item.id));
     const existingAliasNames = new Set(existingAliases.map((item) => item.kpayName));
     const existingPendingIds = new Set(existingPendingKpay.map((item) => item.id));
@@ -426,6 +452,9 @@ export async function POST(request) {
     const toCreateTransactions = data.transactions
       .filter((item) => item.id && !existingTransactionIds.has(item.id))
       .map((item) => ({ ...item, customerId: customerIdMap.get(item.customerId) || item.customerId }));
+    const toCreateCashSales = data.cashSales
+      .filter((item) => item.id && !existingCashSaleIds.has(item.id))
+      .map((item) => ({ ...item, customerId: customerIdMap.get(item.customerId) || item.customerId }));
     const toCreateAliases = data.kpayAliases
       .filter((item) => item.id && !existingAliasIds.has(item.id) && !existingAliasNames.has(item.kpayName))
       .map((item) => ({ ...item, customerId: customerIdMap.get(item.customerId) || item.customerId }));
@@ -443,6 +472,7 @@ export async function POST(request) {
       sourceCounts: {
         customers: data.customers.length,
         transactions: data.transactions.length,
+        cashSales: data.cashSales.length,
         kpayAliases: data.kpayAliases.length,
         unverifiedKpay: data.unverifiedKpay.length,
         auditLogs: data.auditLogs.length,
@@ -456,6 +486,7 @@ export async function POST(request) {
       willAdd: {
         customers: toCreateCustomers.length,
         transactions: toCreateTransactions.length,
+        cashSales: toCreateCashSales.length,
         kpayAliases: toCreateAliases.length,
         unverifiedKpay: toCreatePendingKpay.length,
         auditLogs: toCreateAudits.length,
@@ -469,6 +500,7 @@ export async function POST(request) {
       willSkip: {
         customers: data.customers.length - toCreateCustomers.length,
         transactions: data.transactions.length - toCreateTransactions.length,
+        cashSales: data.cashSales.length - toCreateCashSales.length,
         kpayAliases: data.kpayAliases.length - toCreateAliases.length,
         unverifiedKpay: data.unverifiedKpay.length - toCreatePendingKpay.length,
         auditLogs: data.auditLogs.length - toCreateAudits.length,
@@ -498,6 +530,7 @@ export async function POST(request) {
     const result = await prisma.$transaction(async (tx) => {
       let addedCustomers = 0;
       let addedTransactions = 0;
+      let addedCashSales = 0;
       let addedAliases = 0;
       let addedPendingKpay = 0;
       let addedAuditLogs = 0;
@@ -513,6 +546,12 @@ export async function POST(request) {
       for (const customer of toCreateCustomers) {
         await tx.customer.create({ data: customer });
         addedCustomers += 1;
+      }
+      for (const cashSale of toCreateCashSales) {
+        const customerExists = await tx.customer.findUnique({ where: { id: cashSale.customerId }, select: { id: true } });
+        if (!customerExists) continue;
+        await tx.cashSale.create({ data: cashSale });
+        addedCashSales += 1;
       }
       for (const alias of toCreateAliases) {
         const customerExists = await tx.customer.findUnique({ where: { id: alias.customerId }, select: { id: true } });
@@ -590,16 +629,16 @@ export async function POST(request) {
         actorName: getActorName(request),
         action: "IMPORT",
         entityType: "Backup",
-        summary: `Backup restore: customer ${addedCustomers}, transaction ${addedTransactions}, KPay ${addedAliases + addedPendingKpay}, order ${addedOrders}`,
+        summary: `Backup restore: customer ${addedCustomers}, transaction ${addedTransactions}, cash sale ${addedCashSales}, KPay ${addedAliases + addedPendingKpay}, order ${addedOrders}`,
         metadata: {
           sourceCounts: summary.sourceCounts,
-          added: { addedCustomers, addedTransactions, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns },
+          added: { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns },
           correctedBalances,
           balanceCorrections,
           aliasConflicts: summary.aliasConflicts,
         },
       });
-      return { addedCustomers, addedTransactions, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, correctedBalances, balanceCorrections };
+      return { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, correctedBalances, balanceCorrections };
     });
 
     return NextResponse.json({ data: { ...summary, result } }, { status: 201 });

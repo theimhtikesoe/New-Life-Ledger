@@ -370,7 +370,6 @@ function formatDateLabel(value) {
 
 export function formatOrderDraftMessage(order, { includeActions = true, includeSource = true } = {}) {
   const totals = calculateOrderTotals(order);
-  const warnings = calculateCapWarnings(order).filter((cap) => cap.warningText);
   const heading = order.status === "CONFIRMED"
     ? "✅ Order အတည်ပြုပြီး"
     : order.status === "BATCH_QUEUED"
@@ -390,10 +389,6 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
   });
   const caps = (order.caps || []).map((cap) => `- ${cap.capType}: ပုံမှန် ${(cap.normalPcs || 0).toLocaleString()} pcs + အပို ${(cap.extraPcs || 0).toLocaleString()} pcs`);
   const pickupTime = String(order.aiNotes || "").match(/လာယူချိန်\s*[:：]\s*(.+)$/u)?.[1]?.trim() || "";
-  const warningLines = warnings.map((cap) => {
-    const requested = Number(cap.requestedTotalPcs || 0);
-    return `⚠️ အဖုံး: ${requested.toLocaleString()} pcs`;
-  });
   const sourcePreview = includeSource ? String(order.sourceText || "").trim().slice(0, 1200).replace(/```/g, "'''\n") : "";
   const customerName = order.customer?.name || order.draftCustomerName || "မတွေ့သေးပါ";
   const customerLine = order.customer?.id
@@ -410,7 +405,6 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
     ...(lines.length ? lines : ["မသတ်မှတ်ရသေး"]),
     `စုစုပေါင်း: ${totals.totalCards.toLocaleString()} ကဒ် / ${totals.totalBottles.toLocaleString()} ဘူး`,
     caps.length ? ["", "အဖုံး:", ...caps] : [],
-    warningLines.length ? ["", ...warningLines] : [],
     order.paymentType || order.paymentNote ? ["", `ငွေရှင်း: ${order.paymentType || order.paymentNote}`] : [],
     order.receiptNote ? [`ပြေစာ/ပစ္စည်းစာ: ${order.receiptNote}`] : [],
     sourcePreview ? ["", "မူရင်းမှာယူစာ:", "```", sourcePreview, "```"] : [],

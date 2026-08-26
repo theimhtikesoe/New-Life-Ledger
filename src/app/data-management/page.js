@@ -18,6 +18,7 @@ function downloadBackup(data) {
     ["generatedAt", data.generatedAt],
     ["customers", counts.customers || 0],
     ["transactions", counts.transactions || 0],
+    ["cashSales", counts.cashSales || 0],
     ["kpayAliases", counts.kpayAliases || 0],
     ["unverifiedKpay", counts.unverifiedKpay || 0],
     ["auditLogs", counts.auditLogs || 0],
@@ -29,6 +30,7 @@ function downloadBackup(data) {
   ];
   const customers = (data.customers || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), deletedAt: iso(item.deletedAt) }));
   const transactions = (data.transactions || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
+  const cashSales = (data.cashSales || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
   const kpayAliases = (data.kpayAliases || []).map((item) => ({ ...item }));
   const unverifiedKpay = (data.unverifiedKpay || []).map((item) => ({ ...item, createdAt: iso(item.createdAt) }));
   const auditLogs = (data.auditLogs || []).map((item) => ({ ...item, metadata: item.metadata ? JSON.stringify(item.metadata) : "", createdAt: iso(item.createdAt) }));
@@ -43,6 +45,7 @@ function downloadBackup(data) {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(infoRows), "Backup Info");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(customers), "Customers");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(transactions), "Transactions");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(cashSales), "Cash Sales");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(kpayAliases), "KPay Aliases");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(unverifiedKpay), "Pending KPay");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(auditLogs), "Audit History");
@@ -82,6 +85,10 @@ function downloadReportExcel(customers) {
         transaction.note || "-",
       ]);
     });
+    const cashSales = [...(customer.cashSales || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (cashSales.length) {
+      rows.push([], ["လက်ငင်းရောင်းစာရင်း (Customer လက်ကျန်မပြောင်း)"] , ["ရက်စွဲ (Date)", "အမျိုးအစား (Type)", "ငွေပေးချေမှု (Payment)", "ပမာဏ (Amount)", "မှတ်ချက် (Note)"], ...cashSales.map((sale) => [formatMyanmarDateTime(sale.date), "လက်ငင်းရောင်း", sale.paymentType || "CASH", sale.amount, sale.note || "-"]));
+    }
 
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
     worksheet["!cols"] = [
@@ -177,7 +184,7 @@ export default function DataManagementPage() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Backup export မအောင်မြင်ပါ။");
       downloadBackup(body.data);
-      setMessage(`Backup export အောင်မြင်ပါပြီ။ Customers ${body.data.counts.customers}၊ Transactions ${body.data.counts.transactions}၊ KPay Alias ${body.data.counts.kpayAliases}၊ Pending KPay ${body.data.counts.unverifiedKpay}၊ Audit ${body.data.counts.auditLogs} ခု ပါဝင်ပြီး balance mismatch ${body.data.integrity.balanceMismatchCount} ခု ဖြစ်ပါတယ်။`);
+      setMessage(`Backup export အောင်မြင်ပါပြီ။ Customers ${body.data.counts.customers}၊ Transactions ${body.data.counts.transactions}၊ Cash Sales ${body.data.counts.cashSales || 0}၊ KPay Alias ${body.data.counts.kpayAliases}၊ Pending KPay ${body.data.counts.unverifiedKpay}၊ Audit ${body.data.counts.auditLogs} ခု ပါဝင်ပြီး balance mismatch ${body.data.integrity.balanceMismatchCount} ခု ဖြစ်ပါတယ်။`);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
@@ -185,7 +192,7 @@ export default function DataManagementPage() {
     setLoading(true); setError(""); setMessage("");
     try {
       const actorName = localStorage.getItem("actorName") || "";
-      const response = await fetch("/api/customers?includeLedgers=true", {
+      const response = await fetch("/api/customers?includeLedgers=true&includeCashSales=true", {
         headers: { "x-actor-name": encodeActorHeader(actorName) },
       });
       const body = await response.json();

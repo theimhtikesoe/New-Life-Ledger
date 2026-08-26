@@ -46,6 +46,7 @@ function actionLabel(action) {
     RESTORE: "Customer ပြန်ယူ",
     PAYMENT: "ငွေချေ",
     DEBT_INCREASE: "အကြွေးတိုး",
+    CASH_SALE: "လက်ငင်းရောင်း",
     PERMANENT_DELETE: "Customer အပြီးဖျက်",
   };
   return labels[action] || action || "အခြားလုပ်ဆောင်ချက်";

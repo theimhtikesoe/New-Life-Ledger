@@ -12,7 +12,7 @@ export async function GET() {
   try {
     await ensureDatabase();
 
-    const [customers, transactions, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns] = await Promise.all([
+    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns] = await Promise.all([
       prisma.customer.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -32,6 +32,23 @@ export async function GET() {
           customerId: true,
           date: true,
           type: true,
+          saleType: true,
+          itemSize: true,
+          cartons: true,
+          rate: true,
+          deductions: true,
+          amount: true,
+          note: true,
+          paymentType: true,
+          createdAt: true,
+        },
+      }),
+      prisma.cashSale.findMany({
+        orderBy: [{ date: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          customerId: true,
+          date: true,
           saleType: true,
           itemSize: true,
           cartons: true,
@@ -113,11 +130,12 @@ export async function GET() {
     return NextResponse.json({
       data: {
         format: "new-life-ledger-backup",
-        version: 3,
+        version: 4,
         generatedAt: new Date().toISOString(),
         counts: {
           customers: customers.length,
           transactions: transactions.length,
+          cashSales: cashSales.length,
           kpayAliases: kpayAliases.length,
           unverifiedKpay: unverifiedKpay.length,
           auditLogs: auditLogs.length,
@@ -139,6 +157,7 @@ export async function GET() {
         },
         customers,
         transactions,
+        cashSales,
         kpayAliases,
         unverifiedKpay,
         auditLogs,

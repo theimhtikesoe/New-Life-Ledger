@@ -186,6 +186,42 @@ function AlertNotification({ message, type, onClose }) {
   );
 }
 
+function CashSaleHistory({ cashSales = [] }) {
+  if (!cashSales.length) return null;
+  return (
+    <section className="mb-6 rounded-xl border border-cyan-200 bg-cyan-50/50 p-3 shadow-sm sm:p-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-base font-semibold text-cyan-950">လက်ငင်းရောင်းစာရင်း</h3>
+          <p className="mt-1 text-xs leading-5 text-cyan-800">ဒီစာရင်းသည် ရောင်းပြီးလက်ငင်းရှင်းထားသောမှတ်တမ်းဖြစ်ပြီး Customer လက်ကျန်ထဲ မဝင်ပါ။</p>
+        </div>
+        <span className="rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-bold text-cyan-900">{cashSales.length} ခု</span>
+      </div>
+      <div className="mt-3 space-y-2 md:hidden">
+        {cashSales.map((sale) => (
+          <article key={sale.id} className="rounded-lg border border-cyan-100 bg-white px-3 py-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-slate-500">{formatDate(sale.date)}</p>
+              <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-semibold text-cyan-900">လက်ငင်းရောင်း</span>
+            </div>
+            <p className="mt-1 text-lg font-bold text-cyan-800">{formatMoney(sale.amount)}</p>
+            <p className="mt-1 text-xs text-slate-600">ငွေပေးချေမှု: {sale.paymentType || "CASH"}</p>
+            {sale.note ? <p className="mt-1 text-xs text-slate-600">မှတ်ချက်: {sale.note}</p> : null}
+          </article>
+        ))}
+      </div>
+      <div className="mt-3 hidden overflow-x-auto rounded-lg border border-cyan-100 bg-white md:block">
+        <table className="w-full text-left text-sm text-slate-700">
+          <thead className="bg-cyan-50 text-xs text-cyan-950"><tr><th className="px-3 py-2">ရက်စွဲ</th><th className="px-3 py-2">အမျိုးအစား</th><th className="px-3 py-2 text-right">ပမာဏ</th><th className="px-3 py-2">ငွေပေးချေမှု</th><th className="px-3 py-2">မှတ်ချက်</th></tr></thead>
+          <tbody className="divide-y divide-cyan-100">
+            {cashSales.map((sale) => <tr key={sale.id}><td className="px-3 py-2 text-xs">{formatDate(sale.date)}</td><td className="px-3 py-2 text-xs font-semibold text-cyan-800">လက်ငင်းရောင်း</td><td className="px-3 py-2 text-right font-semibold text-cyan-800">{formatMoney(sale.amount)}</td><td className="px-3 py-2 text-xs">{sale.paymentType || "CASH"}</td><td className="max-w-[240px] truncate px-3 py-2 text-xs">{sale.note || "-"}</td></tr>)}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default function Dashboard({ view = "overview" }) {
   const isLedgerView = view === "ledger";
   const [customers, setCustomers] = useState([]);
@@ -722,10 +758,10 @@ export default function Dashboard({ view = "overview" }) {
     setLoadingCustomer(true);
     try {
       const [customer, transactionPage] = await Promise.all([
-        api(`/api/customers/${id}?includeLedgers=false`),
+        api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`),
         api(`/api/customers/${id}/transactions?limit=50&offset=0`),
       ]);
-      setSelectedCustomer({ ...customer, ledgers: transactionPage.items || [] });
+      setSelectedCustomer({ ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] });
       setTransactionPagination(transactionPage.pagination || { offset: 0, limit: 50, total: 0, hasMore: false });
       setSelectedCustomerId(customer.id);
     } catch (error) {
@@ -834,28 +870,18 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       const amount = Number(ledgerForm.amount);
       const type = ledgerForm.type;
+      const isCashSale = type === "CASH_SALE";
       
-      // Calculate new balance optimistically
-      const balanceDelta = type === "CREDIT" ? amount : -amount;
-      const newBalance = (selectedCustomer?.current_balance || 0) + balanceDelta;
+      // Cash sales are stored outside Ledger and never change Customer.current_balance.
+      if (!isCashSale) {
+        const balanceDelta = type === "CREDIT" ? amount : -amount;
+        const newBalance = (selectedCustomer?.current_balance || 0) + balanceDelta;
+        setSelectedCustomer(prev => ({ ...prev, current_balance: newBalance }));
+        setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c));
+        setAllCustomersForKPI(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c));
+      }
       
-      // Optimistic Update: Update balance immediately
-      setSelectedCustomer(prev => ({
-        ...prev,
-        current_balance: newBalance,
-      }));
-      
-      // Update customer in list
-      setCustomers(prev =>
-        prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c)
-      );
-
-      // Also update allCustomersForKPI to reflect in summary metrics
-      setAllCustomersForKPI(prev =>
-        prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c)
-      );
-      
-      const result = await api(`/api/customers/${selectedCustomerId}/transactions`, {
+      const result = await api(isCashSale ? `/api/customers/${selectedCustomerId}/cash-sales` : `/api/customers/${selectedCustomerId}/transactions`, {
         method: "POST",
         body: JSON.stringify({
           type: ledgerForm.type,
@@ -866,35 +892,18 @@ export default function Dashboard({ view = "overview" }) {
           deductions: Number(ledgerForm.deductions || 0),
           amount: Number(ledgerForm.amount),
           note: ledgerForm.note,
-          paymentType: ledgerForm.paymentType || null,
+          paymentType: ledgerForm.paymentType || (isCashSale ? "CASH" : null),
           date: ledgerForm.date || null,
         }),
       });
       
-      // Add new transaction to the list optimistically
-      if (result && result.ledger) {
-        setSelectedCustomer(prev => ({
-          ...prev,
-          ledgers: [result.ledger, ...(prev.ledgers || [])],
-        }));
-        
-        // Also update the customer in the main list to reflect in "Today's Transactions"
-        setCustomers(prev =>
-          prev.map(c => 
-            c.id === selectedCustomerId 
-              ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } 
-              : c
-          )
-        );
-
-        // Also update allCustomersForKPI to reflect in summary metrics
-        setAllCustomersForKPI(prev =>
-          prev.map(c => 
-            c.id === selectedCustomerId 
-              ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } 
-              : c
-          )
-        );
+      if (isCashSale && result?.cashSale) {
+        setSelectedCustomer(prev => ({ ...prev, cashSales: [result.cashSale, ...(prev.cashSales || [])] }));
+      }
+      if (!isCashSale && result?.ledger) {
+        setSelectedCustomer(prev => ({ ...prev, ledgers: [result.ledger, ...(prev.ledgers || [])] }));
+        setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } : c));
+        setAllCustomersForKPI(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } : c));
       }
       
       // Clear form immediately after successful submission
@@ -912,7 +921,7 @@ export default function Dashboard({ view = "overview" }) {
       });
       clearDashboardDraftFields(["ledgerForm"]);
       
-      showAlert("Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
+      showAlert(isCashSale ? "လက်ငင်းရောင်းစာရင်းကို သီးခြားသိမ်းဆည်းပြီးပါပြီ။ Customer လက်ကျန် မပြောင်းပါ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
       setMessage(error.message);
       showAlert(error.message, "error");
@@ -1801,32 +1810,45 @@ export default function Dashboard({ view = "overview" }) {
                   <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-3 shadow-sm sm:p-5">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းအသစ်သွင်းရန်</h3>
                     <form className="mt-3 space-y-3" onSubmit={createLedgerTransaction}>
-                      <div className="flex p-1 bg-slate-50/80 rounded-xl border border-slate-200 mb-3 shadow-inner">
+                      <div className="flex flex-wrap p-1 bg-slate-50/80 rounded-xl border border-slate-200 mb-3 shadow-inner">
                         <button
                           type="button"
-                          className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
+                          className={`flex-1 min-w-[30%] py-2 text-sm font-semibold rounded-md transition-all ${
                             ledgerForm.type === "CREDIT"
                               ? "bg-rose-600 text-slate-900 shadow-lg"
-                              : "text-slate-600 hover:text-slate-200"
+                              : "text-slate-600 hover:text-slate-900"
                           }`}
                           onClick={() => setLedgerForm({ ...ledgerForm, type: "CREDIT" })}
                           disabled={isSubmitting}
                         >
-                          အကြွေးတိုး (Unpaid)
+                          အကြွေးတိုး
                         </button>
                         <button
                           type="button"
-                          className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${
+                          className={`flex-1 min-w-[30%] py-2 text-sm font-semibold rounded-md transition-all ${
                             ledgerForm.type === "DEBIT"
                               ? "bg-emerald-600 text-slate-900 shadow-lg"
-                              : "text-slate-600 hover:text-slate-200"
+                              : "text-slate-600 hover:text-slate-900"
                           }`}
                           onClick={() => setLedgerForm({ ...ledgerForm, type: "DEBIT" })}
                           disabled={isSubmitting}
                         >
-                          ငွေချေ (Paid)
+                          ငွေချေ
+                        </button>
+                        <button
+                          type="button"
+                          className={`flex-1 min-w-[30%] py-2 text-sm font-semibold rounded-md transition-all ${
+                            ledgerForm.type === "CASH_SALE"
+                              ? "bg-cyan-500 text-slate-950 shadow-lg"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CASH_SALE", paymentType: ledgerForm.paymentType || "CASH" })}
+                          disabled={isSubmitting}
+                        >
+                          လက်ငင်းရောင်း
                         </button>
                       </div>
+                      {ledgerForm.type === "CASH_SALE" ? <p className="-mt-1 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs leading-5 text-cyan-900">လက်ငင်းရောင်းကို သီးခြားစာရင်းအဖြစ် သိမ်းပါမည်။ အကြွေးလက်ကျန် မတိုး၊ ငွေချေမှတ်တမ်းလည်း ထပ်မရေးရပါ။</p> : null}
 
                       <div className="space-y-3">
                         <div className="space-y-1.5">
@@ -1856,9 +1878,9 @@ export default function Dashboard({ view = "overview" }) {
                         </div>
                       </div>
 
-                      {ledgerForm.type === "DEBIT" && (
+                      {(ledgerForm.type === "DEBIT" || ledgerForm.type === "CASH_SALE") && (
                         <div className="space-y-1">
-                          <label className="text-xs text-slate-700 font-medium">ငွေပေးချေမှုပုံစံ</label>
+                          <label className="text-xs text-slate-700 font-medium">{ledgerForm.type === "CASH_SALE" ? "လက်ငင်းငွေပေးချေမှုပုံစံ" : "ငွေပေးချေမှုပုံစံ"}</label>
                           <select
                             className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
                             value={ledgerForm.paymentType}
@@ -1892,6 +1914,8 @@ export default function Dashboard({ view = "overview" }) {
                     </form>
                   </div>
                 </div>
+
+                <CashSaleHistory cashSales={selectedCustomer.cashSales || []} />
 
                 <div className="mt-8">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">

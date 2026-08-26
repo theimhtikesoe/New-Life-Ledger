@@ -97,6 +97,27 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_createdAt_idx" ON "AutoReportRun"("createdAt")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_reportDate_idx" ON "AutoReportRun"("reportDate")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "CashSale" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "customerId" UUID NOT NULL,
+            "saleType" TEXT NOT NULL DEFAULT 'RETAIL',
+            "itemSize" TEXT,
+            "cartons" INTEGER,
+            "rate" INTEGER,
+            "deductions" INTEGER NOT NULL DEFAULT 0,
+            "amount" INTEGER NOT NULL,
+            "note" TEXT,
+            "paymentType" TEXT,
+            "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "CashSale_customerId_fkey"
+              FOREIGN KEY ("customerId") REFERENCES "Customer" ("id")
+              ON DELETE CASCADE ON UPDATE CASCADE
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_customerId_idx" ON "CashSale"("customerId")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_date_idx" ON "CashSale"("date")`);
         const orderTableCheck = await prisma.$queryRaw`
           SELECT count(*)
           FROM information_schema.tables
@@ -185,6 +206,27 @@ export async function ensureDatabase() {
             ON DELETE CASCADE ON UPDATE CASCADE
         )
       `);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "CashSale" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "customerId" UUID NOT NULL,
+          "saleType" TEXT NOT NULL DEFAULT 'RETAIL',
+          "itemSize" TEXT,
+          "cartons" INTEGER,
+          "rate" INTEGER,
+          "deductions" INTEGER NOT NULL DEFAULT 0,
+          "amount" INTEGER NOT NULL,
+          "note" TEXT,
+          "paymentType" TEXT,
+          "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "CashSale_customerId_fkey"
+            FOREIGN KEY ("customerId") REFERENCES "Customer" ("id")
+            ON DELETE CASCADE ON UPDATE CASCADE
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_customerId_idx" ON "CashSale"("customerId")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_date_idx" ON "CashSale"("date")`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "UnverifiedKpay" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
