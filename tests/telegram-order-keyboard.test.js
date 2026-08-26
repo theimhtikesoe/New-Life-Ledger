@@ -25,6 +25,13 @@ describe("Telegram order action keyboards", () => {
     expect(JSON.stringify(keyboard)).not.toContain("AI");
   });
 
+  it("adds a Website edit link when required fields are missing", () => {
+    const incomplete = { ...order, customer: null, missingFields: ["ထုတ်ရမည့်ရက်"] };
+    const keyboard = buildOrderActionKeyboard(incomplete, "https://example.test/", { allowRetry: true });
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "✏️ မသတ်မှတ်ရသေးတာ ဖြည့်ရန်", url: `https://example.test/orders?orderId=${order.id}&edit=details` }]);
+    expect(JSON.stringify(keyboard)).not.toContain("AI");
+  });
+
   it("keeps More actions limited to Batch and Back", () => {
     const keyboard = buildOrderMoreKeyboard(order);
     expect(keyboard.inline_keyboard).toEqual([
