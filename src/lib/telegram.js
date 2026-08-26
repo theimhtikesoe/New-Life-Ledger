@@ -160,7 +160,12 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
   } else if (!blocked) {
     rows.push([{ text: "👤 ရှိပြီးသား Customer ချိတ်ရန်", callback_data: `order|customer|I|${id}` }]);
     rows.push([{ text: "➕ Customer အသစ်ဖန်တီးရန်", callback_data: `order|customer_create|I|${id}` }]);
-    if (appUrl && missingFields.length) rows.push([{ text: "✏️ မသတ်မှတ်ရသေးတာ ဖြည့်ရန်", url: `${String(appUrl).replace(/\/$/, "")}/orders?orderId=${encodeURIComponent(id)}&edit=details` }]);
+    const hasDateMissing = missingFields.some((field) => /ရက်|date/i.test(String(field)));
+    const hasDestinationMissing = missingFields.some((field) => /နေရာ|ကားဂိတ်|destination/i.test(String(field)));
+    const hasPhoneMissing = missingFields.some((field) => /ဖုန်း|phone/i.test(String(field)));
+    if (hasDateMissing) rows.push([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${id}` }]);
+    if (hasDestinationMissing) rows.push([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${id}` }]);
+    if (hasPhoneMissing) rows.push([{ text: "☎️ ဖုန်း ဖြည့်ရန်", callback_data: `order|ask_phone|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
   }
   return rows.length ? { inline_keyboard: rows } : undefined;
@@ -169,7 +174,7 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
 export function buildOrderCustomerCandidatesKeyboard(order, candidates = []) {
   const id = String(order?.id || "");
   if (!id) return undefined;
-  const rows = candidates.slice(0, 8).map((candidate) => [{ text: `👤 ${String(candidate.name || "Customer").slice(0, 42)}`, callback_data: `order|link|I|${id}|${candidate.id}` }]);
+  const rows = candidates.slice(0, 8).map((candidate, index) => [{ text: `👤 ${String(candidate.name || "Customer").slice(0, 42)}`, callback_data: `order|link|I|${id}|${index}` }]);
   rows.push([{ text: "➕ Customer အသစ်ဖန်တီးရန်", callback_data: `order|customer_create|I|${id}` }]);
   rows.push([{ text: "⬅️ မူလခလုတ်များ", callback_data: `order|back|I|${id}` }]);
   return { inline_keyboard: rows };

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createCustomerForOrder, createOrderDraft, getOrderById, getOrderBySourceUpdateId, getOrderCustomerCandidates, linkOrderCustomer, refreshOrderFromAi, saveTelegramDraftMessage, updateOrderStatus } from "@/lib/order-service";
+import { createCustomerForOrder, createOrderDraft, getOrderById, getOrderBySourceUpdateId, getOrderCustomerCandidates, linkOrderCustomer, refreshOrderFromAi, saveTelegramDraftMessage, updateOrderDetails, updateOrderStatus } from "@/lib/order-service";
 import { extractOrderFromText } from "@/lib/order-ai";
 import {
   answerTelegramCallbackQuery,
@@ -127,7 +127,7 @@ async function handleCallback(update) {
     return { ok: true, ignored: "missing_callback_message" };
   }
   const data = String(callback?.data || "");
-  const match = data.match(/^order\|(confirm|cancel|retry|menu|back|customer|customer_create|link)\|(I|B)\|([0-9a-f-]{36})(?:\|([0-9a-f-]{36}))?$/i);
+  const match = data.match(/^order\|(confirm|cancel|retry|menu|back|customer|customer_create|link|ask_date|ask_destination|ask_phone)\|(I|B)\|([0-9a-f-]{36})(?:\|([0-9]{1,2}|[0-9a-f-]{36}))?$/i);
   if (!match) {
     await acknowledge({ callbackQueryId: callback?.id, text: "Order ခလုတ်အချက်အလက် မမှန်ပါ။", showAlert: true });
     return { ok: true, ignored: "unknown_callback" };
@@ -182,13 +182,29 @@ async function handleCallback(update) {
     if (action.toLowerCase() === "link") {
       if (!candidateId) throw new Error("Customer ရွေးချယ်မှု မပြည့်စုံသေးပါ။");
       const result = await getOrderCustomerCandidates({ orderId });
-      const candidate = result.candidates.find((item) => String(item.id) === String(candidateId));
+      const candidateIndex = Number(candidateId);
+      const candidate = Number.isInteger(candidateIndex) ? result.candidates[candidateIndex] : result.candidates.find((item) => String(item.id) === String(candidateId));
       if (!candidate) throw new Error("ရွေးထားသော Customer ကို မတွေ့ပါ။ ပြန်ရှာပြီး ရွေးပါ။");
       const linked = await linkOrderCustomer({ orderId, customerId: candidate.id, actorName: "Staff" });
       await rememberCallbackMessage();
       await acknowledge({ callbackQueryId: callback?.id, text: `Customer ${candidate.name} နှင့် ချိတ်ပြီးပါပြီ။` });
       await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(linked)}\n\n👤 Customer ချိတ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(linked, process.env.NEXT_PUBLIC_APP_URL) });
       return { ok: true, status: "customer_linked", orderId, customerId: candidate.id };
+    }
+    if (["ask_date", "ask_destination", "ask_phone"].includes(action.toLowerCase())) {
+      const prompts = {
+        ask_date: "📅 ထုတ်ရမည့်ရက်ကို ရေးပြီး ဒီစာကို Reply ပြန်ပါ။ ဥပမာ — 27.08.2026",
+        ask_destination: "📍 ကားဂိတ်/နေရာကို ရေးပြီး ဒီစာကို Reply ပြန်ပါ။ ဥပမာ — တောင်ပေါ်ဂိတ်",
+        ask_phone: "☎️ Customer ဖုန်းနံပါတ်ကို ရေးပြီး ဒီစာကို Reply ပြန်ပါ။",
+      };
+      await acknowledge({ callbackQueryId: callback?.id, text: "အောက်မှာမေးထားတဲ့အတိုင်း Reply ပြန်ရေးပါ။" });
+      await sendTelegramTextToChat({
+        chatId,
+        replyToMessageId: callbackMessageId,
+        text: `${prompts[action.toLowerCase()]}\nOrder ID: ${orderId}`,
+        replyMarkup: { force_reply: true, selective: true, input_field_placeholder: "ဒီနေရာမှာ ဖြည့်ပြီး Send လုပ်ပါ" },
+      });
+      return { ok: true, status: "missing_field_prompted", orderId, field: action.toLowerCase().replace("ask_", "") };
     }
     if (action.toLowerCase() === "customer_create") {
       const current = await getOrderById(orderId);
@@ -269,6 +285,23 @@ export async function POST(request) {
     if (message?.from?.is_bot) return NextResponse.json({ ok: true, ignored: "bot_message" });
     if (!Number.isInteger(Number(update.update_id)) || !Number.isInteger(Number(message?.message_id))) return NextResponse.json({ ok: false, error: "Invalid Telegram update identity" }, { status: 400 });
     const text = String(message?.text || "").trim();
+
+    // Telegram-only completion: a reply to a field prompt updates the same Order row,
+    // then refreshes the original Telegram draft message and its action buttons.
+    const repliedText = String(message?.reply_to_message?.text || "");
+    const promptMatch = repliedText.match(/Order ID:\s*([0-9a-f-]{36})/i);
+    const promptFieldMatch = repliedText.match(/(ထုတ်ရမည့်ရက်|ကားဂိတ်\/နေရာ|Customer ဖုန်းနံပါတ်)/u);
+    if (promptMatch && promptFieldMatch && text && await isAuthorizedOrderAdmin(chatId, message.from?.id)) {
+      const promptOrderId = promptMatch[1];
+      const promptField = promptFieldMatch[1];
+      const updatePayload = promptField === "ထုတ်ရမည့်ရက်" ? { requestedDate: text } : promptField === "ကားဂိတ်/နေရာ" ? { destination: text } : { customerPhone: text };
+      const updated = await updateOrderDetails({ orderId: promptOrderId, ...updatePayload, actorName: "Telegram Staff" });
+      if (updated.telegramDraftChatId && updated.telegramDraftMessageId) {
+        await editTelegramOrderMessageOrReply({ chatId: updated.telegramDraftChatId, messageId: Number(updated.telegramDraftMessageId), replyToMessageId: message.message_id, text: formatOrderDraftMessage(updated), replyMarkup: buildOrderActionKeyboard(updated, process.env.NEXT_PUBLIC_APP_URL) });
+      }
+      await sendTelegramTextToChat({ chatId, replyToMessageId: message.message_id, text: `✅ ${promptField} ဖြည့်ပြီးပါပြီ။ Order ကို ပြန်စစ်ပြီး Confirm လုပ်နိုင်ပါပြီ။` });
+      return NextResponse.json({ ok: true, status: "missing_field_updated", orderId: promptOrderId, field: promptField });
+    }
     if (!isOrderTrigger(text)) return NextResponse.json({ ok: true, ignored: "not_order_trigger" });
     const existing = await getOrderBySourceUpdateId(update.update_id);
     if (existing) return NextResponse.json({ ok: true, status: "duplicate", orderId: existing.id });

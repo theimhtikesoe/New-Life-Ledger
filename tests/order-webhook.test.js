@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   refreshOrderFromAi: vi.fn(),
   saveTelegramDraftMessage: vi.fn(),
   updateOrderStatus: vi.fn(),
+  updateOrderDetails: vi.fn(),
   extractOrderFromText: vi.fn(),
   buildOrderDraftKeyboard: vi.fn(),
   buildOrderActionKeyboard: vi.fn(),
@@ -28,7 +29,7 @@ const mocks = vi.hoisted(() => ({
   sendFactoryNotificationForOrder: vi.fn(),
 }));
 
-vi.mock("@/lib/order-service", () => ({ createCustomerForOrder: mocks.createCustomerForOrder, createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderCustomerCandidates: mocks.getOrderCustomerCandidates, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, linkOrderCustomer: mocks.linkOrderCustomer, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderStatus: mocks.updateOrderStatus }));
+vi.mock("@/lib/order-service", () => ({ createCustomerForOrder: mocks.createCustomerForOrder, createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderCustomerCandidates: mocks.getOrderCustomerCandidates, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, linkOrderCustomer: mocks.linkOrderCustomer, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderDetails: mocks.updateOrderDetails, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
 vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderActionKeyboard: mocks.buildOrderActionKeyboard, buildOrderCustomerCandidatesKeyboard: mocks.buildOrderCustomerCandidatesKeyboard, buildOrderMoreKeyboard: mocks.buildOrderMoreKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage, buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction, isFallbackExtractionUsable: mocks.isFallbackExtractionUsable }));
@@ -77,6 +78,7 @@ describe("Telegram order webhook safety gates", () => {
     mocks.refreshOrderFromAi.mockReset().mockResolvedValue(order);
     mocks.saveTelegramDraftMessage.mockReset().mockResolvedValue(order);
     mocks.updateOrderStatus.mockReset();
+    mocks.updateOrderDetails.mockReset();
     mocks.extractOrderFromText.mockReset().mockResolvedValue({});
     mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
     mocks.buildOrderActionKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
@@ -321,6 +323,26 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: linked.customer.id, actorName: "Staff" });
     expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(linked, process.env.NEXT_PUBLIC_APP_URL);
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
+  });
+
+  it("prompts for a missing date inside Telegram and persists a reply to the same order", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    const pending = { ...order, status: "NEEDS_REVIEW", customer: { id: "22222222-2222-4111-8111-222222222222", name: "မမိုး" }, missingFields: ["ထုတ်ရမည့်ရက်"] };
+    const updated = { ...pending, requestedDate: "2026-08-27", missingFields: [], status: "DRAFT", telegramDraftChatId: chatId, telegramDraftMessageId: "99" };
+    mocks.getOrderById.mockResolvedValue(pending);
+    mocks.updateOrderDetails.mockResolvedValue(updated);
+    const promptUpdate = { update_id: 22, callback_query: { id: "callback-date", data: `order|ask_date|I|${order.id}`, message: { message_id: 99, chat: { id: chatId } }, from: { id: 7 } } };
+    const promptResponse = await POST(request(promptUpdate));
+    expect(promptResponse.status).toBe(200);
+    expect((await promptResponse.json()).status).toBe("missing_field_prompted");
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 99, replyMarkup: expect.objectContaining({ force_reply: true }), text: expect.stringContaining("ထုတ်ရမည့်ရက်") }));
+
+    const replyUpdate = { update_id: 23, message: { message_id: 100, text: "27.08.2026", chat: { id: chatId, type: "supergroup" }, from: { id: 7 }, reply_to_message: { message_id: 101, text: `📅 ထုတ်ရမည့်ရက်ကို ရေးပြီး ဒီစာကို Reply ပြန်ပါ။\nOrder ID: ${order.id}` } } };
+    const replyResponse = await POST(request(replyUpdate));
+    expect(replyResponse.status).toBe(200);
+    expect((await replyResponse.json()).status).toBe("missing_field_updated");
+    expect(mocks.updateOrderDetails).toHaveBeenCalledWith({ orderId: order.id, requestedDate: "27.08.2026", actorName: "Telegram Staff" });
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 99 }));
   });
 
   it("lets a verified administrator create a new Customer from the Telegram Draft", async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOrderActionKeyboard, buildOrderDraftKeyboard, buildOrderMoreKeyboard } from "@/lib/telegram";
+import { buildOrderActionKeyboard, buildOrderCustomerCandidatesKeyboard, buildOrderDraftKeyboard, buildOrderMoreKeyboard } from "@/lib/telegram";
 
 const order = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -25,11 +25,20 @@ describe("Telegram order action keyboards", () => {
     expect(JSON.stringify(keyboard)).not.toContain("AI");
   });
 
-  it("adds a Website edit link when required fields are missing", () => {
-    const incomplete = { ...order, customer: null, missingFields: ["ထုတ်ရမည့်ရက်"] };
+  it("asks for missing fields inside Telegram without requiring the website", () => {
+    const incomplete = { ...order, customer: null, missingFields: ["ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"] };
     const keyboard = buildOrderActionKeyboard(incomplete, "https://example.test/", { allowRetry: true });
-    expect(keyboard.inline_keyboard).toContainEqual([{ text: "✏️ မသတ်မှတ်ရသေးတာ ဖြည့်ရန်", url: `https://example.test/orders?orderId=${order.id}&edit=details` }]);
-    expect(JSON.stringify(keyboard)).not.toContain("AI");
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${order.id}` }]);
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${order.id}` }]);
+    expect(JSON.stringify(keyboard)).not.toContain("/orders?");
+  });
+
+  it("uses a short candidate index callback that stays within Telegram callback limits", () => {
+    const candidates = [{ id: "22222222-2222-4222-8222-222222222222", name: "မမိုး" }];
+    const keyboard = buildOrderCustomerCandidatesKeyboard({ id: order.id }, candidates);
+    const callbackData = keyboard.inline_keyboard[0][0].callback_data;
+    expect(callbackData).toBe(`order|link|I|${order.id}|0`);
+    expect(callbackData.length).toBeLessThanOrEqual(64);
   });
 
   it("keeps More actions limited to Batch and Back", () => {
