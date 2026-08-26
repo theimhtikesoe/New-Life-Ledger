@@ -186,6 +186,13 @@ function AlertNotification({ message, type, onClose }) {
   );
 }
 
+export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
+  return [
+    ...ledgers,
+    ...cashSales.map((sale) => ({ ...sale, type: "CASH_SALE", recordType: "CASH_SALE" })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
 function CashSaleHistory({ cashSales = [] }) {
   if (!cashSales.length) return null;
   return (
@@ -1279,7 +1286,7 @@ export default function Dashboard({ view = "overview" }) {
 
   // Export transaction data to CSV
   const exportToCSV = () => {
-    const transactionsToExport = filteredLedgers.length > 0 ? filteredLedgers : (selectedCustomer?.ledgers || []);
+    const transactionsToExport = filteredLedgers.length > 0 ? filteredLedgers : unifiedTransactions;
     
     if (!selectedCustomer || transactionsToExport.length === 0) {
       showAlert("ထုတ်ယူရန် transaction မရှိပါ။", "error");
@@ -1289,7 +1296,7 @@ export default function Dashboard({ view = "overview" }) {
     const headers = ["Date", "Type", "Amount", "Payment Type", "Note"];
     const rows = transactionsToExport.map(transaction => [
       formatDate(transaction.date),
-      transaction.type === "CREDIT" ? "အကြွေးတိုး (Unpaid)" : "ငွေချေ (Paid)",
+      transaction.type === "CASH_SALE" ? "လက်ငင်း (Cash Sale)" : transaction.type === "CREDIT" ? "အကြွေးတိုး (Unpaid)" : "ငွေချေ (Paid)",
       transaction.amount,
       transaction.paymentType || "-",
       transaction.note || "-",
@@ -1339,6 +1346,11 @@ export default function Dashboard({ view = "overview" }) {
     totalCustomers: customers.length,
   }), [customers, todayPaymentsList.length]);
 
+  const unifiedTransactions = useMemo(
+    () => mergeTransactionsWithCashSales(selectedCustomer?.ledgers || [], selectedCustomer?.cashSales || []),
+    [selectedCustomer?.ledgers, selectedCustomer?.cashSales],
+  );
+
   // Handle filter changes from TransactionFilter component
   const handleFilterChange = useCallback((filtered) => {
     setFilteredLedgers(filtered);
@@ -1346,8 +1358,8 @@ export default function Dashboard({ view = "overview" }) {
 
   // Reset filtered ledgers when selected customer changes
   useEffect(() => {
-    setFilteredLedgers(selectedCustomer?.ledgers || []);
-  }, [selectedCustomer]);
+    setFilteredLedgers(unifiedTransactions);
+  }, [unifiedTransactions]);
 
   const deletedCustomerLedgers = deletedCustomerDetail?.ledgers || [];
   const deletedCustomerLedgerSummary = deletedCustomerLedgers.reduce(
@@ -1923,7 +1935,7 @@ export default function Dashboard({ view = "overview" }) {
                   </div>
                   
                   <TransactionFilter 
-                    transactions={selectedCustomer.ledgers || []} 
+                    transactions={unifiedTransactions}
                     onFilterChange={handleFilterChange}
                   />
 
@@ -1941,14 +1953,14 @@ export default function Dashboard({ view = "overview" }) {
                     <article key={`mobile-${ledger.id}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Date</p><p className="mt-0.5 truncate text-xs font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CASH_SALE" ? "bg-cyan-100 text-cyan-700" : ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CASH_SALE" ? "လက်ငင်း" : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
                       </div>
-                      <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
+                      <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CASH_SALE" ? "text-cyan-600" : ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
                       <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[11px]">
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.paymentType || "-"}</p></div>
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
                       </div>
-                      <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
+                      {ledger.type === "CASH_SALE" ? <p className="mt-2 rounded-md bg-cyan-50 px-2 py-1.5 text-center text-xs font-medium text-cyan-700">လက်ငင်းရောင်း — လက်ကျန်မပြောင်း</p> : <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>}
                     </article>
                   )) : <div className="rounded-lg border border-slate-200 px-3 py-6 text-center text-sm text-slate-500">Transaction မရှိသေးပါ။</div>}</div>
 
@@ -1974,17 +1986,19 @@ export default function Dashboard({ view = "overview" }) {
                               <td className="px-4 py-3">
                                 <span
                                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                    ledger.type === "CREDIT"
-                                      ? "bg-rose-100 text-rose-700"
-                                      : "bg-emerald-100 text-emerald-700"
+                                    ledger.type === "CASH_SALE"
+                                      ? "bg-cyan-100 text-cyan-700"
+                                      : ledger.type === "CREDIT"
+                                        ? "bg-rose-100 text-rose-700"
+                                        : "bg-emerald-100 text-emerald-700"
                                   }`}
                                 >
-                                  {ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}
+                                  {ledger.type === "CASH_SALE" ? "လက်ငင်း" : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}
                                 </span>
                               </td>
                               <td
                                 className={`px-4 py-3 text-right font-medium ${
-                                  ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"
+                                  ledger.type === "CASH_SALE" ? "text-cyan-600" : ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"
                                 }`}
                               >
                                 {formatMoney(ledger.amount)}
@@ -1996,7 +2010,8 @@ export default function Dashboard({ view = "overview" }) {
                                 {ledger.note || "-"}
                               </td>
                               <td className="px-4 py-3 text-center">
-                                <button
+                                {ledger.type === "CASH_SALE" ? <span className="text-xs font-medium text-cyan-700">လက်ငင်း · လက်ကျန်မပြောင်း</span> : <button
+                                  type="button"
                                   onClick={() => setDeletingTransaction(ledger)}
                                   className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                                   title="Delete transaction"
@@ -2006,7 +2021,7 @@ export default function Dashboard({ view = "overview" }) {
                                     <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
                                     <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                                   </svg>
-                                </button>
+                                </button>}
                               </td>
                             </tr>
                           ))
@@ -2021,7 +2036,7 @@ export default function Dashboard({ view = "overview" }) {
                     </table>
                   </div>
                   <div className="mt-3 flex flex-col items-center gap-2 text-sm text-slate-600">
-                    <span>{selectedCustomer.ledgers?.length || 0} / {transactionPagination.total} transactions loaded</span>
+                    <span>{unifiedTransactions.length} / {transactionPagination.total + (selectedCustomer.cashSales?.length || 0)} transactions loaded</span>
                     {transactionPagination.hasMore && (
                       <button
                         type="button"
