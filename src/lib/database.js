@@ -105,6 +105,9 @@ export async function ensureDatabase() {
         if (orderTableCheck[0]?.count > 0) {
           await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderDate" TEXT`);
           await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderNumber" INTEGER`);
+          await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedAt" TIMESTAMP(3)`);
+          await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedBy" TEXT`);
+          await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_historyTrashedAt_idx" ON "Order"("historyTrashedAt")`);
           await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_factoryOrderDate_idx" ON "Order"("factoryOrderDate")`);
           await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Order_factoryOrderDate_factoryOrderNumber_key" ON "Order"("factoryOrderDate", "factoryOrderNumber")`);
         }
@@ -244,6 +247,9 @@ export async function ensureDatabase() {
       if (orderTableCheck[0]?.count > 0) {
         await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderDate" TEXT`);
         await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "factoryOrderNumber" INTEGER`);
+        await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedAt" TIMESTAMP(3)`);
+        await setupQuery(`ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "historyTrashedBy" TEXT`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_historyTrashedAt_idx" ON "Order"("historyTrashedAt")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "Order_factoryOrderDate_idx" ON "Order"("factoryOrderDate")`);
         await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Order_factoryOrderDate_factoryOrderNumber_key" ON "Order"("factoryOrderDate", "factoryOrderNumber")`);
       }

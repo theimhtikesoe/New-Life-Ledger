@@ -39,6 +39,11 @@ const ORDER_HISTORY_ACTION_LABELS = {
   ORDER_ARCHIVE: "History သို့ရွှေ့",
   ORDER_RESTORE: "History မှ ပြန်ယူ",
   ORDER_TRASH_RESTORE: "အမှိုက်ပုံးမှ ပြန်ယူ",
+  ORDER_HISTORY_TRASH: "History မှ အမှိုက်ပုံးသို့ရွှေ့",
+  ORDER_HISTORY_TRASH_RESTORE: "History Trash မှ ပြန်ယူ",
+  ORDER_HISTORY_TRASH_DELETE: "History Trash မှ အပြီးဖျက်",
+  ORDER_AUTO_ARCHIVE: "ရက်ကျော်၍ History သို့ Auto ရွှေ့",
+  ORDER_HISTORY_TRASH_AUTO_CLEAR: "History Trash သက်တမ်းကျော်၍ Auto Clear",
   ORDER_AUTO_CLEAR: "သက်တမ်းကျော်၍ Auto Clear",
   ORDER_UPDATE: "Order ပြင်ဆင်",
   ORDER_AI_RETRY: "AI ဖြင့် ပြန်စစ်",
@@ -53,8 +58,8 @@ function formatDate(value) {
   return `${day}/${month}/${year}`;
 }
 
-function retentionLabel(value) {
-  if (!value) return "Cancel ရက် မသိရသေးပါ";
+function retentionLabel(value, label = "Cancel") {
+  if (!value) return `${label} ရက် မသိရသေးပါ`;
   const cancelledAt = new Date(value);
   if (Number.isNaN(cancelledAt.getTime())) return "Cancel ရက် မသိရသေးပါ";
   const elapsed = Math.floor((Date.now() - cancelledAt.getTime()) / (24 * 60 * 60 * 1000));
@@ -243,6 +248,9 @@ export default function OrdersPage() {
       else if (action === "restore") setMessage("Order ကို History မှ ပြန်ယူပြီးပါပြီ။ မူရင်း status မပြောင်းပါ။");
       else if (action === "trash_restore") setMessage("Cancelled Order ကို Trash မှ ပြန်ယူပြီး Draft အဖြစ်ထားပါပြီ။");
       else if (action === "trash_delete_permanently") setMessage("Cancelled Order ကို အပြီးဖျက်ပြီးပါပြီ။ Customer၊ Ledger နှင့် balance မပြောင်းပါ။");
+      else if (action === "history_trash") setMessage("History Order ကို အမှိုက်ပုံးထဲ ရွှေ့ပြီးပါပြီ။ Customer၊ Ledger နှင့် balance မပြောင်းပါ။");
+      else if (action === "history_trash_restore") setMessage("History Trash မှ Order ကို ပြန်ယူပြီးပါပြီ။ မူရင်း status မပြောင်းပါ။");
+      else if (action === "history_trash_delete_permanently") setMessage("History Trash Order ကို အပြီးဖျက်ပြီးပါပြီ။ Customer၊ Ledger နှင့် balance မပြောင်းပါ။");
       else if (action === "retry_ai") setMessage(body.warning || "AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။ မူရင်း Order စာသားနှင့် Website/Telegram Draft ကို ထိန်းသိမ်းထားပါသည်။");
       else setMessage("Order ပြင်ဆင်မှု အောင်မြင်ပါပြီ။");
       await load();
@@ -257,10 +265,17 @@ export default function OrdersPage() {
     if (window.confirm("ဒီ Order ကို History ထဲရွှေ့မလား။ Database ထဲက Order၊ Customer၊ Ledger data မဖျက်ပါ။")) patchOrder(order.id, "archive");
   };
 
+  const moveHistoryToTrash = (order) => {
+    const customerName = order.customer?.name || order.draftCustomerName || "ဒီ Order";
+    const confirmed = window.confirm(`ဒီ History Order (${customerName}) ကို အမှိုက်ပုံးထဲ ရွှေ့မလား။\n\n၁၅ ရက်အတွင်း Restore လုပ်နိုင်ပါမယ်။ Customer၊ Ledger နှင့် balance ကို မဖျက်ပါ။`);
+    if (confirmed) patchOrder(order.id, "history_trash");
+  };
+
   const deletePermanently = (order) => {
     const customerName = order.customer?.name || order.draftCustomerName || "ဒီ Order";
-    const confirmed = window.confirm(`⚠️ ${customerName} ၏ Cancelled Order ကို အပြီးဖျက်မလား။\n\nအပြီးဖျက်ပြီးရင် Restore ပြန်လုပ်လို့ မရတော့ပါ။ Customer၊ Ledger နှင့် balance ကို မဖျက်ပါ။`);
-    if (confirmed) patchOrder(order.id, "trash_delete_permanently");
+    const isHistoryTrash = Boolean(order.historyTrashedAt);
+    const confirmed = window.confirm(`⚠️ ${customerName} ၏ ${isHistoryTrash ? "History Trash Order" : "Cancelled Order"} ကို အပြီးဖျက်မလား။\n\nအပြီးဖျက်ပြီးရင် Restore ပြန်လုပ်လို့ မရတော့ပါ။ Customer၊ Ledger နှင့် balance ကို မဖျက်ပါ။`);
+    if (confirmed) patchOrder(order.id, isHistoryTrash ? "history_trash_delete_permanently" : "trash_delete_permanently");
   };
 
   const setDraftField = (orderId, field, value) => {
@@ -382,7 +397,7 @@ export default function OrdersPage() {
           </section>
         </div> : null}
 
-        {viewMode === "TRASH" ? <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 sm:p-5"><h2 className="font-semibold text-rose-950">အမှိုက်ပုံး — Cancelled Orders</h2><p className="mt-1 text-sm text-rose-800">Cancel လုပ်ထားသော Order များကို ဒီနေရာမှာ ၁၅ ရက်အထိ ထိန်းသိမ်းထားပါမယ်။ Cancel လုပ်တဲ့ရက်ကနေ ၁၅ ရက်အတွင်း Restore လုပ်နိုင်ပြီး သက်တမ်းကျော်ပါက auto clear လုပ်ပါမယ်။</p></section> : viewMode === "HISTORY" ? <section className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5"><h2 className="font-semibold text-indigo-950">Order History</h2><p className="mt-1 text-sm text-indigo-800">Order စမ်းသပ်မှတ်တမ်းများ၊ Confirm မှတ်တမ်းများနှင့် History သို့ ရွှေ့ထားသော Order များကို ဒီနေရာမှာပဲ ကြည့်နိုင်ပါတယ်။ Activity History ထဲမှာ Order မှတ်တမ်းများ မထပ်ပြတော့ပါ။</p></section> : null}
+        {viewMode === "TRASH" ? <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 sm:p-5"><h2 className="font-semibold text-rose-950">အမှိုက်ပုံး — Cancelled / History Orders</h2><p className="mt-1 text-sm text-rose-800">Cancelled Order နှင့် History မှ အမှိုက်ပုံးသို့ ရွှေ့ထားသော Order များကို ဒီနေရာမှာ ၁၅ ရက်အထိ ထိန်းသိမ်းထားပါမယ်။ သက်ဆိုင်ရာ ရွှေ့ထားသည့်ရက်ကနေ ၁၅ ရက်အတွင်း Restore လုပ်နိုင်ပြီး သက်တမ်းကျော်ပါက auto clear လုပ်ပါမယ်။</p></section> : viewMode === "HISTORY" ? <section className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5"><h2 className="font-semibold text-indigo-950">Order History</h2><p className="mt-1 text-sm text-indigo-800">Order စမ်းသပ်မှတ်တမ်းများ၊ Confirm မှတ်တမ်းများနှင့် History သို့ ရွှေ့ထားသော Order များကို ဒီနေရာမှာပဲ ကြည့်နိုင်ပါတယ်။ Activity History ထဲမှာ Order မှတ်တမ်းများ မထပ်ပြတော့ပါ။</p></section> : null}
 
         {viewMode !== "TRASH" ? <section className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-3">
           <p className="mr-2 flex items-center text-sm font-semibold text-slate-700">Filter:</p>
@@ -421,7 +436,7 @@ export default function OrdersPage() {
                 </div>
 
                 {archived ? <p className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-800">History သို့ရွှေ့ချိန်: {formatMyanmarDateTime(order.archivedAt)} · လုပ်သူ: {order.archivedBy || "Staff"}</p> : null}
-                {viewMode === "TRASH" ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">Cancel လုပ်ချိန်: {order.cancelledAt ? formatMyanmarDateTime(order.cancelledAt) : "မသိရသေးပါ"} · လုပ်သူ: {order.cancelledBy || "Staff"} · {retentionLabel(order.cancelledAt)}</p> : null}
+                {viewMode === "TRASH" ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">{order.historyTrashedAt ? `History Trash ရွှေ့ချိန်: ${formatMyanmarDateTime(order.historyTrashedAt)} · လုပ်သူ: ${order.historyTrashedBy || "Staff"} · ${retentionLabel(order.historyTrashedAt, "History Trash")}` : `Cancel လုပ်ချိန်: ${order.cancelledAt ? formatMyanmarDateTime(order.cancelledAt) : "မသိရသေးပါ"} · လုပ်သူ: ${order.cancelledBy || "Staff"} · ${retentionLabel(order.cancelledAt)}`}</p> : null}
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ထုတ်ရမည့်ရက်</p><p className="font-semibold text-slate-800">{formatDate(order.requestedDate)}</p></div>
                   <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ကားဂိတ်/နေရာ</p><p className="font-semibold text-slate-800">{order.destination || "မသတ်မှတ်ရသေး"}</p></div>
@@ -464,10 +479,10 @@ export default function OrdersPage() {
                   {ARCHIVABLE_STATUSES.includes(order.status) ? <button type="button" onClick={() => archive(order)} disabled={busy} className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-bold text-indigo-800 hover:bg-indigo-100 disabled:opacity-50">History သို့ရွှေ့</button> : null}
                 </div> : null}
 
-                {viewMode === "TRASH" ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => patchOrder(order.id, "trash_restore")} disabled={busy || retentionLabel(order.cancelledAt) === "Restore သက်တမ်းကုန်နေပါပြီ"} className="rounded-lg bg-rose-700 px-3 py-2 text-sm font-bold text-white hover:bg-rose-800 disabled:opacity-50">Restore ပြန်ယူရန်</button><button type="button" onClick={() => deletePermanently(order)} disabled={busy} className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-bold text-rose-800 hover:bg-rose-100 disabled:opacity-50">အပြီးဖျက်ရန်</button><span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">Restore ပြီးရင် Draft အဖြစ် ပြန်ဝင်ပါမယ်။ အပြီးဖျက်ရင် ပြန်ယူမရတော့ပါ။</span></div> : null}
+                {viewMode === "TRASH" ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => patchOrder(order.id, order.historyTrashedAt ? "history_trash_restore" : "trash_restore")} disabled={busy || (order.historyTrashedAt ? retentionLabel(order.historyTrashedAt, "History Trash") : retentionLabel(order.cancelledAt)) === "Restore သက်တမ်းကုန်နေပါပြီ"} className="rounded-lg bg-rose-700 px-3 py-2 text-sm font-bold text-white hover:bg-rose-800 disabled:opacity-50">Restore ပြန်ယူရန်</button><button type="button" onClick={() => deletePermanently(order)} disabled={busy} className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-bold text-rose-800 hover:bg-rose-100 disabled:opacity-50">အပြီးဖျက်ရန်</button><span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">History Trash က ပြန်ယူလျှင် မူရင်း status အတိုင်းပြန်ဝင်ပါမယ်။ Cancelled Order က Draft အဖြစ်ပြန်ဝင်ပါမယ်။ အပြီးဖျက်ရင် ပြန်ယူမရတော့ပါ။</span></div> : null}
 
                 {viewMode !== "ACTIVE" && viewMode !== "TRASH" ? <>
-                  {archived ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => patchOrder(order.id, "restore")} disabled={busy} className="rounded-lg bg-indigo-700 px-3 py-2 text-sm font-bold text-white hover:bg-indigo-800 disabled:opacity-50">History မှ ပြန်ယူရန်</button><span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">ပြန်ယူပြီးနောက် မူရင်း {STATUS_LABELS[order.status] || order.status} status အတိုင်းပဲ ရှိပါမယ်။</span></div> : null}
+                  {archived ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => patchOrder(order.id, "restore")} disabled={busy} className="rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm font-bold text-indigo-800 hover:bg-indigo-50 disabled:opacity-50">History မှ ပြန်ယူရန်</button><button type="button" onClick={() => moveHistoryToTrash(order)} disabled={busy} className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-800 hover:bg-rose-100 disabled:opacity-50">အမှိုက်ပုံးသို့ ရွှေ့ရန်</button><span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">ပြန်ယူပြီးနောက် မူရင်း {STATUS_LABELS[order.status] || order.status} status အတိုင်းပဲ ရှိပါမယ်။</span></div> : null}
                   <OrderHistoryTimeline logs={lifecycleLogs} />
                 </> : null}
                 {viewMode === "TRASH" ? <OrderHistoryTimeline logs={lifecycleLogs} /> : null}
