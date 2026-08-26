@@ -126,8 +126,9 @@ describe("Telegram order webhook safety gates", () => {
     expect((await response.json()).status).toBe("draft_created");
     expect(mocks.extractOrderFromText).toHaveBeenCalledWith(expect.stringContaining("မမိုး"));
     expect(mocks.createOrderDraft).toHaveBeenCalledWith(expect.objectContaining({ sourceChatId: chatId, sourceMessageId: 10, sourceUpdateId: 10 }));
-    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(2);
-    expect(mocks.sendTelegramTextToChat).toHaveBeenNthCalledWith(1, expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order စာကို စစ်နေပါသည်") }));
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
+    expect(mocks.sendTelegramTextToChat).toHaveBeenNthCalledWith(1, expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Draft message") }));
+    expect(mocks.editTelegramMessageText).toHaveBeenCalled();
     expect(mocks.saveTelegramDraftMessage).toHaveBeenCalledWith({ orderId: order.id, chatId, messageId: 99 });
   });
 
@@ -161,12 +162,12 @@ describe("Telegram order webhook safety gates", () => {
     mocks.createOrderDraft.mockResolvedValue({ order: fallbackOrder, duplicate: false });
     const response = await POST(request(messageUpdate(fallbackOrder.sourceText)));
     expect(response.status).toBe(200);
-    expect((await response.json()).status).toBe("draft_ai_pending");
+    expect((await response.json())).toEqual(expect.objectContaining({ status: "draft_created", aiEnriched: false }));
     expect(mocks.createOrderDraft).toHaveBeenCalledWith(expect.objectContaining({
       sourceText: fallbackOrder.sourceText,
       extracted: expect.objectContaining({ customerName: expect.any(String), requestedDate: expect.any(String), confidence: "low" }),
     }));
-    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledWith(expect.objectContaining({ chatId, replyToMessageId: 10, text: expect.stringContaining("Order စာကို စစ်နေပါသည်") }));
+    expect(mocks.sendTelegramTextToChat).toHaveBeenCalledTimes(1);
     const fallbackCall = mocks.sendTelegramTextToChat.mock.calls.find(([payload]) => payload.replyToMessageId === 10 && payload.text.includes("Draft message"));
     expect(fallbackCall?.[0]).toEqual(expect.objectContaining({ chatId, replyToMessageId: 10, text: "Draft message" }));
     expect(fallbackCall?.[0].text).not.toContain("AI ပြန်စမ်း");
