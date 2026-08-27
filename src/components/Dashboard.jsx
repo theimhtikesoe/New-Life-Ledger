@@ -1718,7 +1718,18 @@ export default function Dashboard({ view = "overview" }) {
             )}
           </div>
           {showCustomerList && (
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-1 customer-list-container animate-slide-up">
+          <div className="rounded-xl border border-cyan-100 bg-cyan-50/30 p-2.5 shadow-inner sm:p-3">
+            <div className="mb-2 flex items-center justify-between gap-2 px-1">
+              <p className="text-xs font-semibold text-cyan-800 sm:text-sm">Customer စာရင်း</p>
+              <p className="text-[11px] text-slate-500">အောက်သို့ဆွဲ၍ ရှာရန်</p>
+            </div>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-x-2 bottom-0 z-10 h-5 rounded-b-lg bg-gradient-to-t from-white/90 to-transparent" aria-hidden="true" />
+              <div
+                aria-label="Customer စာရင်း"
+                tabIndex={0}
+                className="grid max-h-[600px] grid-cols-2 gap-2 overflow-y-auto overscroll-contain rounded-lg border border-slate-200 bg-white p-2 pr-2 shadow-sm md:grid-cols-2 lg:grid-cols-3 customer-list-container animate-slide-up"
+              >
             {loading && customers.length === 0 ? (
               <div className="col-span-full rounded-lg border border-slate-200 p-4 text-center text-slate-600">
                 <div className="flex items-center justify-center gap-2">
@@ -1816,6 +1827,8 @@ export default function Dashboard({ view = "overview" }) {
                 Customer မရှိသေးပါ။
               </p>
             )}
+              </div>
+            </div>
           </div>
 
           )}
