@@ -1388,19 +1388,33 @@ export default function Dashboard({ view = "overview" }) {
   );
 
   return (
-    <main className="min-h-screen bg-white" aria-busy={loading}>
+    <main className="min-h-screen bg-white" aria-busy={loading || isSubmitting}>
       {alert && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
       )}
-      {loading && (
+      {(loading || isSubmitting) && (
         <div
-          className="pointer-events-none fixed right-3 top-3 z-[100] flex items-center gap-2 rounded-full border border-cyan-100 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur sm:right-5 sm:top-5"
+          className="pointer-events-none fixed left-1/2 top-3 z-[100] w-[min(92vw,360px)] -translate-x-1/2 rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 px-4 py-3 text-slate-800 shadow-xl shadow-cyan-900/10 backdrop-blur sm:left-auto sm:right-5 sm:translate-x-0"
           role="status"
           aria-live="polite"
-          aria-label="အချက်အလက်များကို ရယူနေသည်"
+          aria-label={isSubmitting ? "လုပ်ဆောင်နေသည်" : "အချက်အလက်များကို ရယူနေသည်"}
         >
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-100 border-t-cyan-600" aria-hidden="true" />
-          <span>အချက်အလက်များ ရယူနေသည်...</span>
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-600/10" aria-hidden="true">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-700" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-cyan-900">
+                {isSubmitting ? "လုပ်ဆောင်နေပါသည်" : isLedgerView ? "Customer/Ledger data ရယူနေပါသည်" : "Dashboard data ရယူနေပါသည်"}
+              </p>
+              <p className="mt-0.5 text-xs leading-5 text-slate-600">
+                {isSubmitting ? "Database ထဲ သိမ်းဆည်း/ပြင်ဆင်နေပါသည်။ ခဏစောင့်ပါ။" : "API နှင့် database ကို စစ်ဆေးပြီး data များကို တင်နေပါသည်။ ခဏစောင့်ပါ။"}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-cyan-100">
+            <div className="h-full w-1/3 animate-[pulse_1.4s_ease-in-out_infinite] rounded-full bg-cyan-600" />
+          </div>
         </div>
       )}
 
