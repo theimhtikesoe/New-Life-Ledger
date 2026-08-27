@@ -188,9 +188,11 @@ export default function BackgroundMusicPlayer() {
   useEffect(() => {
     window.addEventListener("pagehide", saveCurrentCheckpoint);
     window.addEventListener("beforeunload", saveCurrentCheckpoint);
+    window.addEventListener("new-life-ledger:background-music-save", saveCurrentCheckpoint);
     return () => {
       window.removeEventListener("pagehide", saveCurrentCheckpoint);
       window.removeEventListener("beforeunload", saveCurrentCheckpoint);
+      window.removeEventListener("new-life-ledger:background-music-save", saveCurrentCheckpoint);
     };
   }, [saveCurrentCheckpoint]);
 
@@ -264,14 +266,19 @@ export default function BackgroundMusicPlayer() {
             startMusic();
           }
         }, 5000);
-      } else if (status === "blocked" || status === "ended" || status === "not-needed") {
+      } else if (status === "playing" || status === "blocked" || status === "ended" || status === "not-needed") {
+        // `playing` can be left behind if Safari reloads while the overdue
+        // alert is active. The alert cannot continue across a reload, and its
+        // same-day guard prevents replay, so background music may resume.
         startMusic();
       }
     };
 
     const timer = window.setTimeout(syncPersistedOverdueStatus, 250);
+    window.addEventListener("pageshow", syncPersistedOverdueStatus);
     return () => {
       window.clearTimeout(timer);
+      window.removeEventListener("pageshow", syncPersistedOverdueStatus);
       if (fallbackTimerRef.current) window.clearTimeout(fallbackTimerRef.current);
     };
   }, [pauseMusic, startMusic]);

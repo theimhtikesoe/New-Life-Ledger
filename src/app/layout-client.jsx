@@ -22,6 +22,9 @@ function RefreshOverlay() {
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
+    // Ask the global player to persist its exact track/time before the
+    // full reload. pagehide/beforeunload remain as additional fallbacks.
+    window.dispatchEvent(new CustomEvent('new-life-ledger:background-music-save'));
     try {
       const registration = await window.navigator.serviceWorker?.getRegistration();
       await registration?.update();

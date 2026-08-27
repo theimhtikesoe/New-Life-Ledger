@@ -10,6 +10,7 @@ describe("PWA quick actions", () => {
   it("keeps only the fixed Refresh control", () => {
     expect(layoutSource).toContain("pwa-quick-actions");
     expect(layoutSource).toContain("aria-label=\"Refresh — စာမျက်နှာ data ပြန်လည်ရယူမည်\"");
+    expect(layoutSource).toContain("new-life-ledger:background-music-save");
     expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
     expect(layoutSource).not.toContain('href="/"');
   });
