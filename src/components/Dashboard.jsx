@@ -1529,7 +1529,7 @@ export default function Dashboard({ view = "overview" }) {
 
               <a
                 href="/orders"
-                className="flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-2 text-sm font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
+                className="flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-2 text-base font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
                 title="Telegram Orders"
               >
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">📦</span>
