@@ -83,7 +83,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
         className={`${compactButtonClass} border-slate-300 bg-white text-slate-500`}
         title="Loading overdue debts"
       >
-        <span className={compact ? "text-sm" : "text-base"}>🔔</span>
+        <span className={compact ? "inline-flex h-5 w-5 shrink-0 items-center justify-center text-[12px] leading-none" : "text-base"} aria-hidden="true">🔔</span>
         <span>အကြွေး သတိပေးချက်</span>
         <span className="text-xs font-medium text-slate-400">ရယူနေသည်...</span>
       </button>
@@ -97,7 +97,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
         className={`${compactButtonClass} border-slate-300 bg-white text-slate-700 hover:bg-slate-50`}
         title="No overdue debts"
       >
-        <span className={compact ? "text-sm" : "text-base"}>🔔</span>
+        <span className={compact ? "inline-flex h-5 w-5 shrink-0 items-center justify-center text-[12px] leading-none" : "text-base"} aria-hidden="true">🔔</span>
         <span>အကြွေး သတိပေးချက်</span>
         <span className="text-xs font-medium text-slate-400">မရှိ</span>
       </button>
@@ -112,7 +112,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
         className={`${compactButtonClass} border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100`}
         title={`${overdueDebts.length} overdue debts`}
       >
-        <span className={compact ? "text-sm" : "text-base"}>🔔</span>
+        <span className={compact ? "inline-flex h-5 w-5 shrink-0 items-center justify-center text-[12px] leading-none" : "text-base"} aria-hidden="true">🔔</span>
         <span>အကြွေး သတိပေးချက်</span>
         <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-xs font-bold text-white">
           {overdueDebts.length}
