@@ -28,10 +28,15 @@ describe("DailySalesSummaryPanel", () => {
   });
 
   it("uses the checked August notebook opening prefill and mobile-safe actions", () => {
-    expect(source).toContain('amount: "246593750"');
+    expect(source).toContain('amount: "246593950"');
     expect(source).toContain('asOfDate: "2026-08-26"');
     expect(source).toContain("max-h-[calc(100dvh-1rem)]");
     expect(source).toContain("flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap");
     expect(source).toContain("w-full rounded-lg bg-indigo-600");
+  });
+
+  it("keeps the combined cash output card aligned with the output grid", () => {
+    expect(source).toContain('className="mt-2 w-full rounded-xl border border-rose-200 bg-rose-50 p-3.5"');
+    expect(source).not.toContain('className="mt-2 max-w-sm rounded-xl border border-rose-200 bg-rose-50 p-3.5"');
   });
 });

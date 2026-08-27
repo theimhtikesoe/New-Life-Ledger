@@ -25,7 +25,7 @@ const INPUT_FIELDS = [
 
 const AUGUST_NOTEBOOK_OPENING = {
   month: "2026-08",
-  amount: "246593750",
+  amount: "246593950",
   asOfDate: "2026-08-26",
   note: "စာအုပ်မှ 26/08/2026 အထိ",
 };
@@ -277,7 +277,7 @@ export default function DailySalesSummaryPanel() {
                     <button type="button" onClick={saveOpening} disabled={saving} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "Opening သိမ်းမည်"}</button>
                   </div>
                 </div>
-                <p className="mt-2 text-[10px] leading-4 text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,750 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `Opening သိမ်းမည်` နှိပ်မှသာ database ထဲ သိမ်းပါမည်။</p>
+                <p className="mt-2 text-[10px] leading-4 text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,950 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `Opening သိမ်းမည်` နှိပ်မှသာ database ထဲ သိမ်းပါမည်။</p>
               </div>
             )}
 
@@ -310,7 +310,7 @@ export default function DailySalesSummaryPanel() {
               </div>
             </div>
 
-            <div className="mt-2 max-w-sm rounded-xl border border-rose-200 bg-rose-50 p-3.5">
+            <div className="mt-2 w-full rounded-xl border border-rose-200 bg-rose-50 p-3.5">
               <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ ငွေသား</p>
               <p className="mt-1 text-lg font-bold text-rose-900">{formatMoney(cashDailyTotal)}</p>
               <p className="mt-1 text-[11px] text-rose-700">လက်လီငွေသား + လက်ကားငွေသား</p>
