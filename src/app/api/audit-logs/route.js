@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ACTORS } from "@/lib/audit";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
+import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export async function GET(request) {
       range ? { createdAt: range } : null,
       ACTORS.includes(actor) ? { actorName: actor } : null,
       isHiddenReportAction ? { action: "__HIDDEN_DAILY_REPORT_SENT__" } : action ? { action } : null,
-      !includeOrders ? { NOT: { entityType: "Order" } } : null,
+      !includeOrders ? accountingAuditLogWhere() : null,
       !action && !isHiddenReportAction ? { NOT: { action: "DAILY_REPORT_SENT" } } : null,
     ].filter(Boolean);
     const [allAuditLogs, legacyLedgers] = await Promise.all([
@@ -73,7 +74,7 @@ export async function GET(request) {
         : [],
     ]);
 
-    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt);
+    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && (includeOrders || !isOrderWorkflowActivity(log)));
     const cashSaleIds = allAuditLogs
       .filter((log) => log.entityType === "CashSale" && log.entityId)
       .map((log) => String(log.entityId));

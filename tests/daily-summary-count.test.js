@@ -60,7 +60,11 @@ describe("Daily Summary activity count", () => {
     const auditWhere = mocks.auditFindMany.mock.calls[0][0].where;
     expect(auditWhere.AND).toEqual(expect.arrayContaining([
       { NOT: { action: "DAILY_REPORT_SENT" } },
-      { NOT: { entityType: "Order" } },
+      { NOT: [
+        { entityType: "Order" },
+        { entityType: "OrderBatch" },
+        { action: { startsWith: "ORDER_" } },
+      ] },
     ]));
   });
 });

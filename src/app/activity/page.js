@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
+import { isOrderWorkflowActivity } from "@/lib/accounting-activity";
 
 const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
 const ACTIONS = ["PAYMENT", "DEBT_INCREASE", "CASH_SALE", "CREATE", "UPDATE", "RESTORE", "DELETE", "PERMANENT_DELETE"];
@@ -28,7 +29,7 @@ function readActivitySnapshot(date, actor, action) {
     const raw = window.sessionStorage.getItem(key);
     if (!raw) return { found: false, logs: [] };
     const snapshot = JSON.parse(raw);
-    return { found: true, logs: Array.isArray(snapshot?.logs) ? snapshot.logs : [] };
+    return { found: true, logs: Array.isArray(snapshot?.logs) ? snapshot.logs.filter((log) => !isOrderWorkflowActivity(log)) : [] };
   } catch {
     return { found: false, logs: [] };
   }
@@ -62,7 +63,7 @@ async function fetchLogs(query) {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || `Activity request မအောင်မြင်ပါ (${response.status})။`);
-      return Array.isArray(body.data) ? body.data : [];
+      return Array.isArray(body.data) ? body.data.filter((log) => !isOrderWorkflowActivity(log)) : [];
     } catch (error) {
       lastError = error;
       if (attempt < 2 && isTransientActivityError(error)) {

@@ -27,10 +27,28 @@ describe("Activity History Order separation", () => {
     expect(response.status).toBe(200);
     const where = mocks.auditFindMany.mock.calls[0][0].where;
     expect(where.AND).toEqual(expect.arrayContaining([
-      { NOT: { entityType: "Order" } },
+      { NOT: [
+        { entityType: "Order" },
+        { entityType: "OrderBatch" },
+        { action: { startsWith: "ORDER_" } },
+      ] },
       { NOT: { action: "DAILY_REPORT_SENT" } },
     ]));
     expect(mocks.auditFindMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("filters OrderBatch and ORDER_* records from the returned accounting list", async () => {
+    mocks.auditFindMany.mockReset().mockResolvedValue([
+      { id: "order", entityType: "Order", action: "ORDER_DRAFT", hiddenAt: null },
+      { id: "batch", entityType: "OrderBatch", action: "ORDER_BATCH_NOTIFIED", hiddenAt: null },
+      { id: "prefixed", entityType: "Operational", action: "ORDER_CUSTOM", hiddenAt: null },
+      { id: "payment", entityType: "Ledger", action: "PAYMENT", entityId: "ledger-1", hiddenAt: null },
+    ]);
+    mocks.ledgerFindMany.mockReset().mockResolvedValue([]);
+    const response = await GET(request());
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.data.map((log) => log.id)).toEqual(["payment"]);
   });
 
   it("allows Order History to request Order audit records explicitly", async () => {

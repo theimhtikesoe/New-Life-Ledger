@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { buildDailySummaryReviewChecks } from "@/lib/daily-summary-review";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
+import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 
 const DEFAULT_MODEL = "gpt-5-mini";
 const MANUS_API_BASE = "https://api.manus.ai";
@@ -165,7 +166,7 @@ export async function getAiDailySummaryPayload(dateParam) {
         AND: [
           { createdAt: { gte: start, lt: end } },
           { NOT: { action: "DAILY_REPORT_SENT" } },
-          { NOT: { entityType: "Order" } },
+          accountingAuditLogWhere(),
         ],
       },
       select: {
@@ -180,7 +181,7 @@ export async function getAiDailySummaryPayload(dateParam) {
     }),
   ]);
 
-  const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt);
+  const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isOrderWorkflowActivity(log));
   const summary = {
     paidCount: 0,
     paidAmount: 0,
@@ -261,12 +262,12 @@ export async function getAiDailySummaryPayload(dateParam) {
   }
 
   const auditedLedgerIds = new Set(
-    allAuditLogs
+    auditLogs
       .filter((log) => log.entityType === "Ledger" && log.entityId)
       .map((log) => String(log.entityId)),
   );
   const auditedCashSaleIds = new Set(
-    allAuditLogs
+    auditLogs
       .filter((log) => log.entityType === "CashSale" && log.entityId)
       .map((log) => String(log.entityId)),
   );
@@ -332,7 +333,7 @@ export async function getAiDailySummaryPayload(dateParam) {
     ),
     sourceRules: [
       "Daily Report delivery actions are excluded.",
-      "Customer/Ledger/CashSale actions only; no phone, KPay, database ID, secret, or raw note is included.",
+      "Customer/Ledger/CashSale actions only; Order/OrderBatch and ORDER_* workflow actions are excluded; no phone, KPay, database ID, secret, or raw note is included.",
       "Legacy Ledger and CashSale actions are added only when no matching audit action exists.",
     ],
   };

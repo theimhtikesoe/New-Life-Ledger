@@ -3,7 +3,7 @@ import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 
-export async function runDailyReport({ date } = {}) {
+export async function runDailyReport({ date, lateByDays = 0 } = {}) {
   const startedAt = Date.now();
   const report = await getDailyReportData(date ? getMyanmarDayRange(date) : undefined);
   const [pdfBuffer, imageBuffer, activityImageBuffer] = await Promise.all([
@@ -15,8 +15,10 @@ export async function runDailyReport({ date } = {}) {
   const cashSaleTypeLines = Object.entries(report.summary.cashSaleTypes || {})
     .filter(([, detail]) => Number(detail?.count || 0) > 0)
     .map(([type, detail]) => `   • <b>${cashSaleTypeLabel(type)}</b> <code>${detail.count} ခု</code> <b>${Number(detail.amount || 0).toLocaleString()} ကျပ်</b>`);
+  const normalizedLateByDays = Math.max(0, Math.floor(Number(lateByDays) || 0));
   const caption = [
     "<b>NEW LIFE LEDGER</b>",
+    normalizedLateByDays > 0 ? `⚠️ <b>နောက်ကျ Catch-up Report</b> — scheduled run မဝင်သဖြင့် ${normalizedLateByDays} ရက်နောက်ကျ၍ ပို့ပါသည်။` : null,
     "<b>နေ့စဉ် လုပ်ငန်းစာရင်းချုပ်</b>",
     "",
     `<b>စာရင်းရက်စွဲ</b>\n<code>${report.dateLabel}</code>`,
@@ -56,5 +58,7 @@ export async function runDailyReport({ date } = {}) {
     },
     recipients: delivery.results.length,
     elapsedMs: Date.now() - startedAt,
+    lateByDays: normalizedLateByDays,
+    catchUp: normalizedLateByDays > 0,
   };
 }

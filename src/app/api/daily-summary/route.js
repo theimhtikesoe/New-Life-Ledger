@@ -3,6 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
+import { accountingAuditLogWhere } from "@/lib/accounting-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ export async function GET(request) {
           AND: [
             { createdAt: { gte: start, lt: end } },
             { NOT: { action: "DAILY_REPORT_SENT" } },
-            { NOT: { entityType: "Order" } },
+            accountingAuditLogWhere(),
           ],
         },
         select: {

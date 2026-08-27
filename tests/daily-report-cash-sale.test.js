@@ -79,12 +79,24 @@ describe("Telegram daily report CashSale data", () => {
     expect(report.activityLogs.find((log) => log.entityType === "CashSale")).toMatchObject({ action: "CASH_SALE", entityLabel: "လက်ငင်း Customer" });
   });
 
-  it("uses the Activity History scope and excludes Order audit records", async () => {
-    await getDailyReportData(period);
+  it("uses the accounting-only Activity History scope and excludes Order workflow records", async () => {
+    mocks.auditFindMany.mockResolvedValue([
+      { id: "order", action: "ORDER_DRAFT", entityType: "Order", entityId: "order-1", hiddenAt: null, createdAt: ledger.createdAt },
+      { id: "batch", action: "ORDER_BATCH_NOTIFIED", entityType: "OrderBatch", entityId: "batch-1", hiddenAt: null, createdAt: ledger.createdAt },
+      { id: "prefixed", action: "ORDER_CUSTOM", entityType: "Operational", entityId: "op-1", hiddenAt: null, createdAt: ledger.createdAt },
+      { id: "payment", actorName: "Staff", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
+    ]);
+    const report = await getDailyReportData(period);
+    expect(report.activityLogs.some((log) => String(log.action).startsWith("ORDER_"))).toBe(false);
+    expect(report.activityLogs.some((log) => log.entityType === "OrderBatch")).toBe(false);
     const where = mocks.auditFindMany.mock.calls[0][0].where;
     expect(where.AND).toEqual(expect.arrayContaining([
       { NOT: { action: "DAILY_REPORT_SENT" } },
-      { NOT: { entityType: "Order" } },
+      { NOT: [
+        { entityType: "Order" },
+        { entityType: "OrderBatch" },
+        { action: { startsWith: "ORDER_" } },
+      ] },
     ]));
   });
 });

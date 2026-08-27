@@ -74,9 +74,17 @@ export function formatMyanmarClock(value = new Date()) {
 }
 
 export function getPreviousMyanmarDayRange(value = new Date()) {
+  return getPreviousMyanmarDayRanges(value, 1)[0];
+}
+
+export function getPreviousMyanmarDayRanges(value = new Date(), count = 1) {
+  const safeCount = Math.min(Math.max(Number(count) || 1, 1), 7);
   const { year, month, day } = getMyanmarDateParts(value);
-  const previousCalendarDate = new Date(Date.UTC(year, month - 1, day));
-  previousCalendarDate.setUTCDate(previousCalendarDate.getUTCDate() - 1);
-  const previousDate = `${previousCalendarDate.getUTCFullYear()}-${pad(previousCalendarDate.getUTCMonth() + 1)}-${pad(previousCalendarDate.getUTCDate())}`;
-  return getMyanmarDayRange(previousDate);
+  const currentCalendarDate = new Date(Date.UTC(year, month - 1, day));
+  return Array.from({ length: safeCount }, (_, index) => {
+    const reportDate = new Date(currentCalendarDate);
+    reportDate.setUTCDate(reportDate.getUTCDate() - index - 1);
+    const dateLabel = `${reportDate.getUTCFullYear()}-${pad(reportDate.getUTCMonth() + 1)}-${pad(reportDate.getUTCDate())}`;
+    return getMyanmarDayRange(dateLabel);
+  }).reverse();
 }

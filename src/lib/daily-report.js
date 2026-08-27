@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureDatabase } from "@/lib/database";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
+import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
 const REMOTE_CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
@@ -160,14 +161,14 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
         AND: [
           { createdAt: { gte: start, lt: end } },
           { NOT: { action: "DAILY_REPORT_SENT" } },
-          { NOT: { entityType: "Order" } },
+          accountingAuditLogWhere(),
         ],
       },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     }),
   ]);
 
-  const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt);
+  const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isOrderWorkflowActivity(log));
   const { summary, customers: ledgerCustomers } = summarizeLedgers(ledgers);
   summary.cashCount = cashSales.length;
   summary.cashAmount = cashSales.reduce((total, sale) => total + Number(sale.amount || 0), 0);
