@@ -1952,7 +1952,6 @@ export default function Dashboard({ view = "overview" }) {
               <div id="customer-details-section" className="scroll-mt-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between pt-4">
                   <div>
-                    <button type="button" onClick={() => setShowCustomerList(true)} className="mb-3 rounded-md border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:hidden">Customer List သို့ပြန်ရန်</button>
                     <h2 className="text-xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
                     <p className="mt-1 text-sm text-slate-700">
                       {[selectedCustomer.phone, selectedCustomer.routeTag].filter(Boolean).join(" / ") ||
