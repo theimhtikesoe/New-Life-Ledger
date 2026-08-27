@@ -52,7 +52,8 @@ function RefreshOverlay() {
           fill="none"
         >
           <path d="M3 7C16 1 34 3 47 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-          <path d="M38 11L48 16L39 23" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M38 9L51 16L39 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M44 12L51 16L45 20" fill="currentColor" />
         </svg>
       </div>
       <button

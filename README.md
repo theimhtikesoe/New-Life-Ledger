@@ -262,6 +262,7 @@ The Dashboard loads KPI first, then overdue data and primary ledger/customer dat
 | Medium | Improve responsive table/card layouts on small phones and iPad | No horizontal clipping, touch targets remain usable, no hidden safety controls |
 | Medium | Add status monitoring/notification for failed or missing Auto Reports | Alert must not itself trigger an unapproved duplicate report |
 | Medium | Add Customer and Order CSV import with preview | Add-only, duplicate preview, no automatic accounting Customer creation from Order-only rows |
+| Medium | Add background music and overdue alert audio | Start only after user gesture/PIN session because mobile browsers block unexpected autoplay; play the overdue alert exactly twice and keep a mute/volume preference |
 | Low | Separate Inventory/Production Telegram group | Keep factory-front handover separate from bottle production/inventory planning |
 | Low | Add delivery batch planning and upcoming-days view | Read-only planning first, explicit confirmation before operational changes |
 
