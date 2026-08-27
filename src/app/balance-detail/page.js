@@ -9,6 +9,70 @@ function formatMoney(value) {
   return `${money.format(Math.round(Number(value || 0)))} Ks`;
 }
 
+const BALANCE_SNAPSHOT_KEY = "new-life-ledger:balance-detail-snapshot:v1";
+
+function readBalanceSnapshot() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(BALANCE_SNAPSHOT_KEY);
+    const snapshot = raw ? JSON.parse(raw) : null;
+    return snapshot && typeof snapshot === "object" ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveBalanceSnapshot(partial) {
+  if (typeof window === "undefined" || !partial || typeof partial !== "object") return;
+  try {
+    const current = readBalanceSnapshot() || {};
+    window.sessionStorage.setItem(BALANCE_SNAPSHOT_KEY, JSON.stringify({ ...current, ...partial, savedAt: Date.now() }));
+  } catch (error) {
+    console.warn("Balance Detail snapshot could not be saved:", error);
+  }
+}
+
+function isTransientError(error) {
+  return error?.name === "TypeError" || error?.name === "TimeoutError" || /Failed to fetch|NetworkError|Load failed|Request timed out/i.test(String(error?.message || ""));
+}
+
+function waitForRetry(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function fetchJson(path, { timeoutMs = 15_000, maxAttempts = 3 } = {}) {
+  const actorName = localStorage.getItem("actorName") || "";
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(path, {
+        headers: { "x-actor-name": encodeActorHeader(actorName) },
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(body.error || "Data ရယူ၍ မရပါ။");
+        error.status = response.status;
+        throw error;
+      }
+      return body.data;
+    } catch (error) {
+      lastError = error?.name === "AbortError"
+        ? Object.assign(new Error("Data ရယူရန် အချိန်ကြာသွားပါပြီ။"), { name: "TimeoutError" })
+        : error;
+      const isServerFailure = Number(lastError?.status) >= 500;
+      if (attempt >= maxAttempts || (!isTransientError(lastError) && !isServerFailure)) throw lastError;
+      await waitForRetry(400 * attempt);
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+  throw lastError || new Error("Data ရယူ၍ မရပါ။");
+}
+
 function balanceInfo(value) {
   const balance = Number(value || 0);
   if (balance > 0) return { key: "debt", label: "အကြွေး", amount: balance, color: "rose" };
@@ -17,14 +81,8 @@ function balanceInfo(value) {
 }
 
 async function fetchCustomers() {
-  const actorName = localStorage.getItem("actorName") || "";
-  const response = await fetch("/api/customers?includeLedgers=false", {
-    headers: { "x-actor-name": encodeActorHeader(actorName) },
-    cache: "no-store",
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "Customer စာရင်း ရယူ၍ မရပါ။");
-  return Array.isArray(body.data) ? body.data.filter((customer) => !customer.deletedAt) : [];
+  const rows = await fetchJson("/api/customers?includeLedgers=false");
+  return Array.isArray(rows) ? rows.filter((customer) => !customer.deletedAt) : [];
 }
 
 function SummaryCard({ title, subtitle, value, count, countLabel = "ယောက်", tone }) {
@@ -77,10 +135,8 @@ function CustomerRow({ customer }) {
 }
 
 async function fetchTodaySummary() {
-  const response = await fetch("/api/daily-summary", { cache: "no-store" });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || "နေ့စဉ်စာရင်း ရယူ၍ မရပါ။");
-  return body.data?.summary || {};
+  const data = await fetchJson("/api/daily-summary");
+  return data?.summary || {};
 }
 
 export default function BalanceDetailPage() {
@@ -94,15 +150,37 @@ export default function BalanceDetailPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    Promise.allSettled([fetchCustomers(), fetchTodaySummary()])
-      .then(([customerResult, summaryResult]) => {
+    const cached = readBalanceSnapshot();
+    const cachedCustomers = Array.isArray(cached?.customers) ? cached.customers : [];
+    if (cachedCustomers.length) {
+      setCustomers(cachedCustomers);
+      setLoading(false);
+    }
+    if (cached?.cashSummary && typeof cached.cashSummary === "object") setCashSummary(cached.cashSummary);
+
+    fetchCustomers()
+      .then((rows) => {
         if (!active) return;
-        if (customerResult.status === "fulfilled") setCustomers(customerResult.value);
-        else setError(customerResult.reason?.message || "Customer စာရင်း ရယူ၍ မရပါ။");
-        if (summaryResult.status === "fulfilled") setCashSummary(summaryResult.value);
+        setCustomers(rows);
+        setError("");
+        setLoading(false);
+        saveBalanceSnapshot({ customers: rows });
       })
-      .finally(() => active && setLoading(false));
+      .catch((err) => {
+        if (!active) return;
+        if (!cachedCustomers.length) setError(err.message || "Customer စာရင်း ရယူ၍ မရပါ။");
+        setLoading(false);
+      });
+
+    // CashSale summary is useful but secondary; it never blocks the customer balance list.
+    fetchTodaySummary()
+      .then((summary) => {
+        if (!active) return;
+        setCashSummary(summary);
+        saveBalanceSnapshot({ cashSummary: summary });
+      })
+      .catch(() => {});
+
     return () => { active = false; };
   }, []);
 
@@ -171,11 +249,11 @@ export default function BalanceDetailPage() {
         {error ? <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">{error}</section> : null}
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <SummaryCard title="အသားတင်ရရန်လက်ကျန်" subtitle={netLabel} value={loading ? "ရယူနေသည်..." : formatMoney(Math.abs(netBalance))} tone={netTone} />
-          <SummaryCard title="လက်ကျန်အကြွေးစုစုပေါင်း" subtitle="အနီရောင် balance များ" value={loading ? "ရယူနေသည်..." : formatMoney(totals.debtTotal)} count={totals.debtCustomers} tone="rose" />
-          <SummaryCard title="လက်ကျန်ကြိုတင်ငွေချေ" subtitle="အစိမ်းရောင် balance များ" value={loading ? "ရယူနေသည်..." : formatMoney(totals.prepaidTotal)} count={totals.prepaidCustomers} tone="emerald" />
-          <SummaryCard title="လက်ကျန်မရှိသူ" subtitle="လက်ရှိ balance = 0" value={loading ? "ရယူနေသည်..." : `${totals.zeroCustomers} ယောက်`} tone="blue" />
-          <SummaryCard title="ဒီနေ့ လက်ငင်းရောင်း" subtitle="လက်ကျန်အကြွေးထဲ မထည့်ပါ" value={loading ? "ရယူနေသည်..." : formatMoney(cashSummary.cashAmount)} count={cashSummary.cashCount || 0} countLabel="ခု" tone="blue" />
+          <SummaryCard title="အသားတင်ရရန်လက်ကျန်" subtitle={netLabel} value={loading && !customers.length ? "ရယူနေသည်..." : formatMoney(Math.abs(netBalance))} tone={netTone} />
+          <SummaryCard title="လက်ကျန်အကြွေးစုစုပေါင်း" subtitle="အနီရောင် balance များ" value={loading && !customers.length ? "ရယူနေသည်..." : formatMoney(totals.debtTotal)} count={totals.debtCustomers} tone="rose" />
+          <SummaryCard title="လက်ကျန်ကြိုတင်ငွေချေ" subtitle="အစိမ်းရောင် balance များ" value={loading && !customers.length ? "ရယူနေသည်..." : formatMoney(totals.prepaidTotal)} count={totals.prepaidCustomers} tone="emerald" />
+          <SummaryCard title="လက်ကျန်မရှိသူ" subtitle="လက်ရှိ balance = 0" value={loading && !customers.length ? "ရယူနေသည်..." : `${totals.zeroCustomers} ယောက်`} tone="blue" />
+          <SummaryCard title="ဒီနေ့ လက်ငင်းရောင်း" subtitle="လက်ကျန်အကြွေးထဲ မထည့်ပါ" value={loading && !customers.length && !cashSummary.cashCount ? "ရယူနေသည်..." : formatMoney(cashSummary.cashAmount)} count={cashSummary.cashCount || 0} countLabel="ခု" tone="blue" />
         </section>
 
         <section className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 sm:p-5">

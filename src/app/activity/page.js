@@ -15,6 +15,33 @@ function formatMyanmarDateInputValue(value = new Date()) {
 }
 
 const today = formatMyanmarDateInputValue(new Date());
+const ACTIVITY_SNAPSHOT_KEY = "new-life-ledger:activity-snapshot:v1";
+
+function getActivitySnapshotKey(date, actor, action) {
+  return `${ACTIVITY_SNAPSHOT_KEY}:${date}:${actor || "all"}:${action || "all"}`;
+}
+
+function readActivitySnapshot(date, actor, action) {
+  if (typeof window === "undefined") return { found: false, logs: [] };
+  try {
+    const key = getActivitySnapshotKey(date, actor, action);
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return { found: false, logs: [] };
+    const snapshot = JSON.parse(raw);
+    return { found: true, logs: Array.isArray(snapshot?.logs) ? snapshot.logs : [] };
+  } catch {
+    return { found: false, logs: [] };
+  }
+}
+
+function saveActivitySnapshot(date, actor, action, logs) {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(getActivitySnapshotKey(date, actor, action), JSON.stringify({ savedAt: Date.now(), logs }));
+  } catch (error) {
+    console.warn("Activity snapshot could not be saved:", error);
+  }
+}
 
 function isTransientActivityError(error) {
   const message = String(error?.message || "").trim();
@@ -110,14 +137,30 @@ export default function ActivityPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    const cached = readActivitySnapshot(date, actor, action);
+    if (cached.found) {
+      setLogs(cached.logs);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     setError("");
     const params = new URLSearchParams({ date, limit: "500" });
     if (actor) params.set("actor", actor);
     if (action) params.set("action", action);
     fetchLogs(params.toString())
-      .then((items) => active && setLogs(items))
-      .catch((err) => active && setError(err.message || "Activity data ရယူရာတွင် အဆင်မပြေပါ။"))
+      .then((items) => {
+        if (!active) return;
+        setLogs(items);
+        setError("");
+        setLoading(false);
+        saveActivitySnapshot(date, actor, action, items);
+      })
+      .catch((err) => {
+        if (!active) return;
+        if (!cached.found) setError(err.message || "Activity data ရယူရာတွင် အဆင်မပြေပါ။");
+        setLoading(false);
+      })
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, [date, actor, action]);
@@ -136,7 +179,11 @@ export default function ActivityPage() {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || "Activity မှတ်တမ်းကို ဖယ်၍ မရပါ။");
-      setLogs((current) => current.filter((item) => String(item.id) !== String(log.id)));
+      setLogs((current) => {
+        const nextLogs = current.filter((item) => String(item.id) !== String(log.id));
+        saveActivitySnapshot(date, actor, action, nextLogs);
+        return nextLogs;
+      });
       setHighlightedId((current) => (current === String(log.id) ? "" : current));
     } catch (err) {
       setError(err.message || "Activity မှတ်တမ်းကို ဖယ်၍ မရပါ။");

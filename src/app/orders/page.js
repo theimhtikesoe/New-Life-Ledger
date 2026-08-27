@@ -52,6 +52,32 @@ const ORDER_HISTORY_ACTION_LABELS = {
 
 const ARCHIVABLE_STATUSES = ["FACTORY_NOTIFIED", "PREPARED", "COMPLETED"];
 const TRASH_RETENTION_DAYS = 15;
+const ORDERS_SNAPSHOT_KEY = "new-life-ledger:orders-snapshot:v1";
+
+function getOrdersSnapshotKey(viewMode) {
+  return `${ORDERS_SNAPSHOT_KEY}:${viewMode}`;
+}
+
+function readOrdersSnapshot(viewMode) {
+  if (typeof window === "undefined") return { found: false };
+  try {
+    const raw = window.sessionStorage.getItem(getOrdersSnapshotKey(viewMode));
+    const snapshot = raw ? JSON.parse(raw) : null;
+    return snapshot && typeof snapshot === "object" ? { found: true, ...snapshot } : { found: false };
+  } catch {
+    return { found: false };
+  }
+}
+
+function saveOrdersSnapshot(viewMode, partial) {
+  if (typeof window === "undefined" || !partial || typeof partial !== "object") return;
+  try {
+    const current = readOrdersSnapshot(viewMode);
+    window.sessionStorage.setItem(getOrdersSnapshotKey(viewMode), JSON.stringify({ ...current, ...partial, savedAt: Date.now() }));
+  } catch (error) {
+    console.warn("Orders snapshot could not be saved:", error);
+  }
+}
 
 function formatDate(value) {
   if (!value) return "မသတ်မှတ်ရသေး";
@@ -272,8 +298,17 @@ export default function OrdersPage() {
 
   const load = useCallback(async ({ silent = false } = {}) => {
     const requestId = ++loadRequestRef.current;
+    const cached = readOrdersSnapshot(viewMode);
     if (!silent) {
-      setLoading(true);
+      if (Array.isArray(cached.orders)) {
+        setOrders(cached.orders);
+        setTrashCount(Number(cached.trashCount || 0));
+        setOrderLogs(Array.isArray(cached.orderLogs) ? cached.orderLogs : []);
+        if (cached.automation) setAutomation(cached.automation);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError("");
     }
     try {
@@ -295,15 +330,21 @@ export default function OrdersPage() {
       const trashBody = trashResult.status === "fulfilled" ? trashResult.value : null;
       if (requestId !== loadRequestRef.current) return;
       const nextOrders = Array.isArray(ordersBody.data) ? ordersBody.data : [];
+      const nextTrashCount = viewMode === "TRASH" ? nextOrders.length : Array.isArray(trashBody?.data) ? trashBody.data.length : 0;
+      const nextOrderLogs = viewMode !== "ACTIVE" && Array.isArray(historyBody?.data) ? historyBody.data.filter((log) => log.entityType === "Order") : [];
+      const nextAutomation = settingBody?.data
+        ? { morningBatchEnabled: Boolean(settingBody.data.morningBatchEnabled), morningBatchTime: settingBody.data.morningBatchTime || "08:10" }
+        : null;
       setOrders(nextOrders);
-      setTrashCount(viewMode === "TRASH" ? nextOrders.length : Array.isArray(trashBody?.data) ? trashBody.data.length : 0);
-      setOrderLogs(viewMode !== "ACTIVE" && Array.isArray(historyBody?.data) ? historyBody.data.filter((log) => log.entityType === "Order") : []);
-      if (settingBody?.data) setAutomation({ morningBatchEnabled: Boolean(settingBody.data.morningBatchEnabled), morningBatchTime: settingBody.data.morningBatchTime || "08:10" });
+      setTrashCount(nextTrashCount);
+      setOrderLogs(nextOrderLogs);
+      if (nextAutomation) setAutomation(nextAutomation);
+      saveOrdersSnapshot(viewMode, { orders: nextOrders, trashCount: nextTrashCount, orderLogs: nextOrderLogs, ...(nextAutomation ? { automation: nextAutomation } : {}) });
       const auxiliaryFailed = [settingResult, historyResult, trashResult].some((result) => result.status === "rejected");
       if (auxiliaryFailed) setMessage("Order စာရင်းကို ပြထားပါပြီ။ အချို့အချက်အလက်များ မရသေးပါ၊ ခဏနေရင် ပြန်စစ်ပါမယ်။");
     } catch (err) {
-      if (!silent) setError(err.message);
-      else console.warn("Orders background refresh skipped:", err);
+      if (!silent && !cached.found) setError(err.message);
+      else console.warn("Orders refresh skipped:", err);
     } finally {
       if (!silent && requestId === loadRequestRef.current) setLoading(false);
     }
