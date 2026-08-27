@@ -31,6 +31,7 @@ describe("Activity History Order separation", () => {
         { entityType: "Order" },
         { entityType: "OrderBatch" },
         { action: { startsWith: "ORDER_" } },
+        { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
       ] },
       { NOT: { action: "DAILY_REPORT_SENT" } },
     ]));

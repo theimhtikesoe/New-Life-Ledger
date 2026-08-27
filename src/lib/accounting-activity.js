@@ -1,4 +1,9 @@
 const ORDER_ENTITY_TYPES = new Set(["Order", "OrderBatch"]);
+const DAILY_SALES_ACTIVITY_ACTIONS = new Set(["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"]);
+
+export function isDailySalesActivity(log) {
+  return DAILY_SALES_ACTIVITY_ACTIONS.has(String(log?.action || "").trim().toUpperCase());
+}
 
 export function isOrderWorkflowActivity(log) {
   const entityType = String(log?.entityType || "").trim();
@@ -12,6 +17,7 @@ export function accountingAuditLogWhere() {
       { entityType: "Order" },
       { entityType: "OrderBatch" },
       { action: { startsWith: "ORDER_" } },
+      { action: { in: [...DAILY_SALES_ACTIVITY_ACTIONS] } },
     ],
   };
 }

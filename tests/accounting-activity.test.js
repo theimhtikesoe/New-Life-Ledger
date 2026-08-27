@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
+import { accountingAuditLogWhere, isDailySalesActivity, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 
 describe("Accounting activity scope", () => {
   it("recognizes Order entity types and ORDER-prefixed actions", () => {
@@ -14,13 +14,20 @@ describe("Accounting activity scope", () => {
     expect(isOrderWorkflowActivity({ entityType: "Customer", action: "UPDATE" })).toBe(false);
   });
 
+  it("recognizes Daily Sales bookkeeping actions as hidden from Activity History", () => {
+    expect(isDailySalesActivity({ action: "DAILY_SALES_OPENING" })).toBe(true);
+    expect(isDailySalesActivity({ action: "DAILY_SALES_SUMMARY" })).toBe(true);
+    expect(isDailySalesActivity({ action: "CASH_SALE" })).toBe(false);
+  });
+
   it("builds a Prisma exclusion for both Order entity types and ORDER actions", () => {
     expect(accountingAuditLogWhere()).toEqual({
       NOT: [
         { entityType: "Order" },
         { entityType: "OrderBatch" },
-        { action: { startsWith: "ORDER_" } },
-      ],
+      { action: { startsWith: "ORDER_" } },
+      { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
+    ],
     });
   });
 });
