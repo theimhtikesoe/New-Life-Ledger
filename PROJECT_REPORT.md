@@ -1104,3 +1104,38 @@ The additive `cancelledAt`/`cancelledBy` migration was applied through a tempora
 | Telegram group guide | Website action and pinned-message content are implemented; actual group publish was not re-triggered after a prior browser timeout, so duplicate posting was avoided and publish remains to be confirmed in the group |
 
 [11]: https://core.telegram.org/bots/api#setwebhook — Telegram Bot API `setWebhook` documentation.
+
+
+## 13. Latest Update — Auto Report Reconciliation and Accounting Activity Scope
+
+**Date:** 2026-08-27
+
+The production Auto Report audit showed that the last persisted successful run was for report date `2026-08-25`, created on 2026-08-26 Myanmar morning. No persisted run existed for report date `2026-08-26`, so the missed day was not a Telegram delivery-recipient failure proven by the database; it was either a Cron invocation that did not reach the route or a failure before a run record was created. The owner-provided Vercel screenshot confirmed that Cron Jobs is enabled and that `/api/cron/daily-report` is configured for `30 1 * * *` UTC. The invocation log itself was not visible in the screenshot, so the exact Vercel-side cause remains unverified.
+
+Commit `37b4156` adds a bounded, idempotent reconciliation path. Each authorized daily Cron invocation examines the previous three Myanmar calendar days in oldest-first order, skips dates that already have a successful `AutoReportRun`, and sends only missing or failed dates. A late catch-up caption is added when a report is sent after its normal date. Existing advisory-lock and per-date status behavior remains in place, and a failed date is recorded as `FAILED` without being marked as delivered. The reconciliation is deliberately bounded so a long outage cannot create an unbounded send loop. No authorized manual Cron request was made during verification.
+
+Order workflow activities are not accounting activity. Website Activity History, Daily Summary activity data, Daily Summary AI payloads, and Telegram Daily Report activity data now exclude `Order`, `OrderBatch`, and all `ORDER_*` actions. Order History can still request and display its operational records explicitly. Existing ledger and customer data are not deleted, overwritten, or reclassified; this is a display/report scope change only. A client-side safeguard also removes stale cached Order rows from the default Activity History view.
+
+A read-only `/api/auto-report-status` allowlist entry was added so the status page can retrieve status without the page becoming stuck behind the general API PIN middleware. Production verification after deployment returned HTTP 200 for that endpoint and HTTP 401 for an unauthenticated daily Cron request, confirming that no report was sent by the safety probe.
+
+| Check | Result |
+|---|---|
+| Accounting activity filter tests | Passed: 14 targeted tests before later Order UI work |
+| Order/Telegram UI tests after inline menu work | Passed: 49 tests; lint passed |
+| Full lint, test, and production build before Order UI work | Passed; only existing Next.js metadata deprecation warnings remain |
+| Code deployment | Commit `37b4156` pushed to `origin/main`; GitHub Vercel check reported completed successfully |
+| Audit note | `audit/auto-report-status-2026-08-27.md` records the evidence; audit-only follow-up commit `fb70fc1` was pushed afterward |
+| Data safety | No customer, ledger, balance, or Telegram report data was manually changed during verification |
+
+The next operational check is Vercel Cron View Logs for the missing 27 Aug invocation. The new reconciliation will recover a missed report on the next authorized Cron invocation, but it does not create multiple same-morning Cron schedules; that remains subject to Vercel plan limits and should be decided separately.
+
+
+## 14. Order Group, Factory Handover Group, and Future Inventory Planning
+
+The Telegram **Order Group** is the intake and review channel. Staff can send an order in Burmese, English, compact notation, or copied Viber format. The system stores the original text, extracts multiple bottle lines and commercial notes, matches an existing website Customer where possible, and keeps an Order-only draft separate from the main accounting Customer table when there is no safe match. Administrators can confirm or cancel the order and can select missing date/location values directly from Telegram menus.
+
+The Telegram **Factory Handover Group** is not a bottle-production or manufacturing-planning group. Its confirmed messages tell factory staff to bring already-available bottles from inside the factory to the front, arrange them for vehicle loading, or prepare a gate-delivery handover. The wording should therefore describe `စက်ရုံရှေ့ လာချ/ကားတင်ရန်` and `ဂိတ်ပို့ရန်` preparation rather than a production date or a request to manufacture bottles. Factory notifications remain idempotent so the same confirmed order is not handed over twice.
+
+A future separate **Inventory / Production Planning Group** will handle stock levels, available bottles, shortages, days of coverage, advance planning, and manufacturing decisions. Those responsibilities are intentionally not mixed into the current Order Group or Factory Handover Group.
+
+The current Order/Factory UI improvements include shared capacity rendering that omits unknown capacity rather than showing `? ml`, compact inline date choices for today/tomorrow/two-days-later/custom date, destination choices for factory-front pickup/gate delivery/custom location, and revised Factory wording. Custom date and location still use a Telegram reply prompt only when the operator chooses the custom option.

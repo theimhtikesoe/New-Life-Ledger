@@ -154,6 +154,28 @@ export function buildOrderRetryKeyboard(order, appUrl = "") {
   };
 }
 
+export function buildOrderDateKeyboard(order, { includeBack = true } = {}) {
+  const id = String(order?.id || "");
+  if (!id) return undefined;
+  const rows = [
+    [{ text: "ယနေ့", callback_data: `order|set_date|T|${id}` }, { text: "မနက်ဖြန်", callback_data: `order|set_date|N|${id}` }],
+    [{ text: "၂ ရက်နောက်", callback_data: `order|set_date|D2|${id}` }, { text: "ရက်စွဲကိုယ်တိုင်ရေးရန်", callback_data: `order|set_date|C|${id}` }],
+  ];
+  if (includeBack) rows.push([{ text: "⬅️ Order သို့ပြန်ရန်", callback_data: `order|back|I|${id}` }]);
+  return { inline_keyboard: rows };
+}
+
+export function buildOrderDestinationKeyboard(order, { includeBack = true } = {}) {
+  const id = String(order?.id || "");
+  if (!id) return undefined;
+  const rows = [
+    [{ text: "စက်ရုံရှေ့ လာယူ/ကားတင်ရန်", callback_data: `order|set_destination|F|${id}` }],
+    [{ text: "ဂိတ်ပို့ရန်", callback_data: `order|set_destination|G|${id}` }, { text: "နေရာကိုယ်တိုင်ရေးရန်", callback_data: `order|set_destination|C|${id}` }],
+  ];
+  if (includeBack) rows.push([{ text: "⬅️ Order သို့ပြန်ရန်", callback_data: `order|back|I|${id}` }]);
+  return { inline_keyboard: rows };
+}
+
 export function buildOrderMoreKeyboard(order, { includeBack = true } = {}) {
   const id = String(order?.id || "");
   if (!id) return undefined;
@@ -178,8 +200,8 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
     const hasDateMissing = missingFields.some((field) => /ရက်|date/i.test(String(field)));
     const hasDestinationMissing = missingFields.some((field) => /နေရာ|ကားဂိတ်|destination/i.test(String(field)));
     const hasPhoneMissing = missingFields.some((field) => /ဖုန်း|phone/i.test(String(field)));
-    if (hasDateMissing) rows.push([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${id}` }]);
-    if (hasDestinationMissing) rows.push([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${id}` }]);
+    if (hasDateMissing) rows.push([{ text: "📅 ရက်စွဲရွေးရန်", callback_data: `order|date_menu|I|${id}` }]);
+    if (hasDestinationMissing) rows.push([{ text: "📍 နေရာရွေးရန်", callback_data: `order|destination_menu|I|${id}` }]);
     if (hasPhoneMissing) rows.push([{ text: "☎️ ဖုန်း ဖြည့်ရန်", callback_data: `order|ask_phone|I|${id}` }]);
     rows.push([{ text: "📋 အသေးစိတ်ကြည့်ရန်", callback_data: `order|menu|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
@@ -189,8 +211,8 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
     const hasDateMissing = missingFields.some((field) => /ရက်|date/i.test(String(field)));
     const hasDestinationMissing = missingFields.some((field) => /နေရာ|ကားဂိတ်|destination/i.test(String(field)));
     const hasPhoneMissing = missingFields.some((field) => /ဖုန်း|phone/i.test(String(field)));
-    if (hasDateMissing) rows.push([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${id}` }]);
-    if (hasDestinationMissing) rows.push([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${id}` }]);
+    if (hasDateMissing) rows.push([{ text: "📅 ရက်စွဲရွေးရန်", callback_data: `order|date_menu|I|${id}` }]);
+    if (hasDestinationMissing) rows.push([{ text: "📍 နေရာရွေးရန်", callback_data: `order|destination_menu|I|${id}` }]);
     if (hasPhoneMissing) rows.push([{ text: "☎️ ဖုန်း ဖြည့်ရန်", callback_data: `order|ask_phone|I|${id}` }]);
     rows.push([{ text: "📋 အသေးစိတ်ကြည့်ရန်", callback_data: `order|menu|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);

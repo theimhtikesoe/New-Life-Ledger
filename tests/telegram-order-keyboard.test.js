@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOrderActionKeyboard, buildOrderCustomerCandidatesKeyboard, buildOrderDraftKeyboard, buildOrderMoreKeyboard } from "@/lib/telegram";
+import { buildOrderActionKeyboard, buildOrderCustomerCandidatesKeyboard, buildOrderDateKeyboard, buildOrderDestinationKeyboard, buildOrderDraftKeyboard, buildOrderMoreKeyboard } from "@/lib/telegram";
 
 const order = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -29,8 +29,8 @@ describe("Telegram order action keyboards", () => {
   it("asks for missing fields inside Telegram without requiring the website", () => {
     const incomplete = { ...order, customer: null, missingFields: ["ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"] };
     const keyboard = buildOrderActionKeyboard(incomplete, "https://example.test/", { allowRetry: true });
-    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${order.id}` }]);
-    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${order.id}` }]);
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📅 ရက်စွဲရွေးရန်", callback_data: `order|date_menu|I|${order.id}` }]);
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📍 နေရာရွေးရန်", callback_data: `order|destination_menu|I|${order.id}` }]);
     expect(JSON.stringify(keyboard)).not.toContain("/orders?");
   });
 
@@ -38,8 +38,8 @@ describe("Telegram order action keyboards", () => {
     const incomplete = { ...order, missingFields: ["ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"] };
     const keyboard = buildOrderActionKeyboard(incomplete, "https://example.test/", { allowRetry: true });
     expect(keyboard.inline_keyboard).toContainEqual([{ text: "✅ Confirm", callback_data: `order|confirm|I|${order.id}` }]);
-    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${order.id}` }]);
-    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${order.id}` }]);
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📅 ရက်စွဲရွေးရန်", callback_data: `order|date_menu|I|${order.id}` }]);
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📍 နေရာရွေးရန်", callback_data: `order|destination_menu|I|${order.id}` }]);
   });
 
   it("uses a short candidate index callback that stays within Telegram callback limits", () => {
@@ -48,6 +48,19 @@ describe("Telegram order action keyboards", () => {
     const callbackData = keyboard.inline_keyboard[0][0].callback_data;
     expect(callbackData).toBe(`order|link|I|${order.id}|0`);
     expect(callbackData.length).toBeLessThanOrEqual(64);
+  });
+
+  it("builds one-click date and destination menus with custom input choices", () => {
+    const dateKeyboard = buildOrderDateKeyboard(order);
+    expect(dateKeyboard.inline_keyboard[0][0].callback_data).toBe(`order|set_date|T|${order.id}`);
+    expect(dateKeyboard.inline_keyboard[0][1].callback_data).toBe(`order|set_date|N|${order.id}`);
+    expect(dateKeyboard.inline_keyboard[1][0].callback_data).toBe(`order|set_date|D2|${order.id}`);
+    expect(dateKeyboard.inline_keyboard[1][1].callback_data).toBe(`order|set_date|C|${order.id}`);
+
+    const destinationKeyboard = buildOrderDestinationKeyboard(order);
+    expect(destinationKeyboard.inline_keyboard[0][0].callback_data).toBe(`order|set_destination|F|${order.id}`);
+    expect(destinationKeyboard.inline_keyboard[1][0].callback_data).toBe(`order|set_destination|G|${order.id}`);
+    expect(destinationKeyboard.inline_keyboard[1][1].callback_data).toBe(`order|set_destination|C|${order.id}`);
   });
 
   it("keeps More actions limited to Batch and Back", () => {

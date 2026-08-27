@@ -5,6 +5,7 @@ import {
   buildFallbackOrderExtraction,
   calculateOrderTotals,
   formatFactoryOrderMessage,
+  formatOrderCapacity,
   formatOrderDraftMessage,
   normalizeExtractedOrder,
   positiveInteger,
@@ -159,7 +160,7 @@ describe("multi-line order totals and cap rules", () => {
     expect(warning.warningText).toContain("မှာထား 5,020 pcs");
     expect(calculateOrderTotals(order)).toMatchObject({ totalBottles: 1500, totalRequestedCaps: 5020 });
     const websiteMessage = formatFactoryOrderMessage(order, { source: "WEBSITE" });
-    expect(websiteMessage).toContain("🟢 စက်ရုံအတွက် Order 7");
+    expect(websiteMessage).toContain("🟢 စက်ရုံရှေ့ လာချ/ကားတင်ရန် Order 7");
     expect(websiteMessage).toContain("Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။");
     expect(websiteMessage).toContain("5,020");
     expect(websiteMessage).not.toContain("အဖုံးကွာခြားချက် သတိပေးချက်သာ");
@@ -170,6 +171,8 @@ describe("multi-line order totals and cap rules", () => {
   });
 
   it("omits unknown Liter/ml instead of rendering a placeholder in Factory messages", () => {
+    expect(formatOrderCapacity({ capacityLabel: "? ml", capacityMl: null })).toBe("");
+    expect(formatOrderCapacity({ capacityLabel: null, capacityMl: 500 })).toBe("500 ml");
     const message = formatFactoryOrderMessage({
       ...baseOrder,
       lines: [{ bottleType: "နွားသေး", capacityMl: null, capacityLabel: null, cardCount: 3, bottlesPerCard: 100, totalBottles: 300, quotedAmount: 114000 }],

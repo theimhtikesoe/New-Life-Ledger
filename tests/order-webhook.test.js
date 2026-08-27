@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   buildOrderDraftKeyboard: vi.fn(),
   buildOrderActionKeyboard: vi.fn(),
   buildOrderCustomerCandidatesKeyboard: vi.fn(),
+  buildOrderDateKeyboard: vi.fn(),
+  buildOrderDestinationKeyboard: vi.fn(),
   buildOrderMoreKeyboard: vi.fn(),
   buildOrderRetryKeyboard: vi.fn(),
   sendTelegramTextToChat: vi.fn(),
@@ -31,7 +33,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/order-service", () => ({ createCustomerForOrder: mocks.createCustomerForOrder, createOrderDraft: mocks.createOrderDraft, getOrderById: mocks.getOrderById, getOrderCustomerCandidates: mocks.getOrderCustomerCandidates, getOrderBySourceUpdateId: mocks.getOrderBySourceUpdateId, linkOrderCustomer: mocks.linkOrderCustomer, refreshOrderFromAi: mocks.refreshOrderFromAi, saveTelegramDraftMessage: mocks.saveTelegramDraftMessage, updateOrderDetails: mocks.updateOrderDetails, updateOrderStatus: mocks.updateOrderStatus }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
-vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderActionKeyboard: mocks.buildOrderActionKeyboard, buildOrderCustomerCandidatesKeyboard: mocks.buildOrderCustomerCandidatesKeyboard, buildOrderMoreKeyboard: mocks.buildOrderMoreKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
+vi.mock("@/lib/telegram", () => ({ buildOrderDraftKeyboard: mocks.buildOrderDraftKeyboard, buildOrderActionKeyboard: mocks.buildOrderActionKeyboard, buildOrderCustomerCandidatesKeyboard: mocks.buildOrderCustomerCandidatesKeyboard, buildOrderDateKeyboard: mocks.buildOrderDateKeyboard, buildOrderDestinationKeyboard: mocks.buildOrderDestinationKeyboard, buildOrderMoreKeyboard: mocks.buildOrderMoreKeyboard, buildOrderRetryKeyboard: mocks.buildOrderRetryKeyboard, sendTelegramTextToChat: mocks.sendTelegramTextToChat, answerTelegramCallbackQuery: mocks.answerTelegramCallbackQuery, editTelegramMessageText: mocks.editTelegramMessageText, getTelegramChatMember: mocks.getTelegramChatMember, isTelegramOrderAdminStatus: mocks.isTelegramOrderAdminStatus, configuredTelegramOrderAdminIds: mocks.configuredTelegramOrderAdminIds }));
 vi.mock("@/lib/order-utils", () => ({ formatOrderDraftMessage: mocks.formatOrderDraftMessage, buildFallbackOrderExtraction: mocks.buildFallbackOrderExtraction, isFallbackExtractionUsable: mocks.isFallbackExtractionUsable }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 
@@ -83,6 +85,8 @@ describe("Telegram order webhook safety gates", () => {
     mocks.buildOrderDraftKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
     mocks.buildOrderActionKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
     mocks.buildOrderCustomerCandidatesKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
+    mocks.buildOrderDateKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "date" }]] });
+    mocks.buildOrderDestinationKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "destination" }]] });
     mocks.buildOrderMoreKeyboard.mockReset().mockReturnValue({ inline_keyboard: [] });
     mocks.buildOrderRetryKeyboard.mockReset().mockReturnValue({ inline_keyboard: [[{ text: "retry" }]] });
     mocks.sendTelegramTextToChat.mockReset().mockResolvedValue({ messageId: 99 });
@@ -273,6 +277,43 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.buildOrderMoreKeyboard).toHaveBeenCalledWith(order);
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 96, replyMarkup: { inline_keyboard: [] } }));
+  });
+
+  it("opens the inline date menu without changing the order until a choice is made", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    mocks.getOrderById.mockResolvedValue({ ...order, missingFields: ["ထုတ်ရမည့်ရက်"] });
+    const update = { update_id: 204, callback_query: { id: "callback-date-menu", data: `order|date_menu|I|${order.id}`, message: { message_id: 199, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("date_menu_opened");
+    expect(mocks.buildOrderDateKeyboard).toHaveBeenCalledWith(expect.objectContaining({ id: order.id }));
+    expect(mocks.updateOrderDetails).not.toHaveBeenCalled();
+  });
+
+  it("sets a relative date from the inline menu and refreshes the original message", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    mocks.getOrderById.mockResolvedValue({ ...order, missingFields: ["ထုတ်ရမည့်ရက်"] });
+    const updated = { ...order, requestedDate: "2026-08-27", missingFields: [] };
+    mocks.updateOrderDetails.mockResolvedValue(updated);
+    const update = { update_id: 205, callback_query: { id: "callback-set-date", data: `order|set_date|T|${order.id}`, message: { message_id: 200, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("date_set");
+    expect(mocks.updateOrderDetails).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, requestedDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), actorName: "Telegram Staff" }));
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 200 }));
+  });
+
+  it("sets factory-front pickup from the inline destination menu", async () => {
+    mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
+    mocks.getOrderById.mockResolvedValue({ ...order, missingFields: ["ကားဂိတ်/နေရာ"] });
+    const updated = { ...order, destination: "စက်ရုံလာယူမည်", missingFields: [] };
+    mocks.updateOrderDetails.mockResolvedValue(updated);
+    const update = { update_id: 206, callback_query: { id: "callback-set-destination", data: `order|set_destination|F|${order.id}`, message: { message_id: 201, chat: { id: chatId } }, from: { id: 7 } } };
+    const response = await POST(request(update));
+    expect(response.status).toBe(200);
+    expect((await response.json()).status).toBe("destination_set");
+    expect(mocks.updateOrderDetails).toHaveBeenCalledWith({ orderId: order.id, destination: "စက်ရုံလာယူမည်", actorName: "Telegram Staff" });
+    expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 201 }));
   });
 
   it("shows existing Customer candidate buttons when the Telegram selection callback is pressed", async () => {

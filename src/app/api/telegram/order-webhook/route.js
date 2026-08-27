@@ -5,6 +5,8 @@ import {
   answerTelegramCallbackQuery,
   buildOrderActionKeyboard,
   buildOrderCustomerCandidatesKeyboard,
+  buildOrderDateKeyboard,
+  buildOrderDestinationKeyboard,
   buildOrderMoreKeyboard,
   configuredTelegramOrderAdminIds,
   editTelegramMessageText,
@@ -14,6 +16,7 @@ import {
 } from "@/lib/telegram";
 import { buildFallbackOrderExtraction, formatOrderDraftMessage, isFallbackExtractionUsable } from "@/lib/order-utils";
 import { sendFactoryNotificationForOrder } from "@/lib/order-delivery";
+import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
@@ -130,7 +133,7 @@ async function handleCallback(update) {
     return { ok: true, ignored: "missing_callback_message" };
   }
   const data = String(callback?.data || "");
-  const match = data.match(/^order\|(confirm|cancel|retry|menu|back|customer|customer_create|link|ask_date|ask_destination|ask_phone)\|(I|B)\|([0-9a-f-]{36})(?:\|([0-9]{1,2}|[0-9a-f-]{36}))?$/i);
+  const match = data.match(/^order\|(confirm|cancel|retry|menu|back|customer|customer_create|link|date_menu|destination_menu|set_date|set_destination|ask_date|ask_destination|ask_phone)\|(I|B|T|N|D2|C|F|G)\|([0-9a-f-]{36})(?:\|([0-9]{1,2}|[0-9a-f-]{36}))?$/i);
   if (!match) {
     await acknowledge({ callbackQueryId: callback?.id, text: "Order ခလုတ်အချက်အလက် မမှန်ပါ။", showAlert: true });
     return { ok: true, ignored: "unknown_callback" };
@@ -193,6 +196,53 @@ async function handleCallback(update) {
       // The callback was already acknowledged immediately above.
       await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(linked)}\n\n👤 Customer ချိတ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(linked, process.env.NEXT_PUBLIC_APP_URL) });
       return { ok: true, status: "customer_linked", orderId, customerId: candidate.id };
+    }
+    if (["date_menu", "destination_menu"].includes(action.toLowerCase())) {
+      const order = await getOrderById(orderId);
+      if (!order) throw new Error("Order မတွေ့ပါ။");
+      const isDateMenu = action.toLowerCase() === "date_menu";
+      await editTelegramOrderMessage({
+        chatId,
+        messageId: callbackMessageId,
+        text: `${formatOrderDraftMessage(order)}\n\n${isDateMenu ? "📅 ရက်စွဲကို ရွေးပါ။" : "📍 ပို့မည့်နေရာကို ရွေးပါ။"}`,
+        replyMarkup: isDateMenu ? buildOrderDateKeyboard(order) : buildOrderDestinationKeyboard(order),
+      });
+      return { ok: true, status: isDateMenu ? "date_menu_opened" : "destination_menu_opened", orderId };
+    }
+    if (action.toLowerCase() === "set_date") {
+      if (modeCode.toUpperCase() === "C") {
+        await sendTelegramTextToChat({
+          chatId,
+          replyToMessageId: callbackMessageId,
+          text: `📅 ထုတ်ရမည့်ရက်ကို ရေးပါ။ ဥပမာ — 27.08.2026\nOrder ID: ${orderId}`,
+          replyMarkup: { force_reply: true, selective: true, input_field_placeholder: "27.08.2026" },
+        });
+        return { ok: true, status: "custom_date_prompted", orderId };
+      }
+      const offset = modeCode.toUpperCase() === "T" ? 0 : modeCode.toUpperCase() === "N" ? 1 : 2;
+      const today = getMyanmarDateInputValue();
+      const todayRange = getMyanmarDayRange(today);
+      const requestedDate = getMyanmarDateInputValue(new Date(todayRange.start.getTime() + offset * 24 * 60 * 60 * 1000));
+      const updated = await updateOrderDetails({ orderId, requestedDate, actorName: "Telegram Staff" });
+      await rememberCallbackMessage();
+      await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(updated)}\n\n✅ ရက်စွဲ သတ်မှတ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(updated, process.env.NEXT_PUBLIC_APP_URL) });
+      return { ok: true, status: "date_set", orderId, requestedDate };
+    }
+    if (action.toLowerCase() === "set_destination") {
+      if (modeCode.toUpperCase() === "C") {
+        await sendTelegramTextToChat({
+          chatId,
+          replyToMessageId: callbackMessageId,
+          text: `📍 ကားဂိတ်/နေရာကို ရေးပါ။ ဥပမာ — တောင်ပေါ်ဂိတ်\nOrder ID: ${orderId}`,
+          replyMarkup: { force_reply: true, selective: true, input_field_placeholder: "နေရာအမည်" },
+        });
+        return { ok: true, status: "custom_destination_prompted", orderId };
+      }
+      const destination = modeCode.toUpperCase() === "F" ? "စက်ရုံလာယူမည်" : "ဂိတ်ပို့ရန်";
+      const updated = await updateOrderDetails({ orderId, destination, actorName: "Telegram Staff" });
+      await rememberCallbackMessage();
+      await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(updated)}\n\n✅ နေရာ သတ်မှတ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(updated, process.env.NEXT_PUBLIC_APP_URL) });
+      return { ok: true, status: "destination_set", orderId, destination };
     }
     if (["ask_date", "ask_destination", "ask_phone"].includes(action.toLowerCase())) {
       const prompts = {

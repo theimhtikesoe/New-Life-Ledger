@@ -362,6 +362,13 @@ export function calculateCapWarnings(order) {
   });
 }
 
+export function formatOrderCapacity(line) {
+  const label = String(line?.capacityLabel || "").trim();
+  if (label && !/^\?+\s*ml$/iu.test(label) && !/^မသတ်မှတ်ရသေး$/u.test(label)) return label;
+  const capacityMl = Number(line?.capacityMl);
+  return Number.isFinite(capacityMl) && capacityMl > 0 ? `${capacityMl.toLocaleString()} ml` : "";
+}
+
 function formatDateLabel(value) {
   if (!value) return "မသတ်မှတ်ရသေး";
   const [year, month, day] = value.split("-");
@@ -375,12 +382,12 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
     : order.status === "BATCH_QUEUED"
       ? "📦 Order ကို 08:10 Batch ထဲ ထည့်ပြီး"
       : order.status === "FACTORY_NOTIFIED"
-        ? "✅ Order ကို စက်ရုံသို့ ပို့ပြီး"
+        ? "✅ စက်ရုံရှေ့ လာချ/ကားတင်ရန် Order ပြင်ဆင်ပြီး"
         : order.status === "CANCELLED"
           ? "❌ Order Cancel ပြီး"
           : "🟡 New Life Order";
   const lines = (order.lines || []).map((line, index) => {
-    const parts = [line.bottleType || "ဘူး", line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "")].filter(Boolean);
+    const parts = [line.bottleType || "ဘူး", formatOrderCapacity(line)].filter(Boolean);
     const quantity = [line.cardCount ? `${line.cardCount.toLocaleString()} ကဒ်` : "", line.bottlesPerCard ? `${line.bottlesPerCard.toLocaleString()} ဘူး` : ""].filter(Boolean).join(" × ");
     const total = line.totalBottles ? ` = ${line.totalBottles.toLocaleString()} ဘူး` : "";
     const quotedAmount = line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : "";
@@ -416,7 +423,7 @@ export function formatFactoryOrderMessage(order, { batch = false, source = "WEBS
   const totals = calculateOrderTotals(order);
   const capLines = (order.caps || []).map((cap) => `- ${cap.capType || "အဖုံး"}: ${(cap.normalPcs || 0).toLocaleString()} pcs${Number(cap.extraPcs || 0) > 0 ? ` + အပို ${Number(cap.extraPcs).toLocaleString()} pcs` : ""} = ${(cap.requestedTotalPcs || 0).toLocaleString()} pcs`);
   const lineLines = (order.lines || []).map((line, index) => {
-    const capacity = line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "");
+    const capacity = formatOrderCapacity(line);
     return `${index + 1}. ${[line.bottleType || "ဘူး", capacity, `${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး`].filter(Boolean).join(" / ")}${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`;
   });
   const factoryNumber = Number.isInteger(order.factoryOrderNumber) && order.factoryOrderNumber > 0 ? ` ${order.factoryOrderNumber}` : "";
@@ -424,7 +431,7 @@ export function formatFactoryOrderMessage(order, { batch = false, source = "WEBS
     ? "Telegram မှ Confirm ပြီးသော order ဖြစ်ပါသည်။"
     : "Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။";
   return [
-    batch ? "🟢 စက်ရုံ မနက်ပိုင်း Order စုစည်းချက်" : `🟢 စက်ရုံအတွက် Order${factoryNumber}`,
+    batch ? "🕗 စက်ရုံရှေ့ လာချ/ကားတင်ရန် Order စုစည်းချက်" : `🟢 စက်ရုံရှေ့ လာချ/ကားတင်ရန် Order${factoryNumber}`,
     `Order ID: ${String(order.id).slice(0, 8)}`,
     `Customer: ${order.customer?.name || order.draftCustomerName || "မသတ်မှတ်ရသေး"}`,
     `ရက်: ${formatDateLabel(order.requestedDate)}`,
@@ -474,7 +481,7 @@ export function formatFactoryBatchMessage(orders) {
     if (order.paymentType || order.paymentNote) lines.push(`   ငွေရှင်း: ${order.paymentType || order.paymentNote}`);
     if (order.receiptNote) lines.push(`   ပြေစာ/ပစ္စည်းစာ: ${order.receiptNote}`);
     (order.lines || []).forEach((line) => {
-      const capacity = line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "");
+      const capacity = formatOrderCapacity(line);
       lines.push(`   • ${[line.bottleType || "ဘူး", capacity, `${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး`].filter(Boolean).join(" / ")}${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`);
     });
     lines.push(`   စုစုပေါင်း: ${totals.totalCards} ကဒ် / ${totals.totalBottles} ဘူး`);
@@ -483,6 +490,6 @@ export function formatFactoryBatchMessage(orders) {
     });
     lines.push("");
   });
-  lines.push("Website မှ Confirm/Batch queue ပြီးသော order များသာ ဖြစ်ပါသည်။");
+  lines.push("Website မှ Confirm/Batch queue ပြီး၊ စက်ရုံရှေ့ လာချ/ကားတင်ရန် ပြင်ဆင်ရမည့် order များသာ ဖြစ်ပါသည်။");
   return lines.join("\n");
 }
