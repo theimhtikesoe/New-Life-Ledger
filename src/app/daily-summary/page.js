@@ -6,6 +6,7 @@ import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { buildDailySummaryReviewChecks, transactionsToDailySummaryEvents } from "@/lib/daily-summary-review";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
+import { cleanAiText, mergeOverviewText, normalizeAiItems } from "@/lib/ai-explanation-merge";
 import {
   recordDailyAiSuccess,
   getAiActivityReviewHref,
@@ -74,18 +75,6 @@ function formatDateControlLabel(value) {
   return `${day} ${monthNames[Number(month) - 1]} ${year}`;
 }
 
-function cleanAiText(value) {
-  return String(value || "")
-    .replace(/^#{1,6}\s*/gm, "")
-    .replace(/\*\*/g, "")
-    .replace(/`/g, "")
-    .trim();
-}
-
-function normalizeAiItems(items = []) {
-  return Array.from(new Set((Array.isArray(items) ? items : []).map((item) => cleanAiText(item)).filter(Boolean)));
-}
-
 function getReviewTarget(text) {
   const value = cleanAiText(text);
   const amountMatch = value.match(/([0-9][0-9,]*)\s*Ks/iu);
@@ -145,9 +134,8 @@ function mergeExplanations(codeExplanation, aiExplanation) {
   if (!codeExplanation) return aiExplanation || null;
   if (!aiExplanation) return codeExplanation;
   const unique = (items = []) => normalizeAiItems(items);
-  const aiOverview = cleanAiText(aiExplanation.overview);
   return {
-    overview: [cleanAiText(codeExplanation.overview), aiOverview && `AI ထပ်ဖြည့်ရှင်းချက် — ${aiOverview}`].filter(Boolean).join("\n\n"),
+    overview: mergeOverviewText(codeExplanation.overview, aiExplanation.overview),
     findings: unique([...(codeExplanation.findings || []), ...(aiExplanation.findings || [])]),
     checks: unique([...(codeExplanation.checks || []), ...(aiExplanation.checks || [])]),
     caution: aiExplanation.caution || codeExplanation.caution,
