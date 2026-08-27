@@ -1002,7 +1002,7 @@ export default function Dashboard({ view = "overview" }) {
     if (pinValue.length !== 6) return;
     setPinError("");
     try {
-      const response = await fetch("/api/auth/confirm", {
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin: pinValue }),

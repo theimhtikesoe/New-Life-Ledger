@@ -1,5 +1,5 @@
 const SESSION_COOKIE = "nll_session";
-const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 const encoder = new TextEncoder();
 
 function base64UrlEncode(bytes) {
