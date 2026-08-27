@@ -40,6 +40,28 @@ function isValidDateInput(value) {
   return !Number.isNaN(date.getTime());
 }
 
+const DAILY_SUMMARY_SNAPSHOT_KEY = "new-life-ledger:daily-summary-snapshot:v1";
+
+function readDailySummarySnapshot(reportDate) {
+  if (typeof window === "undefined" || !reportDate) return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${DAILY_SUMMARY_SNAPSHOT_KEY}:${reportDate}`);
+    const snapshot = raw ? JSON.parse(raw) : null;
+    return snapshot?.data || null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDailySummarySnapshot(reportDate, report) {
+  if (typeof window === "undefined" || !reportDate || !report) return;
+  try {
+    window.sessionStorage.setItem(`${DAILY_SUMMARY_SNAPSHOT_KEY}:${reportDate}`, JSON.stringify({ savedAt: Date.now(), data: report }));
+  } catch (error) {
+    console.warn("Daily Summary snapshot could not be saved:", error);
+  }
+}
+
 function safeMyanmarDateLabel(value) {
   return isValidDateInput(value) ? formatMyanmarDateLabel(`${value}T00:00:00+06:30`) : "ရက်စွဲ မရွေးရသေးပါ";
 }
@@ -125,21 +147,41 @@ function mergeExplanations(codeExplanation, aiExplanation) {
 const AI_CLIENT_TIMEOUT_MS = 50_000;
 const AI_CACHE_CHECK_TIMEOUT_MS = 10_000;
 
-async function fetchJson(path, { timeoutMs = 15_000 } = {}) {
+function isRetryableSummaryError(error) {
+  return error?.name === "TypeError" || error?.name === "TimeoutError" || /Failed to fetch|NetworkError|Load failed|Request timed out/i.test(String(error?.message || ""));
+}
+
+function waitForSummaryRetry(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function fetchJson(path, { timeoutMs = 15_000, maxAttempts = 3 } = {}) {
   const actorName = localStorage.getItem("actorName") || "";
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(path, { headers: { "x-actor-name": encodeActorHeader(actorName) }, signal: controller.signal, cache: "no-store" });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || "Request မအောင်မြင်ပါ။ ပြန်စမ်းကြည့်ပါ။");
-    return body.data;
-  } catch (error) {
-    if (error?.name === "AbortError") throw new Error("စာရင်းရယူရန် အချိန်ကြာသွားပါပြီ။ ပြန်စမ်းကြည့်ပါ။");
-    throw error;
-  } finally {
-    window.clearTimeout(timeout);
+  let lastError;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(path, { headers: { "x-actor-name": encodeActorHeader(actorName) }, signal: controller.signal, cache: "no-store" });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(body.error || "Request မအောင်မြင်ပါ။");
+        error.status = response.status;
+        throw error;
+      }
+      return body.data;
+    } catch (error) {
+      lastError = error?.name === "AbortError"
+        ? Object.assign(new Error("စာရင်းရယူရန် အချိန်ကြာသွားပါပြီ။"), { name: "TimeoutError" })
+        : error;
+      const isServerFailure = Number(lastError?.status) >= 500;
+      if (attempt >= maxAttempts || (!isRetryableSummaryError(lastError) && !isServerFailure)) throw lastError;
+      await waitForSummaryRetry(400 * attempt);
+    } finally {
+      window.clearTimeout(timeout);
+    }
   }
+  throw lastError || new Error("စာရင်းရယူ၍ မရပါ။");
 }
 
 async function fetchAiJson(path, { timeoutMs = AI_CLIENT_TIMEOUT_MS, signal: externalSignal } = {}) {
@@ -286,15 +328,23 @@ export default function DailySummaryPage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    const cachedReport = readDailySummarySnapshot(date);
+    if (cachedReport) setData(cachedReport);
+    setLoading(!cachedReport);
     setError("");
     fetchJson(`/api/daily-summary?date=${date}`)
       .then((result) => {
         if (!active) return;
         setError("");
         setData(result);
+        saveDailySummarySnapshot(date, result);
       })
-      .catch((err) => active && setError(err.message))
+      .catch((err) => {
+        if (!active) return;
+        // Keep a cached report visible during a transient or expired-session
+        // failure instead of replacing it with a false empty/error screen.
+        if (!cachedReport) setError(err.message);
+      })
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, [date]);
