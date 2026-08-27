@@ -104,13 +104,20 @@ textarea {
    inset is included so portrait and landscape standalone PWAs do not crowd the
    top-right notification/menu controls. */
 .pwa-quick-actions {
-  top: calc(env(safe-area-inset-top, 0px) + 4.75rem);
-  right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+  /* Sit below the page header rather than inside the top-right action card. */
+  top: max(calc(env(safe-area-inset-top, 0px) + 8rem), 18vh);
+  right: max(
+    calc(env(safe-area-inset-right, 0px) + 0.75rem),
+    calc((100vw - 80rem) / 2 + 0.75rem)
+  );
 }
 
 @media screen and (min-width: 768px) {
   .pwa-quick-actions {
-    top: calc(env(safe-area-inset-top, 0px) + 5.5rem);
-    right: calc(env(safe-area-inset-right, 0px) + 1rem);
+    top: max(calc(env(safe-area-inset-top, 0px) + 9rem), 20vh);
+    right: max(
+      calc(env(safe-area-inset-right, 0px) + 1rem),
+      calc((100vw - 80rem) / 2 + 1rem)
+    );
   }
 }

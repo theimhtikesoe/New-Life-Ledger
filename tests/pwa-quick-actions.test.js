@@ -7,12 +7,11 @@ const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"
 const cssSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 
 describe("PWA quick actions", () => {
-  it("keeps Refresh and Home in a vertical fixed control stack", () => {
+  it("keeps only the fixed Refresh control", () => {
     expect(layoutSource).toContain("pwa-quick-actions");
-    expect(layoutSource).toContain('href="/"');
-    expect(layoutSource).toContain("Home — Dashboard သို့ ပြန်သွားမည်");
-    expect(layoutSource).toContain("h-9 w-9");
-    expect(layoutSource).toContain("flex flex-col items-end gap-1.5");
+    expect(layoutSource).toContain("aria-label=\"Refresh — စာမျက်နှာ data ပြန်လည်ရယူမည်\"");
+    expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
+    expect(layoutSource).not.toContain('href="/"');
   });
 
   it("uses safe-area-aware spacing and a wider tablet offset", () => {
