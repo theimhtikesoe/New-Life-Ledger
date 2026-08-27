@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import PINLogin from '@/components/PINLogin';
+import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
 
 function RefreshOverlay() {
   const [refreshing, setRefreshing] = useState(false);
@@ -77,6 +78,7 @@ export default function RootLayoutClient({ children }) {
         <>
           {children}
           <RefreshOverlay />
+          <BackgroundMusicPlayer />
         </>
       )}
     </>

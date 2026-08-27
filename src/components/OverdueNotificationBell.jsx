@@ -9,6 +9,10 @@ import { getLatestTransactionDate, getMyanmarDateAgeInDays } from "@/lib/debt-ut
  */
 export default function OverdueNotificationBell({ customers = [], overdueDebts: overdueDebtsProp, onSelectCustomer, compact = false }) {
   const [showModal, setShowModal] = useState(false);
+  const closeModal = () => {
+    setShowModal(false);
+    window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-closed"));
+  };
 
   // Load modal state from localStorage on mount
   useEffect(() => {
@@ -135,7 +139,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={closeModal}
                   className="text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   ✕
@@ -152,7 +156,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
                     onClick={() => {
                       if (onSelectCustomer) {
                         onSelectCustomer(debt.customerId);
-                        setShowModal(false);
+                        closeModal();
                       }
                     }}
                     className={`rounded-lg border border-rose-200 bg-rose-50/50 p-4 transition-colors ${

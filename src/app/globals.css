@@ -120,3 +120,23 @@ textarea {
     );
   }
 }
+
+/* Background music mute control follows the Refresh control as a matching
+   vertical button. The desktop action rail remains separated horizontally. */
+.pwa-music-control {
+  top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+  right: max(
+    calc(env(safe-area-inset-right, 0px) + 0.65rem),
+    calc((100vw - 80rem) / 2 - 3rem)
+  );
+}
+
+@media screen and (min-width: 768px) {
+  .pwa-music-control {
+    top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+    right: max(
+      calc(env(safe-area-inset-right, 0px) + 1rem),
+      calc((100vw - 80rem) / 2 + 4.5rem)
+    );
+  }
+}

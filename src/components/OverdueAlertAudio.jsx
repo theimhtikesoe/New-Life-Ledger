@@ -92,6 +92,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
       audio.volume = 1;
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.then === "function") await playPromise;
+      window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-started"));
       playedRef.current = true;
       rememberAudioPermission();
       setPlayState("playing");
@@ -101,6 +102,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     } catch (error) {
       console.warn("Overdue alert audio could not start:", error);
       setPlayState("blocked");
+      window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-blocked"));
       setShowRetryPanel(true);
       setShowSettingsGuide(false);
       return false;
@@ -126,6 +128,13 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
       setPlayState("blocked");
     }
   }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-status-ready", {
+      detail: { ready: true, hasOverdue },
+    }));
+  }, [ready, hasOverdue]);
 
   useEffect(() => {
     const handleOverdueOpened = () => {
@@ -180,6 +189,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     if (!playedRef.current) return;
     setPlayState("played");
     rememberDay(AUDIO_LAST_PLAYED_DAY_KEY);
+    window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-ended"));
     rememberAudioPermission();
   };
 
@@ -189,6 +199,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     const alreadyBlockedToday = readLocalValue(AUDIO_LAST_BLOCKED_DAY_KEY) === today;
     rememberDay(AUDIO_LAST_BLOCKED_DAY_KEY, today);
     setPlayState("blocked");
+    window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-blocked"));
     // Show the guide on the first blocked attempt only; a refresh must not
     // repeatedly ask the owner to allow the same audio again.
     if (!alreadyBlockedToday) {
