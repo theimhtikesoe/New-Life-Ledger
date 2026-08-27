@@ -34,6 +34,14 @@ describe("Telegram order action keyboards", () => {
     expect(JSON.stringify(keyboard)).not.toContain("/orders?");
   });
 
+  it("allows confirmation with missing fields once an Order Customer exists", () => {
+    const incomplete = { ...order, missingFields: ["ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"] };
+    const keyboard = buildOrderActionKeyboard(incomplete, "https://example.test/", { allowRetry: true });
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "✅ Confirm", callback_data: `order|confirm|I|${order.id}` }]);
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${order.id}` }]);
+    expect(keyboard.inline_keyboard).toContainEqual([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${order.id}` }]);
+  });
+
   it("uses a short candidate index callback that stays within Telegram callback limits", () => {
     const candidates = [{ id: "22222222-2222-4222-8222-222222222222", name: "မမိုး" }];
     const keyboard = buildOrderCustomerCandidatesKeyboard({ id: order.id }, candidates);

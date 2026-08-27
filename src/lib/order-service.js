@@ -815,7 +815,8 @@ export async function updateOrderStatus({ orderId, status, mode = null, actorNam
   if (status === "CONFIRMED" || status === "BATCH_QUEUED") {
     const hasOrderCustomer = Boolean((current.customerId && !current.customer?.deletedAt) || String(current.draftCustomerName || "").trim());
     if (!hasOrderCustomer) throw new Error("Order Customer မသတ်မှတ်ရသေးပါ။");
-    if (removeCustomerMissingFields(current.missingFields).length) throw new Error("Order အချက်အလက် မပြည့်စုံသေးပါ။");
+    // Incomplete date/location/line data is allowed at confirmation time.
+    // The missing fields remain on the Order and are shown in Telegram/Website.
   }
   const nextMode = mode === "MORNING_BATCH" ? "MORNING_BATCH" : "IMMEDIATE";
   if (status === "CONFIRMED" || status === "BATCH_QUEUED") {

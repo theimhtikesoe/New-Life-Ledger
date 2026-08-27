@@ -152,10 +152,16 @@ export function buildOrderActionKeyboard(order, appUrl = "", { allowRetry = fals
   const missingFields = Array.isArray(order?.missingFields) ? order.missingFields : [];
   const blockingMissingFields = missingFields.filter((field) => !/^(?:Customer|ဖောက်သည်)/iu.test(String(field).trim()));
   const hasCustomer = Boolean(order?.customer?.id || order?.customerId || String(order?.draftCustomerName || "").trim());
-  const canConfirm = !blocked && hasCustomer && blockingMissingFields.length === 0;
+  const canConfirm = !blocked && hasCustomer;
   const rows = [];
   if (canConfirm) {
     rows.push([{ text: "✅ Confirm", callback_data: `order|confirm|I|${id}` }]);
+    const hasDateMissing = missingFields.some((field) => /ရက်|date/i.test(String(field)));
+    const hasDestinationMissing = missingFields.some((field) => /နေရာ|ကားဂိတ်|destination/i.test(String(field)));
+    const hasPhoneMissing = missingFields.some((field) => /ဖုန်း|phone/i.test(String(field)));
+    if (hasDateMissing) rows.push([{ text: "📅 ရက်စွဲ ဖြည့်ရန်", callback_data: `order|ask_date|I|${id}` }]);
+    if (hasDestinationMissing) rows.push([{ text: "📍 နေရာ ဖြည့်ရန်", callback_data: `order|ask_destination|I|${id}` }]);
+    if (hasPhoneMissing) rows.push([{ text: "☎️ ဖုန်း ဖြည့်ရန်", callback_data: `order|ask_phone|I|${id}` }]);
     rows.push([{ text: "📋 အသေးစိတ်ကြည့်ရန်", callback_data: `order|menu|I|${id}` }]);
     rows.push([{ text: "❌ Cancel", callback_data: `order|cancel|I|${id}` }]);
   } else if (!blocked) {

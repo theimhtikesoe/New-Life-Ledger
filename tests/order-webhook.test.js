@@ -382,9 +382,9 @@ describe("Telegram order webhook safety gates", () => {
     expect(mocks.sendFactoryNotificationForOrder).not.toHaveBeenCalled();
   });
 
-  it("acknowledges immediate confirmation before the factory work and retries the final source edit as plain text", async () => {
+  it("acknowledges immediate confirmation before factory work even when fields are missing", async () => {
     mocks.getTelegramChatMember.mockResolvedValue({ status: "administrator" });
-    const confirmed = { ...order, status: "CONFIRMED", sourceText: "Customer_စမ်း" };
+    const confirmed = { ...order, status: "CONFIRMED", missingFields: ["ထုတ်ရမည့်ရက်", "ကားဂိတ်/နေရာ"], sourceText: "Customer_စမ်း" };
     const notified = { ...confirmed, status: "FACTORY_NOTIFIED" };
     mocks.updateOrderStatus.mockResolvedValue(confirmed);
     mocks.sendFactoryNotificationForOrder.mockResolvedValue({ sent: true, duplicate: false, order: notified });
