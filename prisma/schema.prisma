@@ -264,3 +264,30 @@ model UnverifiedKpay {
   @@index([status])
   @@index([kpayName])
 }
+
+model DailySalesSummary {
+  id             String   @id @default(uuid()) @db.Uuid
+  date           String   @unique
+  retailTotal    Int      @default(0)
+  wholesaleTotal Int      @default(0)
+  retailCash     Int      @default(0)
+  wholesaleCash  Int      @default(0)
+  source         String   @default("DAILY_INPUT")
+  note           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([date])
+}
+
+model DailySalesOpening {
+  id        String   @id @default(uuid()) @db.Uuid
+  month     String   @unique
+  amount    Int      @default(0)
+  asOfDate  String
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([month])
+}

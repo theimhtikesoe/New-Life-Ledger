@@ -12,6 +12,8 @@ const REQUIRED_TABLES = [
   "AuditLog",
   "AutoReportRun",
   "CashSale",
+  "DailySalesSummary",
+  "DailySalesOpening",
   "Order",
   "OrderLine",
   "OrderCap",
@@ -170,6 +172,33 @@ export async function ensureDatabase() {
         `);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_customerId_idx" ON "CashSale"("customerId")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_date_idx" ON "CashSale"("date")`);
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "DailySalesSummary" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "date" TEXT NOT NULL UNIQUE,
+            "retailTotal" INTEGER NOT NULL DEFAULT 0,
+            "wholesaleTotal" INTEGER NOT NULL DEFAULT 0,
+            "retailCash" INTEGER NOT NULL DEFAULT 0,
+            "wholesaleCash" INTEGER NOT NULL DEFAULT 0,
+            "source" TEXT NOT NULL DEFAULT 'DAILY_INPUT',
+            "note" TEXT,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummary_date_idx" ON "DailySalesSummary"("date")`);
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "DailySalesOpening" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "month" TEXT NOT NULL UNIQUE,
+            "amount" INTEGER NOT NULL DEFAULT 0,
+            "asOfDate" TEXT NOT NULL,
+            "note" TEXT,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesOpening_month_idx" ON "DailySalesOpening"("month")`);
         const orderTableCheck = await prisma.$queryRaw`
           SELECT count(*)
           FROM information_schema.tables
@@ -279,6 +308,33 @@ export async function ensureDatabase() {
       `);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_customerId_idx" ON "CashSale"("customerId")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_date_idx" ON "CashSale"("date")`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "DailySalesSummary" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "date" TEXT NOT NULL UNIQUE,
+          "retailTotal" INTEGER NOT NULL DEFAULT 0,
+          "wholesaleTotal" INTEGER NOT NULL DEFAULT 0,
+          "retailCash" INTEGER NOT NULL DEFAULT 0,
+          "wholesaleCash" INTEGER NOT NULL DEFAULT 0,
+          "source" TEXT NOT NULL DEFAULT 'DAILY_INPUT',
+          "note" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummary_date_idx" ON "DailySalesSummary"("date")`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "DailySalesOpening" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "month" TEXT NOT NULL UNIQUE,
+          "amount" INTEGER NOT NULL DEFAULT 0,
+          "asOfDate" TEXT NOT NULL,
+          "note" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesOpening_month_idx" ON "DailySalesOpening"("month")`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "UnverifiedKpay" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
