@@ -14,6 +14,10 @@ describe("Background music player", () => {
     expect(source).toContain("const MUSIC_VOLUME = 0.12;");
     expect(source).toContain("volume={MUSIC_VOLUME}");
     expect(source).toContain("const nextIndex = (trackIndexRef.current + 1) % TRACKS.length;");
+    expect(source).toContain("MUSIC_CHECKPOINT_KEY");
+    expect(source).toContain("pagehide");
+    expect(source).toContain("onTimeUpdate={saveCurrentCheckpoint}");
+    expect(source).toContain("audio.currentTime = resumePositionRef.current");
     expect((source.match(/files\.manuscdn\.com\/user_upload_by_module/g) || []).length).toBe(4);
   });
 

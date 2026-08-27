@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const MUSIC_MUTED_KEY = "new-life-ledger:background-music-muted-v1";
+const MUSIC_CHECKPOINT_KEY = "new-life-ledger:background-music-checkpoint-v1";
 const MUSIC_VOLUME = 0.12;
 const OVERDUE_LAST_PLAYED_DAY_KEY = "new-life-ledger:overdue-alert-audio-played-day-v2";
 const OVERDUE_LAST_AUTO_ATTEMPT_DAY_KEY = "new-life-ledger:overdue-alert-audio-auto-attempt-day-v2";
@@ -32,6 +33,34 @@ function readMutedPreference() {
     return window.localStorage.getItem(MUSIC_MUTED_KEY) === "true";
   } catch {
     return false;
+  }
+}
+
+function readMusicCheckpoint() {
+  const raw = readLocalValue(MUSIC_CHECKPOINT_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    const trackIndex = Number(parsed?.trackIndex);
+    const currentTime = Number(parsed?.currentTime);
+    if (!Number.isInteger(trackIndex) || trackIndex < 0 || trackIndex >= TRACKS.length) return null;
+    if (!Number.isFinite(currentTime) || currentTime < 0) return null;
+    return { trackIndex, currentTime };
+  } catch {
+    return null;
+  }
+}
+
+function writeMusicCheckpoint(trackIndex, currentTime) {
+  if (!Number.isInteger(trackIndex) || !Number.isFinite(currentTime) || currentTime < 0) return;
+  try {
+    window.localStorage.setItem(MUSIC_CHECKPOINT_KEY, JSON.stringify({
+      trackIndex,
+      currentTime: Number(currentTime.toFixed(2)),
+      updatedAt: Date.now(),
+    }));
+  } catch {
+    // Private browsing can disable localStorage; playback still works in memory.
   }
 }
 
@@ -66,6 +95,7 @@ export default function BackgroundMusicPlayer() {
   const shouldPlayRef = useRef(false);
   const mutedRef = useRef(false);
   const trackIndexRef = useRef(0);
+  const resumePositionRef = useRef(null);
   const [trackIndex, setTrackIndex] = useState(0);
   const [muted, setMuted] = useState(false);
   const [playState, setPlayState] = useState("waiting");
@@ -76,15 +106,19 @@ export default function BackgroundMusicPlayer() {
     setMuted(initialMuted);
   }, []);
 
+  const saveCurrentCheckpoint = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(audio.currentTime) || audio.currentTime <= 0) return;
+    writeMusicCheckpoint(trackIndexRef.current, audio.currentTime);
+  }, []);
+
   const pauseMusic = useCallback((state = "paused") => {
+    saveCurrentCheckpoint();
     shouldPlayRef.current = false;
     const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
+    if (audio) audio.pause();
     setPlayState(state);
-  }, []);
+  }, [saveCurrentCheckpoint]);
 
   const playCurrentTrack = useCallback(async () => {
     const audio = audioRef.current;
@@ -92,6 +126,14 @@ export default function BackgroundMusicPlayer() {
 
     audio.volume = MUSIC_VOLUME;
     audio.muted = mutedRef.current;
+    if (resumePositionRef.current !== null) {
+      try {
+        audio.currentTime = resumePositionRef.current;
+      } catch {
+        // The browser may wait until media metadata is available before seeking.
+      }
+      resumePositionRef.current = null;
+    }
     try {
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.then === "function") await playPromise;
@@ -120,8 +162,17 @@ export default function BackgroundMusicPlayer() {
   const handleTrackEnded = useCallback(() => {
     const nextIndex = (trackIndexRef.current + 1) % TRACKS.length;
     trackIndexRef.current = nextIndex;
+    writeMusicCheckpoint(nextIndex, 0);
     setTrackIndex(nextIndex);
   }, []);
+
+  useEffect(() => {
+    const checkpoint = readMusicCheckpoint();
+    if (!checkpoint) return;
+    trackIndexRef.current = checkpoint.trackIndex;
+    resumePositionRef.current = checkpoint.currentTime;
+    if (checkpoint.trackIndex !== trackIndex) setTrackIndex(checkpoint.trackIndex);
+  }, [trackIndex]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -129,6 +180,15 @@ export default function BackgroundMusicPlayer() {
     audio.volume = MUSIC_VOLUME;
     audio.muted = mutedRef.current;
   }, [muted, trackIndex]);
+
+  useEffect(() => {
+    window.addEventListener("pagehide", saveCurrentCheckpoint);
+    window.addEventListener("beforeunload", saveCurrentCheckpoint);
+    return () => {
+      window.removeEventListener("pagehide", saveCurrentCheckpoint);
+      window.removeEventListener("beforeunload", saveCurrentCheckpoint);
+    };
+  }, [saveCurrentCheckpoint]);
 
   useEffect(() => {
     if (!shouldPlayRef.current) return;
@@ -220,6 +280,7 @@ export default function BackgroundMusicPlayer() {
         volume={MUSIC_VOLUME}
         src={TRACKS[trackIndex].src}
         onEnded={handleTrackEnded}
+        onTimeUpdate={saveCurrentCheckpoint}
         onError={() => setPlayState("blocked")}
         aria-hidden="true"
       />
