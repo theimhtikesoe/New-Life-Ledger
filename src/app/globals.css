@@ -100,24 +100,23 @@ textarea {
 }
 
 
-/* Keep fixed PWA quick actions below the iPad status/header area. The safe-area
-   inset is included so portrait and landscape standalone PWAs do not crowd the
-   top-right notification/menu controls. */
+/* Keep the single Refresh control in a predictable empty rail beside the
+   centered app shell. It stays below the browser/PWA safe area without using
+   viewport-height offsets that can push it into the KPI or chart sections. */
 .pwa-quick-actions {
-  /* Sit below the page header rather than inside the top-right action card. */
-  top: max(calc(env(safe-area-inset-top, 0px) + 8rem), 18vh);
+  top: calc(env(safe-area-inset-top, 0px) + 1rem);
   right: max(
-    calc(env(safe-area-inset-right, 0px) + 0.75rem),
-    calc((100vw - 80rem) / 2 + 0.75rem)
+    calc(env(safe-area-inset-right, 0px) + 0.65rem),
+    calc((100vw - 80rem) / 2 - 3rem)
   );
 }
 
 @media screen and (min-width: 768px) {
   .pwa-quick-actions {
-    top: max(calc(env(safe-area-inset-top, 0px) + 9rem), 20vh);
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
     right: max(
       calc(env(safe-area-inset-right, 0px) + 1rem),
-      calc((100vw - 80rem) / 2 + 1rem)
+      calc((100vw - 80rem) / 2 - 3.5rem)
     );
   }
 }

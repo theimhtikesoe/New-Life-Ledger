@@ -39,12 +39,12 @@ function RefreshOverlay() {
         <div
           className="absolute right-[calc(100%+0.45rem)] top-1/2 flex -translate-y-1/2 items-center gap-0.5 whitespace-nowrap"
           aria-hidden="true"
-        >
-          <span className="animate-pulse -rotate-6 text-[13px] font-extrabold italic leading-none text-rose-600 drop-shadow-[0_1px_2px_rgba(190,24,93,0.35)]">
-            Refresh
-          </span>
+          >
+            <span className="animate-pulse -rotate-6 text-[11px] font-extrabold italic leading-none text-rose-600 drop-shadow-[0_1px_2px_rgba(190,24,93,0.35)]">
+              Refresh
+            </span>
           <svg
-            className="h-8 w-12 animate-pulse overflow-visible text-rose-600"
+            className="h-6 w-10 animate-pulse overflow-visible text-rose-600"
             viewBox="0 0 54 30"
             fill="none"
           >
@@ -59,7 +59,7 @@ function RefreshOverlay() {
           disabled={refreshing}
           aria-label="Refresh — စာမျက်နှာ data ပြန်လည်ရယူမည်"
           title={isOnline ? 'Refresh / Data ပြန်လည်ရယူမည်' : 'အင်တာနက် ပြန်ရသောအခါ Refresh လုပ်မည်'}
-          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-xl font-bold text-white shadow-xl shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-wait disabled:opacity-70"
+          className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-lg font-bold text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-wait disabled:opacity-70"
         >
           <span className={refreshing ? 'animate-spin' : ''} aria-hidden="true">↻</span>
         </button>
