@@ -29,6 +29,13 @@ describe("Overdue alert audio feature", () => {
     expect(source).toContain("AUDIO_PERMISSION_TTL_MS = 30 * 24 * 60 * 60 * 1000");
     expect(source).toContain("AUDIO_LAST_PLAYED_DAY_KEY");
     expect(source).toContain("AUDIO_LAST_AUTO_ATTEMPT_DAY_KEY");
+    expect(source).toContain("AUDIO_STATUS_KEY");
+    expect(source).toContain("hasValidAudioPermission");
+    expect(source).toContain("permission.expiresAt");
+    expect(source).toContain("!hasValidAudioPermission()");
+    expect(source).toContain('hasOverdue ? "pending" : "not-needed"');
+    expect(source).toContain('writeLocalValue(AUDIO_STATUS_KEY, "blocked")');
+    expect(source).toContain('writeLocalValue(AUDIO_STATUS_KEY, "ended")');
     expect(source).toContain("getMyanmarDayKey");
     expect(source).toContain("readLocalValue(AUDIO_LAST_PLAYED_DAY_KEY) === today");
     expect(source).toContain("readLocalValue(AUDIO_LAST_AUTO_ATTEMPT_DAY_KEY) === today");

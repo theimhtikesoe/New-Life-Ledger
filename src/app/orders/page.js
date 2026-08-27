@@ -1,6 +1,7 @@
 
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
@@ -525,7 +526,7 @@ export default function OrdersPage() {
         <header className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <a href="/" className="text-sm font-semibold text-cyan-700">← Dashboard</a>
+              <Link href="/" className="text-sm font-semibold text-cyan-700">← Dashboard</Link>
               <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Telegram Orders</h1>
               <p className="mt-1 text-sm text-slate-600">Order စာရင်းကို စစ်ဆေးရန်၊ Confirm/Cancel လုပ်ရန်နှင့် ဖျက်မည့်အစား History/အမှိုက်ပုံးထဲ ရွှေ့ရန်</p>
             </div>

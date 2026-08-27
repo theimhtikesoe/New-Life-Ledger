@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
@@ -207,8 +208,8 @@ export default function ActivityPage() {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
         <header className="rounded-xl border border-slate-200 bg-white p-5">
           <div className="flex flex-wrap items-center gap-3">
-            <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
-            {returnToAi ? <a href={`/daily-summary?date=${encodeURIComponent(date)}#ai-explanation`} className="text-sm font-semibold text-violet-700">← AI ရှင်းပြချက်သို့ ပြန်သွားရန်</a> : null}
+            <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
+            {returnToAi ? <Link href={`/daily-summary?date=${encodeURIComponent(date)}#ai-explanation`} className="text-sm font-semibold text-violet-700">← AI ရှင်းပြချက်သို့ ပြန်သွားရန်</Link> : null}
           </div>
           <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div><h1 className="text-2xl font-bold text-slate-900">Activity History</h1><p className="mt-1 text-sm text-slate-600">အရင်စာရင်းများနှင့် လက်ရှိလုပ်ဆောင်ချက်များကို အသေးစိတ်ကြည့်ရန်</p></div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 
@@ -69,8 +70,8 @@ export default function VercelBuildLogsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
-                <a href="/" className="text-cyan-700">← Dashboard</a>
-                <a href="/auto-report-status" className="text-amber-700">Auto Report အခြေအနေ</a>
+                <Link href="/" className="text-cyan-700">← Dashboard</Link>
+                <Link href="/auto-report-status" className="text-amber-700">Auto Report အခြေအနေ</Link>
               </div>
               <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900">Vercel Build Logs</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Production deployment များ၏ build အခြေအနေ၊ warning နှင့် error စာသားများကို read-only ဖြင့် ကြည့်ရန် ဖြစ်ပါသည်။</p>

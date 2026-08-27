@@ -61,6 +61,11 @@ function rememberAudioPermission() {
   }));
 }
 
+function hasValidAudioPermission() {
+  const permission = readLocalJson(AUDIO_PERMISSION_KEY);
+  return Number.isFinite(Number(permission?.expiresAt)) && Number(permission.expiresAt) > Date.now();
+}
+
 function rememberDay(key, day = getMyanmarDayKey()) {
   writeLocalValue(key, day);
 }
@@ -106,7 +111,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
       setPlayState("blocked");
       writeLocalValue(AUDIO_STATUS_KEY, "blocked");
       window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-blocked"));
-      setShowRetryPanel(true);
+      setShowRetryPanel(!hasValidAudioPermission());
       setShowSettingsGuide(false);
       return false;
     }
@@ -210,7 +215,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-blocked"));
     // Show the guide on the first blocked attempt only; a refresh must not
     // repeatedly ask the owner to allow the same audio again.
-    if (!alreadyBlockedToday) {
+    if (!alreadyBlockedToday && !hasValidAudioPermission()) {
       setShowRetryPanel(true);
       setShowSettingsGuide(false);
     }

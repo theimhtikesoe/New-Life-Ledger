@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import { encodeActorHeader } from "@/lib/actor-header";
@@ -219,7 +220,7 @@ export default function DataManagementPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-        <header className="rounded-xl border border-slate-200 bg-white p-5"><a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a><h1 className="mt-2 text-2xl font-bold text-slate-900">Data Management</h1><p className="mt-1 text-sm text-slate-600">Website backup export နှင့် နောင်တွင် ပြန်တင်ရန် restore စီမံခန့်ခွဲရာနေရာ</p></header>
+        <header className="rounded-xl border border-slate-200 bg-white p-5"><Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link><h1 className="mt-2 text-2xl font-bold text-slate-900">Data Management</h1><p className="mt-1 text-sm text-slate-600">Website backup export နှင့် နောင်တွင် ပြန်တင်ရန် restore စီမံခန့်ခွဲရာနေရာ</p></header>
         {message && <p className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">{message}</p>}
         {error && <pre className="whitespace-pre-wrap rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</pre>}
 

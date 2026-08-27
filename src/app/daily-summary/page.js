@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
@@ -229,12 +230,12 @@ function AiListItem({ item, index, tone, date }) {
       <div className="min-w-0 flex-1">
         <p className="text-[13px] leading-5 sm:text-sm sm:leading-6">{cleanAiText(item)}</p>
         {tone === "amber" ? (
-          <a
+          <Link
             href={`${getAiActivityReviewHref(date, getReviewTarget(item))}#activity-results`}
             className="mt-2 inline-flex min-h-9 items-center rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-800 shadow-sm transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-300"
           >
             ပြန်စစ်ရန် ↗
-          </a>
+          </Link>
         ) : null}
       </div>
     </div>
@@ -497,7 +498,7 @@ export default function DailySummaryPage() {
         <header className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div className="min-w-0">
-              <a href="/" className="text-xs font-semibold text-cyan-700 sm:text-sm">← Dashboard</a>
+              <Link href="/" className="text-xs font-semibold text-cyan-700 sm:text-sm">← Dashboard</Link>
               <h1 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Daily Summary</h1>
               <p className="mt-1 text-[13px] leading-5 text-slate-600 sm:text-sm">ရွေးထားသောနေ့၏ ငွေချေမှုနှင့် အကြွေးတိုးမှု အသေးစိတ်</p>
               <p className="mt-2 text-[11px] font-semibold text-cyan-700 sm:text-xs">Report Date: {safeMyanmarDateLabel(date)}</p>
@@ -530,7 +531,7 @@ export default function DailySummaryPage() {
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 sm:p-5"><p className="text-[13px] leading-5 text-rose-700 sm:text-sm">အကြွေးတိုးသူ</p><p className="mt-1 text-[26px] font-bold leading-8 text-rose-800 sm:mt-2 sm:text-3xl">{data.summary.unpaidCount}</p><p className="mt-1 text-[13px] text-rose-700 sm:text-sm">{formatMoney(data.summary.unpaidAmount)}</p></div>
               <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3.5 sm:p-5"><p className="text-[13px] leading-5 text-cyan-700 sm:text-sm">လက်ငင်းပေးသူ</p><p className="mt-1 text-[26px] font-bold leading-8 text-cyan-800 sm:mt-2 sm:text-3xl">{data.summary.cashCount || 0}</p><p className="mt-1 text-[13px] text-cyan-700 sm:text-sm">{formatMoney(data.summary.cashAmount)}</p>{cashSaleTypeEntries.length ? <p className="mt-1 text-[11px] leading-4 text-cyan-800 sm:text-xs">{cashSaleTypeEntries.map(([type, detail]) => `${cashSaleTypeLabel(type)} ${detail.count} ခု`).join(" · ")}</p> : null}</div>
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 sm:p-5"><p className="text-[13px] leading-5 text-blue-700 sm:text-sm">Transaction စုစုပေါင်း</p><p className="mt-1 text-[26px] font-bold leading-8 text-blue-800 sm:mt-2 sm:text-3xl">{data.summary.totalTransactions}</p></div>
-              <a href={`/activity?date=${date}`} className="rounded-xl border border-violet-200 bg-violet-50 p-3.5 shadow-sm transition hover:border-violet-300 hover:bg-violet-100 sm:p-5"><p className="text-[13px] leading-5 text-violet-700 sm:text-sm">ရွေးထားသောနေ့ လုပ်ဆောင်ချက်</p><p className="mt-1 text-[26px] font-bold leading-8 text-violet-800 sm:mt-2 sm:text-3xl">{data.summary.activityCount ?? data.summary.auditCount}</p><p className="mt-1 text-[11px] text-violet-700 sm:text-xs">အသေးစိတ်ကြည့်ရန် →</p></a>
+              <Link href={`/activity?date=${date}`} className="rounded-xl border border-violet-200 bg-violet-50 p-3.5 shadow-sm transition hover:border-violet-300 hover:bg-violet-100 sm:p-5"><p className="text-[13px] leading-5 text-violet-700 sm:text-sm">ရွေးထားသောနေ့ လုပ်ဆောင်ချက်</p><p className="mt-1 text-[26px] font-bold leading-8 text-violet-800 sm:mt-2 sm:text-3xl">{data.summary.activityCount ?? data.summary.auditCount}</p><p className="mt-1 text-[11px] text-violet-700 sm:text-xs">အသေးစိတ်ကြည့်ရန် →</p></Link>
             </section>
 
             <section className="grid grid-cols-1 gap-3 sm:gap-5 lg:grid-cols-3">

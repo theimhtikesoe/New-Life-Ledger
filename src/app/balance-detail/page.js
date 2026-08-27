@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 
@@ -110,7 +111,7 @@ function CustomerRow({ customer }) {
     zero: "bg-slate-100 text-slate-700",
   }[info.key];
   return (
-    <a
+    <Link
       href={`/ledger?customerId=${encodeURIComponent(customer.id)}`}
       className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-cyan-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-400"
     >
@@ -130,7 +131,7 @@ function CustomerRow({ customer }) {
         </div>
         <span className="text-xs font-semibold text-cyan-700">Ledger အသေးစိတ် →</span>
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -232,16 +233,16 @@ export default function BalanceDetailPage() {
     <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
         <header className="rounded-xl border border-slate-200 bg-white p-5">
-          <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
+          <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
           <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Balance Detail</h1>
               <p className="mt-1 text-sm text-slate-600">အသားတင်ရရန်လက်ကျန် ဘယ်ကဖြစ်လာသလဲ အသေးစိတ်ကြည့်ရန်</p>
             </div>
             <nav aria-label="စာမျက်နှာများ" className="flex flex-wrap gap-2 text-xs font-semibold">
-              <a href="/daily-summary" className="rounded-full bg-violet-50 px-3 py-2 text-violet-700 hover:bg-violet-100">Daily Summary</a>
-              <a href="/activity" className="rounded-full bg-amber-50 px-3 py-2 text-amber-700 hover:bg-amber-100">Activity History</a>
-              <a href="/ledger" className="rounded-full bg-cyan-50 px-3 py-2 text-cyan-700 hover:bg-cyan-100">Customer Ledger</a>
+              <Link href="/daily-summary" className="rounded-full bg-violet-50 px-3 py-2 text-violet-700 hover:bg-violet-100">Daily Summary</Link>
+              <Link href="/activity" className="rounded-full bg-amber-50 px-3 py-2 text-amber-700 hover:bg-amber-100">Activity History</Link>
+              <Link href="/ledger" className="rounded-full bg-cyan-50 px-3 py-2 text-cyan-700 hover:bg-cyan-100">Customer Ledger</Link>
             </nav>
           </div>
         </header>
@@ -300,7 +301,7 @@ export default function BalanceDetailPage() {
                   <tbody className="divide-y divide-slate-100">{visibleCustomers.map((customer) => {
                     const info = balanceInfo(customer.current_balance);
                     const badgeClass = info.key === "debt" ? "bg-rose-100 text-rose-800" : info.key === "prepaid" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700";
-                    return <tr key={customer.id} className="hover:bg-slate-50"><td className="px-3 py-3"><a href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-800 hover:underline">{customer.name}</a><p className="mt-1 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p></td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span></td><td className={`px-3 py-3 text-right font-bold ${info.key === "debt" ? "text-rose-700" : info.key === "prepaid" ? "text-emerald-700" : "text-slate-700"}`}>{info.amount ? formatMoney(info.amount) : "0 Ks"}</td><td className="px-3 py-3 text-right"><a href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-700 hover:underline">Ledger →</a></td></tr>;
+                    return <tr key={customer.id} className="hover:bg-slate-50"><td className="px-3 py-3"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-800 hover:underline">{customer.name}</Link><p className="mt-1 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p></td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span></td><td className={`px-3 py-3 text-right font-bold ${info.key === "debt" ? "text-rose-700" : info.key === "prepaid" ? "text-emerald-700" : "text-slate-700"}`}>{info.amount ? formatMoney(info.amount) : "0 Ks"}</td><td className="px-3 py-3 text-right"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-700 hover:underline">Ledger →</Link></td></tr>;
                   })}</tbody>
                 </table>
               </div>

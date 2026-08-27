@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 // import KPISummaryDashboard from "./KPISummaryDashboard";
 import TransactionFilter from "./TransactionFilter";
@@ -1490,7 +1491,7 @@ export default function Dashboard({ view = "overview" }) {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
           {isLedgerView ? (
-            <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
+            <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
           ) : null}
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 xl:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] xl:items-center xl:gap-x-6">
             <div className="order-2 col-span-2 col-start-1 row-start-2 min-w-0 xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[360px] xl:justify-self-start">
@@ -1527,14 +1528,14 @@ export default function Dashboard({ view = "overview" }) {
                 />
               </div>
 
-              <a
+              <Link
                 href="/orders"
                 className="flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-2 text-base font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
                 title="Telegram Orders"
               >
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">📦</span>
                 <span>အော်ဒါများ</span>
-              </a>
+              </Link>
               <button
                 type="button"
                 onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
@@ -1567,29 +1568,29 @@ export default function Dashboard({ view = "overview" }) {
                   >
                     📨 Manual အစီရင်ခံစာ
                   </button>
-                  <a
+                  <Link
                     href="/auto-report-status"
                     className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
                   >
                     Auto Report အခြေအနေ
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/vercel-build-logs"
                     className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Build မှတ်တမ်း
-                  </a>
+                  </Link>
                 </div>
               ) : null}
 
               {expandedDashboardMenu === "data" ? (
                 <div id="dashboard-data-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-cyan-200 bg-white p-2 sm:grid-cols-2">
-                  <a
+                  <Link
                     href="/data-management"
                     className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100"
                   >
                     🗂️ ဒေတာစီမံခန့်ခွဲမှု
-                  </a>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => setShowRecycleBin(true)}
@@ -1634,7 +1635,7 @@ export default function Dashboard({ view = "overview" }) {
             <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
             {/* Total Balance */}
-            <a
+            <Link
               href="/balance-detail"
               aria-label="အသားတင်ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-rose-200 bg-rose-50 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
@@ -1642,7 +1643,7 @@ export default function Dashboard({ view = "overview" }) {
               <p className="text-xs font-medium uppercase tracking-wide text-rose-600">အသားတင်ရရန်လက်ကျန်</p>
               <p className="mt-2 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p>
               <p className="mt-1 text-xs text-rose-500">Net Receivable Balance · အသေးစိတ်ကြည့်ရန် →</p>
-            </a>
+            </Link>
 
             {/* Customer Count */}
             <div className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-blue-200 bg-blue-50 p-4 text-left hover:shadow-md transition-shadow sm:min-h-[158px]">
@@ -1661,16 +1662,16 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-xs text-emerald-500">Today&apos;s Paid Transactions</p>
             </button>
 
-            <a
+            <Link
               href="/daily-summary"
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-violet-200 bg-violet-50 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
               <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary &amp; AI</p>
               <p className="mt-1 text-xs text-violet-600">အသေးစိတ်ကြည့်ရန် →</p>
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/daily-summary"
               aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-fuchsia-200 bg-fuchsia-50 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
@@ -1678,25 +1679,25 @@ export default function Dashboard({ view = "overview" }) {
               <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">ဒီနေ့ လက်ငင်းရောင်း</p>
               <p className="mt-2 text-2xl font-bold text-fuchsia-800">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
               <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/activity"
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition-all hover:border-amber-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-amber-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p>
               <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
               <p className="mt-1 text-xs text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
-            </a>
+            </Link>
 
-            <a
+            <Link
               href="/ledger"
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-left shadow-sm transition-all hover:border-cyan-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Customer စာရင်း</p>
               <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>
               <p className="mt-1 text-xs text-cyan-700">Customer စာရင်းသွင်းရန် →</p>
-            </a>
+            </Link>
           </div>
             </section>
           </>

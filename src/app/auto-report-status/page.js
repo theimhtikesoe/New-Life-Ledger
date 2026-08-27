@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 
@@ -133,7 +134,7 @@ export default function AutoReportStatusPage() {
         <header className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
+              <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
               <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">Auto Report အခြေအနေ</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                 နောက်ဆုံး Auto Report run၊ report ရက်စွဲ၊ ပို့မှုအခြေအနေနှင့် လက်ခံရရှိသည့်နေရာအရေအတွက်ကိုသာ ကြည့်နိုင်ပါသည်။
