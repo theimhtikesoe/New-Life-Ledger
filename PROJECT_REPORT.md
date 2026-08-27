@@ -1224,3 +1224,12 @@ README.md was rewritten to document the canonical model names, API surface, envi
 An authenticated global PWA refresh control was added to the RootLayoutClient. It is a small safe-area-aware fixed button at the lower corner so it does not cover the Dashboard's top loading/error panel. It requests a service-worker update before reloading the page, does not write database data, and works across Dashboard and subpages. Existing service-worker v9 behavior remains network-first for pages and bypasses `/api/*` so stale/fake API responses are not produced.
 
 Verification after these changes: `npm run lint` passed, the full Vitest suite passed with 153 tests, `npm run build` passed, Prisma validation and generation passed, route syntax checks passed, `git diff --check` passed, and targeted middleware/CashSale/Daily Summary tests passed.
+
+
+## 21. Manual Report status count reconciliation — 2026-08-27
+
+The production status row for report date `2026-08-26` originally showed zero counts because it was created as a metadata-only reconciliation after the real Manual Telegram delivery. The reconciliation helper now permits a one-time counts-only patch on that specific `manual-reconciled` zero-count row; it cannot overwrite a normal successful Manual row that already has counts and it cannot create a second send.
+
+With the user's confirmation, the row was patched through the PIN-protected reconciliation route using the previously verified Manual Report summary: `paid 4`, `debtIncrease 6`, `transactions 10`, and `activityActions 11`, with recipient count `1`. Production status now displays total records `10`, paid `4`, debt increases `6`, and activities `11`. The API returned `recorded: true`, `updated: true`, and `reason: counts_backfilled`.
+
+This was a metadata-only database update. It did not invoke Telegram, generate or resend any report file, modify Customer/Ledger/CashSale/Order data, change balances, or affect Auto Report duplicate protection. The next Auto scheduled run still treats the date as Manual-successful and sends only the one-time status notice rather than a duplicate full report.
