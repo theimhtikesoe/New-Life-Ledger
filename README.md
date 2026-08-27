@@ -46,7 +46,15 @@ The Dashboard loads KPI information first, then overdue debt alerts and primary 
 
 CashSale entry requires a sale type: `RETAIL` or `WHOLESALE`. The same CashSale record carries item size, cartons, rate, deductions, amount, payment type, date, and note. CashSale records are shown as transaction data and report data without adding a matching debt increase/payment ledger pair.
 
-### 3.4 Telegram Order and Factory Handover flow
+### 3.4 Daily retail/wholesale sales summary
+
+The Dashboard includes a compact Daily Sales Summary panel for the four daily figures: retail total including cash and recorded KPay/Bank/Wave sale payments, wholesale total including cash and recorded KPay/Bank/Wave sale payments, retail cash, and wholesale cash. The red daily sales total and the red daily cash total are formulas; the green monthly cumulative is calculated from the saved monthly opening amount plus daily rows after its `asOfDate`. The monthly cumulative starts a new sequence for each Myanmar month.
+
+Existing CashSale records seed the selected day automatically. Opening the panel for a day with CashSale data also creates an additive `DailySalesSummary` row automatically after the brief save delay; editing any input saves the four values to the same Myanmar date. The panel lists the month’s daily rows in a table with daily total, monthly cumulative, cash total, and source (`CashSale` or `Saved`). A KPay/Bank/Wave settlement that pays an existing customer debt remains a Ledger payment and is not counted as sales unless it is explicitly a CashSale.
+
+For the current partial month, the owner can enter the notebook’s accumulated sales as one `DailySalesOpening` amount with an `asOfDate` (for example, the amount through the previous day). Older paper days do not need to be re-entered as individual rows. The opening amount is an additive reconciliation value and does not change Customer, Ledger, CashSale, Order, or balance data. Daily summary saves are audited under the selected actor.
+
+### 3.5 Telegram Order and Factory Handover flow
 
 The Order group accepts `/order`, `မှာယူမှု`, Burmese, English, Myanmar digits, English digits, and common business shorthand. The deterministic parser is used first; AI extraction is bounded and optional. If information is missing, the draft displays only the useful missing fields and supplies Telegram buttons for date, destination, phone, customer linking, customer creation within the Order domain, details, Confirm, and Cancel.
 
@@ -127,6 +135,8 @@ tests/                                     Vitest regression tests
 | `Customer` | Main accounting customer and current balance | Source for ledger balance |
 | `Ledger` | `DEBIT`/`CREDIT` accounting transaction | Changes balance through domain logic |
 | `CashSale` | Retail/wholesale cash sale | No net receivable change |
+| `DailySalesSummary` | One saved retail/wholesale daily summary row | No Customer/Ledger balance effect |
+| `DailySalesOpening` | One monthly opening reconciliation amount and as-of date | No Customer/Ledger balance effect |
 | `KpayAlias` | KPay sender-name mapping | Helps matching only |
 | `UnverifiedKpay` | Pending or matched KPay notification | Does not become ledger until matched |
 | `AuditLog` | Actor/action history | Accounting and operational events separated by filters |
@@ -166,6 +176,7 @@ The middleware requires a valid application session for normal website APIs. Ext
 | `GET/POST/PATCH` | `/api/customers/[id]/cash-sales` | CashSale list/create/update | App session |
 | `DELETE` | `/api/customers/[id]/cash-sales/[saleId]` | Delete selected CashSale | App session |
 | `GET` | `/api/daily-summary` | Selected-date summary and filtered activities | App session |
+| `GET/POST` | `/api/daily-sales-summary` | Daily retail/wholesale summary, monthly opening, and saved daily rows | App session |
 | `GET` | `/api/dashboard-kpi` | KPI-first dashboard data | App session |
 | `GET` | `/api/overdue-debts` | Overdue debt alert data | App session |
 | `GET/POST/PATCH` | `/api/orders` | Current/history/trash Order data | App session |
