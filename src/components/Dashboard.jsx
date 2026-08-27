@@ -1634,7 +1634,7 @@ export default function Dashboard({ view = "overview" }) {
           <>
             {/* Compact Summary Box */}
             <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {/* Total Balance */}
             <Link
               href="/balance-detail"
@@ -1682,9 +1682,11 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
             </Link>
 
+            <DailySalesSummaryPanel />
+
             <Link
               href="/activity"
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition-all hover:border-amber-300 hover:shadow-md sm:min-h-[158px]"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition-all hover:border-amber-300 hover:shadow-md"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-amber-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p>
               <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
@@ -1693,14 +1695,12 @@ export default function Dashboard({ view = "overview" }) {
 
             <Link
               href="/ledger"
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-left shadow-sm transition-all hover:border-cyan-300 hover:shadow-md sm:min-h-[158px]"
+              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-left shadow-sm transition-all hover:border-cyan-300 hover:shadow-md"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Customer စာရင်း</p>
               <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>
               <p className="mt-1 text-xs text-cyan-700">Customer စာရင်းသွင်းရန် →</p>
             </Link>
-
-            <DailySalesSummaryPanel />
           </div>
             </section>
           </>

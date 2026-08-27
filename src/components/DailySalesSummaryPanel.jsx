@@ -23,6 +23,13 @@ const INPUT_FIELDS = [
   { key: "wholesaleCash", label: "လက်ကား (ငွေသား)", tone: "amber" },
 ];
 
+const AUGUST_NOTEBOOK_OPENING = {
+  month: "2026-08",
+  amount: "246593950",
+  asOfDate: "2026-08-26",
+  note: "စာအုပ်မှ 26/08/2026 အထိ",
+};
+
 function formatMoney(value) {
   return `${money.format(Math.round(Number(value || 0)))} Ks`;
 }
@@ -85,6 +92,9 @@ export default function DailySalesSummaryPanel() {
         setIsEditing(body.data.selectedDay?.source === "CASH_SALE");
         if (body.data.opening?.updatedAt) {
           setOpeningForm({ amount: body.data.opening.amount, asOfDate: body.data.opening.asOfDate, note: body.data.opening.note });
+        } else if (targetDate.startsWith(AUGUST_NOTEBOOK_OPENING.month) && targetDate >= AUGUST_NOTEBOOK_OPENING.asOfDate) {
+          setOpeningForm({ ...AUGUST_NOTEBOOK_OPENING });
+          setShowOpeningForm(true);
         } else {
           setOpeningForm({ amount: "", asOfDate: getPreviousMyanmarDateInputValue(targetDate), note: "စာအုပ်မှ စုစုပေါင်း" });
         }
@@ -261,7 +271,7 @@ export default function DailySalesSummaryPanel() {
                     <button type="button" onClick={saveOpening} disabled={saving} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "Opening သိမ်းမည်"}</button>
                   </div>
                 </div>
-                <p className="mt-2 text-[10px] text-indigo-600">ရွေးထားသောလအတွက် အရင်စာအုပ်ထဲက စုစုပေါင်းကို တစ်ကြိမ်တည်းညှိရန်ဖြစ်ပါသည်။</p>
+                <p className="mt-2 text-[10px] text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,950 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `Opening သိမ်းမည်` နှိပ်မှသာ database ထဲ သိမ်းပါမည်။</p>
               </div>
             )}
 
