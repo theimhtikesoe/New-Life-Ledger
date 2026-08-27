@@ -1505,7 +1505,7 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[320px] xl:mr-14 xl:justify-self-end">
+            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[360px] xl:mr-14 xl:justify-self-end">
               <div className="col-span-2 flex [&>button]:w-full">
                 <OverdueNotificationBell
                   compact
