@@ -1139,3 +1139,14 @@ The Telegram **Factory Handover Group** is not a bottle-production or manufactur
 A future separate **Inventory / Production Planning Group** will handle stock levels, available bottles, shortages, days of coverage, advance planning, and manufacturing decisions. Those responsibilities are intentionally not mixed into the current Order Group or Factory Handover Group.
 
 The current Order/Factory UI improvements include shared capacity rendering that omits unknown capacity rather than showing `? ml`, compact inline date choices for today/tomorrow/two-days-later/custom date, destination choices for factory-front pickup/gate delivery/custom location, and revised Factory wording. Custom date and location still use a Telegram reply prompt only when the operator chooses the custom option.
+
+
+## 15. Latest Update — Manual Report Preview Failure and Cash-sale Types
+
+**Date:** 2026-08-27
+
+The owner reported that the Dashboard manual report dialog showed `Report preview မအောင်မြင်ပါ` after selecting a report date. The preview API is intentionally protected by the normal website session middleware, while the client request did not explicitly include the current session credentials or selected actor header. The report data API itself already carries optional `cashPaymentTypes` and `cashSaleTypes` fields, including `RETAIL` and `WHOLESALE`, and the shared report builder uses safe fallbacks for absent fields. The new retail/wholesale cash-sale fields therefore do not invalidate the preview response shape; the visible failure is handled as a session/request-path problem rather than by deleting or changing cash-sale data.
+
+The Dashboard preview request now explicitly sends `credentials: "include"` and the selected actor header when available. HTTP 401 is shown as a clear Burmese PIN-session message instead of a generic preview failure. The send endpoint remains PIN-protected and no report was sent while diagnosing the preview error. A regression test confirms that manual preview returns both retail and wholesale cash-sale totals for a selected Myanmar date.
+
+The production Auto Report status screenshot still shows the historical latest persisted success for report date `2026-08-25`; it does not prove a new manual send or a successful missed-date catch-up. No CashSale, Ledger, Customer, or AutoReportRun data was deleted or overwritten.

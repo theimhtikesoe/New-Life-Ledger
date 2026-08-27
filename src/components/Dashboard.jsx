@@ -478,11 +478,15 @@ export default function Dashboard({ view = "overview" }) {
     setIsLoadingTelegramReportPreview(true);
     try {
       const query = new URLSearchParams({ date, refresh: String(Date.now()) });
+      const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") || "" : "";
       const response = await fetch(`/api/telegram/manual-report-preview?${query.toString()}`, {
         cache: "no-store",
+        credentials: "include",
+        headers: actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {},
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.ok) {
+        if (response.status === 401) throw new Error("PIN session မရှိတော့ပါ။ Dashboard ကို ပြန်ဝင်ပြီး ထပ်စမ်းပါ။");
         throw new Error(body.error || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
       }
       if (telegramPreviewRequestRef.current === requestId) {
