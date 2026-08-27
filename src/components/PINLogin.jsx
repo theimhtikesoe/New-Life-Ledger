@@ -3,6 +3,34 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
 const ACTOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
+const AUTH_REQUEST_TIMEOUT_MS = 12000;
+
+async function fetchAuthJson(path, options = {}) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), AUTH_REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch(path, {
+      ...options,
+      credentials: "include",
+      signal: controller.signal,
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(body.error || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    return body;
+  } catch (error) {
+    if (error.name === "AbortError") {
+      error.name = "TimeoutError";
+      error.message = "Request timed out";
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
 
 export default function PINLogin({ onSuccess }) {
   const [pin, setPin] = useState("");
@@ -26,8 +54,7 @@ export default function PINLogin({ onSuccess }) {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/auth/session", { cache: "no-store" })
-      .then((response) => response.json().catch(() => ({})))
+    fetchAuthJson("/api/auth/session", { cache: "no-store" })
       .then((body) => {
         if (!active) return;
         const actorName = localStorage.getItem("actorName");
@@ -96,17 +123,18 @@ export default function PINLogin({ onSuccess }) {
     if (pin.length !== 6) return;
     setError("");
     try {
-      const response = await fetch("/api/auth/login", {
+      const body = await fetchAuthJson("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || !body.ok) throw new Error(body.error || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
+      if (!body.ok) throw new Error(body.error || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
       setPin("");
       setSelectingActor(true);
     } catch (loginError) {
-      setError(loginError.message || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
+      setError(loginError.name === "TimeoutError"
+        ? "Server connection အချိန်ကျော်သွားပါပြီ။ ခဏနားပြီး ထပ်စမ်းပါ။"
+        : loginError.message || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
       setPin("");
     }
   };

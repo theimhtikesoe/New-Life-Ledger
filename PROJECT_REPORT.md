@@ -1172,3 +1172,8 @@ The Dashboard Manual Report preview now uses the shared API timeout/retry contra
 A domain check also confirmed that `edger.vercel.app` is a different old Next.js application: its `/api/health` returned 404, while `newlifeledger.vercel.app/api/health` returned HTTP 200. All production testing and current code deployment must use `https://newlifeledger.vercel.app`.
 
 No Customer, Ledger, CashSale, balance, Order, or Telegram report data was created, deleted, overwritten, or manually sent during the audit.
+
+
+## 18. Authentication and Send Processing Guard — 2026-08-27
+
+The PIN session bootstrap and Manual Telegram Report send path are also bounded now. Session/login requests abort after 12 seconds with a clear retry message instead of leaving the login overlay indefinitely. Manual report sending uses the shared request contract with a 20-second timeout; a timeout warns the user to check Auto Report status before attempting another send, reducing duplicate-report risk. No PIN value or secret is stored in browser storage by these changes.

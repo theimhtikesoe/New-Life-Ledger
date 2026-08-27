@@ -551,23 +551,25 @@ export default function Dashboard({ view = "overview" }) {
     setTelegramReportError("");
     try {
       const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") || "" : "";
-      const response = await fetch("/api/telegram/manual-report", {
+      const result = await api("/api/telegram/manual-report", {
         method: "POST",
+        timeoutMs: 20000,
+        cache: "no-store",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${pin}`,
           ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
         },
-          body: JSON.stringify({ date: telegramReportPreview?.date }),
+        body: JSON.stringify({ date: telegramReportPreview?.date }),
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || !body.ok) {
-        throw new Error(body.error || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
-      }
       resetTelegramReportModal();
-      showAlert(`${body.date} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
+      showAlert(`${result?.date || telegramReportPreview?.date} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
     } catch (error) {
-      setTelegramReportError(error.message || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
+      if (error.name === "TimeoutError" || error.name === "AbortError") {
+        setTelegramReportError("Telegram report ပို့ရန် အချိန်ကျော်သွားပါပြီ။ ထပ်မပို့မီ Auto Report အခြေအနေတွင် duplicate run ရှိ/မရှိ စစ်ပါ။");
+      } else {
+        setTelegramReportError(error.message || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
+      }
     } finally {
       setIsSendingTelegramReport(false);
     }
