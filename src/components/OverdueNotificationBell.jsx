@@ -7,7 +7,7 @@ import { getLatestTransactionDate, getMyanmarDateAgeInDays } from "@/lib/debt-ut
  * OverdueNotificationBell Component
  * ၁၅ ရက်ကျော်နေတဲ့ အကြွေးတွေကို သတိပေးတဲ့ component
  */
-export default function OverdueNotificationBell({ customers = [], overdueDebts: overdueDebtsProp, onSelectCustomer }) {
+export default function OverdueNotificationBell({ customers = [], overdueDebts: overdueDebtsProp, onSelectCustomer, compact = false }) {
   const [showModal, setShowModal] = useState(false);
 
   // Load modal state from localStorage on mount
@@ -55,8 +55,10 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
   }, [customers]);
 
   const isLoadingOverdueDebts = overdueDebtsProp === null;
-  const overdueDebts = overdueDebtsProp ?? calculatedOverdueDebts;
-
+    const overdueDebts = overdueDebtsProp ?? calculatedOverdueDebts;
+  const compactButtonClass = compact
+    ? "relative flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold leading-4 shadow-sm transition-colors"
+    : "relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition-colors";
   const formatMoney = (value) => {
     return new Intl.NumberFormat("en-US").format(Number(value || 0));
   };
@@ -74,10 +76,10 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
       <button
         type="button"
         disabled
-        className="relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-500 shadow-sm"
+        className={`${compactButtonClass} border-slate-300 bg-white text-slate-500`}
         title="Loading overdue debts"
       >
-        <span className="text-base">🔔</span>
+        <span className={compact ? "text-sm" : "text-base"}>🔔</span>
         <span>အကြွေး သတိပေးချက်</span>
         <span className="text-xs font-medium text-slate-400">ရယူနေသည်...</span>
       </button>
@@ -88,10 +90,10 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
     return (
       <button
         type="button"
-        className="relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+        className={`${compactButtonClass} border-slate-300 bg-white text-slate-700 hover:bg-slate-50`}
         title="No overdue debts"
       >
-        <span className="text-base">🔔</span>
+        <span className={compact ? "text-sm" : "text-base"}>🔔</span>
         <span>အကြွေး သတိပေးချက်</span>
         <span className="text-xs font-medium text-slate-400">မရှိ</span>
       </button>
@@ -103,10 +105,10 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
       <button
         type="button"
         onClick={() => setShowModal(true)}
-        className="relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 shadow-sm transition-colors hover:bg-rose-100"
+        className={`${compactButtonClass} border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100`}
         title={`${overdueDebts.length} overdue debts`}
       >
-        <span className="text-base">🔔</span>
+        <span className={compact ? "text-sm" : "text-base"}>🔔</span>
         <span>အကြွေး သတိပေးချက်</span>
         <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-xs font-bold text-white">
           {overdueDebts.length}

@@ -1505,9 +1505,10 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-2 shadow-sm justify-self-stretch md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[340px] md:justify-self-end">
+            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-end">
               <div className="col-span-2 flex [&>button]:w-full">
                 <OverdueNotificationBell
+                  compact
                   customers={allCustomersForKPI}
                   overdueDebts={overdueDebts}
                   onSelectCustomer={(id) => {
@@ -1528,7 +1529,7 @@ export default function Dashboard({ view = "overview" }) {
 
               <a
                 href="/orders"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
+                className="flex min-h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
                 title="Telegram Orders"
               >
                 📦 အော်ဒါများ
@@ -1538,7 +1539,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
                 aria-expanded={expandedDashboardMenu === "reports"}
                 aria-controls="dashboard-report-menu"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+                className="flex min-h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-violet-300 bg-violet-50 px-2 py-1.5 text-[11px] font-semibold leading-4 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
                 📊 အစီရင်ခံ / မှတ်တမ်း {expandedDashboardMenu === "reports" ? "⌃" : "⌄"}
               </button>
@@ -1547,7 +1548,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
                 aria-expanded={expandedDashboardMenu === "data"}
                 aria-controls="dashboard-data-menu"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                className="col-span-2 flex min-h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-1.5 text-[11px] font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
               >
                 🗂️ ဒေတာ / အမှိုက်ပုံး {expandedDashboardMenu === "data" ? "⌃" : "⌄"}
               </button>
