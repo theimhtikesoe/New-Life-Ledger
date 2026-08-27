@@ -17,3 +17,17 @@ After the latest production page copy was confirmed active, the user explicitly 
 A fresh read-only status refresh completed successfully. Production now shows the latest report date `2026-08-26` with source `Manual ပို့မှု`, SUCCESS, recipient count 1, and the explanation that the next Auto scheduled run will send only a status notice and not the full duplicate report. The record appears in the history table. Because this was metadata reconciliation, counts are 0 and run duration is blank; this does not represent a newly generated report. The timestamp displayed is 27 Aug 2026 10:58 MMT, matching the reconciliation record time, not independently verified as the original Telegram send time.
 
 The production Dashboard cache-busted page loaded with KPI-first content and a visible overdue count of 1. The top actions are compactly grouped as `အော်ဒါများ`, `အစီရင်ခံ / မှတ်တမ်း`, and `ဒေတာ / အမှိုက်ပုံး`. Expanding the report group showed Manual အစီရင်ခံစာ, Auto Report အခြေအနေ, and Build မှတ်တမ်း. Expanding the data group showed ဒေတာစီမံခန့်ခွဲမှု and Customer အမှိုက်ပုံး. No destructive action or business-data mutation was triggered.
+
+
+## Deployment verification — commit b61e8bd — 2026-08-27 11:21 MMT
+
+GitHub Vercel status for commit `b61e8bd` reached SUCCESS with deployment target `6TcSjPf7B9QSiQYtTHhvpZ257ro8`. Production read-only smoke checks used `https://newlifeledger.vercel.app` only.
+
+- `GET /api/health?deploy=b61e8bd` returned HTTP 200 with service `new-life-ledger`.
+- `GET /api/cron/daily-report?deploy=b61e8bd` without Authorization returned HTTP 401. No authenticated cron request was made.
+- `GET /api/auto-report-status?deploy=b61e8bd` without a session returned HTTP 401 after the status API security hardening.
+- `GET /api/kpay-webhook/match?deploy=b61e8bd` without a session returned HTTP 401, protecting the balance-changing compatibility alias.
+- Production Dashboard displayed KPI-first content, overdue alert count `1`, grouped actions, and the small fixed `↻` refresh button. The Report/Logs group exposed Manual Report, Auto Report status, and Build Logs. The Data/Trash group exposed Data Management and Customer Recycle Bin.
+- Authenticated production Auto Report status displayed report date `2026-08-26`, source `Manual ပို့မှု`, SUCCESS, one recipient, and the one-time next-Auto duplicate-skip explanation. Its reconciliation counts remained zero by design because the row is metadata-only.
+
+No customer, ledger, cash-sale, order, balance, backup, restore, Telegram report, or Telegram notice was created or changed during these checks. The actual Vercel Cron runtime invocation log remains unverified because Vercel dashboard authentication was unavailable in the sandbox browser.
