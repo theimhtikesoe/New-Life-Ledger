@@ -12,6 +12,18 @@ describe("Manual report status notice", () => {
     mocks.sendTelegramTextToChat.mockReset().mockResolvedValue({ messageId: 12 });
   });
 
+  it("does not present the reconciliation timestamp as the manual send time", async () => {
+    await sendManualReportStatusNotice({
+      reportDate: "2026-08-26",
+      run: { trigger: "manual-reconciled", createdAt: "2026-08-27T02:00:00.000Z" },
+    });
+    const text = mocks.sendTelegramTextToChat.mock.calls[0][0].text;
+
+    expect(text).toContain("2026-08-26");
+    expect(text).not.toContain("Manual ပို့ချိန်");
+    expect(text).not.toContain("UTC");
+  });
+
   it("explains the duplicate skip and formats the send time in Myanmar time", async () => {
     const result = await sendManualReportStatusNotice({
       reportDate: "2026-08-26",
