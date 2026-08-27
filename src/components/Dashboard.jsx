@@ -1446,7 +1446,7 @@ export default function Dashboard({ view = "overview" }) {
       )}
       {(loading || isSubmitting) && (
         <div
-          className="pointer-events-none fixed left-1/2 top-3 z-[100] w-[min(92vw,360px)] -translate-x-1/2 rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 px-4 py-3 text-slate-800 shadow-xl shadow-cyan-900/10 backdrop-blur sm:left-auto sm:right-5 sm:translate-x-0"
+          className="pointer-events-none fixed left-3 top-3 z-[100] w-[min(calc(100vw-6rem),360px)] rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 px-4 py-3 text-slate-800 shadow-xl shadow-cyan-900/10 backdrop-blur sm:left-5 sm:w-[min(92vw,360px)]"
           role="status"
           aria-live="polite"
           aria-label={isSubmitting ? "လုပ်ဆောင်နေသည်" : "အချက်အလက်များကို ရယူနေသည်"}
