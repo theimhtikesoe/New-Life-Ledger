@@ -145,6 +145,11 @@ export default function PINLogin({ onSuccess }) {
     setSelectingActor(false);
     setActorLocked(false);
     setIsAuthenticated(true);
+    try {
+      window.sessionStorage.setItem("new-life-ledger:audio-gesture-v1", "true");
+    } catch {
+      // Some private browsing modes block sessionStorage; audio retry remains available.
+    }
     window.dispatchEvent(new CustomEvent("new-life-ledger:actor-selected", { detail: { actorName } }));
     onSuccess?.(actorName);
   };

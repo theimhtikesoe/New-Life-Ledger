@@ -8,6 +8,7 @@ import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } fro
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 import LedgerPulse from "@/components/LedgerPulse";
+import OverdueAlertAudio from "@/components/OverdueAlertAudio";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -1461,6 +1462,7 @@ export default function Dashboard({ view = "overview" }) {
 
   return (
     <main className="min-h-screen bg-white" aria-busy={loading || isSubmitting}>
+      <OverdueAlertAudio overdueDebts={overdueDebts} ready={overdueDebts !== null} />
       {alert && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
       )}

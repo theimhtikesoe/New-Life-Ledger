@@ -49,7 +49,7 @@ function PlantColumn({ point, maxAmount, index }) {
 }
 
 export default function LedgerPulse({ data, loading = false, error = "" }) {
-  const points = Array.isArray(data?.days) ? data.days : [];
+  const points = useMemo(() => (Array.isArray(data?.days) ? data.days : []), [data?.days]);
   const maxAmount = useMemo(() => Math.max(
     1,
     ...points.flatMap((point) => [
