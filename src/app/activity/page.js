@@ -16,12 +16,40 @@ function formatMyanmarDateInputValue(value = new Date()) {
 
 const today = formatMyanmarDateInputValue(new Date());
 
+function isTransientActivityError(error) {
+  const message = String(error?.message || "").trim();
+  return error?.name === "AbortError" || error?.name === "TypeError" || /^(Failed to fetch|NetworkError|Load failed|Request timed out)$/i.test(message);
+}
+
 async function fetchLogs(query) {
   const actorName = localStorage.getItem("actorName") || "";
-  const response = await fetch(`/api/audit-logs?${query}`, { headers: { "x-actor-name": encodeActorHeader(actorName) } });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.error || "Request failed");
-  return body.data;
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(`/api/audit-logs?${query}`, {
+        cache: "no-store",
+        signal: controller.signal,
+        headers: { "x-actor-name": encodeActorHeader(actorName) },
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || `Activity request မအောင်မြင်ပါ (${response.status})။`);
+      return Array.isArray(body.data) ? body.data : [];
+    } catch (error) {
+      lastError = error;
+      if (attempt < 2 && isTransientActivityError(error)) {
+        await new Promise((resolve) => window.setTimeout(resolve, 350 * (attempt + 1)));
+        continue;
+      }
+      if (error?.name === "AbortError") throw new Error("Activity data ရယူရန် အချိန်ကျော်ပါပြီ။ ခဏနေရင် ပြန်စမ်းပါ။");
+      if (isTransientActivityError(error)) throw new Error("Activity data ရယူရာတွင် ခဏအဆင်မပြေပါ။ ပြန်စမ်းပါ။");
+      throw error;
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+  throw lastError || new Error("Activity data ရယူရာတွင် အဆင်မပြေပါ။");
 }
 
 function actionLabel(action) {
@@ -89,7 +117,7 @@ export default function ActivityPage() {
     if (action) params.set("action", action);
     fetchLogs(params.toString())
       .then((items) => active && setLogs(items))
-      .catch((err) => active && setError(err.message))
+      .catch((err) => active && setError(err.message || "Activity data ရယူရာတွင် အဆင်မပြေပါ။"))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, [date, actor, action]);
