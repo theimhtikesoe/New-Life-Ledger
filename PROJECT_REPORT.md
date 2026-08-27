@@ -1197,3 +1197,30 @@ User အတည်ပြုချက်အရ Telegram တွင် မနက် 
 | Cron safety | no-auth `https://newlifeledger.vercel.app/api/cron/daily-report` HTTP 401; authenticated Cron ကို manually မခေါ် |
 
 အတည်မပြုရသေးသည့်အချက်မှာ Vercel Cron invocation runtime log ဖြစ်ပါသည်။ ထို့ကြောင့် `2026-08-26` အတွက် အရင် Manual delivery ကို status metadata အဖြစ် ပြန်မှတ်ထားနိုင်ပြီဖြစ်သော်လည်း Auto Cron ကို ယခုအချိန်တွင် manually trigger မလုပ်ထားပါ။ နောက် scheduled invocation ရောက်သောအခါ full report မထပ်ပို့ဘဲ one-time status notice ထွက်ပြီး `manualNoticeSentAt` မှတ်တမ်းတင်သွားမည်ဖြစ်ပါသည်။
+
+
+## 20. Cron Retry, API Boundary Audit, Documentation, and PWA Refresh — 2026-08-27
+
+### Auto Report readiness
+
+Vercel official documentation was reviewed for Cron frequency, UTC behavior, failure delivery, and idempotency. The project now configures three separate once-per-day entries for the same idempotent handler: `01:30 UTC` (around 08:00 Myanmar primary), `02:30 UTC` (around 09:00 Myanmar retry), and `03:30 UTC` (around 10:00 Myanmar retry). This design does not use an hourly expression, so it remains compatible with Vercel Hobby's once-per-day-per-job restriction. The handler continues to use `CRON_SECRET`, per-report-date locks, bounded previous-date catch-up, Manual reconciliation, and success skipping.
+
+The actual Vercel runtime invocation log is still unverified because the sandbox browser reached the Vercel login page. No authenticated Cron invocation and no Telegram delivery were triggered during this audit. Tomorrow's expected report date is the previous Myanmar calendar day; for a message delivered on the morning of 2026-08-28, the normal report date is 2026-08-27. If the primary invocation fails or is missed, the two separate retry windows can process the still-missing date. A successful date remains protected from a duplicate full report.
+
+### Architecture and security audit
+
+The Prisma schema validates successfully and contains 14 distinct domain models. Migrations and the runtime bootstrap were scanned for destructive SQL; no `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, or equivalent destructive migration was found. CashSale remains separate from Ledger and does not change Customer balance/net receivables. Order-only Customer data remains outside the accounting Customer table. Order activities remain available in Order History while accounting Activity History and Daily Report activity data exclude Order and OrderBatch events.
+
+Two API boundary issues were corrected. `/api/auto-report-status` is no longer public and now requires the normal application session. The balance-changing compatibility alias `/api/kpay-webhook/match` is also no longer public and requires the application session. External KPay, Telegram webhook, and Cron paths retain their own callback/secret guards. Middleware regression tests cover these policies.
+
+### Telegram workflow audit
+
+The bot responsibilities are now documented as four separate flows: KPay notification intake, Order-group draft and field completion, Factory Handover delivery, and accounting Daily Report. Order callbacks acknowledge promptly, use admin checks, database status transitions, source update deduplication, and unique per-delivery records. Factory Handover remains limited to factory-front pickup, vehicle loading, and gate-delivery preparation; future bottle Inventory/Production is kept separate.
+
+### Documentation and PWA UI
+
+README.md was rewritten to document the canonical model names, API surface, environment variable names, data safety rules, Telegram destinations, Auto Report date semantics, retry windows, validation commands, and future plan. The older PRD was synchronized for the main Ledger/CashSale names, UUID identifiers, Telegram destination variables, and three-window report schedule.
+
+An authenticated global PWA refresh control was added to the RootLayoutClient. It is a small safe-area-aware fixed button at the lower corner so it does not cover the Dashboard's top loading/error panel. It requests a service-worker update before reloading the page, does not write database data, and works across Dashboard and subpages. Existing service-worker v9 behavior remains network-first for pages and bypasses `/api/*` so stale/fake API responses are not produced.
+
+Verification after these changes: `npm run lint` passed, the full Vitest suite passed with 153 tests, `npm run build` passed, Prisma validation and generation passed, route syntax checks passed, `git diff --check` passed, and targeted middleware/CashSale/Daily Summary tests passed.

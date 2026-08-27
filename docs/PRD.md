@@ -20,7 +20,7 @@
 
 ဘောက်ချာစာအုပ် ၁၀၀ ကျော် လှန်ရသည့် ဒုက္ခကို လျှော့ချရန်နှင့် ဖုန်းထဲ ငွေဝင်သည်နှင့် လူကိုယ်တိုင် လိုက်ပြောစရာမလိုဘဲ စာရင်းထဲသို့ အော်တိုရောက်ရှိလာစေရန် Custom Web Dashboard တစ်ခု တည်ဆောက်မည်။
 
-ဖေဖေသည် Dashboard ထဲတွင် pending KPay ဝင်ငွေများကိုကြည့်ရှုနိုင်ပြီး Customer နာမည်ဖြင့် အလွယ်တကူ တွဲချိတ် (Match) နိုင်ရမည်။ Match လုပ်ပြီးသည်နှင့် Customer ၏ အကြွေးကျန်ငွေကို အလိုအလျောက် လျှော့ချပြီး Ledger Transaction အဖြစ် သိမ်းဆည်းရမည်။
+ဖေဖေသည် Dashboard ထဲတွင် pending KPay ဝင်ငွေများကိုကြည့်ရှုနိုင်ပြီး Customer နာမည်ဖြင့် အလွယ်တကူ တွဲချိတ် (Match) နိုင်ရမည်။ Match လုပ်ပြီးသည်နှင့် Customer ၏ အကြွေးကျန်ငွေကို အလိုအလျောက် လျှော့ချပြီး `Ledger` transaction အဖြစ် သိမ်းဆည်းရမည်။ CashSale သည် သီးခြား sales record ဖြစ်ပြီး Customer balance/net receivables ကို မပြောင်းရ။
 
 ## ၃။ Core Workflow & Architecture (စနစ်၏ အလုပ်လုပ်ပုံ Flow)
 
@@ -67,7 +67,7 @@ Telegram message format:
 3. Customer ကို dropdown/modal မှ ရွေးသည်။
 4. System သည် transaction တစ်ခုတည်းအတွင်း အောက်ပါအလုပ်များကို ဆောင်ရွက်သည်။
    - Customer `current_balance` မှ KPay amount ကို နှုတ်သည်။
-   - `LedgerTransaction` ထဲတွင် `CREDIT` transaction အဖြစ် သိမ်းသည်။
+   - `Ledger` ထဲတွင် KPay payment အတွက် `DEBIT` transaction အဖြစ် သိမ်းသည်။
    - `UnverifiedKpay.status` ကို `MATCHED` သို့ ပြောင်းသည်။
 
 ## ၄။ Data Model
@@ -76,18 +76,18 @@ Telegram message format:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `id` | Int | Primary key |
+| `id` | UUID String | Primary key |
 | `name` | String | Customer name |
 | `phone` | String? | Optional phone number |
 | `current_balance` | Int | Current debt balance |
 | `createdAt` | DateTime | Created timestamp |
 
-### LedgerTransaction
+### Ledger
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `id` | Int | Primary key |
-| `customer_id` | Int | Foreign key to Customer |
+| `id` | UUID String | Primary key |
+| `customerId` | UUID String | Foreign key to Customer |
 | `date` | DateTime | Transaction date |
 | `type` | String | `DEBIT` or `CREDIT` |
 | `amount` | Int | Transaction amount |
@@ -98,14 +98,19 @@ Meaning:
 
 - `DEBIT` = Customer ငွေချေပြီး လက်ကျန်အကြွေး လျော့သည်။
 - `CREDIT` = Customer အကြွေးတိုးပြီး လက်ကျန်အကြွေး တိုးသည်။
+- `CashSale` = `RETAIL`/`WHOLESALE` လက်ငင်းရောင်းစာရင်းဖြစ်ပြီး Ledger pair မရေးဘဲ net receivables မပြောင်းပါ။
 
 Balance example: လက်ကျန်အကြွေး 100,000 Ks ရှိနေချိန်တွင် `CREDIT 200,000` ထည့်လျှင် 300,000 Ks ဖြစ်ပြီး အနီရောင် debt အဖြစ်ပြမည်။ ထို့နောက် `DEBIT 400,000` ထည့်လျှင် -100,000 Ks ဖြစ်ပြီး 100,000 Ks ကြိုတင်ငွေချေ လက်ကျန်အဖြစ် အစိမ်းရောင်ပြမည်။
+
+### CashSale
+
+CashSale သည် retail/wholesale sale type၊ amount၊ item size၊ cartons၊ rate၊ deductions၊ payment type၊ date နှင့် note ကို သီးခြားသိမ်းပါသည်။ Daily Summary/KPI/Telegram report တွင် ပါဝင်သော်လည်း Customer balance ကို မပြောင်းပါ။
 
 ### UnverifiedKpay
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `id` | Int | Primary key |
+| `id` | UUID String | Primary key |
 | `raw_text` | String | Full notification text |
 | `amount` | Int | Parsed KPay amount |
 | `status` | String | `PENDING` or `MATCHED` |
@@ -196,7 +201,11 @@ MacroDroid version အလိုက် magic text variable names ကွာနိ�
 DATABASE_URL="postgresql://postgres.qvanezzllbcrvmqexzoq:YOUR_DATABASE_PASSWORD@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres.qvanezzllbcrvmqexzoq:YOUR_DATABASE_PASSWORD@aws-1-ap-south-1.pooler.supabase.com:5432/postgres"
 TELEGRAM_BOT_TOKEN=""
-TELEGRAM_CHAT_ID=""
+TELEGRAM_GROUP_CHAT_ID=""
+TELEGRAM_ORDER_GROUP_CHAT_ID=""
+TELEGRAM_FACTORY_GROUP_CHAT_ID=""
+TELEGRAM_ORDER_WEBHOOK_SECRET=""
+TELEGRAM_ORDER_ADMIN_IDS=""
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
@@ -208,7 +217,7 @@ Implemented:
 
 - Next.js App Router project structure
 - Tailwind dark dashboard UI
-- Prisma schema for Customer, LedgerTransaction, UnverifiedKpay
+- Prisma schema for Customer, Ledger, CashSale, UnverifiedKpay, Order, delivery, audit, AI cache, and AutoReportRun domains
 - Postgres migration SQL
 - Runtime database setup guard for Vercel production
 - KPay webhook endpoint
@@ -234,7 +243,7 @@ Known local note:
 
 ## ၁၀။ Telegram Report Schedule
 
-နေ့စဉ် report သည် မနေ့က Myanmar calendar day ၏ `00:00–23:59` စာရင်းကို ဒီနေ့ Myanmar time မနက် `08:00` အနီးတွင် Vercel Cron တစ်ကြိမ်ဖြင့် ပို့ရန်ဖြစ်သည်။ လက်ရှိ Option A သည် Vercel Cron တစ်ကြိမ်တည်းဖြစ်သောကြောင့် Vercel က အလိုအလျောက် retry မလုပ်ပါ။ အောင်မြင်ပြီးသော report date ကို duplicate မပို့စေရန် report-date claim/lock သုံးမည်။ `Report Date` သည် ပို့သည့်နေ့မဟုတ်ဘဲ report ထဲတွင်ပါသော မနေ့ကစာရင်းနေ့ကို ဆိုလိုသည်။
+နေ့စဉ် report သည် မနေ့က Myanmar calendar day ၏ `00:00–23:59` စာရင်းကို ဒီနေ့ Myanmar time မနက် `08:00` အနီးတွင် ပို့ရန်ဖြစ်သည်။ Vercel Cron failed invocation ကို အလိုအလျောက် retry မလုပ်နိုင်သောကြောင့် `/api/cron/daily-report` ကို 01:30 UTC (08:00 MMT) primary၊ 02:30 UTC (09:00 MMT) နှင့် 03:30 UTC (10:00 MMT) retry windows သုံးခုအဖြစ် configure လုပ်ထားသည်။ Handler သည် report-date claim/lock နှင့် bounded catch-up သုံး၍ missing/failed dates ကိုသာ ပြန်စစ်ပြီး success date ကို duplicate မပို့ပါ။ Successful Manual row ရှိလျှင် full duplicate report မပို့ဘဲ one-time status notice သာ ပို့သည်။ `Report Date` သည် ပို့သည့်နေ့မဟုတ်ဘဲ report ထဲတွင်ပါသော မနေ့ကစာရင်းနေ့ကို ဆိုလိုသည်။
 
 ## ၁၁။ Next Milestones
 
@@ -244,3 +253,5 @@ Known local note:
 4. Add customer import from spreadsheet/CSV.
 5. Add mobile-friendly Dad mode with larger tap targets and simplified matching flow.
 6. Add automated end-to-end checks and production monitoring for report delivery and webhook health.
+7. Keep the README and this PRD synchronized with the canonical Prisma model, API route, Telegram destination, and environment-variable names.
+8. Separate future Inventory/Production Telegram planning from the current Factory Handover group, which is limited to factory-front pickup, vehicle loading, and gate-delivery preparation.

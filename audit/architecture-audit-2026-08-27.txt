@@ -1,0 +1,166 @@
+## HEAD / status
+b1e7b6f
+[31m??[m audit/ai-failure-diagnosis.md
+[31m??[m audit/architecture-audit-2026-08-27.txt
+[31m??[m audit/processing-fetch-map.txt
+[31m??[m audit/processing-status-video-findings.md
+[31m??[m audit/production-order-trash-verification.md
+[31m??[m audit/ui-video-analysis-2026-08-27.txt
+
+## API routes
+src/app/api/admin/telegram-order-guide/route.js
+src/app/api/ai/daily-summary/route.js
+src/app/api/audit-logs/[id]/route.js
+src/app/api/audit-logs/route.js
+src/app/api/auth/confirm/route.js
+src/app/api/auth/login/route.js
+src/app/api/auth/logout/route.js
+src/app/api/auth/session/route.js
+src/app/api/auto-report-status/route.js
+src/app/api/backup/route.js
+src/app/api/cron/daily-report/route.js
+src/app/api/cron/order-batch/route.js
+src/app/api/cron/order-trash-cleanup/route.js
+src/app/api/customers/[id]/cash-sales/[saleId]/route.js
+src/app/api/customers/[id]/cash-sales/route.js
+src/app/api/customers/[id]/route.js
+src/app/api/customers/[id]/transactions/route.js
+src/app/api/customers/route.js
+src/app/api/daily-summary/route.js
+src/app/api/dashboard-kpi/route.js
+src/app/api/health/route.js
+src/app/api/kpay-match/route.js
+src/app/api/kpay-webhook/match/route.js
+src/app/api/kpay-webhook/route.js
+src/app/api/order-automation/route.js
+src/app/api/orders/route.js
+src/app/api/overdue-debts/route.js
+src/app/api/reports/route.js
+src/app/api/restore/route.js
+src/app/api/telegram/custom-message/route.js
+src/app/api/telegram/manual-report-preview/route.js
+src/app/api/telegram/manual-report/reconcile/route.js
+src/app/api/telegram/manual-report/route.js
+src/app/api/telegram/order-webhook/route.js
+src/app/api/transactions/[id]/route.js
+src/app/api/unverified-kpay/route.js
+src/app/api/vercel/build-logs/route.js
+
+## Prisma models
+11:model Customer {
+26:model Order {
+76:model OrderLine {
+96:model OrderCap {
+113:model OrderDelivery {
+132:model OrderAutomationSetting {
+139:model OrderBatchRun {
+152:model KpayAlias {
+159:model Ledger {
+179:model CashSale {
+198:model AuditLog {
+218:model AiExplanationCache {
+235:model AutoReportRun {
+254:model UnverifiedKpay {
+
+## Prisma enums
+
+## env references
+process.env.APP_PIN
+process.env.APP_SESSION_SECRET
+process.env.BUILT_IN_FORGE_API_KEY
+process.env.BUILT_IN_FORGE_API_URL
+process.env.CRON_SECRET
+process.env.DATABASE_URL
+process.env.KPAY_WEBHOOK_SECRET
+process.env.MANUAL_REPORT_PIN
+process.env.MANUS_API_KEY
+process.env.MANUS_LLM_API_BASE
+process.env.MANUS_LLM_API_KEY
+process.env.MANUS_LLM_MODEL
+process.env.NEXT_PUBLIC_APP_URL
+process.env.NODE_ENV
+process.env.OPENAI_API_BASE
+process.env.OPENAI_API_KEY
+process.env.TELEGRAM_BOT_TOKEN
+process.env.TELEGRAM_FACTORY_GROUP_CHAT_ID
+process.env.TELEGRAM_GROUP_CHAT_ID
+process.env.TELEGRAM_ORDER_ADMIN_IDS
+process.env.TELEGRAM_ORDER_GROUP_CHAT_ID
+process.env.TELEGRAM_ORDER_WEBHOOK_SECRET
+process.env.VERCEL_API_TOKEN
+process.env.VERCEL_BUILD_LOG_VIEWER_ACTORS
+process.env.VERCEL_PROJECT_ID
+process.env.VERCEL_TEAM_ID
+
+## route paths in source
+"/api/:path
+"/api/admin/telegram-order-guide
+"/api/audit-logs?includeOrders=true&limit=500
+"/api/auth/login
+"/api/auth/logout
+"/api/auth/session
+"/api/auto-report-status
+"/api/backup
+"/api/cron/daily-report
+"/api/cron/order-batch
+"/api/cron/order-trash-cleanup
+"/api/customers
+"/api/customers?deleted=true&includeLedgers=false
+"/api/customers?includeLedgers=false
+"/api/customers?includeLedgers=true&includeCashSales=true
+"/api/daily-summary
+"/api/dashboard-kpi
+"/api/health
+"/api/kpay-match
+"/api/kpay-webhook
+"/api/kpay-webhook/match
+"/api/order-automation
+"/api/orders
+"/api/orders?limit=200
+"/api/orders?view=history&limit=200
+"/api/orders?view=trash&limit=200
+"/api/restore
+"/api/telegram/custom-message
+"/api/telegram/manual-report
+"/api/telegram/order-webhook
+"/api/unverified-kpay?status=PENDING
+
+## operational action/name literals
+DASHBOARD_DRAFT_STORAGE_PREFIX
+MESSAGE_SENT
+MORNING_BATCH
+ORDER_ADMIN_IDS
+ORDER_AI_RETRY
+ORDER_ARCHIVE
+ORDER_AUTO_ARCHIVE
+ORDER_AUTO_CLEAR
+ORDER_BATCH_NOTIFIED
+ORDER_BATCH_SETTING
+ORDER_CANCEL
+ORDER_CONFIRM
+ORDER_CUSTOMER_CREATE
+ORDER_CUSTOMER_DRAFT
+ORDER_CUSTOMER_LINK
+ORDER_DETAILS_UPDATE
+ORDER_DRAFT
+ORDER_ENTITY_TYPES
+ORDER_FACTORY_NOTIFIED
+ORDER_GROUP_CHAT_ID
+ORDER_HISTORY_ACTION_LABELS
+ORDER_HISTORY_TRASH
+ORDER_HISTORY_TRASH_AUTO_CLEAR
+ORDER_HISTORY_TRASH_DELETE
+ORDER_HISTORY_TRASH_RESTORE
+ORDER_INCLUDE
+ORDER_MODES
+ORDER_PERMANENT_DELETE
+ORDER_RESTORE
+ORDER_STATUSES
+ORDER_STRUCTURED_OUTPUT_SCHEMA
+ORDER_TEXT
+ORDER_TRASH_RESTORE
+ORDER_UPDATE
+ORDER_WEBHOOK_SECRET
+PERMANENT_DELETE
+REPORT_SENT
+REPORT_SENT__

@@ -1,0 +1,245 @@
+
+### src/app/api/admin/telegram-order-guide/route.js
+2:import { getTelegramOrderConfig, pinTelegramMessage, sendTelegramTextToChat } from "@/lib/telegram";
+44:export async function POST() {
+48:    const sent = await sendTelegramTextToChat({ chatId: orderChatId, text: guideText(), replyMarkup: guideKeyboard() });
+
+### src/app/api/ai/daily-summary/route.js
+28:export async function GET(request) {
+
+### src/app/api/audit-logs/[id]/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+8:export async function DELETE(request, { params }) {
+10:    await ensureDatabase();
+11:    const auditLog = await prisma.auditLog.findUnique({
+24:    const updated = await prisma.auditLog.update({
+
+### src/app/api/audit-logs/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+23:export async function GET(request) {
+25:    await ensureDatabase();
+45:      prisma.auditLog.findMany({
+51:        ? prisma.ledger.findMany({
+82:      ? await prisma.cashSale.findMany({ where: { id: { in: cashSaleIds } }, select: { id: true, saleType: true, amount: true, paymentType: true } })
+
+### src/app/api/auth/confirm/route.js
+8:export async function POST(request) {
+
+### src/app/api/auth/login/route.js
+40:export async function POST(request) {
+
+### src/app/api/auth/logout/route.js
+7:export async function POST() {
+
+### src/app/api/auth/session/route.js
+7:export async function GET(request) {
+
+### src/app/api/auto-report-status/route.js
+7:export async function GET() {
+
+### src/app/api/backup/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+11:export async function GET() {
+13:    await ensureDatabase();
+16:      prisma.customer.findMany({
+28:      prisma.ledger.findMany({
+46:      prisma.cashSale.findMany({
+63:      prisma.kpayAlias.findMany({
+71:      prisma.unverifiedKpay.findMany({
+83:      prisma.auditLog.findMany({
+97:      prisma.order.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }], include: { customer: { select: { id: true, name: true } } } }),
+98:      prisma.orderLine.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+99:      prisma.orderCap.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+100:      prisma.orderDelivery.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+101:      prisma.orderAutomationSetting.findUnique({ where: { id: 1 } }),
+102:      prisma.orderBatchRun.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+
+### src/app/api/cron/daily-report/route.js
+17:function isAuthorized(request) {
+110:export async function GET(request) {
+114:export async function POST(request) {
+
+### src/app/api/cron/order-batch/route.js
+7:function isAuthorized(request) {
+14:export async function GET(request) {
+18:export async function POST(request) {
+
+### src/app/api/cron/order-trash-cleanup/route.js
+7:function isAuthorized(request) {
+12:export async function GET(request) {
+16:export async function POST(request) {
+
+### src/app/api/customers/[id]/cash-sales/[saleId]/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+8:export async function DELETE(request, { params }) {
+10:    await ensureDatabase();
+15:    const result = await prisma.$transaction(async (tx) => {
+
+### src/app/api/customers/[id]/cash-sales/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+44:export async function GET(request, { params }) {
+46:    await ensureDatabase();
+57:      prisma.cashSale.findMany({ where, select: cashSaleSelect, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: limit }),
+58:      prisma.cashSale.count({ where }),
+66:export async function POST(request, { params }) {
+68:    await ensureDatabase();
+72:    const customer = await prisma.customer.findUnique({ where: { id: params.id }, select: { id: true, name: true, deletedAt: true } });
+75:    const result = await prisma.$transaction(async (tx) => {
+
+### src/app/api/customers/[id]/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+36:export async function GET(request, { params }) {
+38:    await ensureDatabase();
+44:    const customer = await prisma.customer.findUnique({
+89:export async function PATCH(request, { params }) {
+91:    await ensureDatabase();
+101:    const customer = await prisma.customer.update({
+145:export async function DELETE(request, { params }) {
+147:    await ensureDatabase();
+159:      customer = await prisma.customer.delete({
+164:      customer = await prisma.customer.update({
+
+### src/app/api/customers/[id]/transactions/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+12:export async function GET(request, { params }) {
+14:    await ensureDatabase();
+37:      prisma.ledger.findMany({
+56:      prisma.ledger.count({ where }),
+75:export async function POST(request, { params }) {
+77:    await ensureDatabase();
+89:    const result = await prisma.$transaction(async (tx) => {
+
+### src/app/api/customers/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+8:export async function GET(request) {
+10:    await ensureDatabase();
+66:    const customers = await prisma.customer.findMany({
+107:export async function POST(request) {
+109:    await ensureDatabase();
+119:    const customer = await prisma.$transaction(async (tx) => {
+
+### src/app/api/daily-summary/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+10:export async function GET(request) {
+12:    await ensureDatabase();
+18:      prisma.ledger.findMany({
+31:      prisma.cashSale.findMany({
+48:      prisma.auditLog.findMany({
+
+### src/app/api/dashboard-kpi/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+9:export async function GET(request) {
+11:    await ensureDatabase();
+17:      prisma.customer.aggregate({
+22:      prisma.ledger.aggregate({
+27:      prisma.cashSale.groupBy({
+
+### src/app/api/health/route.js
+5:export function GET() {
+
+### src/app/api/kpay-match/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+8:export async function POST(request) {
+10:    await ensureDatabase();
+23:    const result = await prisma.$transaction(async (tx) => {
+
+### src/app/api/kpay-webhook/match/route.js
+
+### src/app/api/kpay-webhook/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+5:import { sendTelegramMessage } from "@/lib/telegram";
+9:function isAuthorized(request) {
+15:export async function POST(request) {
+20:    await ensureDatabase();
+38:      ? await prisma.kpayAlias.findUnique({
+44:    const kpay = await prisma.unverifiedKpay.create({
+62:      await sendTelegramMessage(message);
+
+### src/app/api/order-automation/route.js
+8:export async function GET() {
+17:export async function PATCH(request) {
+
+### src/app/api/orders/route.js
+34:export async function GET(request) {
+50:export async function POST(request) {
+69:export async function PATCH(request) {
+
+### src/app/api/overdue-debts/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+8:export async function GET() {
+10:    await ensureDatabase();
+12:    const customers = await prisma.customer.findMany({
+
+### src/app/api/reports/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+7:export async function GET(request) {
+9:    await ensureDatabase();
+20:    const ledgers = await prisma.ledger.findMany({
+
+### src/app/api/restore/route.js
+3:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+376:export async function POST(request) {
+378:    await ensureDatabase();
+401:      prisma.customer.findMany({ select: { id: true, name: true, phone: true } }),
+402:      prisma.ledger.findMany({ select: { id: true } }),
+403:      prisma.cashSale.findMany({ select: { id: true } }),
+404:      prisma.kpayAlias.findMany({ select: { id: true, kpayName: true } }),
+405:      prisma.unverifiedKpay.findMany({ select: { id: true } }),
+406:      prisma.auditLog.findMany({ select: { id: true } }),
+407:      prisma.order.findMany({ select: { id: true, sourceChatId: true, sourceMessageId: true, sourceUpdateId: true } }),
+408:      prisma.orderLine.findMany({ select: { id: true } }),
+409:      prisma.orderCap.findMany({ select: { id: true } }),
+410:      prisma.orderDelivery.findMany({ select: { id: true } }),
+411:      prisma.orderAutomationSetting.findUnique({ where: { id: 1 }, select: { id: true } }),
+412:      prisma.orderBatchRun.findMany({ select: { id: true, batchDate: true } }),
+530:    const result = await prisma.$transaction(async (tx) => {
+
+### src/app/api/telegram/custom-message/route.js
+2:import { sendTelegramPlainTextMessage } from "@/lib/telegram";
+3:import { ensureDatabase } from "@/lib/database";
+12:function isAuthorized(request) {
+18:export async function POST(request) {
+40:    const result = await sendTelegramPlainTextMessage(message);
+43:        await ensureDatabase();
+
+### src/app/api/telegram/manual-report-preview/route.js
+9:export async function GET(request) {
+
+### src/app/api/telegram/manual-report/reconcile/route.js
+9:function isAuthorized(request) {
+15:export async function POST(request) {
+
+### src/app/api/telegram/manual-report/route.js
+11:function isAuthorized(request) {
+17:export async function POST(request) {
+
+### src/app/api/telegram/order-webhook/route.js
+15:  sendTelegramTextToChat,
+27:function isAuthorized(request) {
+49:async function isAuthorizedOrderAdmin(chatId, userId) {
+87:    return sendTelegramTextToChat({
+98:    await sendTelegramTextToChat({
+214:        await sendTelegramTextToChat({
+233:        await sendTelegramTextToChat({
+254:      await sendTelegramTextToChat({
+330:export async function POST(request) {
+356:      await sendTelegramTextToChat({ chatId, replyToMessageId: message.message_id, text: `✅ ${promptField} ဖြည့်ပြီးပါပြီ။ Order ကို ပြန်စစ်ပြီး Confirm လုပ်နိုင်ပါပြီ။` });
+364:      await sendTelegramTextToChat({ chatId, text: "Order အချက်အလက်ကို `မှာယူမှု` နောက်မှာ ရေးပေးပါ။ ဥပမာ — `မှာယူမှု မမိုး၊ 1 Liter၊ 100 ဘူးဆံ့ 5 ကဒ်၊ မြောက်ဒဂုံ၊ မနက်ဖြန်`", replyToMessageId: message.message_id });
+379:      const sentDraft = await sendTelegramTextToChat({
+398:    const sentDraft = await sendTelegramTextToChat({
+425:        await sendTelegramTextToChat({
+
+### src/app/api/transactions/[id]/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+15:export async function DELETE(request, { params }) {
+17:    await ensureDatabase();
+21:    const result = await prisma.$transaction(async (tx) => {
+
+### src/app/api/unverified-kpay/route.js
+2:import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+7:export async function GET(request) {
+9:    await ensureDatabase();
+14:    const items = await prisma.unverifiedKpay.findMany({
+
+### src/app/api/vercel/build-logs/route.js
+14:export async function GET(request) {
