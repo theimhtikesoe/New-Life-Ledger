@@ -14,10 +14,18 @@ describe("AI explanation deduplication", () => {
     expect(mergeOverviewText(code, ai)).not.toContain("AI ထပ်ဖြည့်ရှင်းချက်");
   });
 
+  it("removes a repeated code summary when it is embedded in a longer AI overview", () => {
+    const code = "2026-08-27 အတွက် စာရင်းအချက်အလက်ကို အကျဉ်းချုပ်ပြထားပါသည်။";
+    const ai = `${code} လက်ငင်းရောင်းစာရင်းကို သီးခြားစစ်ထားပါသည်။ ${code}`;
+    const merged = mergeOverviewText(code, ai);
+    expect(merged).toBe("လက်ငင်းရောင်းစာရင်းကို သီးခြားစစ်ထားပါသည်။");
+    expect(merged.match(/2026-08-27/g) || []).toHaveLength(0);
+  });
+
   it("keeps a genuinely new AI overview while avoiding a repeated code prefix", () => {
     const code = "2026-08-27 အတွက် စာရင်းအချက်အလက်ကို အကျဉ်းချုပ်ပြထားပါသည်။";
     const ai = `${code} လက်ငင်းရောင်းနှင့် ငွေချေမှုများကို သီးခြားစစ်ဆေးထားပါသည်။`;
-    expect(mergeOverviewText(code, ai)).toBe(ai);
+    expect(mergeOverviewText(code, ai)).toBe("လက်ငင်းရောင်းနှင့် ငွေချေမှုများကို သီးခြားစစ်ဆေးထားပါသည်။");
   });
 
   it("deduplicates repeated findings and checks ignoring final punctuation", () => {

@@ -50,7 +50,10 @@ export function mergeOverviewText(codeOverview, aiOverview) {
   const normalizedCode = normalizeExplanationText(code);
   const normalizedAi = normalizeExplanationText(ai);
   if (normalizedCode === normalizedAi) return code;
-  if (normalizedAi.includes(normalizedCode)) return ai;
+  if (normalizedAi.includes(normalizedCode)) {
+    const remaining = dedupeRepeatedSentences(ai.split(code).join(" "));
+    return remaining || code;
+  }
   if (normalizedCode.includes(normalizedAi)) return code;
   return `${code}\n\nAI ထပ်ဖြည့်ရှင်းချက် — ${ai}`;
 }
