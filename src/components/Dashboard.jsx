@@ -673,7 +673,7 @@ export default function Dashboard({ view = "overview" }) {
       setLedgerPulseError("");
       void api("/api/dashboard-pulse?days=7", { signal, cache: "no-store", timeoutMs: 20000 })
         .then((payload) => {
-          const pulse = payload?.data || null;
+          const pulse = payload || null;
           setLedgerPulse(pulse);
           saveDashboardSnapshot({ ledgerPulse: pulse });
         })
