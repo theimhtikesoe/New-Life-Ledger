@@ -169,6 +169,16 @@ describe("multi-line order totals and cap rules", () => {
     expect(telegramMessage).not.toContain("Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။");
   });
 
+  it("omits unknown Liter/ml instead of rendering a placeholder in Factory messages", () => {
+    const message = formatFactoryOrderMessage({
+      ...baseOrder,
+      lines: [{ bottleType: "နွားသေး", capacityMl: null, capacityLabel: null, cardCount: 3, bottlesPerCard: 100, totalBottles: 300, quotedAmount: 114000 }],
+    }, { source: "TELEGRAM" });
+    expect(message).toContain("1. နွားသေး / 3 ကဒ် × 100 ဘူး = 300 ဘူး");
+    expect(message).not.toContain("? ml");
+    expect(message).not.toContain("/  / ");
+  });
+
   it("formats the Telegram draft without internal missing fields or requested-cap total", () => {
     const normalized = normalizeExtractedOrder({
       customerName: "ကံလီ",

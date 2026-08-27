@@ -415,7 +415,10 @@ export function formatOrderDraftMessage(order, { includeActions = true, includeS
 export function formatFactoryOrderMessage(order, { batch = false, source = "WEBSITE" } = {}) {
   const totals = calculateOrderTotals(order);
   const capLines = (order.caps || []).map((cap) => `- ${cap.capType || "အဖုံး"}: ${(cap.normalPcs || 0).toLocaleString()} pcs${Number(cap.extraPcs || 0) > 0 ? ` + အပို ${Number(cap.extraPcs).toLocaleString()} pcs` : ""} = ${(cap.requestedTotalPcs || 0).toLocaleString()} pcs`);
-  const lineLines = (order.lines || []).map((line, index) => `${index + 1}. ${line.bottleType || "ဘူး"} / ${line.capacityLabel || `${line.capacityMl || "?"} ml`} / ${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`);
+  const lineLines = (order.lines || []).map((line, index) => {
+    const capacity = line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "");
+    return `${index + 1}. ${[line.bottleType || "ဘူး", capacity, `${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး`].filter(Boolean).join(" / ")}${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`;
+  });
   const factoryNumber = Number.isInteger(order.factoryOrderNumber) && order.factoryOrderNumber > 0 ? ` ${order.factoryOrderNumber}` : "";
   const sourceLabel = source === "TELEGRAM"
     ? "Telegram မှ Confirm ပြီးသော order ဖြစ်ပါသည်။"
@@ -471,7 +474,8 @@ export function formatFactoryBatchMessage(orders) {
     if (order.paymentType || order.paymentNote) lines.push(`   ငွေရှင်း: ${order.paymentType || order.paymentNote}`);
     if (order.receiptNote) lines.push(`   ပြေစာ/ပစ္စည်းစာ: ${order.receiptNote}`);
     (order.lines || []).forEach((line) => {
-      lines.push(`   • ${line.bottleType || "ဘူး"} / ${line.capacityLabel || `${line.capacityMl || "?"} ml`} / ${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`);
+      const capacity = line.capacityLabel || (line.capacityMl ? `${line.capacityMl} ml` : "");
+      lines.push(`   • ${[line.bottleType || "ဘူး", capacity, `${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး`].filter(Boolean).join(" / ")}${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`);
     });
     lines.push(`   စုစုပေါင်း: ${totals.totalCards} ကဒ် / ${totals.totalBottles} ဘူး`);
     (order.caps || []).forEach((cap) => {
