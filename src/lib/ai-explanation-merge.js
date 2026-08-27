@@ -42,6 +42,17 @@ export function normalizeAiItems(items = []) {
     });
 }
 
+export function sanitizeExplanation(explanation) {
+  if (!explanation || typeof explanation !== "object") return null;
+  return {
+    ...explanation,
+    overview: dedupeRepeatedSentences(explanation.overview),
+    findings: normalizeAiItems(explanation.findings),
+    checks: normalizeAiItems(explanation.checks),
+    caution: dedupeRepeatedSentences(explanation.caution),
+  };
+}
+
 export function mergeOverviewText(codeOverview, aiOverview) {
   const code = dedupeRepeatedSentences(codeOverview);
   const ai = dedupeRepeatedSentences(aiOverview);

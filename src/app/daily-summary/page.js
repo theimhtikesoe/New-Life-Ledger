@@ -6,7 +6,7 @@ import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { buildDailySummaryReviewChecks, transactionsToDailySummaryEvents } from "@/lib/daily-summary-review";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
-import { cleanAiText, mergeOverviewText, normalizeAiItems } from "@/lib/ai-explanation-merge";
+import { cleanAiText, mergeOverviewText, normalizeAiItems, sanitizeExplanation } from "@/lib/ai-explanation-merge";
 import {
   recordDailyAiSuccess,
   getAiActivityReviewHref,
@@ -131,14 +131,15 @@ function buildCodeBasedExplanation(report, reportDate) {
 }
 
 function mergeExplanations(codeExplanation, aiExplanation) {
-  if (!codeExplanation) return aiExplanation || null;
-  if (!aiExplanation) return codeExplanation;
+  if (!codeExplanation) return sanitizeExplanation(aiExplanation);
+  if (!aiExplanation) return sanitizeExplanation(codeExplanation);
+  const cleanedAiExplanation = sanitizeExplanation(aiExplanation);
   const unique = (items = []) => normalizeAiItems(items);
   return {
-    overview: mergeOverviewText(codeExplanation.overview, aiExplanation.overview),
-    findings: unique([...(codeExplanation.findings || []), ...(aiExplanation.findings || [])]),
-    checks: unique([...(codeExplanation.checks || []), ...(aiExplanation.checks || [])]),
-    caution: aiExplanation.caution || codeExplanation.caution,
+    overview: mergeOverviewText(codeExplanation.overview, cleanedAiExplanation.overview),
+    findings: unique([...(codeExplanation.findings || []), ...(cleanedAiExplanation.findings || [])]),
+    checks: unique([...(codeExplanation.checks || []), ...(cleanedAiExplanation.checks || [])]),
+    caution: cleanedAiExplanation.caution || codeExplanation.caution,
   };
 }
 
@@ -364,8 +365,9 @@ export default function DailySummaryPage() {
     aiAbortRef.current = null;
     aiRequestStartedAtRef.current = 0;
     const actorName = localStorage.getItem("actorName") || "Staff";
-    const localExplanation = readAiExplanationCache(date, actorName);
+    const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
     setAiExplanation(localExplanation);
+    if (localExplanation) saveAiExplanationCache(date, localExplanation, actorName);
     setAiSource(localExplanation ? "browser" : "");
     setAiUsage(getDailyAiUsage(actorName, date));
     setAiStale(false);
@@ -414,7 +416,7 @@ export default function DailySummaryPage() {
   const handleAiExplain = async ({ bypassLimit = false } = {}) => {
     if (aiLoading) return;
     const actorName = localStorage.getItem("actorName") || "Staff";
-    const localExplanation = readAiExplanationCache(date, actorName);
+    const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
     const codeExplanation = buildCodeBasedExplanation(data, date);
     const immediateExplanation = codeExplanation ? mergeExplanations(codeExplanation, localExplanation) : localExplanation;
     if (immediateExplanation) {

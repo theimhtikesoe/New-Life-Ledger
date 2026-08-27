@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeOverviewText, normalizeAiItems } from "@/lib/ai-explanation-merge";
+import { mergeOverviewText, normalizeAiItems, sanitizeExplanation } from "@/lib/ai-explanation-merge";
 
 describe("AI explanation deduplication", () => {
   it("keeps only one overview when AI repeats the code-based overview", () => {
@@ -33,5 +33,20 @@ describe("AI explanation deduplication", () => {
       "စာရင်းရှိပါသည်။",
       "အသစ်တွေ့ရှိချက်",
     ]);
+  });
+
+  it("sanitizes a cached explanation before it is rendered again", () => {
+    const cleaned = sanitizeExplanation({
+      overview: "အနှစ်ချုပ်တစ်ကြောင်း။ အနှစ်ချုပ်တစ်ကြောင်း။",
+      findings: ["တွေ့ရှိချက်။", "တွေ့ရှိချက်။"],
+      checks: ["ပြန်စစ်ရန်။", "ပြန်စစ်ရန်"],
+      caution: "သတိပေးချက်။ သတိပေးချက်။",
+    });
+    expect(cleaned).toEqual({
+      overview: "အနှစ်ချုပ်တစ်ကြောင်း။",
+      findings: ["တွေ့ရှိချက်။"],
+      checks: ["ပြန်စစ်ရန်။"],
+      caution: "သတိပေးချက်။",
+    });
   });
 });
