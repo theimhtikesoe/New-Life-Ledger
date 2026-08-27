@@ -23,10 +23,19 @@ describe("Overdue alert audio feature", () => {
     expect(source).toContain("iPad PWA / Safari");
   });
 
+  it("stores permission for thirty days and blocks repeat playback on refresh", () => {
+    expect(source).toContain("AUDIO_PERMISSION_TTL_MS = 30 * 24 * 60 * 60 * 1000");
+    expect(source).toContain("AUDIO_LAST_PLAYED_DAY_KEY");
+    expect(source).toContain("AUDIO_LAST_AUTO_ATTEMPT_DAY_KEY");
+    expect(source).toContain("getMyanmarDayKey");
+    expect(source).toContain("readLocalValue(AUDIO_LAST_PLAYED_DAY_KEY) === today");
+    expect(source).toContain("readLocalValue(AUDIO_LAST_AUTO_ATTEMPT_DAY_KEY) === today");
+  });
+
   it("records completion only after playback reaches the end", () => {
     const playBlock = source.slice(source.indexOf("const playFromStart"), source.indexOf("useEffect(() =>", source.indexOf("const playFromStart")));
-    expect(playBlock).not.toContain("writeSessionFlag(AUDIO_PLAYED_KEY)");
+    expect(playBlock).not.toContain("rememberDay(AUDIO_LAST_PLAYED_DAY_KEY)");
     expect(source).toContain("const handleEnded");
-    expect(source).toContain("writeSessionFlag(AUDIO_PLAYED_KEY);");
+    expect(source).toContain("rememberDay(AUDIO_LAST_PLAYED_DAY_KEY);");
   });
 });
