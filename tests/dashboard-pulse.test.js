@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   findLedger: vi.fn(),
   findCashSale: vi.fn(),
   findAudit: vi.fn(),
-  getPreviousMyanmarDayRanges: vi.fn(),
+  getRecentMyanmarDayRanges: vi.fn(),
 }));
 
 vi.mock("@/lib/database", () => ({
@@ -20,7 +20,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 vi.mock("@/lib/myanmar-time", () => ({
-  getPreviousMyanmarDayRanges: mocks.getPreviousMyanmarDayRanges,
+  getRecentMyanmarDayRanges: mocks.getRecentMyanmarDayRanges,
 }));
 vi.mock("@/lib/accounting-activity", () => ({
   accountingAuditLogWhere: () => ({}),
@@ -43,10 +43,10 @@ describe("Dashboard Ledger Pulse API", () => {
     mocks.findLedger.mockReset().mockResolvedValue([]);
     mocks.findCashSale.mockReset().mockResolvedValue([]);
     mocks.findAudit.mockReset().mockResolvedValue([]);
-    mocks.getPreviousMyanmarDayRanges.mockReset().mockReturnValue([
-      day("2026-08-24"),
+    mocks.getRecentMyanmarDayRanges.mockReset().mockReturnValue([
       day("2026-08-25"),
       day("2026-08-26"),
+      day("2026-08-27"),
     ]);
   });
 
@@ -70,7 +70,6 @@ describe("Dashboard Ledger Pulse API", () => {
 
     expect(response.status).toBe(200);
     expect(body.data.days).toEqual([
-      expect.objectContaining({ date: "2026-08-24", paidCount: 0, debtCount: 0, cashCount: 0, activityCount: 0 }),
       expect.objectContaining({
         date: "2026-08-25",
         paidCount: 1,
@@ -92,6 +91,7 @@ describe("Dashboard Ledger Pulse API", () => {
         cashRetailCount: 1,
         activityCount: 1,
       }),
+      expect.objectContaining({ date: "2026-08-27", paidCount: 0, debtCount: 0, cashCount: 0, activityCount: 0 }),
     ]);
     expect(body.data.totals).toEqual({
       paidCount: 2,
@@ -102,6 +102,23 @@ describe("Dashboard Ledger Pulse API", () => {
       cashAmount: 13000,
       activityCount: 4,
     });
+  });
+
+  it("includes the current Myanmar day so same-day CashSale appears in the graph", async () => {
+    mocks.findCashSale.mockResolvedValue([
+      { date: new Date("2026-08-27T12:00:00.000Z"), saleType: "RETAIL", amount: 577000 },
+    ]);
+
+    const response = await GET(new Request("http://localhost/api/dashboard-pulse?days=3"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.days.find((point) => point.date === "2026-08-27")).toEqual(expect.objectContaining({
+      date: "2026-08-27",
+      cashCount: 1,
+      cashAmount: 577000,
+      cashRetailCount: 1,
+    }));
   });
 
   it("never returns order-only audit activity in the accounting pulse", async () => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
-import { getPreviousMyanmarDayRanges } from "@/lib/myanmar-time";
+import { getRecentMyanmarDayRanges } from "@/lib/myanmar-time";
 import { accountingAuditLogWhere } from "@/lib/accounting-activity";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 
@@ -49,7 +49,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const requestedDays = Number(searchParams.get("days") || MAX_DAYS);
     const days = Math.min(Math.max(Number.isFinite(requestedDays) ? requestedDays : MAX_DAYS, 3), MAX_DAYS);
-    const ranges = getPreviousMyanmarDayRanges(new Date(), days);
+    const ranges = getRecentMyanmarDayRanges(new Date(), days);
     const start = ranges[0].start;
     const end = new Date(ranges[ranges.length - 1].end.getTime() + DAY_MS);
     const points = ranges.map(makePoint);
