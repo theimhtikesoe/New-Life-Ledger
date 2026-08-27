@@ -210,6 +210,7 @@ export default function BackgroundMusicPlayer() {
         ref={audioRef}
         preload="auto"
         playsInline
+        volume={MUSIC_VOLUME}
         src={TRACKS[trackIndex].src}
         onEnded={handleTrackEnded}
         onError={() => setPlayState("blocked")}
