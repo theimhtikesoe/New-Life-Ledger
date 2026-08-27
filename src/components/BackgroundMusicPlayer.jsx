@@ -124,6 +124,13 @@ export default function BackgroundMusicPlayer() {
   }, []);
 
   useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = MUSIC_VOLUME;
+    audio.muted = mutedRef.current;
+  }, [muted, trackIndex]);
+
+  useEffect(() => {
     if (!shouldPlayRef.current) return;
     const audio = audioRef.current;
     if (!audio) return;
@@ -166,9 +173,9 @@ export default function BackgroundMusicPlayer() {
     // blocked alert must keep music stopped.
     const handleOverdueStatus = (event) => {
       if (!event.detail?.ready) return;
-      if (!event.detail.hasOverdue || playedToday) {
+      if (!event.detail.hasOverdue || playedToday || attemptToday) {
         startMusic();
-      } else if (attemptToday || event.detail.hasOverdue) {
+      } else {
         pauseMusic("waiting");
       }
     };

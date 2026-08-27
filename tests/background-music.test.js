@@ -12,6 +12,8 @@ describe("Background music player", () => {
     expect(source).toContain("Ledger Drift 3");
     expect(source).toContain("Ledger Drift 4");
     expect(source).toContain("const MUSIC_VOLUME = 0.12;");
+    expect(source).toContain("volume={MUSIC_VOLUME}");
+    expect(source).toContain("const nextIndex = (trackIndexRef.current + 1) % TRACKS.length;");
     expect((source.match(/files\.manuscdn\.com\/user_upload_by_module/g) || []).length).toBe(4);
   });
 
