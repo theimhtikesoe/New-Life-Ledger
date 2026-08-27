@@ -154,6 +154,8 @@ async function api(path, options) {
 
       if (!response.ok) {
         const error = new Error(body.error || `Request failed with status ${response.status}`);
+        error.status = response.status;
+        error.code = response.status === 401 ? "AUTH_REQUIRED" : undefined;
         error.retryable = response.status >= 500;
         throw error;
       }
@@ -616,6 +618,13 @@ export default function Dashboard({ view = "overview" }) {
         });
     } catch (error) {
       if (error.name === 'AbortError') return;
+      if (error.code === "AUTH_REQUIRED" || error.status === 401) {
+        const message = "PIN session သက်တမ်းကုန်ပါပြီ။ Data ပြန်ရယူရန် PIN ထည့်ပါ။";
+        setDataLoadError("");
+        setMessage(message);
+        setShowPinModal(true);
+        return;
+      }
       console.error("Dashboard data loading error:", error);
       const message = friendlyError(error);
       setDataLoadError(message);
@@ -1002,6 +1011,9 @@ export default function Dashboard({ view = "overview" }) {
       if (!response.ok || !body.ok) throw new Error(body.error || "PIN အတည်ပြု၍ မရပါ။");
       setShowPinModal(false);
       setPinValue("");
+      setMessage("");
+      setDataLoadError("");
+      await loadDashboard();
       if (deletingTransaction) {
         await deleteTransaction(deletingTransaction);
       }
