@@ -172,6 +172,29 @@ async function api(path, options) {
   throw new Error("Request failed");
 }
 
+const DASHBOARD_SNAPSHOT_KEY = "new-life-ledger:dashboard-snapshot:v1";
+
+function readDashboardSnapshot() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(DASHBOARD_SNAPSHOT_KEY);
+    const snapshot = raw ? JSON.parse(raw) : null;
+    return snapshot && typeof snapshot === "object" ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDashboardSnapshot(partial) {
+  if (typeof window === "undefined" || !partial || typeof partial !== "object") return;
+  try {
+    const current = readDashboardSnapshot() || {};
+    window.sessionStorage.setItem(DASHBOARD_SNAPSHOT_KEY, JSON.stringify({ ...current, ...partial, savedAt: Date.now() }));
+  } catch (error) {
+    console.warn("Dashboard snapshot could not be saved:", error);
+  }
+}
+
 // Alert notification component
 function AlertNotification({ message, type, onClose }) {
   useEffect(() => {
@@ -198,8 +221,8 @@ export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
 
 export default function Dashboard({ view = "overview" }) {
   const isLedgerView = view === "ledger";
-  const [customers, setCustomers] = useState([]);
-  const [allCustomersForKPI, setAllCustomersForKPI] = useState([]);
+  const [customers, setCustomers] = useState(() => readDashboardSnapshot()?.customers || []);
+  const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => readDashboardSnapshot()?.allCustomersForKPI || []);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
   const [deletedCustomerDetail, setDeletedCustomerDetail] = useState(null);
@@ -241,6 +264,7 @@ export default function Dashboard({ view = "overview" }) {
   });
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingStage, setLoadingStage] = useState("Dashboard data ရယူနေပါသည်");
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [showCustomerList, setShowCustomerList] = useState(true);
@@ -252,9 +276,10 @@ export default function Dashboard({ view = "overview" }) {
   const [transactionPagination, setTransactionPagination] = useState({ offset: 0, limit: 50, total: 0, hasMore: false });
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
-  const [todayPaymentsList, setTodayPaymentsList] = useState([]);
-  const [todayCashSales, setTodayCashSales] = useState([]);
-  const [overdueDebts, setOverdueDebts] = useState(null);
+  const [todayPaymentsList, setTodayPaymentsList] = useState(() => readDashboardSnapshot()?.todayPaymentsList || []);
+  const [todayCashSales, setTodayCashSales] = useState(() => readDashboardSnapshot()?.todayCashSales || []);
+  const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
+  const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
   const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
   const [telegramReportStep, setTelegramReportStep] = useState("preview");
   const [telegramReportDate, setTelegramReportDate] = useState(() => getPreviousMyanmarDateInputValue());
@@ -552,11 +577,14 @@ export default function Dashboard({ view = "overview" }) {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || `Request failed with status ${response.status}`);
-      setOverdueDebts(Array.isArray(body.data) ? body.data : []);
+      const overdueRows = Array.isArray(body.data) ? body.data : [];
+      setOverdueDebts(overdueRows);
+      saveDashboardSnapshot({ overdueDebts: overdueRows });
     } catch (error) {
       if (error.name !== "AbortError") {
         console.warn("Overdue debts were not loaded:", error);
-        setOverdueDebts([]);
+        // Keep the last successful overdue snapshot visible during a transient failure.
+        setOverdueDebts((current) => current || []);
       }
     } finally {
       clearTimeout(timeout);
@@ -567,7 +595,22 @@ export default function Dashboard({ view = "overview" }) {
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
     setDataLoadError("");
+    setLoadingStage("KPI အချက်အလက်များ ရယူနေပါသည်");
     try {
+      // Stage 1: fetch only small aggregate values so KPI cards can paint first.
+      const kpi = await api("/api/dashboard-kpi", { signal });
+      setDashboardKpi(kpi);
+      saveDashboardSnapshot({ dashboardKpi: kpi });
+
+      // Stage 2 starts immediately after KPI. It is independent of the main
+      // customer list, so the ledger can render without waiting for slow alerts.
+      setLoadingStage("အကြွေးသတိပေးချက်များ ရယူနေပါသည်");
+      void loadOverdueDebts();
+
+      // Stage 3: load the lightweight customer/ledger index. Keep the previous
+      // snapshot visible while this request is running so navigation/refresh
+      // never turns a populated screen into a false empty state.
+      setLoadingStage("ငွေရှင်းတမ်းနှင့် Customer data ရယူနေပါသည်");
       const customerRequest = api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal });
       const allCustomersRequest = search ? api("/api/customers?includeLedgers=false", { signal }) : customerRequest;
       const [customerRows, allCustomersRows] = await Promise.all([
@@ -576,20 +619,13 @@ export default function Dashboard({ view = "overview" }) {
       ]);
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
-      setTodayPaymentsList([]);
-      setTodayCashSales([]);
-      setOverdueDebts(null);
+      saveDashboardSnapshot({ customers: customerRows, allCustomersForKPI: allCustomersRows });
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
-      
-      // Overdue debt records are loaded separately because the initial customer
-      // payload intentionally omits all ledger history.
-      void loadOverdueDebts();
 
-      // Today's payments are non-critical for the initial customer list.
-      // Load only today's transactions in the background so slow mobile paths
-      // can render customers and balances immediately.
+      // Stage 4: detailed daily values are intentionally background work.
+      setLoadingStage("ယနေ့ ငွေချေ/လက်ငင်း data ရယူနေပါသည်");
       void api("/api/daily-summary", { signal })
         .then((summary) => {
           const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
@@ -602,15 +638,17 @@ export default function Dashboard({ view = "overview" }) {
               customerPhone: phoneByCustomerId.get(transaction.customer?.id) || null,
             }))
             .sort((a, b) => new Date(b.date) - new Date(a.date));
+          const cashSales = Array.isArray(summary.cashSales) ? summary.cashSales : [];
           setTodayPaymentsList(payments);
-          setTodayCashSales(Array.isArray(summary.cashSales) ? summary.cashSales : []);
+          setTodayCashSales(cashSales);
+          saveDashboardSnapshot({ todayPaymentsList: payments, todayCashSales: cashSales });
         })
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Today summary was not loaded:", error);
         });
 
-      // KPay alerts are non-critical for the initial Dashboard render.
-      // Load them in the background so customer balances and counts appear first.
+      // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
+      setLoadingStage("ကျန်ရှိသော data များ ရယူနေပါသည်");
       void api("/api/unverified-kpay?status=PENDING", { signal })
         .then((kpayRows) => setPendingKpay(kpayRows))
         .catch((error) => {
@@ -632,6 +670,7 @@ export default function Dashboard({ view = "overview" }) {
       showAlert(message, "error");
     } finally {
       setLoading(false);
+      setLoadingStage("");
     }
   }, [clearAutoRetryTimers, loadOverdueDebts, search, showAlert]);
 
@@ -794,10 +833,14 @@ export default function Dashboard({ view = "overview" }) {
     [allCustomersForKPI],
   );
 
-    const todayTransactions = todayPaymentsList.length;
-  const todayCashAmount = useMemo(() => todayCashSales.reduce((sum, sale) => sum + Number(sale.amount || 0), 0), [todayCashSales]);
-  const todayCashRetail = useMemo(() => todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length, [todayCashSales]);
-  const todayCashWholesale = todayCashSales.length - todayCashRetail;
+    const hasKpiSnapshot = Boolean(dashboardKpi);
+  const displayedTotalBalance = dashboardKpi?.totalBalance ?? totalBalance;
+  const displayedCustomerCount = dashboardKpi?.totalCustomers ?? customerCount;
+  const todayTransactions = dashboardKpi?.todayPaidCount ?? todayPaymentsList.length;
+  const todayCashAmount = dashboardKpi?.amount ?? todayCashSales.reduce((sum, sale) => sum + Number(sale.amount || 0), 0);
+  const todayCashCount = dashboardKpi?.count ?? todayCashSales.length;
+  const todayCashRetail = dashboardKpi?.retailCount ?? todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length;
+  const todayCashWholesale = dashboardKpi?.wholesaleCount ?? (todayCashSales.length - todayCashRetail);
 
   // Pagination logic
   const paginatedCustomers = useMemo(() => {
@@ -1405,10 +1448,10 @@ export default function Dashboard({ view = "overview" }) {
             </span>
             <div className="min-w-0">
               <p className="text-sm font-bold text-cyan-900">
-                {isSubmitting ? "လုပ်ဆောင်နေပါသည်" : isLedgerView ? "Customer/Ledger data ရယူနေပါသည်" : "Dashboard data ရယူနေပါသည်"}
+                {isSubmitting ? "လုပ်ဆောင်နေပါသည်" : loadingStage || (isLedgerView ? "Customer/Ledger data ရယူနေပါသည်" : "Dashboard data ရယူနေပါသည်")}
               </p>
               <p className="mt-0.5 text-xs leading-5 text-slate-600">
-                {isSubmitting ? "Database ထဲ သိမ်းဆည်း/ပြင်ဆင်နေပါသည်။ ခဏစောင့်ပါ။" : "API နှင့် database ကို စစ်ဆေးပြီး data များကို တင်နေပါသည်။ ခဏစောင့်ပါ။"}
+                {isSubmitting ? "Database ထဲ သိမ်းဆည်း/ပြင်ဆင်နေပါသည်။ ခဏစောင့်ပါ။" : loadingStage ? "အရေးကြီးသော data များကို အစဉ်လိုက် တင်နေပါသည်။ ခဏစောင့်ပါ။" : "API နှင့် database ကို စစ်ဆေးပြီး data များကို တင်နေပါသည်။ ခဏစောင့်ပါ။"}
               </p>
             </div>
           </div>
@@ -1538,14 +1581,14 @@ export default function Dashboard({ view = "overview" }) {
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-rose-200 bg-rose-50 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-rose-600">အသားတင်ရရန်လက်ကျန်</p>
-              <p className="mt-2 text-2xl font-bold text-rose-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : formatMoney(totalBalance)}</p>
+              <p className="mt-2 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p>
               <p className="mt-1 text-xs text-rose-500">Net Receivable Balance · အသေးစိတ်ကြည့်ရန် →</p>
             </a>
 
             {/* Customer Count */}
             <div className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-blue-200 bg-blue-50 p-4 text-left hover:shadow-md transition-shadow sm:min-h-[158px]">
               <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Customer အရေအတွက်</p>
-              <p className="mt-2 text-2xl font-bold text-blue-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : customerCount}</p>
+              <p className="mt-2 text-2xl font-bold text-blue-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p>
               <p className="mt-1 text-xs text-blue-500">Total Customers</p>
             </div>
 
@@ -1555,7 +1598,7 @@ export default function Dashboard({ view = "overview" }) {
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer sm:min-h-[158px]"
             >
               <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">ယနေ့ ငွေချေမှုများ</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : todayTransactions}</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
               <p className="mt-1 text-xs text-emerald-500">Today&apos;s Paid Transactions</p>
             </button>
 
@@ -1574,8 +1617,8 @@ export default function Dashboard({ view = "overview" }) {
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-fuchsia-200 bg-fuchsia-50 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">ဒီနေ့ လက်ငင်းရောင်း</p>
-              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{loading ? "ရယူနေသည်..." : dataLoadError ? "—" : formatMoney(todayCashAmount)}</p>
-              <p className="mt-1 text-xs text-fuchsia-700">{todayCashSales.length} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
+              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
+              <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
             </a>
 
             <a
@@ -1676,14 +1719,14 @@ export default function Dashboard({ view = "overview" }) {
           </div>
           {showCustomerList && (
           <div className="grid grid-cols-2 gap-2 md:grid-cols-2 lg:grid-cols-3 max-h-[600px] overflow-y-auto pr-1 customer-list-container animate-slide-up">
-            {loading ? (
+            {loading && customers.length === 0 ? (
               <div className="col-span-full rounded-lg border border-slate-200 p-4 text-center text-slate-600">
                 <div className="flex items-center justify-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-600 border-t-cyan-400"></div>
                   <span>Customer များ ရှာဖွေနေသည်...</span>
                 </div>
               </div>
-            ) : dataLoadError ? (
+            ) : dataLoadError && customers.length === 0 ? (
               <div className="col-span-full rounded-lg border border-rose-200 bg-rose-50 p-5 text-center text-sm text-rose-700">
                 <p>Customer data မရသေးပါ။ ခဏစောင့်ပြီး ပြန်စမ်းနေပါသည်။</p>
                 <p className="mt-1 text-xs text-rose-600">
