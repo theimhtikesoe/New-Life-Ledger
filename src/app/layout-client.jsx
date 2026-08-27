@@ -79,9 +79,11 @@ export default function RootLayoutClient({ children }) {
       <PINLogin onSuccess={() => setAuthenticated(true)} />
       {authenticated && (
         <>
-          {children}
-          <RefreshOverlay />
+          {/* Mount the global player before page children so it cannot miss the
+              first overdue-status/audio event during the PWA startup handshake. */}
           <BackgroundMusicPlayer />
+          <RefreshOverlay />
+          {children}
         </>
       )}
     </>
