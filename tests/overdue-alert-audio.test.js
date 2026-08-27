@@ -37,5 +37,7 @@ describe("Overdue alert audio feature", () => {
     expect(playBlock).not.toContain("rememberDay(AUDIO_LAST_PLAYED_DAY_KEY)");
     expect(source).toContain("const handleEnded");
     expect(source).toContain("rememberDay(AUDIO_LAST_PLAYED_DAY_KEY);");
+    expect(source).toContain('new-life-ledger:overdue-opened');
+    expect(source).toContain("audio.pause();");
   });
 });

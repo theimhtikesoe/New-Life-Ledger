@@ -128,6 +128,28 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
   }, []);
 
   useEffect(() => {
+    const handleOverdueOpened = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+      // Opening the overdue detail is an intentional acknowledgement. Do not
+      // restart the same notification after the modal is closed or the page is refreshed.
+      if (playedRef.current) {
+        rememberDay(AUDIO_LAST_PLAYED_DAY_KEY);
+        setPlayState("played");
+      } else {
+        setPlayState("blocked");
+      }
+      setShowRetryPanel(false);
+      setShowSettingsGuide(false);
+    };
+
+    window.addEventListener("new-life-ledger:overdue-opened", handleOverdueOpened);
+    return () => window.removeEventListener("new-life-ledger:overdue-opened", handleOverdueOpened);
+  }, []);
+
+  useEffect(() => {
     if (!hasOverdue || attemptedRef.current || playedRef.current) return;
     attemptedRef.current = true;
 

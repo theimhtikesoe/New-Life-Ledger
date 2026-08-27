@@ -18,9 +18,13 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
     }
   }, []);
 
-  // Persist modal state to localStorage
+  // Persist modal state to localStorage and notify the global audio layer when
+  // the overdue detail view is open.
   useEffect(() => {
     localStorage.setItem("overdueModalOpen", showModal ? "true" : "false");
+    if (showModal) {
+      window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-opened"));
+    }
   }, [showModal]);
 
   // Calculate overdue debts (15+ days old)
@@ -57,7 +61,7 @@ export default function OverdueNotificationBell({ customers = [], overdueDebts: 
   const isLoadingOverdueDebts = overdueDebtsProp === null;
     const overdueDebts = overdueDebtsProp ?? calculatedOverdueDebts;
   const compactButtonClass = compact
-    ? "relative flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs font-semibold leading-4 shadow-sm transition-colors"
+    ? "relative flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm font-semibold leading-4 shadow-sm transition-colors"
     : "relative flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold shadow-sm transition-colors";
   const formatMoney = (value) => {
     return new Intl.NumberFormat("en-US").format(Number(value || 0));

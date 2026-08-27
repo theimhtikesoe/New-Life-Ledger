@@ -1492,20 +1492,20 @@ export default function Dashboard({ view = "overview" }) {
           {isLedgerView ? (
             <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
           ) : null}
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] md:items-center md:gap-x-6">
-            <div className="order-2 col-span-2 col-start-1 row-start-2 min-w-0 md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-start">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] lg:items-center lg:gap-x-6">
+            <div className="order-2 col-span-2 col-start-1 row-start-2 min-w-0 lg:order-none lg:col-span-1 lg:col-start-auto lg:row-start-auto lg:max-w-[360px] lg:justify-self-start">
               <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
               <h1 className="mt-1 max-w-none whitespace-nowrap text-[clamp(1rem,1.8vw,1.55rem)] font-semibold leading-tight tracking-tight text-slate-900">
                 Customer ငွေရှင်းတမ်း၊ အကြွေးရှင်းတမ်း
               </h1>
             </div>
-            <div className="order-1 col-span-2 min-w-0 text-center md:order-none md:col-span-1 md:min-w-[210px]">
+            <div className="order-1 col-span-2 min-w-0 text-center lg:order-none lg:col-span-1 lg:min-w-[210px]">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700">ယနေ့ရက်စွဲ</p>
               <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[360px] md:justify-self-end">
+            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch lg:order-none lg:col-span-1 lg:col-start-auto lg:row-start-auto lg:max-w-[320px] lg:mr-14 lg:justify-self-end">
               <div className="col-span-2 flex [&>button]:w-full">
                 <OverdueNotificationBell
                   compact
@@ -1529,7 +1529,7 @@ export default function Dashboard({ view = "overview" }) {
 
               <a
                 href="/orders"
-                className="flex min-h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
+                className="flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-2 text-sm font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
                 title="Telegram Orders"
               >
                 📦 အော်ဒါများ
@@ -1539,7 +1539,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
                 aria-expanded={expandedDashboardMenu === "reports"}
                 aria-controls="dashboard-report-menu"
-                className="flex min-h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-violet-300 bg-violet-50 px-2 py-1.5 text-[11px] font-semibold leading-4 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+                className="flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-violet-300 bg-violet-50 px-2 py-2 text-sm font-semibold leading-4 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
                 📊 အစီရင်ခံ / မှတ်တမ်း {expandedDashboardMenu === "reports" ? "⌃" : "⌄"}
               </button>
@@ -1548,7 +1548,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
                 aria-expanded={expandedDashboardMenu === "data"}
                 aria-controls="dashboard-data-menu"
-                className="col-span-2 flex min-h-9 w-full items-center justify-center gap-1 whitespace-nowrap rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-1.5 text-[11px] font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                className="col-span-2 flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-2 text-sm font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
               >
                 🗂️ ဒေတာ / အမှိုက်ပုံး {expandedDashboardMenu === "data" ? "⌃" : "⌄"}
               </button>
