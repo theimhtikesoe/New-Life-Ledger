@@ -38,5 +38,8 @@ describe("DailySalesSummaryPanel", () => {
   it("keeps the combined cash output card aligned with the output grid", () => {
     expect(source).toContain('<div className="mt-4 grid gap-2 sm:grid-cols-2">');
     expect(source).not.toContain('max-w-sm rounded-xl border border-rose-200 bg-rose-50 p-3.5');
+    expect(source).toContain("လစဉ်စုစုပေါင်း / နောက်နေ့ Opening");
+    expect(source).toContain("နေ့စဉ်ရောင်းရငွေ / နောက်နေ့ Opening ဇယား");
+    expect(source).toContain("အဲဒီနေ့အဆုံး / နောက်နေ့ Opening");
   });
 });

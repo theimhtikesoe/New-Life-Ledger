@@ -304,9 +304,9 @@ export default function DailySalesSummaryPanel() {
                 <p className="mt-1 text-[11px] text-rose-700">Row ၁ ရဲ့ ခရမ်း + အဝါ</p>
               </div>
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
-                <p className="text-xs font-semibold text-emerald-800">တစ်လစာ ရောင်းရငွေ</p>
+                <p className="text-xs font-semibold text-emerald-800">လစဉ်စုစုပေါင်း / နောက်နေ့ Opening</p>
                 <p className="mt-1 text-xl font-bold text-emerald-900">{formatMoney(monthlyTotal)}</p>
-                <p className="mt-1 text-[11px] text-emerald-700">လဆန်း ၁ ရက်မှ {currentLabel} အထိ</p>
+                <p className="mt-1 text-[11px] text-emerald-700">ဒီနေ့စာရင်းသိမ်းပြီးနောက် နောက်နေ့ Opening အဖြစ် ဆက်သွားမည်</p>
               </div>
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5">
                 <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ ငွေသား</p>
@@ -325,8 +325,8 @@ export default function DailySalesSummaryPanel() {
 
             {summary?.rows?.length > 0 && (
               <div className="mt-6">
-                <h3 className="text-sm font-bold text-slate-900">လစဉ် နေ့စဉ်ရောင်းရငွေ ဇယား</h3>
-                <p className="mt-1 text-[11px] text-slate-500">အစိမ်းက Opening ညှိထားသောပမာဏနှင့် အဲဒီနောက်နေ့များ၏ တစ်နေ့တာရောင်းရငွေ စုစုပေါင်းဖြစ်ပါသည်။</p>
+                <h3 className="text-sm font-bold text-slate-900">နေ့စဉ်ရောင်းရငွေ / နောက်နေ့ Opening ဇယား</h3>
+                <p className="mt-1 text-[11px] text-slate-500">အဲဒီနေ့အဆုံး စုစုပေါင်းက နောက်နေ့ Opening အဖြစ် အလိုအလျောက် ဆက်သွားပါသည်။</p>
                 <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-slate-600">
@@ -335,7 +335,7 @@ export default function DailySalesSummaryPanel() {
                         <th className="px-3 py-2 font-bold">လက်လီ (Total)</th>
                         <th className="px-3 py-2 font-bold">လက်ကား (Total)</th>
                         <th className="px-3 py-2 font-bold">တစ်နေ့တာ</th>
-                        <th className="px-3 py-2 font-bold">လစဉ်စုစုပေါင်း</th>
+                        <th className="px-3 py-2 font-bold">အဲဒီနေ့အဆုံး / နောက်နေ့ Opening</th>
                         <th className="px-3 py-2 font-bold">ငွေသား</th>
                         <th className="px-3 py-2 font-bold">Source</th>
                       </tr>
