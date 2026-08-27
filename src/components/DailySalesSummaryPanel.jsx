@@ -25,7 +25,7 @@ const INPUT_FIELDS = [
 
 const AUGUST_NOTEBOOK_OPENING = {
   month: "2026-08",
-  amount: "246593950",
+  amount: "246593750",
   asOfDate: "2026-08-26",
   note: "စာအုပ်မှ 26/08/2026 အထိ",
 };
@@ -71,6 +71,7 @@ export default function DailySalesSummaryPanel() {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
+  const [saveNotice, setSaveNotice] = useState("");
   const [showOpeningForm, setShowOpeningForm] = useState(false);
   const [openingDraft, setOpeningForm] = useState({ amount: "", asOfDate: "", note: "" });
 
@@ -79,6 +80,7 @@ export default function DailySalesSummaryPanel() {
     const actorName = window.localStorage.getItem("actorName") || "";
     setLoading(true);
     setError("");
+    setSaveNotice("");
     try {
       const response = await fetch(`/api/daily-sales-summary?date=${encodeURIComponent(targetDate)}`, {
         cache: "no-store",
@@ -126,7 +128,6 @@ export default function DailySalesSummaryPanel() {
     || Number(values.wholesaleTotal || 0) !== Number(automatic.wholesaleTotal || 0)
     || Number(values.retailCash || 0) !== Number(automatic.retailCash || 0)
     || Number(values.wholesaleCash || 0) !== Number(automatic.wholesaleCash || 0);
-  const canSaveDaily = hasManualDifference || automatic.source !== "DAILY_SUMMARY";
   const invalidCashInput = Number(values.retailCash || 0) > Number(values.retailTotal || 0)
     || Number(values.wholesaleCash || 0) > Number(values.wholesaleTotal || 0);
   const tableRows = useMemo(() => {
@@ -159,6 +160,7 @@ export default function DailySalesSummaryPanel() {
 
   const handleInput = (key, value) => {
     setIsEditing(true);
+    setSaveNotice("");
     setDraft((current) => ({ ...(current || toDraft(automatic)), [key]: value === "" ? "" : Number(value) }));
   };
 
@@ -171,6 +173,7 @@ export default function DailySalesSummaryPanel() {
     if (saving) return;
     setSaving(true);
     setError("");
+    setSaveNotice("");
     const actorName = window.localStorage.getItem("actorName") || "";
     try {
       const response = await fetch("/api/daily-sales-summary", {
@@ -183,9 +186,10 @@ export default function DailySalesSummaryPanel() {
       setSummary(body.data);
       setDraft(toDraft(body.data.selectedDay));
       setIsEditing(false);
+      setSaveNotice("နေ့စဉ်စာရင်း သိမ်းပြီးပါပြီ။");
     } catch (saveError) {
-      setIsEditing(false);
-      setError(saveError.message);
+      setIsEditing(true);
+      setError(saveError.message || "နေ့စဉ်စာရင်း သိမ်း၍ မရပါ။ ပြန်စမ်းပါ။");
     } finally {
       setSaving(false);
     }
@@ -195,6 +199,7 @@ export default function DailySalesSummaryPanel() {
     if (saving) return;
     setSaving(true);
     setError("");
+    setSaveNotice("");
     const actorName = window.localStorage.getItem("actorName") || "";
     try {
       const response = await fetch("/api/daily-sales-summary", {
@@ -206,8 +211,9 @@ export default function DailySalesSummaryPanel() {
       if (!response.ok || !body.ok) throw new Error(body.error || "Opening သိမ်း၍ မရပါ။");
       setSummary(body.data);
       setShowOpeningForm(false);
+      setSaveNotice("စာအုပ်အစ စုစုပေါင်း သိမ်းပြီးပါပြီ။");
     } catch (saveError) {
-      setError(saveError.message);
+      setError(saveError.message || "Opening သိမ်း၍ မရပါ။ ပြန်စမ်းပါ။");
     } finally {
       setSaving(false);
     }
@@ -233,8 +239,8 @@ export default function DailySalesSummaryPanel() {
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/35 p-2 backdrop-blur-[2px] sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-labelledby="daily-sales-summary-title">
-          <section className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-4 shadow-2xl sm:p-6">
+        <div className="fixed inset-0 z-[120] flex items-start justify-center bg-slate-950/35 p-2 backdrop-blur-[2px] sm:items-center sm:p-5" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }} role="dialog" aria-modal="true" aria-labelledby="daily-sales-summary-title">
+          <section className="relative max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl sm:max-h-[94vh] sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">Daily Sales Summary</p>
@@ -271,12 +277,13 @@ export default function DailySalesSummaryPanel() {
                     <button type="button" onClick={saveOpening} disabled={saving} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "Opening သိမ်းမည်"}</button>
                   </div>
                 </div>
-                <p className="mt-2 text-[10px] text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,950 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `Opening သိမ်းမည်` နှိပ်မှသာ database ထဲ သိမ်းပါမည်။</p>
+                <p className="mt-2 text-[10px] leading-4 text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,750 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `Opening သိမ်းမည်` နှိပ်မှသာ database ထဲ သိမ်းပါမည်။</p>
               </div>
             )}
 
             {loading ? <p className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center text-sm text-indigo-800">Data ရယူနေပါသည်...</p> : null}
             {error ? <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
+            {saveNotice ? <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{saveNotice}</p> : null}
 
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {INPUT_FIELDS.map((field) => (
@@ -311,9 +318,9 @@ export default function DailySalesSummaryPanel() {
 
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs leading-5 text-slate-700 sm:flex-row sm:items-center sm:justify-between">
               <p>{saving ? "နေ့စဉ်စာရင်းကို auto သိမ်းနေပါသည်..." : hasManualDifference ? "Input ပြောင်းပြီး ၀.၉ စက္ကန့်အတွင်း auto သိမ်းပါမည်။" : automatic.source === "CASH_SALE" ? "ရှိပြီးသား CashSale data ကို နေ့စဉ်စာရင်းအဖြစ် auto သိမ်းပါမည်။" : "အခုတန်ဖိုးများသည် ရှိပြီးသား data မှ auto တွက်ထားခြင်းဖြစ်ပါသည်။"}</p>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={resetToAutomatic} disabled={!summary || saving} className="shrink-0 rounded-lg border border-indigo-200 bg-white px-3 py-2 font-semibold text-indigo-800 hover:bg-indigo-50 disabled:opacity-50">Auto data ပြန်ထားရန်</button>
-                <button type="button" onClick={saveDaily} disabled={saving || !canSaveDaily} className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "နေ့စဉ်စာရင်း သိမ်းမည်"}</button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+                <button type="button" onClick={resetToAutomatic} disabled={!summary || saving} className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 font-semibold text-indigo-800 hover:bg-indigo-50 disabled:opacity-50 sm:w-auto">Auto data ပြန်ထားရန်</button>
+                <button type="button" onClick={saveDaily} disabled={saving || invalidCashInput} className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto">{saving ? "သိမ်းနေသည်..." : "နေ့စဉ်စာရင်း သိမ်းမည်"}</button>
               </div>
             </div>
 

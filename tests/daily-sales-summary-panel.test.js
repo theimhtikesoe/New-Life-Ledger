@@ -18,10 +18,20 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain("window.setTimeout(() => { saveDaily(); }, 900)");
     expect(source).toContain('body: JSON.stringify({ date, ...values })');
     expect(source).toContain('body: JSON.stringify({ action: "opening", month: date.slice(0, 7), selectedDate: date, ...openingDraft })');
+    expect(source).toContain('setSaveNotice("နေ့စဉ်စာရင်း သိမ်းပြီးပါပြီ။")');
+    expect(source).toContain('setIsEditing(true);\n      setError(saveError.message || "နေ့စဉ်စာရင်း သိမ်း၍ မရပါ။ ပြန်စမ်းပါ။")');
   });
 
   it("keeps the Daily Sales card above Activity History in a responsive grid", () => {
     expect(dashboardSource).toContain("grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4");
     expect(dashboardSource.indexOf("<DailySalesSummaryPanel />")).toBeLessThan(dashboardSource.indexOf('href=\"/activity\"'));
+  });
+
+  it("uses the checked August notebook opening prefill and mobile-safe actions", () => {
+    expect(source).toContain('amount: "246593750"');
+    expect(source).toContain('asOfDate: "2026-08-26"');
+    expect(source).toContain("max-h-[calc(100dvh-1rem)]");
+    expect(source).toContain("flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap");
+    expect(source).toContain("w-full rounded-lg bg-indigo-600");
   });
 });

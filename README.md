@@ -52,7 +52,7 @@ The Dashboard includes a compact Daily Sales Summary panel for the four daily fi
 
 Existing CashSale records seed the selected day automatically. Opening the panel for a day with CashSale data also creates an additive `DailySalesSummary` row automatically after the brief save delay; editing any input saves the four values to the same Myanmar date. The panel lists the month’s daily rows in a table with daily total, monthly cumulative, cash total, and source (`CashSale` or `Saved`). A KPay/Bank/Wave settlement that pays an existing customer debt remains a Ledger payment and is not counted as sales unless it is explicitly a CashSale.
 
-For the current partial month, the owner can enter the notebook’s accumulated sales as one `DailySalesOpening` amount with an `asOfDate` (for example, the amount through the previous day). Older paper days do not need to be re-entered as individual rows. The opening amount is an additive reconciliation value and does not change Customer, Ledger, CashSale, Order, or balance data. Daily summary saves are audited under the selected actor.
+For the current partial month, the owner can enter the notebook’s accumulated sales as one `DailySalesOpening` amount with an `asOfDate` (for example, the amount through the previous day). For the verified August 2026 notebook row, the current prefill is `246,593,750 Ks` through `2026-08-26`; the owner must check the paper value before pressing `Opening သိမ်းမည်`. Older paper days do not need to be re-entered as individual rows. The opening amount is an additive reconciliation value and does not change Customer, Ledger, CashSale, Order, or balance data. Daily summary saves are audited under the selected actor.
 
 ### 3.5 Telegram Order and Factory Handover flow
 
