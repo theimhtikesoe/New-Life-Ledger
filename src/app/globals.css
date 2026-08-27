@@ -98,3 +98,19 @@ textarea {
 .customer-card {
   transition: all 0.2s ease-out;
 }
+
+
+/* Keep fixed PWA quick actions below the iPad status/header area. The safe-area
+   inset is included so portrait and landscape standalone PWAs do not crowd the
+   top-right notification/menu controls. */
+.pwa-quick-actions {
+  top: calc(env(safe-area-inset-top, 0px) + 4.75rem);
+  right: calc(env(safe-area-inset-right, 0px) + 0.75rem);
+}
+
+@media screen and (min-width: 768px) {
+  .pwa-quick-actions {
+    top: calc(env(safe-area-inset-top, 0px) + 5.5rem);
+    right: calc(env(safe-area-inset-right, 0px) + 1rem);
+  }
+}
