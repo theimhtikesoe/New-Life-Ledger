@@ -7,6 +7,7 @@ import OverdueNotificationBell from "./OverdueNotificationBell";
 import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
+import LedgerPulse from "@/components/LedgerPulse";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -280,6 +281,9 @@ export default function Dashboard({ view = "overview" }) {
   const [todayCashSales, setTodayCashSales] = useState(() => readDashboardSnapshot()?.todayCashSales || []);
   const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
+  const [ledgerPulse, setLedgerPulse] = useState(() => readDashboardSnapshot()?.ledgerPulse || null);
+  const [ledgerPulseLoading, setLedgerPulseLoading] = useState(false);
+  const [ledgerPulseError, setLedgerPulseError] = useState("");
   const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
   const [telegramReportStep, setTelegramReportStep] = useState("preview");
   const [telegramReportDate, setTelegramReportDate] = useState(() => getPreviousMyanmarDateInputValue());
@@ -663,6 +667,22 @@ export default function Dashboard({ view = "overview" }) {
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Pending KPay data was not loaded:", error);
         });
+
+      // Stage 6: the visual pulse is non-critical and loads after the main data.
+      setLedgerPulseLoading(true);
+      setLedgerPulseError("");
+      void api("/api/dashboard-pulse?days=7", { signal, cache: "no-store", timeoutMs: 20000 })
+        .then((payload) => {
+          const pulse = payload?.data || null;
+          setLedgerPulse(pulse);
+          saveDashboardSnapshot({ ledgerPulse: pulse });
+        })
+        .catch((error) => {
+          if (error.name === "AbortError") return;
+          console.warn("Ledger Pulse data was not loaded:", error);
+          setLedgerPulseError(error.message || "Ledger Pulse data မရသေးပါ။");
+        })
+        .finally(() => setLedgerPulseLoading(false));
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (error.code === "AUTH_REQUIRED" || error.status === 401) {
@@ -1672,6 +1692,10 @@ export default function Dashboard({ view = "overview" }) {
           </div>
             </section>
           </>
+        ) : null}
+
+        {!isLedgerView ? (
+          <LedgerPulse data={ledgerPulse} loading={ledgerPulseLoading} error={ledgerPulseError} />
         ) : null}
 
         {isLedgerView ? (

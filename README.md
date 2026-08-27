@@ -248,7 +248,7 @@ The global shell registers `public/service-worker-v9.js`. API requests bypass th
 
 Authenticated pages display a small fixed refresh button at the upper safe-area corner. It first asks the active service worker to update and then performs a normal page reload. The control is intentionally compact, keyboard-accessible, safe-area aware, and separate from destructive actions. It does not mutate database data; it only revalidates the page and APIs through the normal load flow.
 
-The Dashboard loads KPI first, then overdue data and primary ledger/customer data, with detailed summaries, KPay, Orders, and secondary data in background stages. Each critical request has bounded timeout/error/retry behavior so a stale loading label cannot remain forever. A cached browser snapshot is only used to keep the screen useful while revalidation is in progress; successful server responses replace it.
+The Dashboard loads KPI first, then overdue data and primary ledger/customer data, with detailed summaries, KPay, Orders, and secondary data in background stages. The non-critical `/api/dashboard-pulse?days=7` route aggregates the previous seven Myanmar calendar days in one server-side request. Its `Ledger Pulse` panel renders paid, debt-increase, and CashSale amounts as separate animated plant-like columns; CashSale is never mixed into Customer balance/net receivables. Each critical request has bounded timeout/error/retry behavior so a stale loading label cannot remain forever. A cached browser snapshot is only used to keep the screen useful while revalidation is in progress; successful server responses replace it.
 
 ## 12. Future plan
 
