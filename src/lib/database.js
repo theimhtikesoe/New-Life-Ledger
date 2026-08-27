@@ -1,7 +1,35 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 let setupPromise;
 let setupComplete = false;
+
+const REQUIRED_TABLES = [
+  "Customer",
+  "KpayAlias",
+  "Ledger",
+  "UnverifiedKpay",
+  "AuditLog",
+  "AutoReportRun",
+  "CashSale",
+  "Order",
+  "OrderLine",
+  "OrderCap",
+  "OrderDelivery",
+  "OrderAutomationSetting",
+  "OrderBatchRun",
+  "AiExplanationCache",
+];
+
+async function hasExpectedSchema() {
+  const result = await prisma.$queryRaw`
+    SELECT COUNT(*)::int AS count
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+      AND table_name IN (${Prisma.join(REQUIRED_TABLES)})
+  `;
+  return Number(result[0]?.count || 0) === REQUIRED_TABLES.length;
+}
 
 function isBenignSetupRace(error) {
   const code = error?.code || error?.meta?.code;
@@ -54,15 +82,22 @@ export async function ensureDatabase() {
   // Start setup and cache the promise
   setupPromise = (async () => {
     try {
-      // Use a lightweight check before running full setup to reduce overhead
-      // Only run setup if a key table is missing
+      // Production requests normally arrive after migrations have already
+      // created the complete schema. Avoid repeating many CREATE/ALTER/index
+      // statements on every cold serverless function. If the readiness probe
+      // fails, fall back to the existing additive setup path below.
+      if (await hasExpectedSchema().catch(() => false)) {
+        setupComplete = true;
+        return;
+      }
+
       const tableCheck = await prisma.$queryRaw`
-        SELECT count(*) 
-        FROM information_schema.tables 
+        SELECT count(*)
+        FROM information_schema.tables
         WHERE table_name = 'Customer'
       `.catch(() => [{ count: 0 }]);
 
-      if (tableCheck[0]?.count > 0) {
+      if (Number(tableCheck[0]?.count || 0) > 0) {
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "AuditLog" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),

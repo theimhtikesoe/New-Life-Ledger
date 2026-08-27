@@ -297,6 +297,7 @@ export default function Dashboard({ view = "overview" }) {
   const retryTimerRef = useRef(null);
   const retryCountdownRef = useRef(null);
   const telegramPreviewRequestRef = useRef(0);
+  const telegramPreviewControllerRef = useRef(null);
   const lastDashboardAttemptAtRef = useRef(0);
   const dashboardDraftRestoredRef = useRef(false);
   const dashboardDraftActorRef = useRef("");
@@ -466,6 +467,9 @@ export default function Dashboard({ view = "overview" }) {
     setTelegramReportPreview(null);
     setTelegramReportPin("");
     setTelegramReportError("");
+    telegramPreviewRequestRef.current += 1;
+    telegramPreviewControllerRef.current?.abort();
+    telegramPreviewControllerRef.current = null;
     setIsLoadingTelegramReportPreview(false);
     setIsSendingTelegramReport(false);
   }, []);
@@ -473,31 +477,36 @@ export default function Dashboard({ view = "overview" }) {
   const loadTelegramReportPreview = useCallback(async (date) => {
     const requestId = telegramPreviewRequestRef.current + 1;
     telegramPreviewRequestRef.current = requestId;
+    telegramPreviewControllerRef.current?.abort();
+    const controller = new AbortController();
+    telegramPreviewControllerRef.current = controller;
     setTelegramReportPreview(null);
     setTelegramReportError("");
     setIsLoadingTelegramReportPreview(true);
     try {
       const query = new URLSearchParams({ date, refresh: String(Date.now()) });
-      const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") || "" : "";
-      const response = await fetch(`/api/telegram/manual-report-preview?${query.toString()}`, {
+      const preview = await api(`/api/telegram/manual-report-preview?${query.toString()}`, {
+        signal: controller.signal,
+        timeoutMs: 12000,
         cache: "no-store",
         credentials: "include",
-        headers: actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {},
       });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok || !body.ok) {
-        if (response.status === 401) throw new Error("PIN session မရှိတော့ပါ။ Dashboard ကို ပြန်ဝင်ပြီး ထပ်စမ်းပါ။");
-        throw new Error(body.error || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
-      }
       if (telegramPreviewRequestRef.current === requestId) {
-        setTelegramReportPreview(body.data);
+        setTelegramReportPreview(preview);
       }
     } catch (error) {
       if (telegramPreviewRequestRef.current === requestId) {
-        setTelegramReportError(error.message || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
+        if (error.code === "AUTH_REQUIRED" || error.status === 401) {
+          setTelegramReportError("PIN session မရှိတော့ပါ။ Dashboard ကို ပြန်ဝင်ပြီး ထပ်စမ်းပါ။");
+        } else if (error.name === "TimeoutError" || error.name === "AbortError") {
+          setTelegramReportError("Report preview ရယူရန် အချိန်ကျော်သွားပါပြီ။ ပြန်စမ်းမည် သို့မဟုတ် ပိတ်ရန် နှိပ်ပါ။");
+        } else {
+          setTelegramReportError(error.message || "Report preview ရယူခြင်း မအောင်မြင်ပါ။");
+        }
       }
     } finally {
       if (telegramPreviewRequestRef.current === requestId) {
+        telegramPreviewControllerRef.current = null;
         setIsLoadingTelegramReportPreview(false);
       }
     }
@@ -565,33 +574,21 @@ export default function Dashboard({ view = "overview" }) {
   }, [isSendingTelegramReport, resetTelegramReportModal, showAlert, telegramReportPin, telegramReportPreview]);
 
   const loadOverdueDebts = useCallback(async () => {
-    // This is a non-critical background request. Keep it independent from the
-    // dashboard search AbortController and bypass the general retry wrapper.
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    // This is a non-critical background request. It must never leave the bell
+    // in an infinite loading state if the database or network is slow.
     try {
-      const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") || "" : "";
-      const response = await fetch(`/api/overdue-debts?refresh=${Date.now()}`, {
+      const overdueRows = await api(`/api/overdue-debts?refresh=${Date.now()}`, {
+        timeoutMs: 20000,
         cache: "no-store",
-        signal: controller.signal,
-        headers: {
-          "Content-Type": "application/json",
-          ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
-        },
       });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || `Request failed with status ${response.status}`);
-      const overdueRows = Array.isArray(body.data) ? body.data : [];
-      setOverdueDebts(overdueRows);
-      saveDashboardSnapshot({ overdueDebts: overdueRows });
+      const rows = Array.isArray(overdueRows) ? overdueRows : [];
+      setOverdueDebts(rows);
+      saveDashboardSnapshot({ overdueDebts: rows });
     } catch (error) {
-      if (error.name !== "AbortError") {
-        console.warn("Overdue debts were not loaded:", error);
-        // Keep the last successful overdue snapshot visible during a transient failure.
-        setOverdueDebts((current) => current || []);
-      }
-    } finally {
-      clearTimeout(timeout);
+      console.warn("Overdue debts were not loaded:", error);
+      // Keep the last successful snapshot; if none exists, explicitly resolve
+      // to an empty state so the bell cannot remain stuck on “ရယူနေသည်...”.
+      setOverdueDebts((current) => current ?? []);
     }
   }, []);
 
@@ -2587,8 +2584,15 @@ export default function Dashboard({ view = "overview" }) {
                     {telegramReportDate || "ရွေးထားသောနေ့"} report အချက်အလက်များ ရယူနေသည်...
                   </div>
                 ) : telegramReportError && !telegramReportPreview ? (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-                    {telegramReportError}
+                  <div className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                    <p>{telegramReportError}</p>
+                    <button
+                      type="button"
+                      onClick={() => loadTelegramReportPreview(telegramReportDate)}
+                      className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100"
+                    >
+                      ပြန်စမ်းမည်
+                    </button>
                   </div>
                 ) : telegramReportPreview ? (
                   <div className="space-y-4">
@@ -2627,7 +2631,7 @@ export default function Dashboard({ view = "overview" }) {
                     type="button"
                     className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200 disabled:opacity-50"
                     onClick={resetTelegramReportModal}
-                    disabled={isLoadingTelegramReportPreview}
+                    disabled={false}
                   >
                     မပို့တော့ပါ
                   </button>
