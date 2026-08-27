@@ -7,6 +7,7 @@ const AUDIO_PERMISSION_KEY = "new-life-ledger:overdue-alert-audio-permission-v2"
 const AUDIO_LAST_PLAYED_DAY_KEY = "new-life-ledger:overdue-alert-audio-played-day-v2";
 const AUDIO_LAST_AUTO_ATTEMPT_DAY_KEY = "new-life-ledger:overdue-alert-audio-auto-attempt-day-v2";
 const AUDIO_LAST_BLOCKED_DAY_KEY = "new-life-ledger:overdue-alert-audio-blocked-day-v2";
+const AUDIO_STATUS_KEY = "new-life-ledger:overdue-alert-audio-status-v1";
 const AUDIO_PERMISSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 function isAppleTablet() {
@@ -92,6 +93,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
       audio.volume = 1;
       const playPromise = audio.play();
       if (playPromise && typeof playPromise.then === "function") await playPromise;
+      writeLocalValue(AUDIO_STATUS_KEY, "playing");
       window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-started"));
       playedRef.current = true;
       rememberAudioPermission();
@@ -102,6 +104,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     } catch (error) {
       console.warn("Overdue alert audio could not start:", error);
       setPlayState("blocked");
+      writeLocalValue(AUDIO_STATUS_KEY, "blocked");
       window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-blocked"));
       setShowRetryPanel(true);
       setShowSettingsGuide(false);
@@ -131,6 +134,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
 
   useEffect(() => {
     if (!ready) return;
+    writeLocalValue(AUDIO_STATUS_KEY, hasOverdue ? "pending" : "not-needed");
     window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-status-ready", {
       detail: { ready: true, hasOverdue },
     }));
@@ -166,10 +170,12 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     if (readLocalValue(AUDIO_LAST_PLAYED_DAY_KEY) === today) {
       playedRef.current = true;
       setPlayState("played");
+      writeLocalValue(AUDIO_STATUS_KEY, "ended");
       return;
     }
     if (readLocalValue(AUDIO_LAST_AUTO_ATTEMPT_DAY_KEY) === today) {
       setPlayState("blocked");
+      writeLocalValue(AUDIO_STATUS_KEY, "blocked");
       return;
     }
 
@@ -189,6 +195,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     if (!playedRef.current) return;
     setPlayState("played");
     rememberDay(AUDIO_LAST_PLAYED_DAY_KEY);
+    writeLocalValue(AUDIO_STATUS_KEY, "ended");
     window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-ended"));
     rememberAudioPermission();
   };
@@ -199,6 +206,7 @@ export default function OverdueAlertAudio({ overdueDebts = [], ready = false }) 
     const alreadyBlockedToday = readLocalValue(AUDIO_LAST_BLOCKED_DAY_KEY) === today;
     rememberDay(AUDIO_LAST_BLOCKED_DAY_KEY, today);
     setPlayState("blocked");
+    writeLocalValue(AUDIO_STATUS_KEY, "blocked");
     window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-audio-blocked"));
     // Show the guide on the first blocked attempt only; a refresh must not
     // repeatedly ask the owner to allow the same audio again.

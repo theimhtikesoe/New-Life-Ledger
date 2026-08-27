@@ -7,6 +7,7 @@ const MUSIC_CHECKPOINT_KEY = "new-life-ledger:background-music-checkpoint-v1";
 const MUSIC_VOLUME = 0.12;
 const OVERDUE_LAST_PLAYED_DAY_KEY = "new-life-ledger:overdue-alert-audio-played-day-v2";
 const OVERDUE_LAST_AUTO_ATTEMPT_DAY_KEY = "new-life-ledger:overdue-alert-audio-auto-attempt-day-v2";
+const OVERDUE_AUDIO_STATUS_KEY = "new-life-ledger:overdue-alert-audio-status-v1";
 
 const TRACKS = [
   {
@@ -96,6 +97,9 @@ export default function BackgroundMusicPlayer() {
   const mutedRef = useRef(false);
   const trackIndexRef = useRef(0);
   const resumePositionRef = useRef(null);
+  const overdueAudioActiveRef = useRef(false);
+  const overdueModalOpenRef = useRef(false);
+  const fallbackTimerRef = useRef(null);
   const [trackIndex, setTrackIndex] = useState(0);
   const [muted, setMuted] = useState(false);
   const [playState, setPlayState] = useState("waiting");
@@ -199,12 +203,37 @@ export default function BackgroundMusicPlayer() {
   }, [playCurrentTrack, trackIndex]);
 
   useEffect(() => {
-    const handleOverdueStarted = () => pauseMusic("waiting");
-    const handleOverdueBlocked = () => startMusic();
-    const handleOverdueEnded = () => startMusic();
-    const handleOverdueNotNeeded = () => startMusic();
-    const handleOverdueOpened = () => pauseMusic("paused");
-    const handleOverdueClosed = () => startMusic();
+    const handleOverdueStarted = () => {
+      overdueAudioActiveRef.current = true;
+      pauseMusic("waiting");
+    };
+    const handleOverdueBlocked = () => {
+      overdueAudioActiveRef.current = false;
+      if (!overdueModalOpenRef.current) startMusic();
+    };
+    const handleOverdueEnded = () => {
+      overdueAudioActiveRef.current = false;
+      if (!overdueModalOpenRef.current) startMusic();
+    };
+    const handleOverdueNotNeeded = () => {
+      overdueAudioActiveRef.current = false;
+      if (!overdueModalOpenRef.current) startMusic();
+    };
+    const handleOverdueOpened = () => {
+      overdueModalOpenRef.current = true;
+      pauseMusic("paused");
+    };
+    const handleOverdueClosed = () => {
+      overdueModalOpenRef.current = false;
+      startMusic();
+    };
+
+    const clearFallbackTimer = () => {
+      if (fallbackTimerRef.current) {
+        window.clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+    };
 
     window.addEventListener("new-life-ledger:overdue-audio-started", handleOverdueStarted);
     window.addEventListener("new-life-ledger:overdue-audio-blocked", handleOverdueBlocked);
@@ -214,12 +243,36 @@ export default function BackgroundMusicPlayer() {
     window.addEventListener("new-life-ledger:overdue-closed", handleOverdueClosed);
 
     return () => {
+      clearFallbackTimer();
       window.removeEventListener("new-life-ledger:overdue-audio-started", handleOverdueStarted);
       window.removeEventListener("new-life-ledger:overdue-audio-blocked", handleOverdueBlocked);
       window.removeEventListener("new-life-ledger:overdue-audio-ended", handleOverdueEnded);
       window.removeEventListener("new-life-ledger:overdue-audio-not-needed", handleOverdueNotNeeded);
       window.removeEventListener("new-life-ledger:overdue-opened", handleOverdueOpened);
       window.removeEventListener("new-life-ledger:overdue-closed", handleOverdueClosed);
+    };
+  }, [pauseMusic, startMusic]);
+
+  useEffect(() => {
+    const syncPersistedOverdueStatus = () => {
+      const status = readLocalValue(OVERDUE_AUDIO_STATUS_KEY);
+      if (status === "pending") {
+        pauseMusic("waiting");
+        fallbackTimerRef.current = window.setTimeout(() => {
+          const latestStatus = readLocalValue(OVERDUE_AUDIO_STATUS_KEY);
+          if (latestStatus === "pending" && !overdueAudioActiveRef.current && !overdueModalOpenRef.current) {
+            startMusic();
+          }
+        }, 5000);
+      } else if (status === "blocked" || status === "ended" || status === "not-needed") {
+        startMusic();
+      }
+    };
+
+    const timer = window.setTimeout(syncPersistedOverdueStatus, 250);
+    return () => {
+      window.clearTimeout(timer);
+      if (fallbackTimerRef.current) window.clearTimeout(fallbackTimerRef.current);
     };
   }, [pauseMusic, startMusic]);
 
@@ -245,6 +298,9 @@ export default function BackgroundMusicPlayer() {
   }, [pauseMusic, startMusic]);
 
   const handleMusicButton = () => {
+    const audio = audioRef.current;
+    const wasPaused = !audio || audio.paused;
+
     if (playState === "blocked" && !mutedRef.current) {
       startMusic();
       return;
@@ -259,15 +315,23 @@ export default function BackgroundMusicPlayer() {
       // Private browsing may disable localStorage; the current session still works.
     }
 
-    const audio = audioRef.current;
-    if (audio) {
-      audio.muted = nextMuted;
-      audio.volume = MUSIC_VOLUME;
+    if (!audio) {
+      setPlayState(nextMuted ? "muted" : "waiting");
+      if (!nextMuted) startMusic();
+      return;
     }
+
+    // Do not call load(), reset currentTime, or replace the source when toggling
+    // mute. A currently playing track must continue at its exact position.
+    audio.volume = MUSIC_VOLUME;
+    audio.muted = nextMuted;
     if (nextMuted) {
       setPlayState("muted");
-    } else {
+    } else if (wasPaused) {
       startMusic();
+    } else {
+      shouldPlayRef.current = true;
+      setPlayState("playing");
     }
   };
 

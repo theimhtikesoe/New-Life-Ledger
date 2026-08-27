@@ -18,6 +18,8 @@ describe("Background music player", () => {
     expect(source).toContain("pagehide");
     expect(source).toContain("onTimeUpdate={saveCurrentCheckpoint}");
     expect(source).toContain("audio.currentTime = resumePositionRef.current");
+    expect(source).toContain("Do not call load(), reset currentTime, or replace the source");
+    expect(source).toContain("const wasPaused = !audio || audio.paused;");
     expect((source.match(/files\.manuscdn\.com\/user_upload_by_module/g) || []).length).toBe(4);
   });
 
@@ -27,6 +29,10 @@ describe("Background music player", () => {
     expect(source).toContain("new-life-ledger:overdue-opened");
     expect(source).toContain("MUSIC_MUTED_KEY");
     expect(source).toContain("new-life-ledger:background-music-blocked");
+    expect(source).toContain("OVERDUE_AUDIO_STATUS_KEY");
+    expect(source).toContain("latestStatus === \"pending\"");
+    expect(source).toContain("overdueAudioActiveRef.current");
+    expect(source).toContain("}, 5000);");
     expect(source).toContain("aria-label={muted ? \"Background music unmute\" : \"Background music mute\"}");
   });
 });
