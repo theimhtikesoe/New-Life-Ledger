@@ -4,8 +4,10 @@ import { describe, expect, it } from "vitest";
 
 const projectRoot = process.cwd();
 const componentPath = path.join(projectRoot, "src/components/OverdueAlertAudio.jsx");
+const bellPath = path.join(projectRoot, "src/components/OverdueNotificationBell.jsx");
 const assetPath = path.join(projectRoot, "public/audio/overdue-debt-notification.m4a");
 const source = fs.readFileSync(componentPath, "utf8");
+const bellSource = fs.readFileSync(bellPath, "utf8");
 
 describe("Overdue alert audio feature", () => {
   it("ships the owner-provided audio asset in the web app", () => {
@@ -30,6 +32,11 @@ describe("Overdue alert audio feature", () => {
     expect(source).toContain("getMyanmarDayKey");
     expect(source).toContain("readLocalValue(AUDIO_LAST_PLAYED_DAY_KEY) === today");
     expect(source).toContain("readLocalValue(AUDIO_LAST_AUTO_ATTEMPT_DAY_KEY) === today");
+  });
+
+  it("dispatches a close event from every overdue modal close action", () => {
+    expect(bellSource).toContain('window.dispatchEvent(new CustomEvent("new-life-ledger:overdue-closed"));');
+    expect(bellSource).toContain("onClick={closeModal}");
   });
 
   it("records completion only after playback reaches the end", () => {
