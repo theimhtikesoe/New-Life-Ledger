@@ -21,6 +21,10 @@ function normalizeCounts(counts) {
   };
 }
 
+function hasMeaningfulCounts(counts) {
+  return Boolean(counts && Object.values(counts).some((value) => Number.isFinite(Number(value)) && Number(value) > 0));
+}
+
 export async function beginAutoReportRun({ reportDate, trigger = "schedule" } = {}) {
   if (!reportDate) throw new Error("Report date is required");
   await ensureDatabase();
@@ -128,6 +132,22 @@ export async function reconcileManualReportRun({
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     if (latest?.status === "SUCCESS") {
+      const nextCounts = normalizeCounts(counts);
+      const existingCounts = normalizeCounts(latest.counts);
+      const canBackfillReconciledCounts = latest.trigger === "manual-reconciled"
+        && hasMeaningfulCounts(nextCounts)
+        && !hasMeaningfulCounts(existingCounts);
+      if (canBackfillReconciledCounts) {
+        const updated = await tx.autoReportRun.update({
+          where: { id: latest.id },
+          data: {
+            periodLabel: periodLabel || latest.periodLabel || undefined,
+            recipientCount: Math.max(0, Number(recipients ?? latest.recipientCount ?? 0)),
+            counts: nextCounts,
+          },
+        });
+        return { recorded: true, updated: true, reason: "counts_backfilled", run: serializeAutoReportRun(updated) };
+      }
       return { recorded: false, reason: "already_success", run: serializeAutoReportRun(latest) };
     }
     if (latest?.status === "RUNNING" && Date.now() - new Date(latest.createdAt).getTime() < RUNNING_TIMEOUT_MS) {
