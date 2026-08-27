@@ -88,11 +88,20 @@ function normalizeAiItems(items = []) {
 
 function getReviewTarget(text) {
   const value = cleanAiText(text);
-  const customerMatch = value.match(/Customer\s+(.+?)(?=\s*(?:၏|အတွက်|သည်|နှင့်|တွင်|ကို|တူ|ရှိ|အကြွေး|ငွေချေ|ငွေပြန်|payment)|\s+[0-9,]+\s*Ks|$)/iu);
   const amountMatch = value.match(/([0-9][0-9,]*)\s*Ks/iu);
-  const action = /ငွေချေ|ပေးချေ|ငွေပြန်/iu.test(value) ? "PAYMENT" : /အကြွေး/iu.test(value) ? "DEBT_INCREASE" : "";
+  const customerMatch = value.match(/Customer\s+အမည်\s+(.+?)\s+တူသော/iu)
+    || value.match(/Customer\s+အသစ်\s+(.+?)\s+ထည့်/iu)
+    || value.match(/Customer\s+(.+?)(?=\s*(?:၏|အတွက်|သည်|နှင့်|တွင်|ကို|တူ|ရှိ|အကြွေး|ငွေချေ|ငွေပြန်)|\s+[0-9,]+\s*Ks|$)/iu);
+  const customerName = customerMatch?.[1]?.trim().replace(/^အမည်\s+/iu, "") || "";
+  const hasPayment = /ငွေချေ|ပေးချေ|ငွေပြန်/iu.test(value);
+  const hasDebtIncrease = /အကြွေးတိုး/iu.test(value);
+  const action = customerName && hasPayment && !hasDebtIncrease
+    ? "PAYMENT"
+    : customerName && hasDebtIncrease && !hasPayment
+      ? "DEBT_INCREASE"
+      : "";
   return {
-    customerName: customerMatch?.[1]?.trim() || "",
+    customerName,
     amount: amountMatch?.[1] || "",
     action,
     targetText: value,
@@ -314,6 +323,7 @@ function AiExplanationPanel({ explanation, date, source }) {
 
 export default function DailySummaryPage() {
   const [date, setDate] = useState(getInitialReportDate);
+  const [urlReady, setUrlReady] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -328,6 +338,13 @@ export default function DailySummaryPage() {
   const aiRequestStartedAtRef = useRef(0);
 
   useEffect(() => {
+    const requestedDate = new URLSearchParams(window.location.search).get("date") || "";
+    if (isValidDateInput(requestedDate)) setDate(requestedDate);
+    setUrlReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!urlReady) return undefined;
     let active = true;
     const cachedReport = readDailySummarySnapshot(date);
     if (cachedReport) setData(cachedReport);
@@ -348,12 +365,13 @@ export default function DailySummaryPage() {
       })
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [date]);
+  }, [date, urlReady]);
 
   const paymentEntries = useMemo(() => Object.entries(data?.summary?.paymentTypes || {}), [data]);
   const cashSaleTypeEntries = useMemo(() => Object.entries(data?.summary?.cashSaleTypes || {}).filter(([, detail]) => Number(detail?.count || 0) > 0), [data]);
 
   useEffect(() => {
+    if (!urlReady) return undefined;
     aiAbortRef.current?.abort();
     aiAbortRef.current = null;
     aiRequestStartedAtRef.current = 0;
@@ -366,7 +384,7 @@ export default function DailySummaryPage() {
     setAiFallback(false);
     setAiRefreshMessage("");
     setAiLoading(false);
-  }, [date]);
+  }, [date, urlReady]);
 
   useEffect(() => {
     const recoverIfStuck = () => {
@@ -377,6 +395,8 @@ export default function DailySummaryPage() {
       aiRequestStartedAtRef.current = 0;
       const fallback = buildCodeBasedExplanation(data, date);
       if (fallback) {
+        const actorName = localStorage.getItem("actorName") || "Staff";
+        saveAiExplanationCache(date, fallback, actorName);
         setAiExplanation((current) => current || fallback);
         setAiFallback(true);
         setAiStale(false);
@@ -414,6 +434,7 @@ export default function DailySummaryPage() {
       setAiStale(false);
       setAiFallback(Boolean(codeExplanation));
       setAiSource(codeExplanation ? "code-first" : "browser");
+      if (codeExplanation && !localExplanation) saveAiExplanationCache(date, codeExplanation, actorName);
       setAiRefreshMessage("Code-based စစ်ချက်ကို အရင်ပြထားပြီး AI ကို နောက်ကွယ်မှာ စစ်ဆေးနေပါသည်။");
     } else {
       setAiRefreshMessage("စာရင်း data ရရှိပြီးမှ AI refresh လုပ်ပါမည်။");
@@ -473,6 +494,7 @@ export default function DailySummaryPage() {
       if (isCurrentRequest()) {
         const fallback = codeExplanation || buildCodeBasedExplanation(data, date);
         if (fallback) {
+          saveAiExplanationCache(date, fallback, actorName);
           setAiExplanation((current) => current || fallback);
           setAiFallback(true);
           setAiStale(false);

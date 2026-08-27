@@ -111,24 +111,10 @@ function logMatchesReviewTarget(log, target) {
 }
 
 export default function ActivityPage() {
-  const [returnToAi] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return params.get("from") === "ai" && /^\d{4}-\d{2}-\d{2}$/.test(params.get("date") || "");
-  });
-  const [reviewTarget] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const params = new URLSearchParams(window.location.search);
-    const target = { customerName: params.get("customer") || "", amount: params.get("amount") || "", action: params.get("action") || "", targetText: params.get("targetText") || "" };
-    return target.customerName || target.amount || target.action || target.targetText ? target : null;
-  });
-  const [date, setDate] = useState(() => {
-    if (typeof window !== "undefined") {
-      const requestedDate = new URLSearchParams(window.location.search).get("date") || "";
-      if (/^\d{4}-\d{2}-\d{2}$/.test(requestedDate)) return requestedDate;
-    }
-    return today;
-  });
+  const [returnToAi, setReturnToAi] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [date, setDate] = useState(today);
+  const [urlReady, setUrlReady] = useState(false);
   const [actor, setActor] = useState("");
   const [action, setAction] = useState("");
   const [logs, setLogs] = useState([]);
@@ -138,6 +124,18 @@ export default function ActivityPage() {
   const [deletingId, setDeletingId] = useState("");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedDate = params.get("date") || "";
+    const nextDate = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : today;
+    const target = { customerName: params.get("customer") || "", amount: params.get("amount") || "", action: params.get("action") || "", targetText: params.get("targetText") || "" };
+    setDate(nextDate);
+    setReturnToAi(params.get("from") === "ai" && nextDate === requestedDate);
+    setReviewTarget(target.customerName || target.amount || target.action || target.targetText ? target : null);
+    setUrlReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!urlReady) return undefined;
     let active = true;
     const cached = readActivitySnapshot(date, actor, action);
     if (cached.found) {
@@ -165,7 +163,7 @@ export default function ActivityPage() {
       })
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [date, actor, action]);
+  }, [date, actor, action, urlReady]);
 
   async function handleDeleteLog(log) {
     if (!log || log.eventSource === "legacy" || deletingId) return;
