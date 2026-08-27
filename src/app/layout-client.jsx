@@ -33,8 +33,11 @@ function RefreshOverlay() {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-3 right-3 z-40 sm:bottom-5 sm:right-5"
-      style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      className="pointer-events-none fixed z-[110]"
+      style={{
+        top: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
+        right: 'calc(env(safe-area-inset-right, 0px) + 0.75rem)',
+      }}
     >
       <button
         type="button"
@@ -42,7 +45,7 @@ function RefreshOverlay() {
         disabled={refreshing}
         aria-label="စာမျက်နှာ data ပြန်လည်ရယူမည်"
         title={isOnline ? 'Data ပြန်လည်ရယူမည်' : 'အင်တာနက် ပြန်ရသောအခါ data ပြန်ရယူမည်'}
-        className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border border-slate-300/90 bg-white/95 text-lg font-semibold text-slate-700 shadow-lg backdrop-blur transition hover:border-cyan-400 hover:text-cyan-700 active:scale-95 disabled:cursor-wait disabled:opacity-70"
+        className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-xl font-bold text-white shadow-xl shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-wait disabled:opacity-70"
       >
         <span className={refreshing ? 'animate-spin' : ''} aria-hidden="true">↻</span>
       </button>
