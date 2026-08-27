@@ -308,12 +308,11 @@ export default function DailySalesSummaryPanel() {
                 <p className="mt-1 text-xl font-bold text-emerald-900">{formatMoney(monthlyTotal)}</p>
                 <p className="mt-1 text-[11px] text-emerald-700">လဆန်း ၁ ရက်မှ {currentLabel} အထိ</p>
               </div>
-            </div>
-
-            <div className="mt-2 w-full rounded-xl border border-rose-200 bg-rose-50 p-3.5">
-              <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ ငွေသား</p>
-              <p className="mt-1 text-lg font-bold text-rose-900">{formatMoney(cashDailyTotal)}</p>
-              <p className="mt-1 text-[11px] text-rose-700">လက်လီငွေသား + လက်ကားငွေသား</p>
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5">
+                <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ ငွေသား</p>
+                <p className="mt-1 text-lg font-bold text-rose-900">{formatMoney(cashDailyTotal)}</p>
+                <p className="mt-1 text-[11px] text-rose-700">လက်လီငွေသား + လက်ကားငွေသား</p>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs leading-5 text-slate-700 sm:flex-row sm:items-center sm:justify-between">
