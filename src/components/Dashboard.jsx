@@ -9,6 +9,7 @@ import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } fro
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 import LedgerPulse from "@/components/LedgerPulse";
+import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
 
 
@@ -1698,6 +1699,8 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>
               <p className="mt-1 text-xs text-cyan-700">Customer စာရင်းသွင်းရန် →</p>
             </Link>
+
+            <DailySalesSummaryPanel />
           </div>
             </section>
           </>
