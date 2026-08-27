@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { runDailyReport } from "@/lib/daily-report-delivery";
-import { beginAutoReportRun, finishAutoReportRun } from "@/lib/auto-report-status";
+import {
+  beginAutoReportRun,
+  claimManualReportNotice,
+  finishAutoReportRun,
+  finishManualReportNotice,
+  releaseManualReportNotice,
+} from "@/lib/auto-report-status";
 import { getPreviousMyanmarDayRanges } from "@/lib/myanmar-time";
+import { sendManualReportStatusNotice } from "@/lib/auto-report-notice";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +18,33 @@ function isAuthorized(request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
   return request.headers.get("authorization") === `Bearer ${secret}`;
+}
+
+async function handleManualAlreadySent({ reportDate, run } = {}) {
+  const claim = await claimManualReportNotice({ reportDate });
+  if (!claim.shouldSend) {
+    return { noticeSent: false, noticeReason: claim.reason };
+  }
+
+  try {
+    const notice = await sendManualReportStatusNotice({ reportDate, run: claim.run || run });
+    if (!notice.sent) {
+      await releaseManualReportNotice({ runId: claim.runId });
+      return { noticeSent: false, noticeReason: notice.reason };
+    }
+    const finished = await finishManualReportNotice({ runId: claim.runId });
+    if (!finished) {
+      // Keep the claim so a database write failure cannot cause repeated notices.
+      return { noticeSent: true, noticeWarning: "notice_record_update_failed" };
+    }
+    return { noticeSent: true, noticeMessageId: notice.messageId };
+  } catch (error) {
+    // Do not release an ambiguous Telegram delivery claim: the request may
+    // have reached Telegram before the network failed. Keeping the claim is
+    // safer than sending a duplicate notice on the next cron invocation.
+    console.error("Manual report status notice failed", error);
+    return { noticeSent: false, noticeReason: "notice_delivery_failed" };
+  }
 }
 
 async function handle(request) {
@@ -31,7 +65,18 @@ async function handle(request) {
     });
 
     if (!claim.shouldRun) {
-      results.push({ date: reportRange.dateLabel, skipped: true, reason: claim.reason });
+      const manualAlreadySent = claim.reason === "already_success"
+        && typeof claim.run?.trigger === "string"
+        && claim.run.trigger.startsWith("manual");
+      const notice = manualAlreadySent
+        ? await handleManualAlreadySent({ reportDate: reportRange.dateLabel, run: claim.run })
+        : null;
+      results.push({
+        date: reportRange.dateLabel,
+        skipped: true,
+        reason: claim.reason,
+        ...(manualAlreadySent ? notice : {}),
+      });
       continue;
     }
 

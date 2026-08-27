@@ -52,6 +52,102 @@ export async function beginAutoReportRun({ reportDate, trigger = "schedule" } = 
   });
 }
 
+export async function claimManualReportNotice({ reportDate } = {}) {
+  if (!reportDate) return { shouldSend: false, reason: "missing_report_date" };
+  try {
+    await ensureDatabase();
+    return await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`new-life-ledger-manual-notice:${reportDate}`}))`;
+      const latest = await tx.autoReportRun.findFirst({
+        where: { reportDate, status: "SUCCESS", trigger: { startsWith: "manual" } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      });
+      if (!latest) return { shouldSend: false, reason: "manual_run_not_found" };
+      if (latest.manualNoticeSentAt) return { shouldSend: false, reason: "notice_already_sent", run: serializeAutoReportRun(latest) };
+      if (latest.manualNoticeClaimedAt) return { shouldSend: false, reason: "notice_already_claimed", run: serializeAutoReportRun(latest) };
+
+      const claimedAt = new Date();
+      const claimed = await tx.autoReportRun.updateMany({
+        where: { id: latest.id, manualNoticeClaimedAt: null, manualNoticeSentAt: null },
+        data: { manualNoticeClaimedAt: claimedAt },
+      });
+      if (claimed.count !== 1) return { shouldSend: false, reason: "notice_already_claimed", run: serializeAutoReportRun(latest) };
+      return {
+        shouldSend: true,
+        runId: latest.id,
+        run: serializeAutoReportRun({ ...latest, manualNoticeClaimedAt: claimedAt }),
+      };
+    });
+  } catch (error) {
+    console.error("Manual report notice claim failed", error);
+    return { shouldSend: false, reason: "notice_claim_failed", error };
+  }
+}
+
+export async function finishManualReportNotice({ runId } = {}) {
+  if (!runId) return null;
+  try {
+    await ensureDatabase();
+    return await prisma.autoReportRun.update({
+      where: { id: runId },
+      data: { manualNoticeSentAt: new Date() },
+    });
+  } catch (error) {
+    console.error("Manual report notice completion failed", error);
+    return null;
+  }
+}
+
+export async function releaseManualReportNotice({ runId } = {}) {
+  if (!runId) return null;
+  try {
+    await ensureDatabase();
+    return await prisma.autoReportRun.updateMany({
+      where: { id: runId, manualNoticeSentAt: null },
+      data: { manualNoticeClaimedAt: null },
+    });
+  } catch (error) {
+    console.error("Manual report notice release failed", error);
+    return null;
+  }
+}
+
+export async function reconcileManualReportRun({
+  reportDate,
+  periodLabel = null,
+  counts = null,
+  recipients = 1,
+} = {}) {
+  if (!reportDate) throw new Error("Report date is required");
+  await ensureDatabase();
+
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`new-life-ledger-report:${reportDate}`}))`;
+    const latest = await tx.autoReportRun.findFirst({
+      where: { reportDate },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    if (latest?.status === "SUCCESS") {
+      return { recorded: false, reason: "already_success", run: serializeAutoReportRun(latest) };
+    }
+    if (latest?.status === "RUNNING" && Date.now() - new Date(latest.createdAt).getTime() < RUNNING_TIMEOUT_MS) {
+      return { recorded: false, reason: "already_running", run: serializeAutoReportRun(latest) };
+    }
+
+    const run = await tx.autoReportRun.create({
+      data: {
+        status: "SUCCESS",
+        trigger: "manual-reconciled",
+        reportDate,
+        periodLabel,
+        recipientCount: Math.max(0, Number(recipients || 0)),
+        counts: normalizeCounts(counts) || undefined,
+      },
+    });
+    return { recorded: true, run: serializeAutoReportRun(run) };
+  });
+}
+
 export async function finishAutoReportRun({
   runId,
   status,
@@ -79,7 +175,7 @@ export async function finishAutoReportRun({
       });
     }
 
-    return recordAutoReportRun({ status, reportDate, periodLabel, counts, recipients, elapsedMs, error });
+    return recordAutoReportRun({ status, reportDate, periodLabel, counts, recipients, elapsedMs, error, trigger: "schedule" });
   } catch (recordError) {
     // Monitoring must never turn a successful Telegram delivery into a failed cron response.
     console.error("Auto report status record failed", recordError);
@@ -129,6 +225,8 @@ export function serializeAutoReportRun(run) {
     counts: run.counts || null,
     elapsedMs: run.elapsedMs,
     errorMessage: run.errorMessage,
+    manualNoticeClaimedAt: run.manualNoticeClaimedAt?.toISOString?.() || run.manualNoticeClaimedAt || null,
+    manualNoticeSentAt: run.manualNoticeSentAt?.toISOString?.() || run.manualNoticeSentAt || null,
     createdAt: run.createdAt?.toISOString?.() || run.createdAt,
   };
 }

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { runDailyReport } from "@/lib/daily-report-delivery";
+import { beginAutoReportRun, finishAutoReportRun } from "@/lib/auto-report-status";
 import { decodeActorHeader } from "@/lib/actor-header";
-import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { getMyanmarDayRange, getPreviousMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,13 +21,41 @@ export async function POST(request) {
 
   try {
     const requestBody = await request.json().catch(() => ({}));
-    const date = requestBody?.date;
-    if (date) getMyanmarDayRange(date);
+    const requestedDate = requestBody?.date;
+    const reportDate = requestedDate || getPreviousMyanmarDayRange().dateLabel;
+    getMyanmarDayRange(reportDate);
     const actorName = decodeActorHeader(request.headers.get("x-actor-name")) || "Manual User";
-    return NextResponse.json({
-      ok: true,
-      ...(await runDailyReport({ actorName, trigger: "manual", date })),
-    });
+    const claim = await beginAutoReportRun({ reportDate, trigger: "manual" });
+    if (!claim.shouldRun) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: claim.reason,
+        date: reportDate,
+        actorName,
+      });
+    }
+
+    try {
+      const result = await runDailyReport({ date: reportDate });
+      await finishAutoReportRun({
+        runId: claim.runId,
+        status: "SUCCESS",
+        reportDate: result.date,
+        periodLabel: result.period,
+        counts: result.counts,
+        recipients: result.recipients,
+        elapsedMs: result.elapsedMs,
+      });
+      return NextResponse.json({
+        ok: true,
+        ...result,
+        actorName,
+      });
+    } catch (error) {
+      await finishAutoReportRun({ runId: claim.runId, status: "FAILED", reportDate, error });
+      throw error;
+    }
   } catch (error) {
     console.error("Manual Telegram report failed", error);
     const isInvalidDate = /report date မမှန်ကန်ပါ/.test(String(error?.message || ""));

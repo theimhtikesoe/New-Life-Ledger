@@ -20,15 +20,27 @@ const REQUIRED_TABLES = [
   "OrderBatchRun",
   "AiExplanationCache",
 ];
+const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 
 async function hasExpectedSchema() {
   const result = await prisma.$queryRaw`
-    SELECT COUNT(*)::int AS count
-    FROM information_schema.tables
-    WHERE table_schema = 'public'
-      AND table_name IN (${Prisma.join(REQUIRED_TABLES)})
+    SELECT
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name IN (${Prisma.join(REQUIRED_TABLES)})
+      ) AS table_count,
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'AutoReportRun'
+          AND column_name IN (${Prisma.join(REQUIRED_AUTO_REPORT_COLUMNS)})
+      ) AS auto_report_column_count
   `;
-  return Number(result[0]?.count || 0) === REQUIRED_TABLES.length;
+  return Number(result[0]?.table_count || 0) === REQUIRED_TABLES.length
+    && Number(result[0]?.auto_report_column_count || 0) === REQUIRED_AUTO_REPORT_COLUMNS.length;
 }
 
 function isBenignSetupRace(error) {
@@ -135,6 +147,8 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_createdAt_idx" ON "AutoReportRun"("createdAt")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_reportDate_idx" ON "AutoReportRun"("reportDate")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
+        await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeClaimedAt" TIMESTAMP(3)`);
+        await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeSentAt" TIMESTAMP(3)`);
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "CashSale" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -334,6 +348,8 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_createdAt_idx" ON "AutoReportRun"("createdAt")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_reportDate_idx" ON "AutoReportRun"("reportDate")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
+      await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeClaimedAt" TIMESTAMP(3)`);
+      await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeSentAt" TIMESTAMP(3)`);
       const orderTableCheck = await prisma.$queryRaw`
         SELECT count(*)
         FROM information_schema.tables

@@ -1,0 +1,2 @@
+ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeClaimedAt" TIMESTAMP(3);
+ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeSentAt" TIMESTAMP(3);

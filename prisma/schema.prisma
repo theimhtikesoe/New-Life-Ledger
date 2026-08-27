@@ -241,8 +241,10 @@ model AutoReportRun {
   recipientCount Int      @default(0)
   counts         Json?
   elapsedMs      Int?
-  errorMessage   String?
-  createdAt      DateTime @default(now())
+  errorMessage           String?
+  manualNoticeClaimedAt  DateTime?
+  manualNoticeSentAt     DateTime?
+  createdAt              DateTime @default(now())
 
   @@index([createdAt])
   @@index([reportDate])

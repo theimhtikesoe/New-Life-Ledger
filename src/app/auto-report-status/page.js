@@ -18,6 +18,28 @@ function formatCount(value) {
   return money.format(Number(value || 0));
 }
 
+function triggerLabel(trigger) {
+  const value = String(trigger || "");
+  if (value === "manual" || value.startsWith("manual-")) return "Manual ပို့မှု";
+  if (value.includes("catch-up")) return "Auto Catch-up";
+  return "Auto Scheduled";
+}
+
+function triggerClassName(trigger) {
+  const value = String(trigger || "");
+  if (value === "manual" || value.startsWith("manual-")) return "border-violet-200 bg-violet-50 text-violet-800";
+  if (value.includes("catch-up")) return "border-amber-200 bg-amber-50 text-amber-800";
+  return "border-cyan-200 bg-cyan-50 text-cyan-800";
+}
+
+function TriggerBadge({ trigger }) {
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${triggerClassName(trigger)}`}>
+      {triggerLabel(trigger)}
+    </span>
+  );
+}
+
 function statusInfo(status) {
   if (status === "SUCCESS") {
     return {
@@ -114,7 +136,7 @@ export default function AutoReportStatusPage() {
               <a href="/" className="text-sm font-medium text-cyan-700">← Dashboard</a>
               <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">Auto Report အခြေအနေ</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                Login မလိုဘဲ နောက်ဆုံး Auto Report run၊ report ရက်စွဲ၊ ပို့မှုအခြေအနေနှင့် လက်ခံရရှိသည့်နေရာအရေအတွက်ကို ကြည့်နိုင်ပါသည်။
+                နောက်ဆုံး Auto Report run၊ report ရက်စွဲ၊ ပို့မှုအခြေအနေနှင့် လက်ခံရရှိသည့်နေရာအရေအတွက်ကိုသာ ကြည့်နိုင်ပါသည်။
               </p>
             </div>
             <button
@@ -151,8 +173,11 @@ export default function AutoReportStatusPage() {
             <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-cyan-700">နောက်ဆုံး Auto Report run</p>
-                  <h2 className="mt-1 text-xl font-bold text-slate-900">{latest.reportDate || "Report date မရရှိသေးပါ"}</h2>
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-cyan-700">နောက်ဆုံး Report run</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <h2 className="text-xl font-bold text-slate-900">{latest.reportDate || "Report date မရရှိသေးပါ"}</h2>
+                    <TriggerBadge trigger={latest.trigger} />
+                  </div>
                 </div>
                 <StatusBadge status={latest.status} />
               </div>
@@ -172,8 +197,10 @@ export default function AutoReportStatusPage() {
                   <p className="font-semibold">အမှားအကျဉ်း</p>
                   <p className="mt-1">{latest.errorMessage}</p>
                 </div>
+              ) : latest.trigger === "manual" || String(latest.trigger || "").startsWith("manual-") ? (
+                <p className="mt-5 rounded-lg border border-violet-200 bg-violet-50 p-4 text-sm leading-6 text-violet-800">ဒီ report ကို Manual ဖြင့် ပို့ပြီးပါပြီ။ နောက် Auto scheduled run တွင် report အပြည့်ကို ထပ်မပို့ဘဲ status notice သာ ပို့ပါမည်။</p>
               ) : (
-                <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">Telegram ပို့မှုအတွက် server run က အောင်မြင်ပြီး လက်ခံရရှိသည့်နေရာ {formatCount(latest.recipientCount)} နေရာကို မှတ်တမ်းတင်ထားပါသည်။</p>
+                <p className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-800">Telegram ပို့မှုအတွက် Auto scheduled run က အောင်မြင်ပြီး လက်ခံရရှိသည့်နေရာ {formatCount(latest.recipientCount)} နေရာကို မှတ်တမ်းတင်ထားပါသည်။</p>
               )}
             </section>
 
@@ -181,7 +208,7 @@ export default function AutoReportStatusPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">နောက်ဆုံး run မှတ်တမ်းများ</h2>
-                  <p className="mt-1 text-sm text-slate-500">Scheduled Auto Report run များ၏ read-only မှတ်တမ်း</p>
+                  <p className="mt-1 text-sm text-slate-500">Manual နှင့် Scheduled Auto Report ပို့မှုများ၏ read-only မှတ်တမ်း</p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{history.length} ခု</span>
               </div>
@@ -191,6 +218,7 @@ export default function AutoReportStatusPage() {
                     <tr>
                       <th className="px-3 py-3">Run အချိန်</th>
                       <th className="px-3 py-3">Report ရက်စွဲ</th>
+                      <th className="px-3 py-3">ပို့သည့်နည်း</th>
                       <th className="px-3 py-3">အခြေအနေ</th>
                       <th className="px-3 py-3 text-right">လက်ခံရရှိသည့်နေရာ</th>
                       <th className="px-3 py-3 text-right">စာရင်း</th>
@@ -201,6 +229,7 @@ export default function AutoReportStatusPage() {
                       <tr key={run.id}>
                         <td className="whitespace-nowrap px-3 py-3 text-slate-700">{formatRunTime(run.createdAt)}</td>
                         <td className="whitespace-nowrap px-3 py-3 font-medium text-slate-800">{run.reportDate || "မသတ်မှတ်ရသေးပါ"}</td>
+                        <td className="px-3 py-3"><TriggerBadge trigger={run.trigger} /></td>
                         <td className="px-3 py-3"><StatusBadge status={run.status} /></td>
                         <td className="px-3 py-3 text-right tabular-nums text-slate-700">{formatCount(run.recipientCount)}</td>
                         <td className="px-3 py-3 text-right tabular-nums text-slate-700">{formatCount(run.counts?.transactions)}</td>

@@ -289,6 +289,7 @@ export default function Dashboard({ view = "overview" }) {
   const [isLoadingTelegramReportPreview, setIsLoadingTelegramReportPreview] = useState(false);
   const [isSendingTelegramReport, setIsSendingTelegramReport] = useState(false);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
+  const [expandedDashboardMenu, setExpandedDashboardMenu] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -563,7 +564,12 @@ export default function Dashboard({ view = "overview" }) {
         body: JSON.stringify({ date: telegramReportPreview?.date }),
       });
       resetTelegramReportModal();
-      showAlert(`${result?.date || telegramReportPreview?.date} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
+      const sentDate = result?.date || telegramReportPreview?.date;
+      if (result?.skipped) {
+        showAlert(`${sentDate} ငွေရှင်းတမ်းကို အရင်ပို့ပြီးသားဖြစ်လို့ ထပ်မပို့တော့ပါ။ Auto Report status တွင် စစ်နိုင်ပါသည်။`, "info");
+      } else {
+        showAlert(`${sentDate} ငွေရှင်းတမ်းကို Telegram group သို့ ပို့ပြီးပါပြီ။`, "success");
+      }
     } catch (error) {
       if (error.name === "TimeoutError" || error.name === "AbortError") {
         setTelegramReportError("Telegram report ပို့ရန် အချိန်ကျော်သွားပါပြီ။ ထပ်မပို့မီ Auto Report အခြေအနေတွင် duplicate run ရှိ/မရှိ စစ်ပါ။");
@@ -1482,67 +1488,94 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
             </div>
-            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-1 items-center gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-2 shadow-sm justify-self-stretch md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[340px] md:justify-self-end xl:grid-cols-2">
-              <div className="col-span-1 flex [&>button]:w-full xl:col-span-2">
+            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-2 rounded-2xl border border-slate-200/90 bg-slate-50/80 p-2 shadow-sm justify-self-stretch md:order-none md:col-span-1 md:col-start-auto md:row-start-auto md:max-w-[340px] md:justify-self-end">
+              <div className="col-span-2 flex [&>button]:w-full">
                 <OverdueNotificationBell
-                customers={allCustomersForKPI}
-                overdueDebts={overdueDebts}
-                onSelectCustomer={(id) => {
-                  // If clicking the same customer, we still want to trigger the scroll effect
-                  if (selectedCustomerId === id) {
-                    setShowCustomerList(false);
-                    const element = document.getElementById("customer-details-section");
-                    if (element) {
-                      element.scrollIntoView({ behavior: "smooth", block: "start" });
+                  customers={allCustomersForKPI}
+                  overdueDebts={overdueDebts}
+                  onSelectCustomer={(id) => {
+                    // If clicking the same customer, we still want to trigger the scroll effect
+                    if (selectedCustomerId === id) {
+                      setShowCustomerList(false);
+                      const element = document.getElementById("customer-details-section");
+                      if (element) {
+                        element.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }
+                    } else {
+                      setSelectedCustomerId(id);
                     }
-                  } else {
-                    setSelectedCustomerId(id);
-                  }
-                  setSearch(""); // Clear search
-                }} 
+                    setSearch(""); // Clear search
+                  }}
                 />
               </div>
-              <button
-                onClick={handleOpenTelegramReportPreview}
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
-                title="ငွေရှင်းတမ်း ပို့ရန်"
-              >
-                📨 ငွေရှင်းတမ်း ပို့ရန်
-              </button>
-              <button
-                onClick={() => setShowRecycleBin(true)}
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-              >
-                🗑️ Customer Recycle Bin
-              </button>
-              <a
-                href="/data-management"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
-                title="Data Management"
-              >
-                🗂️ Data Management
-              </a>
+
               <a
                 href="/orders"
                 className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
                 title="Telegram Orders"
               >
-                📦 Orders
+                📦 အော်ဒါများ
               </a>
-              <a
-                href="/auto-report-status"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 shadow-sm transition-colors hover:bg-amber-100"
-                title="Auto Report အခြေအနေ"
+              <button
+                type="button"
+                onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
+                aria-expanded={expandedDashboardMenu === "reports"}
+                aria-controls="dashboard-report-menu"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
-                Auto Report အခြေအနေ
-              </a>
-              <a
-                href="/vercel-build-logs"
-                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
-                title="Vercel Build Logs"
+                📊 အစီရင်ခံ / မှတ်တမ်း {expandedDashboardMenu === "reports" ? "⌃" : "⌄"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
+                aria-expanded={expandedDashboardMenu === "data"}
+                aria-controls="dashboard-data-menu"
+                className="flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-cyan-300 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
               >
-                Build Logs
-              </a>
+                🗂️ ဒေတာ / အမှိုက်ပုံး {expandedDashboardMenu === "data" ? "⌃" : "⌄"}
+              </button>
+
+              {expandedDashboardMenu === "reports" ? (
+                <div id="dashboard-report-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-violet-200 bg-white p-2 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={handleOpenTelegramReportPreview}
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
+                  >
+                    📨 Manual အစီရင်ခံစာ
+                  </button>
+                  <a
+                    href="/auto-report-status"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                  >
+                    Auto Report အခြေအနေ
+                  </a>
+                  <a
+                    href="/vercel-build-logs"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    Build မှတ်တမ်း
+                  </a>
+                </div>
+              ) : null}
+
+              {expandedDashboardMenu === "data" ? (
+                <div id="dashboard-data-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-cyan-200 bg-white p-2 sm:grid-cols-2">
+                  <a
+                    href="/data-management"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100"
+                  >
+                    🗂️ ဒေတာစီမံခန့်ခွဲမှု
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setShowRecycleBin(true)}
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                  >
+                    🗑️ Customer အမှိုက်ပုံး
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
           {message ? (
