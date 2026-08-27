@@ -7,7 +7,6 @@ import { buildDailySummaryReviewChecks, transactionsToDailySummaryEvents } from 
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 import {
   recordDailyAiSuccess,
-  resetDailyAiUsage,
   getAiActivityReviewHref,
   getDailyAiUsage,
   MAX_DAILY_AI_REQUESTS,
@@ -97,7 +96,7 @@ function buildCodeBasedExplanation(report, reportDate) {
     customers,
   });
   return {
-    overview: `${reportDate} အတွက် စာရင်းအချက်အလက်ကို အလိုအလျောက် အကျဉ်းချုပ်ပြထားပါသည်။ AI service ပြန်ကောင်းလာသောအခါ အသေးစိတ် ပြန်ရှင်းနိုင်ပါသည်။`,
+    overview: `${reportDate} အတွက် စာရင်းအချက်အလက်ကို အကျဉ်းချုပ်ပြထားပါသည်။`,
     findings: normalizeAiItems([
       `${reportDate} တွင် စာရင်းမှတ်တမ်း ${totalTransactions.toLocaleString("en-US")} ခု ရှိပါသည်။`,
       `ငွေချေမှု ${paidCount.toLocaleString("en-US")} ခု၊ အကြွေးတိုးမှု ${debtCount.toLocaleString("en-US")} ခု ရှိပါသည်။`,
@@ -239,7 +238,6 @@ function AiExplanationPanel({ explanation, date, source }) {
           </div>
                         <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{date}</span>
-                <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{source === "database" ? "Database မှ ပြန်ပြ" : source === "database-stale" ? "Data ပြောင်းသဖြင့် အဟောင်း" : source === "fresh" ? "AI အသစ်ထုတ်ထားသည်" : source === "automatic" ? "AI မရသေးသဖြင့် အလိုအလျောက်" : source === "code-first" ? "Code စစ်ချက်အရင်ပြ" : source === "code-first-cache" ? "Code + သိမ်းထားသော AI" : "Browser မှ ပြန်ပြ"}</span>
               </div>
 
         </div>
@@ -267,13 +265,6 @@ function AiExplanationPanel({ explanation, date, source }) {
       {findings.length > 0 && <div className="mt-3"><AiDetailSection number="02" title="အဓိကတွေ့ရှိချက်များ" items={findings} tone="emerald" date={date} /></div>}
       {checks.length > 0 && <div className="mt-2"><AiDetailSection number="03" title="ပြန်စစ်သင့်သည့်အချက်များ" items={checks} tone="amber" date={date} /></div>}
 
-      <div className="mt-3 flex items-start gap-2 rounded-xl border-l-4 border-slate-400 bg-slate-50 px-3 py-3 sm:px-4">
-        <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700">!</span>
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-slate-900">သတိပြုရန်</h3>
-          <p className="mt-1 text-[13px] leading-5 text-slate-600 sm:text-sm sm:leading-6">{cleanAiText(explanation?.caution) || "အရေးကြီးသည့် စာရင်းများကို Website ထဲတွင် ပြန်စစ်ပါ။"}</p>
-        </div>
-      </div>
     </section>
   );
 }
@@ -284,12 +275,12 @@ export default function DailySummaryPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [aiExplanation, setAiExplanation] = useState(null);
-  const [aiRefreshMessage, setAiRefreshMessage] = useState("");
+  const [, setAiRefreshMessage] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiUsage, setAiUsage] = useState(0);
-  const [aiStale, setAiStale] = useState(false);
-  const [aiFallback, setAiFallback] = useState(false);
-  const [aiSource, setAiSource] = useState("");
+  const [, setAiUsage] = useState(0);
+  const [, setAiStale] = useState(false);
+  const [, setAiFallback] = useState(false);
+  const [, setAiSource] = useState("");
   const aiAbortRef = useRef(null);
   const aiRequestStartedAtRef = useRef(0);
 
@@ -449,13 +440,6 @@ export default function DailySummaryPage() {
     }
   };
 
-  const handleResetAndRetry = async () => {
-    const actorName = localStorage.getItem("actorName") || "Staff";
-    resetDailyAiUsage(actorName, date);
-    setAiUsage(0);
-    setAiRefreshMessage("");
-    await handleAiExplain({ bypassLimit: true });
-  };
 
   return (
     <main className="min-h-screen bg-slate-50 px-3 py-3 sm:px-6 sm:py-6">
@@ -478,13 +462,12 @@ export default function DailySummaryPage() {
               <button type="button" onClick={() => handleAiExplain()} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
                 {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanation ? "AI ရှင်းပြချက် ပြန်ကြည့်ရန်" : "AI ဖြင့် ရှင်းပြရန်"}
               </button>
-              <p className="text-right text-[11px] text-slate-500">ဒီ Browser မှာ အောင်မြင်သော AI အဖြေ {aiUsage}/{MAX_DAILY_AI_REQUESTS} ကြိမ် · Cache/Fallback မတွက်ပါ</p>
+
             </div>
           </div>
         </header>
 
-        {aiRefreshMessage && <section role="status" className={`rounded-xl border px-3 py-3 sm:p-4 ${aiStale || aiFallback ? "border-amber-200 bg-amber-50" : "border-violet-200 bg-violet-50"}`}><h2 className={`text-sm font-semibold sm:text-base ${aiStale || aiFallback ? "text-amber-900" : "text-violet-900"}`}>{aiStale ? "အဟောင်းရှင်းပြချက်ကို ပြထားပါသည်" : aiFallback ? "Code-based အဖြေကို အရင်ပြထားပါသည်" : "AI background refresh အခြေအနေ"}</h2><p className={`mt-1 text-[13px] leading-5 sm:mt-2 sm:text-sm ${aiStale || aiFallback ? "text-amber-800" : "text-violet-800"}`}>{aiRefreshMessage}</p><div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => handleAiExplain()} disabled={aiLoading} className="min-h-9 rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-bold text-violet-800 shadow-sm disabled:opacity-60">AI ပြန်စမ်းရန်</button>{aiUsage >= MAX_DAILY_AI_REQUESTS && <button type="button" onClick={handleResetAndRetry} disabled={aiLoading} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 shadow-sm disabled:opacity-60">ဒီ Browser limit ပြန်စတင်ပြီး AI ပြန်စမ်းရန်</button>}<button type="button" onClick={() => setAiRefreshMessage("")} className="min-h-9 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700">စာရင်းသာကြည့်ရန်</button></div></section>}
-        {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} source={aiSource} />}
+        {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}
         {loading ? <div className="rounded-xl bg-white p-6 text-center text-[13px] text-slate-600 shadow-sm sm:p-8 sm:text-sm">Summary ရယူနေသည်...</div> : data && (
