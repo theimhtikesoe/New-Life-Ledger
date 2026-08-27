@@ -33,3 +33,24 @@ User-provided Vercel Cron Jobs screenshot confirms: Cron Jobs is Enabled; /api/c
 New requirement: accounting Activity History and Telegram Daily Report must exclude all Order workflow activities, including ORDER_DRAFT, ORDER_CANCEL, ORDER_BATCH_NOTIFIED, and future ORDER_* actions. Order History must remain able to show its own operational audit records. Implemented a shared accounting activity scope that excludes entityType Order, entityType OrderBatch, and any action beginning ORDER_, with both database-query and client-side safeguards.
 
 Commit 37b4156 was pushed to origin/main and GitHub reports the Vercel deployment completed successfully. Production verification after deployment: GET /api/auto-report-status returned HTTP 200 and still showed the latest persisted SUCCESS as reportDate 2026-08-25, createdAt 2026-08-26T02:28:59.341Z, recipientCount 1, activityActions 33; no persisted 2026-08-26 run was present. GET /api/cron/daily-report without Authorization returned HTTP 401, confirming the safety guard and no report send. No manual authorized cron invocation was made, so no duplicate Telegram report was triggered.
+
+## Recheck after manual report success — 2026-08-27 10:25 MMT
+
+The user confirmed Manual Report delivery now works. A fresh production status-page navigation required the normal PIN/session bootstrap and advanced to actor selection after the already-provided PIN was entered. No Auto Report send or manual cron invocation was performed.
+
+## Current status page recheck — 2026-08-27 10:25 MMT
+
+After selecting `Staff`, the read-only status page entered its normal loading state. No refresh/send action was triggered; a follow-up view is required to read the latest run table.
+
+## Status recheck — 2026-08-27 10:29 MMT
+
+The production status page completed loading. The latest recorded run remained report date `2026-08-25`, sent `26 Aug 2026 08:58 MMT`, with one recipient, 19 transactions, and 33 historical activities. No run for report date `2026-08-26` was present by 10:29 MMT. This confirms the scheduled invocation/catch-up has not occurred yet; no manual send or cron endpoint invocation was made.
+
+
+## Manual report reconciliation and production verification — 2026-08-27 10:58–10:59 MMT
+
+The owner clarified that `2026-08-26` is the report date and that the report was delivered on the morning of `2026-08-27`. The owner explicitly confirmed a metadata-only reconciliation. The PIN-protected reconciliation endpoint returned HTTP 200 with `recorded: true`, `status: SUCCESS`, `trigger: manual-reconciled`, report date `2026-08-26`, and recipient count `1`. It did not generate or send a Telegram report and did not change Customer, Ledger, CashSale, Order, or other business data.
+
+A fresh read-only Auto Report status refresh then showed `2026-08-26` with source `Manual ပို့မှု`, SUCCESS, recipient count `1`, and the explanation that the next Auto scheduled run will send only a status notice and not the full duplicate report. The reconciled row has zero counts and no elapsed time because it records the already-confirmed delivery metadata only; the reconciliation timestamp is not treated as proof of the original Telegram send timestamp.
+
+The production Dashboard showed KPI-first content, overdue count `1`, and the compact grouped actions `အော်ဒါများ`, `အစီရင်ခံ / မှတ်တမ်း`, and `ဒေတာ / အမှိုက်ပုံး`. Expanding the report group exposed Manual အစီရင်ခံစာ, Auto Report အခြေအနေ, and Build မှတ်တမ်း. Expanding the data group exposed ဒေတာစီမံခန့်ခွဲမှု and Customer အမှိုက်ပုံး. A no-auth request to `/api/cron/daily-report` returned HTTP 401. The authenticated cron was not manually invoked, so no status notice was sent during verification.

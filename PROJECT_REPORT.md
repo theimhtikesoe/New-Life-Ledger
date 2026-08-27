@@ -1177,3 +1177,23 @@ No Customer, Ledger, CashSale, balance, Order, or Telegram report data was creat
 ## 18. Authentication and Send Processing Guard — 2026-08-27
 
 The PIN session bootstrap and Manual Telegram Report send path are also bounded now. Session/login requests abort after 12 seconds with a clear retry message instead of leaving the login overlay indefinitely. Manual report sending uses the shared request contract with a 20-second timeout; a timeout warns the user to check Auto Report status before attempting another send, reducing duplicate-report risk. No PIN value or secret is stored in browser storage by these changes.
+
+
+## 19. Manual/Auto Report State and Duplicate Protection — 2026-08-27
+
+Manual Report နှင့် scheduled Auto Report ကို report date တစ်ရက်တည်းအတွက် မထပ်ပို့စေရန် `AutoReportRun` ကို shared state အဖြစ် အသုံးပြုထားပါသည်။ Manual send route သည် Telegram မပို့မီ ထို report date အတွက် per-date advisory lock ဖြင့် run ကို claim လုပ်ပြီး၊ ပို့မှုအောင်မြင်လျှင် `SUCCESS`/`trigger=manual` အဖြစ် မှတ်တမ်းတင်ပါသည်။ ထိုနေ့အတွက် `SUCCESS` row ရှိပြီးသားဖြစ်လျှင် Manual ကိုလည်း `skipped` ပြန်ပေးပြီး report ကို ထပ်မပို့ပါ။ Dashboard သည် အဲဒီ skip ကို “အရင်ပို့ပြီးသားဖြစ်လို့ ထပ်မပို့တော့ပါ” ဟု မှန်ကန်စွာ ပြပါသည်။
+
+Scheduled Auto Cron သည် prior Myanmar dates များကို oldest-first catch-up ဖြင့် စစ်ပါသည်။ အောင်မြင်ပြီးသား Manual row ကိုတွေ့လျှင် full report generation/delivery ကို မလုပ်ဘဲ group ထဲတွင် Manual ပို့ပြီးသားဖြစ်ကြောင်း၊ duplicate full report မပို့ကြောင်း status notice တစ်ကြောင်းသာ ပို့ပါသည်။ `manualNoticeClaimedAt` နှင့် `manualNoticeSentAt` timestamp များသည် concurrent cron invocation များကြား notice ကိုလည်း တစ်ကြိမ်တည်းဖြစ်စေရန် ကာကွယ်ပါသည်။ Metadata reconciliation row အတွက် system record time ကို မူရင်း Manual Telegram send time ဟု မမှားယွင်းစေရန် notice တွင် timestamp မပြပါ။
+
+User အတည်ပြုချက်အရ Telegram တွင် မနက် `2026-08-27` တွင် ပို့ထားပြီးသား `2026-08-26` report ကို business data မထိဘဲ metadata-only reconcile လုပ်ထားပါသည်။ Production status page တွင် `2026-08-26`, `Manual ပို့မှု`, `SUCCESS`, recipient `1` အဖြစ် ပေါ်နေပါသည်။ ဤ row သည် အရင်ပို့ထားသော report ကို ပြန် generate မလုပ်ထားသောကြောင့် counts `0` နှင့် elapsed time မရှိခြင်းသည် ရည်ရွယ်ထားသော reconciliation အခြေအနေဖြစ်ပါသည်။ Customer၊ Ledger၊ CashSale၊ Order သို့မဟုတ် accounting/business data မည်သည့်အရာမျှ မပြောင်းလဲပါ။
+
+| စစ်ဆေးချက် | အတည်ပြုထားသော အခြေအနေ |
+| --- | --- |
+| Local validation | `npm run lint`, full `npm test -- --run` (153 tests), `npm run build`, `git diff --check` အောင်မြင် |
+| Git deployment | `85fe9c0` feature commit နှင့် `7e2e2c6` MMT notice wording fix ကို `origin/main` သို့ push ပြီး |
+| Production health | `https://newlifeledger.vercel.app/api/health` HTTP 200 |
+| Production Dashboard | KPI-first loading၊ overdue count `1`၊ compact grouped controls အလုပ်လုပ် |
+| Production Auto status | `2026-08-26` Manual source row နှင့် next Auto duplicate-skip explanation ပေါ် |
+| Cron safety | no-auth `https://newlifeledger.vercel.app/api/cron/daily-report` HTTP 401; authenticated Cron ကို manually မခေါ် |
+
+အတည်မပြုရသေးသည့်အချက်မှာ Vercel Cron invocation runtime log ဖြစ်ပါသည်။ ထို့ကြောင့် `2026-08-26` အတွက် အရင် Manual delivery ကို status metadata အဖြစ် ပြန်မှတ်ထားနိုင်ပြီဖြစ်သော်လည်း Auto Cron ကို ယခုအချိန်တွင် manually trigger မလုပ်ထားပါ။ နောက် scheduled invocation ရောက်သောအခါ full report မထပ်ပို့ဘဲ one-time status notice ထွက်ပြီး `manualNoticeSentAt` မှတ်တမ်းတင်သွားမည်ဖြစ်ပါသည်။
