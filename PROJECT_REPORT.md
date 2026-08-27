@@ -1150,3 +1150,12 @@ The owner reported that the Dashboard manual report dialog showed `Report previe
 The Dashboard preview request now explicitly sends `credentials: "include"` and the selected actor header when available. HTTP 401 is shown as a clear Burmese PIN-session message instead of a generic preview failure. The send endpoint remains PIN-protected and no report was sent while diagnosing the preview error. A regression test confirms that manual preview returns both retail and wholesale cash-sale totals for a selected Myanmar date.
 
 The production Auto Report status screenshot still shows the historical latest persisted success for report date `2026-08-25`; it does not prove a new manual send or a successful missed-date catch-up. No CashSale, Ledger, Customer, or AutoReportRun data was deleted or overwritten.
+
+
+## 16. Production Verification — Manual Preview Session Fix
+
+**Date:** 2026-08-27
+
+Commit `86bb089` was pushed to `origin/main`, and GitHub's Vercel check reported the production deployment completed successfully. Production `/api/health` returned HTTP 200. The read-only `/api/auto-report-status?fresh=1` request returned HTTP 200 after a cold-start timeout on the first request and continued to show the same persisted latest success for report date `2026-08-25`; no report was manually triggered. Anonymous `/api/telegram/manual-report-preview` returned HTTP 401 as intended because the selected website session is required, and anonymous `/api/cron/daily-report` returned HTTP 401 as intended.
+
+The manual preview request now explicitly includes same-origin credentials and the selected actor header. The operator should use the current production domain, sign in once with the PIN if the session expired, and reopen the Dashboard before testing the preview. The manual send remains a separate PIN-confirmed action, so this fix does not send or duplicate a Telegram report automatically.
