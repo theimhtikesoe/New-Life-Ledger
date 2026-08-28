@@ -285,33 +285,45 @@ export default function DailySalesSummaryPanel() {
             {error ? <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
             {saveNotice ? <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{saveNotice}</p> : null}
 
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {INPUT_FIELDS.map((field) => (
-                <label key={field.key} className={`rounded-xl border p-3 ${toneClasses(field.tone)}`}>
-                  <span className="block text-xs font-semibold leading-5">{field.label}</span>
-                  <span className="mt-2 flex items-center gap-2">
-                    <input type="number" min="0" value={values[field.key]} onChange={(event) => handleInput(field.key, event.target.value)} className="min-h-11 w-full rounded-lg border border-white/80 bg-white px-3 py-2 text-base font-bold text-slate-900 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-                    <span className="text-xs font-semibold">Ks</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5">
-                <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ လက်လီ + လက်ကား</p>
-                <p className="mt-1 text-xl font-bold text-rose-900">{formatMoney(dailyTotal)}</p>
-                <p className="mt-1 text-[11px] text-rose-700">Row ၁ ရဲ့ ခရမ်း + အဝါ</p>
+            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-stretch">
+              <div className="order-1 flex flex-col gap-2">
+                {[INPUT_FIELDS[0], INPUT_FIELDS[2]].map((field) => (
+                  <label key={field.key} className={`rounded-xl border p-3 ${toneClasses(field.tone)}`}>
+                    <span className="block text-xs font-semibold leading-5">{field.label}</span>
+                    <span className="mt-2 flex items-center gap-2">
+                      <input type="number" min="0" value={values[field.key]} onChange={(event) => handleInput(field.key, event.target.value)} className="min-h-11 w-full rounded-lg border border-white/80 bg-white px-3 py-2 text-base font-bold text-slate-900 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+                      <span className="text-xs font-semibold">Ks</span>
+                    </span>
+                  </label>
+                ))}
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5">
+                  <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ လက်လီ + လက်ကား</p>
+                  <p className="mt-1 text-xl font-bold text-rose-900">{formatMoney(dailyTotal)}</p>
+                  <p className="mt-1 text-[11px] text-rose-700">Row ၁ ရဲ့ ခရမ်း + အဝါ</p>
+                </div>
               </div>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
-                <p className="text-xs font-semibold text-emerald-800">လစဉ်စုစုပေါင်း / နောက်နေ့ Opening</p>
-                <p className="mt-1 text-xl font-bold text-emerald-900">{formatMoney(monthlyTotal)}</p>
-                <p className="mt-1 text-[11px] text-emerald-700">ဒီနေ့စာရင်းသိမ်းပြီးနောက် နောက်နေ့ Opening အဖြစ် ဆက်သွားမည်</p>
+              <div className="order-2 flex items-center justify-center sm:self-center">
+                <div className="w-full rounded-xl border border-rose-200 bg-rose-50 p-3.5">
+                  <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ ငွေသား</p>
+                  <p className="mt-1 text-lg font-bold text-rose-900">{formatMoney(cashDailyTotal)}</p>
+                  <p className="mt-1 text-[11px] text-rose-700">လက်လီငွေသား + လက်ကားငွေသား</p>
+                </div>
               </div>
-              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3.5">
-                <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ ငွေသား</p>
-                <p className="mt-1 text-lg font-bold text-rose-900">{formatMoney(cashDailyTotal)}</p>
-                <p className="mt-1 text-[11px] text-rose-700">လက်လီငွေသား + လက်ကားငွေသား</p>
+              <div className="order-3 flex flex-col gap-2">
+                {[INPUT_FIELDS[1], INPUT_FIELDS[3]].map((field) => (
+                  <label key={field.key} className={`rounded-xl border p-3 ${toneClasses(field.tone)}`}>
+                    <span className="block text-xs font-semibold leading-5">{field.label}</span>
+                    <span className="mt-2 flex items-center gap-2">
+                      <input type="number" min="0" value={values[field.key]} onChange={(event) => handleInput(field.key, event.target.value)} className="min-h-11 w-full rounded-lg border border-white/80 bg-white px-3 py-2 text-base font-bold text-slate-900 shadow-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+                      <span className="text-xs font-semibold">Ks</span>
+                    </span>
+                  </label>
+                ))}
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3.5">
+                  <p className="text-xs font-semibold text-emerald-800">လစဉ်စုစုပေါင်း / နောက်နေ့ Opening</p>
+                  <p className="mt-1 text-xl font-bold text-emerald-900">{formatMoney(monthlyTotal)}</p>
+                  <p className="mt-1 text-[11px] text-emerald-700">ဒီနေ့စာရင်းသိမ်းပြီးနောက် နောက်နေ့ Opening အဖြစ် ဆက်သွားမည်</p>
+                </div>
               </div>
             </div>
 
