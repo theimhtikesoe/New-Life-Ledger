@@ -292,7 +292,7 @@ export function formatCashSaleDetails(customer = {}) {
   ].filter(Boolean).join("<br>");
 }
 
-function createReportHtml(report, fontDataUri, latinDataUri) {
+export function createReportHtml(report, fontDataUri, latinDataUri) {
   const { summary } = report;
   const customers = report.customers || [];
   const logs = report.activityLogs || report.auditLogs || [];
