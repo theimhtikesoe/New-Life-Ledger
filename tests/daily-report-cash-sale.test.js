@@ -73,6 +73,26 @@ describe("Telegram daily report CashSale data", () => {
     expect(html).toContain("လက်လီ 4 / 162,000 Ks<br>လက်ကား 1 / 415,000 Ks");
   });
 
+  it("shows only the payment type in Activity Payment and keeps sale type in the action label", () => {
+    const html = createReportHtml({
+      summary: {},
+      customers: [],
+      activityLogs: [{
+        createdAt: cashSale.date,
+        actorName: "Staff",
+        action: "CASH_SALE",
+        entityType: "CashSale",
+        entityLabel: "လက်ငင်း Customer",
+        metadata: { amount: 50000, paymentType: "CASH", saleType: "WHOLESALE" },
+        eventSource: "audit",
+      }],
+      periodLabel: "2026-08-25",
+    }, "", "");
+    expect(html).toContain("<td>လက်ငင်းရောင်း</td><td>လက်ငင်း Customer</td><td>50,000 Ks</td><td class=\"payment-cell\">CASH</td>");
+    expect(html).not.toContain("CASH · လက်ကား");
+    expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:11%}");
+  });
+
   it("keeps cash sales separate from debt totals and includes one activity event", async () => {
     const report = await getDailyReportData(period);
     expect(report.summary).toMatchObject({
