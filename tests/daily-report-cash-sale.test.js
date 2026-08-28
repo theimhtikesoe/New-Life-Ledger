@@ -90,7 +90,10 @@ describe("Telegram daily report CashSale data", () => {
     }, "", "");
     expect(html).toContain("<td>လက်ငင်းရောင်း</td><td>လက်ငင်း Customer</td><td>50,000 Ks</td><td class=\"payment-cell\">CASH · လက်ကား</td>");
     expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:14%}");
+    expect(html).toContain(".activity-table th:nth-child(7),.activity-table td:nth-child(7){width:14%}");
     expect(html).toContain(".activity-table .payment-cell{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.25}");
+    expect(html).not.toContain("<th>Source</th>");
+    expect(html).not.toContain("အသစ်မှတ်တမ်း");
   });
 
   it("keeps cash sales separate from debt totals and includes one activity event", async () => {
@@ -109,6 +112,7 @@ describe("Telegram daily report CashSale data", () => {
       expect.objectContaining({ customerName: "လက်ငင်း Customer", paidCount: 0, debtCount: 0, cashCount: 1, cashAmount: 50000, cashRetailCount: 0, cashWholesaleCount: 1, cashWholesaleAmount: 50000 }),
     ]));
     expect(report.activityLogs.filter((log) => log.entityType === "CashSale")).toHaveLength(1);
+    expect(report.activityLogs.find((log) => log.entityType === "CashSale")).toMatchObject({ eventSource: "audit" });
     expect(report.activityLogs.find((log) => log.entityType === "CashSale")).toMatchObject({ action: "CASH_SALE", entityLabel: "လက်ငင်း Customer" });
   });
 
