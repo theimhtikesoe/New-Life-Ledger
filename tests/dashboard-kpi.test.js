@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { vi, describe, it, expect } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -28,7 +30,17 @@ vi.mock("@/lib/myanmar-time", () => ({
 
 import { GET } from "@/app/api/dashboard-kpi/route";
 
+const dashboardSource = fs.readFileSync(path.join(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
+
 describe("Dashboard KPI aggregate route", () => {
+  it("provides an isolated date selector for date-sensitive KPI cards", () => {
+    expect(dashboardSource).toContain('id="dashboard-kpi-date"');
+    expect(dashboardSource).toContain('type="date"');
+    expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`');
+    expect(dashboardSource).toContain("const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;");
+    expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
+  });
+
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.customerAggregate.mockResolvedValue({ _count: { _all: 12 }, _sum: { current_balance: 3400000 } });

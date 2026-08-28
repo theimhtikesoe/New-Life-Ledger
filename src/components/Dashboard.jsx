@@ -298,12 +298,17 @@ export default function Dashboard({ view = "overview" }) {
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [expandedDashboardMenu, setExpandedDashboardMenu] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
+  const [kpiDateLoading, setKpiDateLoading] = useState(false);
+  const [kpiDateError, setKpiDateError] = useState("");
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === "undefined" ? true : navigator.onLine
   ));
   const [nextAutoRetrySeconds, setNextAutoRetrySeconds] = useState(0);
   const retryTimerRef = useRef(null);
   const retryCountdownRef = useRef(null);
+  const kpiDateInitializedRef = useRef(false);
+  const kpiDateRequestRef = useRef(0);
   const telegramPreviewRequestRef = useRef(0);
   const telegramPreviewControllerRef = useRef(null);
   const lastDashboardAttemptAtRef = useRef(0);
@@ -328,6 +333,39 @@ export default function Dashboard({ view = "overview" }) {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!kpiDateInitializedRef.current) {
+      kpiDateInitializedRef.current = true;
+      return undefined;
+    }
+    if (!selectedKpiDate) return undefined;
+
+    const controller = new AbortController();
+    const requestId = kpiDateRequestRef.current + 1;
+    kpiDateRequestRef.current = requestId;
+    setKpiDateLoading(true);
+    setKpiDateError("");
+
+    api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then((kpi) => {
+        if (kpiDateRequestRef.current !== requestId) return;
+        setDashboardKpi(kpi);
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError" && kpiDateRequestRef.current === requestId) {
+          setKpiDateError("KPI data ပြောင်းလဲရာတွင် အမှားရှိပါသည်။");
+        }
+      })
+      .finally(() => {
+        if (kpiDateRequestRef.current === requestId) setKpiDateLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [selectedKpiDate]);
 
   // Keep unfinished local work available when the actor-only idle lock appears.
   // Each actor has a separate session draft so shared-phone users do not see one another's form data.
@@ -866,6 +904,8 @@ export default function Dashboard({ view = "overview" }) {
   );
 
     const hasKpiSnapshot = Boolean(dashboardKpi);
+  const currentMyanmarDate = formatMyanmarDateInputValue(currentTime);
+  const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;
   const displayedTotalBalance = dashboardKpi?.totalBalance ?? totalBalance;
   const displayedCustomerCount = dashboardKpi?.totalCustomers ?? customerCount;
   const todayTransactions = dashboardKpi?.todayPaidCount ?? todayPaymentsList.length;
@@ -1506,6 +1546,19 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                <label htmlFor="dashboard-kpi-date" className="text-[11px] font-semibold text-cyan-700">KPI ရက်စွဲ</label>
+                <input
+                  id="dashboard-kpi-date"
+                  type="date"
+                  value={selectedKpiDate}
+                  onChange={(event) => setSelectedKpiDate(event.target.value)}
+                  className="rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
+                  aria-label="KPI ရက်စွဲရွေးရန်"
+                />
+                {kpiDateLoading ? <span className="text-[10px] text-cyan-600">ပြောင်းနေသည်...</span> : null}
+                {kpiDateError ? <span className="text-[10px] text-rose-600">ပြန်စမ်းပါ</span> : null}
+              </div>
             </div>
             <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[360px] xl:mr-14 xl:justify-self-end">
               <div className="col-span-2 flex [&>button]:w-full">
@@ -1656,11 +1709,12 @@ export default function Dashboard({ view = "overview" }) {
             {/* Today&apos;s Transactions */}
             <button
               onClick={() => setShowTodayPaymentsModal(true)}
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer sm:min-h-[158px]"
+              disabled={!selectedKpiIsToday}
+              className={`flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
             >
-              <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">ယနေ့ ငွေချေမှုများ</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
-              <p className="mt-1 text-xs text-emerald-500">Today&apos;s Paid Transactions</p>
+              <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေမှုများ</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-700">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
+              <p className="mt-1 text-xs text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
             </button>
 
             <Link
@@ -1677,8 +1731,8 @@ export default function Dashboard({ view = "overview" }) {
               aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
               className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-fuchsia-200 bg-fuchsia-50 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
             >
-              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">ဒီနေ့ လက်ငင်းရောင်း</p>
-              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ဒီနေ့" : selectedKpiDate} လက်ငင်းရောင်း</p>
+              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
               <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
             </Link>
 
