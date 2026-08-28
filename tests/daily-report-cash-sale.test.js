@@ -73,7 +73,7 @@ describe("Telegram daily report CashSale data", () => {
     expect(html).toContain("လက်လီ 4 / 162,000 Ks<br>လက်ကား 1 / 415,000 Ks");
   });
 
-  it("shows only the payment type in Activity Payment and keeps sale type in the action label", () => {
+  it("shows payment type and sale type in Activity Payment without clipping", () => {
     const html = createReportHtml({
       summary: {},
       customers: [],
@@ -88,9 +88,9 @@ describe("Telegram daily report CashSale data", () => {
       }],
       periodLabel: "2026-08-25",
     }, "", "");
-    expect(html).toContain("<td>လက်ငင်းရောင်း</td><td>လက်ငင်း Customer</td><td>50,000 Ks</td><td class=\"payment-cell\">CASH</td>");
-    expect(html).not.toContain("CASH · လက်ကား");
-    expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:11%}");
+    expect(html).toContain("<td>လက်ငင်းရောင်း</td><td>လက်ငင်း Customer</td><td>50,000 Ks</td><td class=\"payment-cell\">CASH · လက်ကား</td>");
+    expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:14%}");
+    expect(html).toContain(".activity-table .payment-cell{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.25}");
   });
 
   it("keeps cash sales separate from debt totals and includes one activity event", async () => {
