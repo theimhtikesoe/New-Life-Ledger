@@ -16,7 +16,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { getDailyReportData } from "@/lib/daily-report";
+import { formatCashSaleDetails, getDailyReportData } from "@/lib/daily-report";
 
 const period = {
   start: new Date("2026-08-25T00:00:00.000Z"),
@@ -60,6 +60,15 @@ beforeEach(() => {
 });
 
 describe("Telegram daily report CashSale data", () => {
+  it("renders retail and wholesale cash-sale details on separate full lines", () => {
+    expect(formatCashSaleDetails({
+      cashRetailCount: 4,
+      cashRetailAmount: 162000,
+      cashWholesaleCount: 1,
+      cashWholesaleAmount: 415000,
+    })).toBe("လက်လီ 4 / 162,000 Ks<br>လက်ကား 1 / 415,000 Ks");
+  });
+
   it("keeps cash sales separate from debt totals and includes one activity event", async () => {
     const report = await getDailyReportData(period);
     expect(report.summary).toMatchObject({
