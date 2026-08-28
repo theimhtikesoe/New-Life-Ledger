@@ -591,13 +591,20 @@ export default function OrdersPage() {
 
         {viewMode === "TRASH" ? <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 sm:p-5"><h2 className="font-semibold text-rose-950">အမှိုက်ပုံး — Cancelled / History Orders</h2><p className="mt-1 text-sm text-rose-800">Cancelled Order နှင့် History မှ အမှိုက်ပုံးသို့ ရွှေ့ထားသော Order များကို ဒီနေရာမှာ ၁၅ ရက်အထိ ထိန်းသိမ်းထားပါမယ်။ သက်ဆိုင်ရာ ရွှေ့ထားသည့်ရက်ကနေ ၁၅ ရက်အတွင်း Restore လုပ်နိုင်ပြီး သက်တမ်းကျော်ပါက auto clear လုပ်ပါမယ်။</p></section> : viewMode === "HISTORY" ? <section className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5"><h2 className="font-semibold text-indigo-950">Order History</h2><p className="mt-1 text-sm text-indigo-800">Order စမ်းသပ်မှတ်တမ်းများ၊ Confirm မှတ်တမ်းများနှင့် History သို့ ရွှေ့ထားသော Order များကို ဒီနေရာမှာပဲ ကြည့်နိုင်ပါတယ်။ Activity History ထဲမှာ Order မှတ်တမ်းများ မထပ်ပြတော့ပါ။</p></section> : null}
 
-        {viewMode !== "TRASH" ? <section className="flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-white p-3">
-          <p className="mr-2 flex items-center text-sm font-semibold text-slate-700">Filter:</p>
-          {["ALL", "NEEDS_CUSTOMER", "NEEDS_REVIEW", "DRAFT", "CONFIRMED", "BATCH_QUEUED"].map((status) => (
-            <button key={status} type="button" onClick={() => setStatusFilter(status)} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${statusFilter === status ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"}`}>
-              {status === "ALL" ? "အားလုံး" : STATUS_LABELS[status] || status}
-            </button>
-          ))}
+        {viewMode !== "TRASH" ? <section className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center">
+          <label htmlFor="order-status-filter" className="shrink-0 text-sm font-semibold text-slate-700">Filter:</label>
+          <select
+            id="order-status-filter"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200 sm:max-w-md"
+          >
+            {["ALL", "NEEDS_CUSTOMER", "NEEDS_REVIEW", "DRAFT", "CONFIRMED", "BATCH_QUEUED"].map((status) => (
+              <option key={status} value={status}>
+                {status === "ALL" ? "အားလုံး" : STATUS_LABELS[status] || status}
+              </option>
+            ))}
+          </select>
         </section> : null}
 
         {loading ? <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">Order များကို ရယူနေပါသည်...</section> : null}
