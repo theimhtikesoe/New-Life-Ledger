@@ -75,13 +75,22 @@ function formatDateControlLabel(value) {
   return `${day} ${monthNames[Number(month) - 1]} ${year}`;
 }
 
+function isGenericReviewCustomerName(value) {
+  const normalized = String(value || "")
+    .normalize("NFKC")
+    .replace(/\s+/g, "")
+    .toLocaleLowerCase("my-MM");
+  return !normalized || ["စာရင်း", "စာရင်းအလိုက်", "အသစ်", "မသတ်မှတ်ရသေး"].includes(normalized);
+}
+
 function getReviewTarget(text) {
   const value = cleanAiText(text);
   const amountMatch = value.match(/([0-9][0-9,]*)\s*Ks/iu);
   const customerMatch = value.match(/Customer\s+အမည်\s+(.+?)\s+တူသော/iu)
     || value.match(/Customer\s+အသစ်\s+(.+?)\s+ထည့်/iu)
     || value.match(/Customer\s+(.+?)(?=\s*(?:၏|အတွက်|သည်|နှင့်|တွင်|ကို|တူ|ရှိ|အကြွေး|ငွေချေ|ငွေပြန်)|\s+[0-9,]+\s*Ks|$)/iu);
-  const customerName = customerMatch?.[1]?.trim().replace(/^အမည်\s+/iu, "") || "";
+  const parsedCustomerName = customerMatch?.[1]?.trim().replace(/^အမည်\s+/iu, "") || "";
+  const customerName = isGenericReviewCustomerName(parsedCustomerName) ? "" : parsedCustomerName;
   const hasPayment = /ငွေချေ|ပေးချေ|ငွေပြန်/iu.test(value);
   const hasDebtIncrease = /အကြွေးတိုး/iu.test(value);
   const action = customerName && hasPayment && !hasDebtIncrease
@@ -89,11 +98,13 @@ function getReviewTarget(text) {
     : customerName && hasDebtIncrease && !hasPayment
       ? "DEBT_INCREASE"
       : "";
+  const amount = amountMatch?.[1] || "";
+  const targetText = customerName || amount || action ? value : "";
   return {
     customerName,
-    amount: amountMatch?.[1] || "",
+    amount,
     action,
-    targetText: value,
+    targetText,
   };
 }
 

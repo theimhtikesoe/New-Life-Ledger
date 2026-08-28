@@ -19,6 +19,12 @@ describe("Daily Summary AI review navigation", () => {
     expect(activitySource).toContain('href={`/daily-summary?date=${encodeURIComponent(date)}#ai-explanation`}');
   });
 
+  it("does not treat generic review wording as a real customer target", () => {
+    expect(dailySummarySource).toContain("function isGenericReviewCustomerName(value)");
+    expect(dailySummarySource).toContain('["စာရင်း", "စာရင်းအလိုက်", "အသစ်", "မသတ်မှတ်ရသေး"]');
+    expect(dailySummarySource).toContain("const customerName = isGenericReviewCustomerName(parsedCustomerName) ? \"\" : parsedCustomerName;");
+  });
+
   it("hydrates Activity review targets, preserves the selected date, and scrolls to a match", () => {
     expect(activitySource).toContain("const [urlReady, setUrlReady] = useState(false);");
     expect(activitySource).toContain("setReviewTarget(target.customerName || target.amount || target.action || target.targetText ? target : null);");
