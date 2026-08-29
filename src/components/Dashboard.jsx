@@ -1822,13 +1822,26 @@ export default function Dashboard({ view = "overview" }) {
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5">
           <div className="flex items-center gap-2 mb-3">
-            <input
-              type="text"
-              className="min-w-0 flex-1 h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all shadow-inner sm:h-12 sm:px-4 sm:text-sm"
-              placeholder="Customer ရှာရန် (အမည် / ဖုန်း)"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <div className="relative min-w-0 flex-1">
+              <input
+                type="text"
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 pr-10 text-xs text-slate-900 outline-none transition-all shadow-inner focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 sm:h-12 sm:px-4 sm:pr-12 sm:text-sm"
+                placeholder="Customer ရှာရန် (အမည် / ဖုန်း)"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search ? (
+                <button
+                  type="button"
+                  aria-label="Customer ရှာဖွေမှု ရှင်းရန်"
+                  title="ရှာဖွေမှု ရှင်းရန်"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-slate-300 bg-white text-base font-semibold leading-none text-slate-500 shadow-sm transition-colors hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-200 sm:right-3 sm:h-8 sm:w-8"
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
             {selectedCustomerId && (
               <button
                 onClick={() => setShowCustomerList(!showCustomerList)}

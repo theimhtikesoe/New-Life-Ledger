@@ -11,6 +11,13 @@ describe("Customer list responsive navigation", () => {
     expect(source).toContain("setShowCustomerList(!showCustomerList)");
   });
 
+  it("shows a contextual clear button when a search value exists", () => {
+    expect(source).toContain('aria-label="Customer ရှာဖွေမှု ရှင်းရန်"');
+    expect(source).toContain('onClick={() => setSearch("")}');
+    expect(source).toContain("pr-10");
+    expect(source).toContain("{search ? (");
+  });
+
   it("does not render the unnecessary detail-page return button", () => {
     expect(source).not.toContain("Customer List သို့ပြန်ရန်");
   });
