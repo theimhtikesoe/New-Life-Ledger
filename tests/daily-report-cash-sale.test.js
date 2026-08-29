@@ -88,10 +88,13 @@ describe("Telegram daily report CashSale data", () => {
       }],
       periodLabel: "2026-08-25",
     }, "", "");
-    expect(html).toContain("<td>လက်ငင်းရောင်း</td><td>လက်ငင်း Customer</td><td>50,000 Ks</td><td class=\"payment-cell\">CASH · လက်ကား</td>");
-    expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:14%}");
-    expect(html).toContain(".activity-table th:nth-child(7),.activity-table td:nth-child(7){width:14%}");
-    expect(html).toContain(".activity-table .payment-cell{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.25}");
+    expect(html).toContain("<td class=\"activity-action\">လက်ငင်းရောင်း</td><td class=\"activity-entity\">လက်ငင်း Customer</td><td class=\"activity-amount\">50,000 Ks</td><td class=\"payment-cell\">CASH · လက်ကား</td>");
+    expect(html).toContain(".summary-table .summary-amount{font-size:22px;font-weight:700");
+    expect(html).toContain(".payment-row strong{font-size:23px;font-weight:700");
+    expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:15%}");
+    expect(html).toContain(".activity-table .activity-actor{font-size:14px;color:#64748b;font-weight:400}");
+    expect(html).toContain(".activity-table .activity-amount{font-size:23px;font-weight:700");
+    expect(html).toContain(".activity-table .payment-cell{font-size:21px;font-weight:700");
     expect(html).not.toContain("<th>Source</th>");
     expect(html).not.toContain("အသစ်မှတ်တမ်း");
   });
