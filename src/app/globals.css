@@ -68,6 +68,54 @@ body {
   color: #0f172a;
 }
 
+.neon-app-shell {
+  position: relative;
+  min-height: 100dvh;
+  isolation: isolate;
+  overflow: clip;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(103, 232, 249, 0.12), transparent 22rem),
+    radial-gradient(circle at 92% 22%, rgba(196, 181, 253, 0.12), transparent 24rem),
+    linear-gradient(180deg, #ffffff 0%, #fbfeff 48%, #ffffff 100%);
+}
+
+.neon-app-shell::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  inset: -30%;
+  pointer-events: none;
+  opacity: 0.28;
+  background: conic-gradient(from 135deg at 50% 50%, transparent 0deg, rgba(34, 211, 238, 0.08) 42deg, transparent 82deg, rgba(167, 139, 250, 0.07) 150deg, transparent 205deg, rgba(45, 212, 191, 0.06) 270deg, transparent 320deg);
+  animation: neonAtmosphere 18s linear infinite;
+}
+
+@keyframes neonAtmosphere {
+  from { transform: rotate(0deg) scale(1); }
+  to { transform: rotate(360deg) scale(1.04); }
+}
+
+.neon-app-shell button:not(:disabled),
+.neon-app-shell a {
+  transition: box-shadow 180ms ease-out, filter 180ms ease-out, transform 160ms ease-out;
+}
+
+.neon-app-shell button:not(:disabled):hover,
+.neon-app-shell a:hover {
+  filter: saturate(1.05);
+}
+
+.neon-app-shell button:not(:disabled):active,
+.neon-app-shell a:active {
+  transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-app-shell::before {
+    animation: none;
+  }
+}
+
 button,
 input,
 select,

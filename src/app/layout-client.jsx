@@ -83,7 +83,7 @@ export default function RootLayoutClient({ children }) {
               first overdue-status/audio event during the PWA startup handshake. */}
           <BackgroundMusicPlayer />
           <RefreshOverlay />
-          {children}
+          <div className="neon-app-shell">{children}</div>
         </>
       )}
     </>
