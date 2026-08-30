@@ -19,6 +19,13 @@ const SUMMARY_SELECT = {
   note: true,
   enteredAt: true,
   enteredBy: true,
+  calculationMode: true,
+  sourceSnapshotAt: true,
+  sourceTransactionCount: true,
+  sourceTransactionTotal: true,
+  adjustmentReason: true,
+  lastCalculatedAt: true,
+  lastCalculatedBy: true,
   createdAt: true,
   updatedAt: true,
 };
@@ -33,6 +40,24 @@ function parseDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error("ရက်စွဲပုံစံ မမှန်ပါ။");
   const range = getMyanmarDayRange(text);
   return { text, range };
+}
+
+async function getSourceSnapshot(date) {
+  const { range } = parseDate(date);
+  const [ledgers, cashSales] = await Promise.all([
+    prisma.ledger?.findMany
+      ? prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
+      : Promise.resolve([]),
+    prisma.cashSale?.findMany
+      ? prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
+      : Promise.resolve([]),
+  ]);
+  const amounts = [...ledgers, ...cashSales].map((row) => toAmount(row.amount));
+  return {
+    capturedAt: new Date(),
+    transactionCount: amounts.length,
+    transactionTotal: amounts.reduce((total, amount) => total + amount, 0),
+  };
 }
 
 function parseMonth(value) {
@@ -148,12 +173,16 @@ function validateDailyInput(body) {
   if (retailCash > retailTotal || wholesaleCash > wholesaleTotal) {
     throw new Error("ငွေသားပမာဏသည် သက်ဆိုင်ရာ လက်လီ/လက်ကားစုစုပေါင်းထက် မကျော်ရပါ။");
   }
+  const requestedMode = String(body.calculationMode || "MANUAL").trim().toUpperCase();
+  const calculationMode = ["AUTO", "MANUAL", "AUTO_ADJUSTED"].includes(requestedMode) ? requestedMode : "MANUAL";
   return {
     date,
     retailTotal,
     wholesaleTotal,
     retailCash,
     wholesaleCash,
+    calculationMode,
+    adjustmentReason: body.adjustmentReason?.trim() || null,
     note: body.note?.trim() || null,
   };
 }
@@ -269,6 +298,7 @@ export async function POST(request) {
     }
 
     const input = validateDailyInput(body);
+    const sourceSnapshot = await getSourceSnapshot(input.date);
     const existing = prisma.dailySalesSummary.findUnique
       ? await prisma.dailySalesSummary.findUnique({
           where: { date: input.date },
@@ -284,6 +314,13 @@ export async function POST(request) {
         wholesaleCash: input.wholesaleCash,
         source: "DAILY_INPUT",
         note: input.note,
+        calculationMode: input.calculationMode,
+        sourceSnapshotAt: sourceSnapshot.capturedAt,
+        sourceTransactionCount: sourceSnapshot.transactionCount,
+        sourceTransactionTotal: sourceSnapshot.transactionTotal,
+        adjustmentReason: input.calculationMode === "AUTO" ? null : input.adjustmentReason,
+        lastCalculatedAt: sourceSnapshot.capturedAt,
+        lastCalculatedBy: input.calculationMode === "AUTO" ? "SYSTEM" : actorName || null,
       },
       create: {
         date: input.date,
@@ -295,6 +332,13 @@ export async function POST(request) {
         wholesaleCash: input.wholesaleCash,
         source: "DAILY_INPUT",
         note: input.note,
+        calculationMode: input.calculationMode,
+        sourceSnapshotAt: sourceSnapshot.capturedAt,
+        sourceTransactionCount: sourceSnapshot.transactionCount,
+        sourceTransactionTotal: sourceSnapshot.transactionTotal,
+        adjustmentReason: input.calculationMode === "AUTO" ? null : input.adjustmentReason,
+        lastCalculatedAt: sourceSnapshot.capturedAt,
+        lastCalculatedBy: input.calculationMode === "AUTO" ? "SYSTEM" : actorName || null,
       },
       select: SUMMARY_SELECT,
     });

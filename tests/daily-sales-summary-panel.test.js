@@ -16,7 +16,8 @@ describe("DailySalesSummaryPanel", () => {
   it("auto-saves existing CashSale values and edited daily inputs", () => {
     expect(source).toContain('setIsEditing(body.data.selectedDay?.source === "CASH_SALE")');
     expect(source).toContain("window.setTimeout(() => { saveDaily(); }, 900)");
-    expect(source).toContain('body: JSON.stringify({ date, ...values })');
+    expect(source).toContain('calculationMode: hasManualDifference ? "MANUAL" : "AUTO"');
+    expect(source).toContain('adjustmentReason: hasManualDifference ?');
     expect(source).toContain('body: JSON.stringify({ action: "opening", month: date.slice(0, 7), selectedDate: date, ...openingDraft })');
     expect(source).toContain('setSaveNotice("နေ့စဉ်စာရင်း သိမ်းပြီးပါပြီ။")');
     expect(source).toContain('setIsEditing(true);\n      setError(saveError.message || "နေ့စဉ်စာရင်း သိမ်း၍ မရပါ။ ပြန်စမ်းပါ။")');

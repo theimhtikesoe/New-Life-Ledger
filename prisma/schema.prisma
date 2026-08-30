@@ -273,11 +273,18 @@ model DailySalesSummary {
   retailCash     Int      @default(0)
   wholesaleCash  Int      @default(0)
   source         String   @default("DAILY_INPUT")
-  note           String?
-  enteredAt      DateTime?
-  enteredBy      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  note                  String?
+  enteredAt             DateTime?
+  enteredBy             String?
+  calculationMode       String?
+  sourceSnapshotAt      DateTime?
+  sourceTransactionCount Int?
+  sourceTransactionTotal Int?
+  adjustmentReason      String?
+  lastCalculatedAt      DateTime?
+  lastCalculatedBy      String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
 
   @@index([date])
 }

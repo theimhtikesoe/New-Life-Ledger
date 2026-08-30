@@ -34,6 +34,14 @@ function formatMoney(value) {
   return `${money.format(Math.round(Number(value || 0)))} Ks`;
 }
 
+function calculationModeLabel(row) {
+  if (row?.source === "CASH_SALE") return "CashSale auto";
+  if (row?.calculationMode === "AUTO") return "Auto";
+  if (row?.calculationMode === "MANUAL") return "Manual";
+  if (row?.calculationMode === "AUTO_ADJUSTED") return "Auto + ညှိ";
+  return "Legacy";
+}
+
 function formatMyanmarDateInputValue(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   const local = new Date(date.getTime() + (6 * 60 + 30) * 60 * 1000);
@@ -179,7 +187,12 @@ export default function DailySalesSummaryPanel() {
       const response = await fetch("/api/daily-sales-summary", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-actor-name": encodeActorHeader(actorName) },
-        body: JSON.stringify({ date, ...values }),
+        body: JSON.stringify({
+          date,
+          ...values,
+          calculationMode: hasManualDifference ? "MANUAL" : "AUTO",
+          adjustmentReason: hasManualDifference ? "Daily Summary တန်ဖိုးကို user က ညှိထားသည်" : null,
+        }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.ok) throw new Error(body.error || "သိမ်းဆည်း၍ မရပါ။");
@@ -346,7 +359,7 @@ export default function DailySalesSummaryPanel() {
                           <td className="px-3 py-2 font-bold text-indigo-900">{formatMoney(row.dailyTotal)}</td>
                           <td className="px-3 py-2 font-bold text-emerald-900">{row.monthlyCumulative == null ? "—" : formatMoney(row.monthlyCumulative)}</td>
                           <td className="px-3 py-2 text-slate-700">{formatMoney(row.cashDailyTotal)}</td>
-                          <td className="px-3 py-2 text-[10px] font-medium text-slate-500">{row.source === "DAILY_SUMMARY" ? "Saved" : "CashSale"}</td>
+                          <td className="px-3 py-2 text-[10px] font-medium text-slate-500">{row.source === "DAILY_SUMMARY" ? `Saved · ${calculationModeLabel(row)}` : calculationModeLabel(row)}</td>
                         </tr>
                       ))}
                     </tbody>

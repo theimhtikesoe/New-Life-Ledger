@@ -199,6 +199,13 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummary_date_idx" ON "DailySalesSummary"("date")`);
         await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredAt" TIMESTAMP(3)`);
         await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredBy" TEXT`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "calculationMode" TEXT`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "sourceSnapshotAt" TIMESTAMP(3)`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "sourceTransactionCount" INTEGER`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "sourceTransactionTotal" INTEGER`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "adjustmentReason" TEXT`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "lastCalculatedAt" TIMESTAMP(3)`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "lastCalculatedBy" TEXT`);
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "DailySalesSummarySource" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -356,6 +363,13 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummary_date_idx" ON "DailySalesSummary"("date")`);
       await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredAt" TIMESTAMP(3)`);
       await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredBy" TEXT`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "calculationMode" TEXT`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "sourceSnapshotAt" TIMESTAMP(3)`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "sourceTransactionCount" INTEGER`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "sourceTransactionTotal" INTEGER`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "adjustmentReason" TEXT`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "lastCalculatedAt" TIMESTAMP(3)`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "lastCalculatedBy" TEXT`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "DailySalesSummarySource" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
