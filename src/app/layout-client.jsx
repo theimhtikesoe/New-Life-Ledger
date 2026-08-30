@@ -69,22 +69,11 @@ function RefreshOverlay() {
       className="pwa-quick-actions pointer-events-none fixed z-[110]"
     >
       <div className="relative">
-        <div
-          className="absolute right-[calc(100%+0.7rem)] top-1/2 flex items-center gap-0.5 whitespace-nowrap"
-          style={{ transform: 'translateY(calc(-50% + 0.3rem))' }}
-          aria-hidden="true"
-          >
-            <span className="animate-pulse -rotate-6 text-[11px] font-extrabold italic leading-none text-rose-600 drop-shadow-[0_1px_2px_rgba(190,24,93,0.35)]">
-              Refresh
-            </span>
-          <svg
-            className="h-6 w-10 animate-pulse overflow-visible text-rose-600"
-            viewBox="0 0 54 30"
-            fill="none"
-          >
-            <path d="M3 7C16 1 34 3 47 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-            <path d="M38 9L51 16L39 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M44 12L51 16L45 20" fill="currentColor" />
+        <div className="pwa-refresh-guide" aria-hidden="true">
+          <span className="pwa-refresh-guide-label">Refresh</span>
+          <svg className="pwa-refresh-guide-arrow" viewBox="0 0 42 24" fill="none">
+            <path d="M2 6C12 1 25 3 35 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M28 6L38 12L29 19" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <button
