@@ -103,7 +103,12 @@ describe("Telegram daily report CashSale data", () => {
 
   it("shows payment type and sale type in Activity Payment without clipping", () => {
     const html = createReportHtml({
-      summary: {},
+      summary: {
+        paymentTypes: { KPAY: 1155000 },
+        cashPaymentTypes: { CASH: 2120500, KPAY: 81000 },
+        cashSaleTypes: { RETAIL: { count: 7, amount: 297500 }, WHOLESALE: { count: 7, amount: 1904000 } },
+        cashAmount: 2201500,
+      },
       customers: [],
       activityLogs: [{
         createdAt: cashSale.date,
@@ -118,6 +123,12 @@ describe("Telegram daily report CashSale data", () => {
     }, "", "");
     expect(html).toContain("<td class=\"activity-action\">လက်ငင်းရောင်း</td><td class=\"activity-entity\">လက်ငင်း Customer</td><td class=\"activity-amount\">50,000 Ks</td><td class=\"payment-cell\">CASH · လက်ကား</td>");
     expect(html).toContain(".summary-table .summary-amount{font-size:22px;font-weight:700");
+    expect(html).toContain("ငွေချေမှုစုစုပေါင်း · Payment Total");
+    expect(html).toContain("လက်ငင်းရောင်းရငွေ · Cash Sales");
+    expect(html).toContain("ရောင်းအမျိုးအစား · Sale Breakdown");
+    expect(html).toContain(".retail-row{background:#f5f3ff;color:#6d28d9");
+    expect(html).toContain(".wholesale-row{background:#fffbeb;color:#b45309");
+    expect(html).toContain("စုစုပေါင်း 2,201,500 Ks");
     expect(html).toContain(".payment-row strong{font-size:23px;font-weight:700");
     expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:15%}");
     expect(html).toContain(".activity-table .activity-actor{font-size:14px;color:#64748b;font-weight:400}");
