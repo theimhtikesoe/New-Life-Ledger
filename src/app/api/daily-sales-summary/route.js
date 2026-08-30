@@ -17,6 +17,8 @@ const SUMMARY_SELECT = {
   wholesaleCash: true,
   source: true,
   note: true,
+  enteredAt: true,
+  enteredBy: true,
   createdAt: true,
   updatedAt: true,
 };
@@ -89,8 +91,52 @@ function summarizeSavedRow(row) {
   };
 }
 
-function serializeRow(date, summary, source, savedAt = null) {
-  return { date, ...summary, source, savedAt };
+function serializeRow(date, summary, source, savedAt = null, metadata = {}) {
+  return { date, ...summary, source, savedAt, ...metadata };
+}
+
+async function captureFutureSourceLinks(summaryId, date) {
+  // Keep tests and legacy deployments safe if the additive model has not been generated yet.
+  if (!prisma.dailySalesSummarySource?.upsert) return;
+  const { range } = parseDate(date);
+  const [ledgers, cashSales] = await Promise.all([
+    prisma.ledger.findMany({
+      where: { date: { gte: range.start, lt: range.end } },
+      select: { id: true, amount: true, paymentType: true, type: true },
+    }),
+    prisma.cashSale.findMany({
+      where: { date: { gte: range.start, lt: range.end } },
+      select: { id: true, amount: true, paymentType: true, saleType: true },
+    }),
+  ]);
+  const links = [
+    ...ledgers.map((ledger) => ({
+      sourceType: "LEDGER",
+      sourceId: ledger.id,
+      contributionType: "LEDGER_TOTAL",
+      amount: toAmount(ledger.amount),
+      paymentType: ledger.paymentType || null,
+    })),
+    ...cashSales.map((sale) => ({
+      sourceType: "CASH_SALE",
+      sourceId: sale.id,
+      contributionType: normalizeCashSaleType(sale.saleType) === "WHOLESALE" ? "WHOLESALE_TOTAL" : "RETAIL_TOTAL",
+      amount: toAmount(sale.amount),
+      paymentType: sale.paymentType || CASH_PAYMENT_TYPE,
+    })),
+  ];
+  await Promise.all(links.map((link) => prisma.dailySalesSummarySource.upsert({
+    where: {
+      summaryId_sourceType_sourceId_contributionType: {
+        summaryId,
+        sourceType: link.sourceType,
+        sourceId: link.sourceId,
+        contributionType: link.contributionType,
+      },
+    },
+    update: { amount: link.amount, paymentType: link.paymentType },
+    create: { summaryId, ...link },
+  })));
 }
 
 function validateDailyInput(body) {
@@ -141,7 +187,13 @@ async function readSummary(date) {
   const selectedSaved = savedByDate.get(date);
   const selectedCash = summarizeCashSales(cashByDate.get(date) || []);
   const selectedDay = selectedSaved
-    ? { ...summarizeSavedRow(selectedSaved), source: "DAILY_SUMMARY", savedAt: selectedSaved.updatedAt }
+    ? {
+        ...summarizeSavedRow(selectedSaved),
+        source: "DAILY_SUMMARY",
+        savedAt: selectedSaved.updatedAt,
+        enteredAt: selectedSaved.enteredAt || null,
+        enteredBy: selectedSaved.enteredBy || null,
+      }
     : { ...selectedCash, source: selectedCash.recordCount ? "CASH_SALE" : "NONE", savedAt: null };
 
   const rows = new Map();
@@ -149,7 +201,10 @@ async function readSummary(date) {
     rows.set(rowDate, serializeRow(rowDate, summarizeCashSales(sales), "CASH_SALE", null));
   }
   for (const row of savedRows) {
-    rows.set(row.date, serializeRow(row.date, summarizeSavedRow(row), "DAILY_SUMMARY", row.updatedAt));
+    rows.set(row.date, serializeRow(row.date, summarizeSavedRow(row), "DAILY_SUMMARY", row.updatedAt, {
+      enteredAt: row.enteredAt || null,
+      enteredBy: row.enteredBy || null,
+    }));
   }
   const sortedRows = [...rows.values()].sort((a, b) => a.date.localeCompare(b.date));
   const openingAmount = toAmount(opening?.amount);
@@ -214,6 +269,12 @@ export async function POST(request) {
     }
 
     const input = validateDailyInput(body);
+    const existing = prisma.dailySalesSummary.findUnique
+      ? await prisma.dailySalesSummary.findUnique({
+          where: { date: input.date },
+          select: { id: true, enteredAt: true, enteredBy: true },
+        })
+      : null;
     const row = await prisma.dailySalesSummary.upsert({
       where: { date: input.date },
       update: {
@@ -226,6 +287,8 @@ export async function POST(request) {
       },
       create: {
         date: input.date,
+        enteredAt: new Date(),
+        enteredBy: actorName || null,
         retailTotal: input.retailTotal,
         wholesaleTotal: input.wholesaleTotal,
         retailCash: input.retailCash,
@@ -235,6 +298,7 @@ export async function POST(request) {
       },
       select: SUMMARY_SELECT,
     });
+    if (!existing) await captureFutureSourceLinks(row.id, input.date);
     await writeAuditLog({
       actorName,
       action: "DAILY_SALES_SUMMARY",

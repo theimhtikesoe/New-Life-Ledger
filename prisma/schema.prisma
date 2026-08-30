@@ -274,10 +274,27 @@ model DailySalesSummary {
   wholesaleCash  Int      @default(0)
   source         String   @default("DAILY_INPUT")
   note           String?
+  enteredAt      DateTime?
+  enteredBy      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@index([date])
+}
+
+model DailySalesSummarySource {
+  id               String   @id @default(uuid()) @db.Uuid
+  summaryId        String   @db.Uuid
+  sourceType       String
+  sourceId         String   @db.Uuid
+  contributionType String
+  amount           Int      @default(0)
+  paymentType      String?
+  linkedAt         DateTime @default(now())
+
+  @@unique([summaryId, sourceType, sourceId, contributionType])
+  @@index([summaryId])
+  @@index([sourceType, sourceId])
 }
 
 model DailySalesOpening {

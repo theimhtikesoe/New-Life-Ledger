@@ -187,6 +187,27 @@ export async function ensureDatabase() {
           )
         `);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummary_date_idx" ON "DailySalesSummary"("date")`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredAt" TIMESTAMP(3)`);
+        await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredBy" TEXT`);
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "DailySalesSummarySource" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "summaryId" UUID NOT NULL,
+            "sourceType" TEXT NOT NULL,
+            "sourceId" UUID NOT NULL,
+            "contributionType" TEXT NOT NULL,
+            "amount" INTEGER NOT NULL DEFAULT 0,
+            "paymentType" TEXT,
+            "linkedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT "DailySalesSummarySource_summaryId_fkey"
+              FOREIGN KEY ("summaryId") REFERENCES "DailySalesSummary" ("id")
+              ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT "DailySalesSummarySource_unique"
+              UNIQUE ("summaryId", "sourceType", "sourceId", "contributionType")
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummarySource_summaryId_idx" ON "DailySalesSummarySource"("summaryId")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummarySource_source_idx" ON "DailySalesSummarySource"("sourceType", "sourceId")`);
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "DailySalesOpening" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -323,6 +344,27 @@ export async function ensureDatabase() {
         )
       `);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummary_date_idx" ON "DailySalesSummary"("date")`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredAt" TIMESTAMP(3)`);
+      await setupQuery(`ALTER TABLE "DailySalesSummary" ADD COLUMN IF NOT EXISTS "enteredBy" TEXT`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "DailySalesSummarySource" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "summaryId" UUID NOT NULL,
+          "sourceType" TEXT NOT NULL,
+          "sourceId" UUID NOT NULL,
+          "contributionType" TEXT NOT NULL,
+          "amount" INTEGER NOT NULL DEFAULT 0,
+          "paymentType" TEXT,
+          "linkedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "DailySalesSummarySource_summaryId_fkey"
+            FOREIGN KEY ("summaryId") REFERENCES "DailySalesSummary" ("id")
+            ON DELETE CASCADE ON UPDATE CASCADE,
+          CONSTRAINT "DailySalesSummarySource_unique"
+            UNIQUE ("summaryId", "sourceType", "sourceId", "contributionType")
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummarySource_summaryId_idx" ON "DailySalesSummarySource"("summaryId")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesSummarySource_source_idx" ON "DailySalesSummarySource"("sourceType", "sourceId")`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "DailySalesOpening" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
