@@ -2196,7 +2196,7 @@ export default function Dashboard({ view = "overview" }) {
                     <article key={`mobile-${ledger.id}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Date</p><p className="mt-0.5 truncate text-xs font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
-                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CASH_SALE" ? "bg-cyan-100 text-cyan-700" : ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CASH_SALE" ? `လက်ငင်း · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${ledger.type === "CASH_SALE" ? (ledger.saleType === "RETAIL" ? "bg-violet-100 text-violet-800 ring-1 ring-violet-200" : "bg-amber-100 text-amber-800 ring-1 ring-amber-200") : ledger.type === "CREDIT" ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{ledger.type === "CASH_SALE" ? `လက်ငင်း · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"}</span>
                       </div>
                       <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CASH_SALE" ? "text-cyan-600" : ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
                       <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[11px]">
@@ -2230,7 +2230,7 @@ export default function Dashboard({ view = "overview" }) {
                                 <span
                                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                                     ledger.type === "CASH_SALE"
-                                      ? "bg-cyan-100 text-cyan-700"
+                                      ? (ledger.saleType === "RETAIL" ? "bg-violet-100 text-violet-800 ring-1 ring-violet-200" : "bg-amber-100 text-amber-800 ring-1 ring-amber-200")
                                       : ledger.type === "CREDIT"
                                         ? "bg-rose-100 text-rose-700"
                                         : "bg-emerald-100 text-emerald-700"
