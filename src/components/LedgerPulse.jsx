@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const amountFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 
@@ -49,6 +49,7 @@ function PlantColumn({ point, maxAmount, index }) {
 }
 
 export default function LedgerPulse({ data, loading = false, error = "" }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const points = useMemo(() => (Array.isArray(data?.days) ? data.days : []), [data?.days]);
   const maxAmount = useMemo(() => Math.max(
     1,
@@ -61,15 +62,24 @@ export default function LedgerPulse({ data, loading = false, error = "" }) {
 
   return (
     <section className="overflow-hidden rounded-2xl border border-cyan-200 bg-gradient-to-br from-white via-cyan-50/50 to-slate-50 p-3 text-slate-800 shadow-lg shadow-cyan-100/60 sm:p-5" aria-labelledby="ledger-pulse-title">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-cyan-700/80">Ledger Pulse</p>
           <h2 id="ledger-pulse-title" className="mt-1 text-base font-bold text-slate-900 sm:text-lg">၇ ရက် စာရင်းအခြေအနေ</h2>
-          <p className="mt-1 text-[11px] text-slate-600 sm:text-xs">ငွေချေ၊ အကြွေးတိုးနှင့် လက်ငင်းကို သီးခြားမြင်နိုင်ပါသည်။</p>
+          <p className="mt-1 text-[11px] text-slate-600 sm:text-xs">Graph ကို လိုအပ်သည့်အချိန်တွင်သာ ဖွင့်ကြည့်နိုင်ပါသည်။</p>
         </div>
-        <div className="rounded-full border border-cyan-200 bg-white/80 px-3 py-1 text-[10px] font-semibold text-cyan-700">Data plant view</div>
+        <button
+          type="button"
+          className="shrink-0 rounded-full border border-cyan-200 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-cyan-800 shadow-sm transition hover:bg-cyan-50 active:scale-[0.98]"
+          onClick={() => setIsExpanded((value) => !value)}
+          aria-expanded={isExpanded}
+          aria-controls="ledger-pulse-graph"
+        >
+          {isExpanded ? "Graph ဖျောက်ရန်" : "Graph ကြည့်ရန်"}
+        </button>
       </div>
 
+      {isExpanded && <div id="ledger-pulse-graph">
       {loading && points.length === 0 ? (
         <div className="mt-5 flex h-48 items-end justify-center gap-3 rounded-xl border border-slate-200 bg-white/80 px-4 pb-5 shadow-inner sm:h-56" aria-live="polite">
           {[38, 58, 28, 72, 46, 64, 34].map((height, index) => (
@@ -93,6 +103,7 @@ export default function LedgerPulse({ data, loading = false, error = "" }) {
       ) : (
         <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 p-4 text-xs text-slate-600">ပြီးခဲ့သော ၇ ရက်အတွင်း ပြရန် data မရှိသေးပါ။</div>
       )}
+      </div>}
     </section>
   );
 }
