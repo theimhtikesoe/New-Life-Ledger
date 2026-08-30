@@ -13,6 +13,7 @@ const REQUIRED_TABLES = [
   "AutoReportRun",
   "CashSale",
   "DailySalesSummary",
+  "DailySalesSummarySource",
   "DailySalesOpening",
   "Order",
   "OrderLine",
@@ -23,6 +24,7 @@ const REQUIRED_TABLES = [
   "AiExplanationCache",
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
+const REQUIRED_DAILY_SALES_COLUMNS = ["enteredAt", "enteredBy"];
 
 async function hasExpectedSchema() {
   const result = await prisma.$queryRaw`
@@ -39,10 +41,18 @@ async function hasExpectedSchema() {
         WHERE table_schema = 'public'
           AND table_name = 'AutoReportRun'
           AND column_name IN (${Prisma.join(REQUIRED_AUTO_REPORT_COLUMNS)})
-      ) AS auto_report_column_count
+      ) AS auto_report_column_count,
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'DailySalesSummary'
+          AND column_name IN (${Prisma.join(REQUIRED_DAILY_SALES_COLUMNS)})
+      ) AS daily_sales_column_count
   `;
   return Number(result[0]?.table_count || 0) === REQUIRED_TABLES.length
-    && Number(result[0]?.auto_report_column_count || 0) === REQUIRED_AUTO_REPORT_COLUMNS.length;
+    && Number(result[0]?.auto_report_column_count || 0) === REQUIRED_AUTO_REPORT_COLUMNS.length
+    && Number(result[0]?.daily_sales_column_count || 0) === REQUIRED_DAILY_SALES_COLUMNS.length;
 }
 
 function isBenignSetupRace(error) {
