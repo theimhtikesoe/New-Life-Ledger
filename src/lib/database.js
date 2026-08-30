@@ -24,7 +24,17 @@ const REQUIRED_TABLES = [
   "AiExplanationCache",
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
-const REQUIRED_DAILY_SALES_COLUMNS = ["enteredAt", "enteredBy"];
+const REQUIRED_DAILY_SALES_COLUMNS = [
+  "enteredAt",
+  "enteredBy",
+  "calculationMode",
+  "sourceSnapshotAt",
+  "sourceTransactionCount",
+  "sourceTransactionTotal",
+  "adjustmentReason",
+  "lastCalculatedAt",
+  "lastCalculatedBy",
+];
 
 async function hasExpectedSchema() {
   const result = await prisma.$queryRaw`
