@@ -18,8 +18,8 @@ describe("PWA quick actions", () => {
     expect(layoutSource).toContain("စာလုံးနှင့် website အရွယ်အစား သေးရန်");
     expect(layoutSource).toContain("style={{ zoom: appZoom");
     expect(layoutSource).toContain("marginInline: 'auto'");
-    expect(layoutSource).toContain("pwa-refresh-guide");
-    expect(layoutSource).toContain("pwa-refresh-guide-arrow");
+    expect(layoutSource).not.toContain("pwa-refresh-guide");
+    expect(layoutSource).not.toContain("pwa-refresh-guide-arrow");
     expect(layoutSource).toContain("new-life-ledger:background-music-save");
     expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
     expect(layoutSource).not.toContain('href="/"');
@@ -36,9 +36,7 @@ describe("PWA quick actions", () => {
     expect(cssSource).toContain(".pwa-top-loading");
     expect(cssSource).toContain(".pwa-zoom-controls");
     expect(cssSource).toContain("calc(var(--pwa-top-clearance) + 7rem)");
-    expect(cssSource).toContain(".pwa-refresh-guide");
-    expect(cssSource).toContain("right: calc(100% + 0.65rem)");
-    expect(cssSource).toContain("@keyframes pwaRefreshGuideFloat");
-    expect(cssSource).toContain("prefers-reduced-motion: reduce");
+    expect(cssSource).not.toContain(".pwa-refresh-guide");
+    expect(cssSource).not.toContain("@keyframes pwaRefreshGuideFloat");
   });
 });

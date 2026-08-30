@@ -69,13 +69,6 @@ function RefreshOverlay() {
       className="pwa-quick-actions pointer-events-none fixed z-[110]"
     >
       <div className="relative">
-        <div className="pwa-refresh-guide" aria-hidden="true">
-          <span className="pwa-refresh-guide-label">Refresh</span>
-          <svg className="pwa-refresh-guide-arrow" viewBox="0 0 42 24" fill="none">
-            <path d="M2 6C12 1 25 3 35 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M28 6L38 12L29 19" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
         <button
           type="button"
           onClick={handleRefresh}
