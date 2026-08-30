@@ -1503,7 +1503,7 @@ export default function Dashboard({ view = "overview" }) {
   );
 
   return (
-    <main className="min-h-screen bg-transparent" aria-busy={loading || isSubmitting}>
+    <main className="min-h-screen min-w-0 overflow-x-clip bg-transparent" aria-busy={loading || isSubmitting}>
       <OverdueAlertAudio overdueDebts={overdueDebts} ready={overdueDebts !== null} />
       {alert && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
@@ -1529,19 +1529,19 @@ export default function Dashboard({ view = "overview" }) {
         </div>
       )}
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
-        <header className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-4 sm:px-5 sm:py-5">
+      <div className="mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-4 overflow-x-clip px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
+        <header className="neon-surface neon-sweep min-w-0 rounded-2xl border border-cyan-200/80 bg-white/90 px-3 py-3 sm:px-5 sm:py-5">
           {isLedgerView ? (
             <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
           ) : null}
-          <div className="grid grid-cols-[minmax(0,1fr)_minmax(150px,auto)] gap-5 xl:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] xl:items-center xl:gap-x-6">
-            <div className="order-2 col-span-2 col-start-1 row-start-2 min-w-0 xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[360px] xl:justify-self-start">
+          <div className="grid min-w-0 grid-cols-1 gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] lg:items-center lg:gap-x-6">
+            <div className="order-2 min-w-0 lg:order-none lg:max-w-[360px] lg:justify-self-start">
               <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
-              <h1 className="mt-1 max-w-none whitespace-nowrap text-[clamp(1rem,1.8vw,1.55rem)] font-semibold leading-tight tracking-tight text-slate-900">
+              <h1 className="mt-1 max-w-full break-words text-[clamp(1rem,4.5vw,1.55rem)] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[clamp(1rem,1.8vw,1.55rem)]">
                 Customer ငွေရှင်းတမ်း၊ အကြွေးရှင်းတမ်း
               </h1>
             </div>
-            <div className="order-1 col-span-2 min-w-0 text-center xl:order-none xl:col-span-1 xl:min-w-[210px]">
+            <div className="order-1 min-w-0 text-center lg:order-none lg:min-w-[210px]">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700">ယနေ့ရက်စွဲ</p>
               <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
@@ -1560,8 +1560,8 @@ export default function Dashboard({ view = "overview" }) {
                 {kpiDateError ? <span className="text-[10px] text-rose-600">ပြန်စမ်းပါ</span> : null}
               </div>
             </div>
-            <div className="neon-control-deck order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[360px] xl:mr-14 xl:justify-self-end">
-              <div className="col-span-2 flex [&>button]:w-full">
+            <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
+              <div className="col-span-2 flex min-w-0 [&>button]:w-full">
                 <OverdueNotificationBell
                   compact
                   customers={allCustomersForKPI}
@@ -1584,7 +1584,7 @@ export default function Dashboard({ view = "overview" }) {
 
               <Link
                 href="/orders"
-                className="flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-2 text-base font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
+                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-2 text-center text-sm font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100 sm:text-base"
                 title="Telegram Orders"
               >
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">📦</span>
@@ -1595,7 +1595,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
                 aria-expanded={expandedDashboardMenu === "reports"}
                 aria-controls="dashboard-report-menu"
-                className="flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-violet-300 bg-violet-50 px-2 py-2 text-sm font-semibold leading-4 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-violet-300 bg-violet-50 px-2 py-2 text-center text-xs font-semibold leading-4 text-violet-700 shadow-sm transition-colors hover:bg-violet-100 sm:text-sm"
               >
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">📊</span>
                 <span>အစီရင်ခံ / မှတ်တမ်း</span>
@@ -1606,7 +1606,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
                 aria-expanded={expandedDashboardMenu === "data"}
                 aria-controls="dashboard-data-menu"
-                className="col-span-2 flex min-h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-2 text-sm font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                className="col-span-2 flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-2 text-center text-xs font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 sm:text-sm"
               >
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">🗂️</span>
                 <span>ဒေတာ / အမှိုက်ပုံး</span>
@@ -2041,7 +2041,7 @@ export default function Dashboard({ view = "overview" }) {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2 items-start">
+                <div className="mt-5 grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 items-start">
                   <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-3 shadow-sm sm:p-5">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းအသစ်သွင်းရန်</h3>
                     <form className="mt-3 space-y-3" onSubmit={createLedgerTransaction}>

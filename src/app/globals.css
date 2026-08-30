@@ -62,17 +62,52 @@
   color-scheme: light;
 }
 
+html {
+  min-width: 320px;
+  overflow-x: hidden;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
+  min-width: 0;
   margin: 0;
+  overflow-x: hidden;
   background: #ffffff;
   color: #0f172a;
 }
 
+main,
+header,
+section,
+article,
+form,
+nav,
+fieldset {
+  min-width: 0;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
 .neon-app-shell {
   position: relative;
+  width: 100%;
+  min-width: 0;
   min-height: 100dvh;
   isolation: isolate;
-  overflow: clip;
+  overflow-x: clip;
+  overflow-y: visible;
   background:
     radial-gradient(circle at 8% 4%, rgba(103, 232, 249, 0.12), transparent 22rem),
     radial-gradient(circle at 92% 22%, rgba(196, 181, 253, 0.12), transparent 24rem),
@@ -168,8 +203,40 @@ button,
 input,
 select,
 textarea {
+  max-width: 100%;
   font: inherit;
   font-size: 16px !important;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+/* Small screens keep the same readable scale as the reference phone views;
+   desktop layouts remain fluid without creating a second horizontal canvas. */
+@media screen and (max-width: 767px) {
+  .neon-app-shell,
+  .neon-app-shell > main,
+  .neon-app-shell main > div {
+    max-width: 100%;
+  }
+
+  .neon-app-shell table {
+    min-width: 600px;
+  }
+
+  .neon-app-shell .overflow-x-auto {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media screen and (orientation: landscape) and (min-width: 768px) {
+  .neon-app-shell {
+    min-height: 100svh;
+  }
 }
 
 /* More aggressive fix for mobile zoom on focus */
