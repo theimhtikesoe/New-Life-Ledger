@@ -230,7 +230,7 @@ export default function DailySalesSummaryPanel() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-left shadow-sm transition-all hover:border-indigo-300 hover:shadow-md sm:min-h-[158px]"
+        className="neon-card neon-sweep neon-card-indigo flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-indigo-200 bg-indigo-50/85 p-4 text-left shadow-sm transition-all hover:border-indigo-300 hover:shadow-md sm:min-h-[158px]"
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
         <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">နေ့စဉ်ရောင်းရငွေ</p>

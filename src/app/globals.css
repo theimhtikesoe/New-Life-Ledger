@@ -95,6 +95,53 @@ body {
   to { transform: rotate(360deg) scale(1.04); }
 }
 
+.neon-surface,
+.neon-card,
+.neon-control-deck {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.72) inset;
+}
+
+.neon-surface::after,
+.neon-card::after,
+.neon-control-deck::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.72) 48%, transparent 62%);
+}
+
+.neon-sweep::after {
+  animation: neonSweep 7s ease-in-out infinite;
+}
+
+.neon-card {
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+}
+
+.neon-card:hover {
+  transform: translateY(-2px);
+}
+
+.neon-card-rose { box-shadow: 0 10px 26px rgba(244, 63, 94, 0.10), 0 0 18px rgba(251, 113, 133, 0.12); }
+.neon-card-blue { box-shadow: 0 10px 26px rgba(59, 130, 246, 0.10), 0 0 18px rgba(96, 165, 250, 0.12); }
+.neon-card-emerald { box-shadow: 0 10px 26px rgba(16, 185, 129, 0.10), 0 0 18px rgba(52, 211, 153, 0.12); }
+.neon-card-violet { box-shadow: 0 10px 26px rgba(139, 92, 246, 0.11), 0 0 18px rgba(167, 139, 250, 0.14); }
+.neon-card-fuchsia { box-shadow: 0 10px 26px rgba(217, 70, 239, 0.10), 0 0 18px rgba(232, 121, 249, 0.13); }
+.neon-card-amber { box-shadow: 0 10px 26px rgba(245, 158, 11, 0.11), 0 0 18px rgba(251, 191, 36, 0.13); }
+.neon-card-cyan { box-shadow: 0 10px 26px rgba(6, 182, 212, 0.11), 0 0 18px rgba(34, 211, 238, 0.14); }
+.neon-card-indigo { box-shadow: 0 10px 26px rgba(99, 102, 241, 0.11), 0 0 18px rgba(129, 140, 248, 0.15); }
+
+@keyframes neonSweep {
+  0%, 62%, 100% { opacity: 0; transform: translateX(-120%); }
+  72% { opacity: 0.75; }
+  86% { opacity: 0; transform: translateX(120%); }
+}
+
 .neon-app-shell button:not(:disabled),
 .neon-app-shell a {
   transition: box-shadow 180ms ease-out, filter 180ms ease-out, transform 160ms ease-out;
@@ -111,7 +158,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .neon-app-shell::before {
+  .neon-app-shell::before,
+  .neon-sweep::after {
     animation: none;
   }
 }

@@ -1503,7 +1503,7 @@ export default function Dashboard({ view = "overview" }) {
   );
 
   return (
-    <main className="min-h-screen bg-white" aria-busy={loading || isSubmitting}>
+    <main className="min-h-screen bg-transparent" aria-busy={loading || isSubmitting}>
       <OverdueAlertAudio overdueDebts={overdueDebts} ready={overdueDebts !== null} />
       {alert && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
@@ -1530,7 +1530,7 @@ export default function Dashboard({ view = "overview" }) {
       )}
 
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
-        <header className="rounded-lg border border-slate-200 bg-white px-4 py-4 sm:px-5 sm:py-5">
+        <header className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-4 sm:px-5 sm:py-5">
           {isLedgerView ? (
             <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
           ) : null}
@@ -1560,7 +1560,7 @@ export default function Dashboard({ view = "overview" }) {
                 {kpiDateError ? <span className="text-[10px] text-rose-600">ပြန်စမ်းပါ</span> : null}
               </div>
             </div>
-            <div className="order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[360px] xl:mr-14 xl:justify-self-end">
+            <div className="neon-control-deck order-3 col-span-2 col-start-1 row-start-3 grid w-full max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm justify-self-stretch xl:order-none xl:col-span-1 xl:col-start-auto xl:row-start-auto xl:max-w-[360px] xl:mr-14 xl:justify-self-end">
               <div className="col-span-2 flex [&>button]:w-full">
                 <OverdueNotificationBell
                   compact
@@ -1686,13 +1686,13 @@ export default function Dashboard({ view = "overview" }) {
         {!isLedgerView ? (
           <>
             {/* Compact Summary Box */}
-            <section className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+            <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {/* Total Balance */}
             <Link
               href="/balance-detail"
               aria-label="အသားတင်ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-rose-200 bg-rose-50 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
+              className="neon-card neon-sweep neon-card-rose flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-rose-200 bg-rose-50/85 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-rose-600">အသားတင်ရရန်လက်ကျန်</p>
               <p className="mt-2 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p>
@@ -1700,7 +1700,7 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
 
             {/* Customer Count */}
-            <div className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-blue-200 bg-blue-50 p-4 text-left hover:shadow-md transition-shadow sm:min-h-[158px]">
+            <div className="neon-card neon-sweep neon-card-blue flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-blue-200 bg-blue-50/85 p-4 text-left hover:shadow-md transition-shadow sm:min-h-[158px]">
               <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Customer အရေအတွက်</p>
               <p className="mt-2 text-2xl font-bold text-blue-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p>
               <p className="mt-1 text-xs text-blue-500">Total Customers</p>
@@ -1710,7 +1710,7 @@ export default function Dashboard({ view = "overview" }) {
             <button
               onClick={() => setShowTodayPaymentsModal(true)}
               disabled={!selectedKpiIsToday}
-              className={`flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
+              className={`neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
             >
               <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေမှုများ</p>
               <p className="mt-2 text-2xl font-bold text-emerald-700">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
@@ -1719,7 +1719,7 @@ export default function Dashboard({ view = "overview" }) {
 
             <Link
               href="/daily-summary"
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-violet-200 bg-violet-50 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[158px]"
+              className="neon-card neon-sweep neon-card-violet flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-violet-200 bg-violet-50/85 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
               <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary &amp; AI</p>
@@ -1729,7 +1729,7 @@ export default function Dashboard({ view = "overview" }) {
             <Link
               href="/daily-summary"
               aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-fuchsia-200 bg-fuchsia-50 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
+              className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ဒီနေ့" : selectedKpiDate} လက်ငင်းရောင်း</p>
               <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
@@ -1740,7 +1740,7 @@ export default function Dashboard({ view = "overview" }) {
 
             <Link
               href="/activity"
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition-all hover:border-amber-300 hover:shadow-md"
+              className="neon-card neon-sweep neon-card-amber flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-amber-200 bg-amber-50/85 p-4 text-left shadow-sm transition-all hover:border-amber-300 hover:shadow-md"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-amber-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p>
               <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
@@ -1749,7 +1749,7 @@ export default function Dashboard({ view = "overview" }) {
 
             <Link
               href="/ledger"
-              className="flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-left shadow-sm transition-all hover:border-cyan-300 hover:shadow-md"
+              className="neon-card neon-sweep neon-card-cyan flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/85 p-4 text-left shadow-sm transition-all hover:border-cyan-300 hover:shadow-md"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Customer စာရင်း</p>
               <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>
