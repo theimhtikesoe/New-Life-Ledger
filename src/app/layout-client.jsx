@@ -70,7 +70,7 @@ function RefreshOverlay() {
     >
       <div className="relative">
         <div
-          className="absolute right-[calc(100%+0.45rem)] top-1/2 flex items-center gap-0.5 whitespace-nowrap"
+          className="absolute right-[calc(100%+0.7rem)] top-1/2 flex items-center gap-0.5 whitespace-nowrap"
           style={{ transform: 'translateY(calc(-50% + 0.3rem))' }}
           aria-hidden="true"
           >
@@ -160,7 +160,7 @@ export default function RootLayoutClient({ children }) {
           <div
             className="neon-app-shell"
             data-app-zoom={appZoom}
-            style={{ zoom: appZoom, width: `${100 / appZoom}%` }}
+            style={{ zoom: appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
           >
             {children}
           </div>

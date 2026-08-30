@@ -17,6 +17,8 @@ describe("PWA quick actions", () => {
     expect(layoutSource).toContain("စာလုံးနှင့် website အရွယ်အစား ကြီးရန်");
     expect(layoutSource).toContain("စာလုံးနှင့် website အရွယ်အစား သေးရန်");
     expect(layoutSource).toContain("style={{ zoom: appZoom");
+    expect(layoutSource).toContain("marginInline: 'auto'");
+    expect(layoutSource).toContain("right-[calc(100%+0.7rem)]");
     expect(layoutSource).toContain("new-life-ledger:background-music-save");
     expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
     expect(layoutSource).not.toContain('href="/"');
