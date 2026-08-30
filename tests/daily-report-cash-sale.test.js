@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   ledgerFindMany: vi.fn(),
   cashSaleFindMany: vi.fn(),
   auditFindMany: vi.fn(),
+  dailySalesSummaryFindUnique: vi.fn(),
 }));
 
 vi.mock("@/lib/database", () => ({ ensureDatabase: mocks.ensureDatabase }));
@@ -13,6 +14,7 @@ vi.mock("@/lib/prisma", () => ({
     ledger: { findMany: mocks.ledgerFindMany },
     cashSale: { findMany: mocks.cashSaleFindMany },
     auditLog: { findMany: mocks.auditFindMany },
+    dailySalesSummary: { findUnique: mocks.dailySalesSummaryFindUnique },
   },
 }));
 
@@ -53,6 +55,7 @@ beforeEach(() => {
   mocks.ensureDatabase.mockReset().mockResolvedValue(undefined);
   mocks.ledgerFindMany.mockReset().mockResolvedValue([ledger]);
   mocks.cashSaleFindMany.mockReset().mockResolvedValue([cashSale]);
+  mocks.dailySalesSummaryFindUnique.mockReset().mockResolvedValue(null);
   mocks.auditFindMany.mockReset().mockResolvedValue([
     { id: "audit-ledger-1", actorName: "Staff", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
     { id: "audit-cash-sale-1", actorName: "Staff", action: "CASH_SALE", entityType: "CashSale", entityId: "cash-sale-1", entityLabel: "လက်ငင်း Customer", summary: "လက်ငင်း Customer လက်ငင်းရောင်း 50,000 Ks", metadata: { amount: 50000, paymentType: "KPay" }, createdAt: cashSale.date, hiddenAt: null },
@@ -71,6 +74,31 @@ describe("Telegram daily report CashSale data", () => {
     const html = createReportHtml({ summary: {}, customers: [customer], activityLogs: [], periodLabel: "2026-08-27" }, "", "");
     expect(html).toContain("white-space:normal;overflow:visible;text-overflow:clip");
     expect(html).toContain("လက်လီ 4 / 162,000 Ks<br>လက်ကား 1 / 415,000 Ks");
+  });
+
+  it("includes a saved Daily Summary row for the requested business date", async () => {
+    mocks.dailySalesSummaryFindUnique.mockResolvedValue({
+      id: "summary-28",
+      date: "2026-08-28",
+      retailTotal: 145000,
+      wholesaleTotal: 7389000,
+      retailCash: 82000,
+      wholesaleCash: 341500,
+      source: "DAILY_INPUT",
+      note: "28 ရက်စာကို 29 ရက်မှာ ထည့်",
+      enteredAt: new Date("2026-08-29T02:45:00.000Z"),
+      enteredBy: "Staff",
+      createdAt: new Date("2026-08-29T02:45:00.000Z"),
+      updatedAt: new Date("2026-08-29T02:45:00.000Z"),
+    });
+    const report = await getDailyReportData({ ...period, dateLabel: "2026-08-28" });
+    expect(report.dailySalesSummary).toMatchObject({
+      date: "2026-08-28",
+      retailTotal: 145000,
+      wholesaleTotal: 7389000,
+      enteredBy: "Staff",
+    });
+    expect(mocks.dailySalesSummaryFindUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { date: "2026-08-28" } }));
   });
 
   it("shows payment type and sale type in Activity Payment without clipping", () => {
