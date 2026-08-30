@@ -7,9 +7,16 @@ const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"
 const cssSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 
 describe("PWA quick actions", () => {
-  it("keeps only the fixed Refresh control", () => {
+  it("keeps the fixed Refresh control and adds accessible app zoom controls", () => {
     expect(layoutSource).toContain("pwa-quick-actions");
     expect(layoutSource).toContain("aria-label=\"Refresh — စာမျက်နှာ data ပြန်လည်ရယူမည်\"");
+    expect(layoutSource).toContain("pwa-zoom-controls");
+    expect(layoutSource).toContain("APP_ZOOM_KEY");
+    expect(layoutSource).toContain("MIN_APP_ZOOM = 0.85");
+    expect(layoutSource).toContain("MAX_APP_ZOOM = 1.15");
+    expect(layoutSource).toContain("စာလုံးနှင့် website အရွယ်အစား ကြီးရန်");
+    expect(layoutSource).toContain("စာလုံးနှင့် website အရွယ်အစား သေးရန်");
+    expect(layoutSource).toContain("style={{ zoom: appZoom");
     expect(layoutSource).toContain("new-life-ledger:background-music-save");
     expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
     expect(layoutSource).not.toContain('href="/"');
@@ -19,5 +26,7 @@ describe("PWA quick actions", () => {
     expect(cssSource).toContain(".pwa-quick-actions");
     expect(cssSource).toContain("env(safe-area-inset-top, 0px)");
     expect(cssSource).toContain("@media screen and (min-width: 768px)");
+    expect(cssSource).toContain(".pwa-zoom-controls");
+    expect(cssSource).toContain("calc(env(safe-area-inset-top, 0px) + 8rem)");
   });
 });

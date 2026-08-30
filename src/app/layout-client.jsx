@@ -4,6 +4,35 @@ import { useEffect, useState } from 'react';
 import PINLogin from '@/components/PINLogin';
 import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
 
+const APP_ZOOM_KEY = 'new-life-ledger:app-zoom-v1';
+const MIN_APP_ZOOM = 0.85;
+const MAX_APP_ZOOM = 1.15;
+const APP_ZOOM_STEP = 0.05;
+
+function clampAppZoom(value) {
+  return Math.min(MAX_APP_ZOOM, Math.max(MIN_APP_ZOOM, Number(value.toFixed(2))));
+}
+
+function readAppZoom() {
+  if (typeof window === 'undefined') return 1;
+  try {
+    const storedValue = window.localStorage.getItem(APP_ZOOM_KEY);
+    if (storedValue === null) return 1;
+    const stored = Number(storedValue);
+    return Number.isFinite(stored) ? clampAppZoom(stored) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function writeAppZoom(value) {
+  try {
+    window.localStorage.setItem(APP_ZOOM_KEY, String(value));
+  } catch {
+    // Private browsing may disable localStorage; the current session still works.
+  }
+}
+
 function RefreshOverlay() {
   const [refreshing, setRefreshing] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
@@ -72,8 +101,51 @@ function RefreshOverlay() {
   );
 }
 
+function AppZoomControls({ appZoom, onChange }) {
+  const zoomPercent = Math.round(appZoom * 100);
+  const updateZoom = (delta) => {
+    const nextZoom = clampAppZoom(appZoom + delta);
+    if (nextZoom === appZoom) return;
+    writeAppZoom(nextZoom);
+    onChange(nextZoom);
+  };
+
+  return (
+    <div className="pwa-zoom-controls pointer-events-none fixed z-[110]" aria-label="စာလုံးနှင့် website အရွယ်အစား ပြောင်းရန်">
+      <div className="pointer-events-auto flex flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => updateZoom(APP_ZOOM_STEP)}
+          disabled={appZoom >= MAX_APP_ZOOM}
+          aria-label={`စာလုံးနှင့် website အရွယ်အစား ကြီးရန် — လက်ရှိ ${zoomPercent}%`}
+          title={`အရွယ်အစား ကြီးရန် (${zoomPercent}%)`}
+          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-sm font-extrabold text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <span aria-hidden="true">A+</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => updateZoom(-APP_ZOOM_STEP)}
+          disabled={appZoom <= MIN_APP_ZOOM}
+          aria-label={`စာလုံးနှင့် website အရွယ်အစား သေးရန် — လက်ရှိ ${zoomPercent}%`}
+          title={`အရွယ်အစား သေးရန် (${zoomPercent}%)`}
+          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-sm font-extrabold text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <span aria-hidden="true">A−</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function RootLayoutClient({ children }) {
   const [authenticated, setAuthenticated] = useState(false);
+  const [appZoom, setAppZoom] = useState(1);
+
+  useEffect(() => {
+    setAppZoom(readAppZoom());
+  }, []);
+
   return (
     <>
       <PINLogin onSuccess={() => setAuthenticated(true)} />
@@ -83,7 +155,14 @@ export default function RootLayoutClient({ children }) {
               first overdue-status/audio event during the PWA startup handshake. */}
           <BackgroundMusicPlayer />
           <RefreshOverlay />
-          <div className="neon-app-shell">{children}</div>
+          <AppZoomControls appZoom={appZoom} onChange={setAppZoom} />
+          <div
+            className="neon-app-shell"
+            data-app-zoom={appZoom}
+            style={{ zoom: appZoom, width: `${100 / appZoom}%` }}
+          >
+            {children}
+          </div>
         </>
       )}
     </>

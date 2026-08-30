@@ -303,3 +303,24 @@ textarea {
     );
   }
 }
+
+/* The A+/A− controls live under Mute in the same safe-area-aware rail.
+   They change the app canvas zoom, not the browser/PWA zoom, so iPad Safari
+   keeps its stable viewport while the owner can adjust readability. */
+.pwa-zoom-controls {
+  top: calc(env(safe-area-inset-top, 0px) + 8rem);
+  right: max(
+    calc(env(safe-area-inset-right, 0px) + 0.65rem),
+    calc((100vw - 80rem) / 2 - 3rem)
+  );
+}
+
+@media screen and (min-width: 768px) {
+  .pwa-zoom-controls {
+    top: calc(env(safe-area-inset-top, 0px) + 8rem);
+    right: max(
+      calc(env(safe-area-inset-right, 0px) + 1rem),
+      calc((100vw - 80rem) / 2 + 4.5rem)
+    );
+  }
+}

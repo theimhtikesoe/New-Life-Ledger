@@ -20,7 +20,6 @@ export const metadata = {
       { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
-  themeColor: "#00d4ff",
 };
 
 export const viewport = {
@@ -29,6 +28,7 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: "#00d4ff",
 };
 
 export default function RootLayout({ children }) {

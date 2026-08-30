@@ -11,7 +11,7 @@ describe("Background music player", () => {
     expect(source).toContain("Ledger Drift 2");
     expect(source).toContain("Ledger Drift 3");
     expect(source).toContain("Ledger Drift 4");
-    expect(source).toContain("const MUSIC_VOLUME = 0.12;");
+    expect(source).toContain("const MUSIC_VOLUME = 0.04;");
     expect(source).toContain("volume={MUSIC_VOLUME}");
     expect(source).toContain("const nextIndex = (trackIndexRef.current + 1) % TRACKS.length;");
     expect(source).toContain("MUSIC_CHECKPOINT_KEY");

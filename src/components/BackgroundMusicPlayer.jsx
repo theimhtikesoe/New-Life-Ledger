@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const MUSIC_MUTED_KEY = "new-life-ledger:background-music-muted-v1";
 const MUSIC_CHECKPOINT_KEY = "new-life-ledger:background-music-checkpoint-v1";
-const MUSIC_VOLUME = 0.12;
+const MUSIC_VOLUME = 0.04;
 const OVERDUE_LAST_PLAYED_DAY_KEY = "new-life-ledger:overdue-alert-audio-played-day-v2";
 const OVERDUE_LAST_AUTO_ATTEMPT_DAY_KEY = "new-life-ledger:overdue-alert-audio-auto-attempt-day-v2";
 const OVERDUE_AUDIO_STATUS_KEY = "new-life-ledger:overdue-alert-audio-status-v1";
