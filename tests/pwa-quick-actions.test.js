@@ -10,6 +10,9 @@ describe("PWA quick actions", () => {
   it("keeps the fixed Refresh control and adds accessible app zoom controls", () => {
     expect(layoutSource).toContain("pwa-quick-actions");
     expect(layoutSource).toContain("aria-label=\"Refresh — စာမျက်နှာ data ပြန်လည်ရယူမည်\"");
+    expect(layoutSource).toContain("SettingsToggle");
+    expect(layoutSource).toContain("aria-controls=\"pwa-settings-controls\"");
+    expect(layoutSource).toContain("pwa-settings-group-hidden");
     expect(layoutSource).toContain("pwa-zoom-controls");
     expect(layoutSource).toContain("APP_ZOOM_KEY");
     expect(layoutSource).toContain("MIN_APP_ZOOM = 0.85");
@@ -21,6 +24,8 @@ describe("PWA quick actions", () => {
     expect(layoutSource).not.toContain("pwa-refresh-guide");
     expect(layoutSource).not.toContain("pwa-refresh-guide-arrow");
     expect(layoutSource).toContain("new-life-ledger:background-music-save");
+    expect(layoutSource).toContain("<BackgroundMusicPlayer settingsOpen={settingsOpen} />");
+    expect(layoutSource).toContain("<RefreshOverlay />");
     expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
     expect(layoutSource).not.toContain('href="/"');
   });
@@ -35,7 +40,11 @@ describe("PWA quick actions", () => {
     expect(cssSource).toContain(".pwa-top-alert");
     expect(cssSource).toContain(".pwa-top-loading");
     expect(cssSource).toContain(".pwa-zoom-controls");
+    expect(cssSource).toContain(".pwa-settings-toggle");
+    expect(cssSource).toContain("calc(var(--pwa-top-clearance) + 3.5rem)");
     expect(cssSource).toContain("calc(var(--pwa-top-clearance) + 7rem)");
+    expect(cssSource).toContain("calc(var(--pwa-top-clearance) + 10.5rem)");
+    expect(cssSource).toContain("calc(env(safe-area-inset-top, 0px) + 11.5rem)");
     expect(cssSource).not.toContain(".pwa-refresh-guide");
     expect(cssSource).not.toContain("@keyframes pwaRefreshGuideFloat");
   });

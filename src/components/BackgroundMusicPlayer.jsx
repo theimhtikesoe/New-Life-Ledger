@@ -91,7 +91,7 @@ function dispatchMusicEvent(name, detail = {}) {
   window.dispatchEvent(new CustomEvent(name, { detail }));
 }
 
-export default function BackgroundMusicPlayer() {
+export default function BackgroundMusicPlayer({ settingsOpen = false }) {
   const audioRef = useRef(null);
   const shouldPlayRef = useRef(false);
   const mutedRef = useRef(false);
@@ -343,7 +343,11 @@ export default function BackgroundMusicPlayer() {
   };
 
   return (
-    <div className="pwa-music-control pointer-events-none fixed z-[110]" aria-live="polite">
+    <div
+      className={`pwa-music-control pointer-events-none fixed z-[110] ${settingsOpen ? 'pwa-settings-group-visible' : 'pwa-settings-group-hidden'}`}
+      aria-live="polite"
+      aria-hidden={!settingsOpen}
+    >
       <audio
         ref={audioRef}
         preload="auto"
@@ -358,6 +362,7 @@ export default function BackgroundMusicPlayer() {
       <button
         type="button"
         onClick={handleMusicButton}
+        tabIndex={settingsOpen ? 0 : -1}
         className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95"
         aria-label={muted ? "Background music unmute" : "Background music mute"}
         title={

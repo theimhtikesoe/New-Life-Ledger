@@ -329,9 +329,10 @@ textarea {
   }
 }
 
-/* Background music mute control follows the Refresh control as a matching
-   vertical button. The desktop action rail remains separated horizontally. */
-.pwa-music-control {
+/* Settings reveals the remaining controls below the always-visible Refresh
+   and Settings buttons. Hidden controls remain mounted so audio state and zoom
+   preferences are preserved. */
+.pwa-settings-toggle {
   top: calc(var(--pwa-top-clearance) + 3.5rem);
   right: max(
     calc(env(safe-area-inset-right, 0px) + 0.65rem),
@@ -339,20 +340,26 @@ textarea {
   );
 }
 
-@media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
-  .pwa-music-control {
-    top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
-    right: max(
-      calc(env(safe-area-inset-right, 0px) + 1rem),
-      calc((100vw - 80rem) / 2 + 4.5rem)
-    );
-  }
+.pwa-settings-group-hidden,
+.pwa-settings-group-visible {
+  transition: opacity 180ms ease-out, transform 180ms ease-out, visibility 0s linear;
 }
 
-/* The A+/A− controls live under Mute in the same safe-area-aware rail.
-   They change the app canvas zoom, not the browser/PWA zoom, so iPad Safari
-   keeps its stable viewport while the owner can adjust readability. */
-.pwa-zoom-controls {
+.pwa-settings-group-hidden {
+  pointer-events: none !important;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-0.35rem) scale(0.94);
+  transition-delay: 0s, 0s, 180ms;
+}
+
+.pwa-settings-group-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.pwa-music-control {
   top: calc(var(--pwa-top-clearance) + 7rem);
   right: max(
     calc(env(safe-area-inset-right, 0px) + 0.65rem),
@@ -361,8 +368,36 @@ textarea {
 }
 
 @media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
-  .pwa-zoom-controls {
+  .pwa-settings-toggle {
+    top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+    right: max(
+      calc(env(safe-area-inset-right, 0px) + 1rem),
+      calc((100vw - 80rem) / 2 + 4.5rem)
+    );
+  }
+
+  .pwa-music-control {
     top: calc(env(safe-area-inset-top, 0px) + 8rem);
+    right: max(
+      calc(env(safe-area-inset-right, 0px) + 1rem),
+      calc((100vw - 80rem) / 2 + 4.5rem)
+    );
+  }
+}
+
+/* The A+/A− controls appear under Mute while Settings is open. They change
+   the app canvas zoom, not the browser/PWA zoom, so the viewport stays stable. */
+.pwa-zoom-controls {
+  top: calc(var(--pwa-top-clearance) + 10.5rem);
+  right: max(
+    calc(env(safe-area-inset-right, 0px) + 0.65rem),
+    calc((100vw - 80rem) / 2 - 3rem)
+  );
+}
+
+@media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .pwa-zoom-controls {
+    top: calc(env(safe-area-inset-top, 0px) + 11.5rem);
     right: max(
       calc(env(safe-area-inset-right, 0px) + 1rem),
       calc((100vw - 80rem) / 2 + 4.5rem)

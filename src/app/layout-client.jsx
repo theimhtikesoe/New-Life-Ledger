@@ -84,7 +84,28 @@ function RefreshOverlay() {
   );
 }
 
-function AppZoomControls({ appZoom, onChange }) {
+function SettingsToggle({ open, onToggle }) {
+  return (
+    <div className="pwa-settings-toggle pointer-events-none fixed z-[110]">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls="pwa-settings-controls"
+        aria-label={open ? 'Settings ကိုပိတ်ရန်' : 'Settings ကိုဖွင့်ရန်'}
+        title={open ? 'Settings ကိုပိတ်ရန်' : 'Settings ကိုဖွင့်ရန်'}
+        className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95"
+      >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 15.25a3.25 3.25 0 1 0 0-6.5 3.25 3.25 0 0 0 0 6.5Z" />
+          <path d="m19.4 15-.1.2a1.8 1.8 0 0 0 0 1.8l.1.2-1.8 1.8-.2-.1a1.8 1.8 0 0 0-1.8 0l-.2.1-1.8-1.8.1-.2a1.8 1.8 0 0 0 0-1.8l-.1-.2.1-.2a1.8 1.8 0 0 0 0-1.8l-.1-.2 1.8-1.8.2.1a1.8 1.8 0 0 0 1.8 0l.2-.1 1.8 1.8-.1.2a1.8 1.8 0 0 0 0 1.8Z" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function AppZoomControls({ appZoom, onChange, settingsOpen }) {
   const zoomPercent = Math.round(appZoom * 100);
   const updateZoom = (delta) => {
     const nextZoom = clampAppZoom(appZoom + delta);
@@ -94,7 +115,12 @@ function AppZoomControls({ appZoom, onChange }) {
   };
 
   return (
-    <div className="pwa-zoom-controls pointer-events-none fixed z-[110]" aria-label="စာလုံးနှင့် website အရွယ်အစား ပြောင်းရန်">
+    <div
+      id="pwa-settings-controls"
+      className={`pwa-zoom-controls pointer-events-none fixed z-[110] ${settingsOpen ? 'pwa-settings-group-visible' : 'pwa-settings-group-hidden'}`}
+      aria-label="စာလုံးနှင့် website အရွယ်အစား ပြောင်းရန်"
+      aria-hidden={!settingsOpen}
+    >
       <div className="pointer-events-auto flex flex-col gap-2">
         <button
           type="button"
@@ -102,6 +128,7 @@ function AppZoomControls({ appZoom, onChange }) {
           disabled={appZoom >= MAX_APP_ZOOM}
           aria-label={`စာလုံးနှင့် website အရွယ်အစား ကြီးရန် — လက်ရှိ ${zoomPercent}%`}
           title={`အရွယ်အစား ကြီးရန် (${zoomPercent}%)`}
+          tabIndex={settingsOpen ? 0 : -1}
           className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-sm font-extrabold text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
         >
           <span aria-hidden="true">A+</span>
@@ -112,6 +139,7 @@ function AppZoomControls({ appZoom, onChange }) {
           disabled={appZoom <= MIN_APP_ZOOM}
           aria-label={`စာလုံးနှင့် website အရွယ်အစား သေးရန် — လက်ရှိ ${zoomPercent}%`}
           title={`အရွယ်အစား သေးရန် (${zoomPercent}%)`}
+          tabIndex={settingsOpen ? 0 : -1}
           className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-sm font-extrabold text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
         >
           <span aria-hidden="true">A−</span>
@@ -124,6 +152,7 @@ function AppZoomControls({ appZoom, onChange }) {
 export default function RootLayoutClient({ children }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [appZoom, setAppZoom] = useState(1);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setAppZoom(readAppZoom());
@@ -136,9 +165,10 @@ export default function RootLayoutClient({ children }) {
         <>
           {/* Mount the global player before page children so it cannot miss the
               first overdue-status/audio event during the PWA startup handshake. */}
-          <BackgroundMusicPlayer />
+          <BackgroundMusicPlayer settingsOpen={settingsOpen} />
           <RefreshOverlay />
-          <AppZoomControls appZoom={appZoom} onChange={setAppZoom} />
+          <SettingsToggle open={settingsOpen} onToggle={() => setSettingsOpen((current) => !current)} />
+          <AppZoomControls appZoom={appZoom} onChange={setAppZoom} settingsOpen={settingsOpen} />
           <div className="neon-app-shell-viewport">
             <div
               className="neon-app-shell"
