@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
+import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 
 export const dynamic = "force-dynamic";
 
@@ -149,6 +150,7 @@ export async function POST(request, { params }) {
           amount,
           paymentType: ledger.paymentType,
           note: ledger.note,
+          wholesaleTracking: getWholesaleTracking(amount),
         },
       });
 

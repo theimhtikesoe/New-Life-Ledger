@@ -25,8 +25,14 @@ describe("PWA quick actions", () => {
   it("uses safe-area-aware spacing and a wider tablet offset", () => {
     expect(cssSource).toContain(".pwa-quick-actions");
     expect(cssSource).toContain("env(safe-area-inset-top, 0px)");
-    expect(cssSource).toContain("@media screen and (min-width: 768px)");
+    expect(cssSource).toContain("@media screen and (max-width: 1023px)");
+    expect(cssSource).toContain("@media screen and (min-width: 1024px)");
+    expect(cssSource).toContain("--pwa-top-clearance: max(env(safe-area-inset-top, 0px), 6.5rem)");
+    expect(cssSource).toContain("padding-top: var(--pwa-top-clearance)");
+    expect(cssSource).toContain(".pwa-top-alert");
+    expect(cssSource).toContain(".pwa-top-loading");
     expect(cssSource).toContain(".pwa-zoom-controls");
-    expect(cssSource).toContain("calc(env(safe-area-inset-top, 0px) + 8rem)");
+    expect(cssSource).toContain("calc(var(--pwa-top-clearance) + 7rem)");
+    expect(layoutSource).toContain("translateY(calc(-50% + 0.3rem))");
   });
 });

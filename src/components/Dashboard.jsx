@@ -210,7 +210,7 @@ function AlertNotification({ message, type, onClose }) {
   const textColor = type === "success" ? "text-emerald-200" : "text-rose-200";
 
   return (
-    <div className={`fixed top-4 right-4 z-40 rounded-md border px-4 py-3 text-sm ${bgColor} ${textColor} shadow-lg`}>
+    <div className={`pwa-top-alert fixed right-4 z-40 rounded-md border px-4 py-3 text-sm ${bgColor} ${textColor} shadow-lg`}>
       {message}
     </div>
   );
@@ -1510,7 +1510,7 @@ export default function Dashboard({ view = "overview" }) {
       )}
       {(loading || isSubmitting) && (
         <div
-          className="pointer-events-none fixed left-2 top-2 z-[100] w-[min(calc(100vw-6.5rem),280px)] rounded-xl border border-cyan-200/80 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 px-2.5 py-2 text-slate-800 shadow-lg shadow-cyan-900/10 backdrop-blur sm:left-5 sm:w-[min(92vw,280px)]"
+          className="pwa-top-loading pointer-events-none fixed left-2 z-[100] w-[min(calc(100vw-6.5rem),280px)] rounded-xl border border-cyan-200/80 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 px-2.5 py-2 text-slate-800 shadow-lg shadow-cyan-900/10 backdrop-blur sm:left-5 sm:w-[min(92vw,280px)]"
           role="status"
           aria-live="polite"
           aria-label={isSubmitting ? "လုပ်ဆောင်နေသည်" : "အချက်အလက်များကို ရယူနေသည်"}

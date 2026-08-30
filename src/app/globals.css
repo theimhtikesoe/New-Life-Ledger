@@ -60,6 +60,9 @@
 
 :root {
   color-scheme: light;
+  /* iPhone Dynamic Island/status-bar clearance. The 6.5rem fallback also
+     protects Safari browser mode where the inset can be reported as zero. */
+  --pwa-top-clearance: max(env(safe-area-inset-top, 0px), 6.5rem);
 }
 
 html {
@@ -216,7 +219,13 @@ textarea {
 
 /* Small screens keep the same readable scale as the reference phone views;
    desktop layouts remain fluid without creating a second horizontal canvas. */
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 1023px), screen and (pointer: coarse) {
+  .neon-app-shell {
+    /* Keep the first page content below iPhone Dynamic Island/status bar even
+       when Safari reports a zero safe-area inset in browser mode. */
+    padding-top: var(--pwa-top-clearance);
+  }
+
   .neon-app-shell,
   .neon-app-shell > main,
   .neon-app-shell main > div {
@@ -266,15 +275,37 @@ textarea {
 /* Keep the single Refresh control in a predictable empty rail beside the
    centered app shell. It stays below the browser/PWA safe area without using
    viewport-height offsets that can push it into the KPI or chart sections. */
+.pwa-top-alert {
+  top: calc(var(--pwa-top-clearance) + 0.5rem);
+  right: max(4rem, calc(env(safe-area-inset-right, 0px) + 4rem));
+  max-width: calc(100vw - 5rem);
+}
+
+.pwa-top-loading {
+  top: calc(var(--pwa-top-clearance) + 0.5rem);
+}
+
+@media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .pwa-top-alert {
+    top: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+
+  .pwa-top-loading {
+    top: 0.5rem;
+  }
+}
+
 .pwa-quick-actions {
-  top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  top: var(--pwa-top-clearance);
   right: max(
     calc(env(safe-area-inset-right, 0px) + 0.65rem),
     calc((100vw - 80rem) / 2 - 3rem)
   );
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   .pwa-quick-actions {
     top: calc(env(safe-area-inset-top, 0px) + 1rem);
     right: max(
@@ -287,14 +318,14 @@ textarea {
 /* Background music mute control follows the Refresh control as a matching
    vertical button. The desktop action rail remains separated horizontally. */
 .pwa-music-control {
-  top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+  top: calc(var(--pwa-top-clearance) + 3.5rem);
   right: max(
     calc(env(safe-area-inset-right, 0px) + 0.65rem),
     calc((100vw - 80rem) / 2 - 3rem)
   );
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   .pwa-music-control {
     top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
     right: max(
@@ -308,14 +339,14 @@ textarea {
    They change the app canvas zoom, not the browser/PWA zoom, so iPad Safari
    keeps its stable viewport while the owner can adjust readability. */
 .pwa-zoom-controls {
-  top: calc(env(safe-area-inset-top, 0px) + 8rem);
+  top: calc(var(--pwa-top-clearance) + 7rem);
   right: max(
     calc(env(safe-area-inset-right, 0px) + 0.65rem),
     calc((100vw - 80rem) / 2 - 3rem)
   );
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   .pwa-zoom-controls {
     top: calc(env(safe-area-inset-top, 0px) + 8rem);
     right: max(

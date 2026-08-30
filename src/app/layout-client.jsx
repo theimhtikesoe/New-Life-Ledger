@@ -70,7 +70,8 @@ function RefreshOverlay() {
     >
       <div className="relative">
         <div
-          className="absolute right-[calc(100%+0.45rem)] top-1/2 flex -translate-y-1/2 items-center gap-0.5 whitespace-nowrap"
+          className="absolute right-[calc(100%+0.45rem)] top-1/2 flex items-center gap-0.5 whitespace-nowrap"
+          style={{ transform: 'translateY(calc(-50% + 0.3rem))' }}
           aria-hidden="true"
           >
             <span className="animate-pulse -rotate-6 text-[11px] font-extrabold italic leading-none text-rose-600 drop-shadow-[0_1px_2px_rgba(190,24,93,0.35)]">

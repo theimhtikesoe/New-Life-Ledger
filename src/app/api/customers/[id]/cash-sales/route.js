@@ -3,6 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
+import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +97,15 @@ export async function POST(request, { params }) {
         entityId: cashSale.id,
         entityLabel: customer.name,
         summary: `${customer.name} လက်ငင်းရောင်း ${amount.toLocaleString()} Ks`,
-        metadata: { customerId: customer.id, amount, paymentType: cashSale.paymentType, saleType: cashSale.saleType, note: cashSale.note, date: cashSale.date },
+        metadata: {
+          customerId: customer.id,
+          amount,
+          paymentType: cashSale.paymentType,
+          saleType: cashSale.saleType,
+          note: cashSale.note,
+          date: cashSale.date,
+          wholesaleTracking: getWholesaleTracking(amount),
+        },
       });
       return { cashSale };
     });
