@@ -103,6 +103,17 @@ canvas {
   max-width: 100%;
 }
 
+.neon-app-shell-viewport {
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(103, 232, 249, 0.12), transparent 22rem),
+    radial-gradient(circle at 92% 22%, rgba(196, 181, 253, 0.12), transparent 24rem),
+    linear-gradient(180deg, #ffffff 0%, #fbfeff 48%, #ffffff 100%);
+}
+
 .neon-app-shell {
   position: relative;
   width: 100%;
@@ -111,10 +122,7 @@ canvas {
   isolation: isolate;
   overflow-x: clip;
   overflow-y: visible;
-  background:
-    radial-gradient(circle at 8% 4%, rgba(103, 232, 249, 0.12), transparent 22rem),
-    radial-gradient(circle at 92% 22%, rgba(196, 181, 253, 0.12), transparent 24rem),
-    linear-gradient(180deg, #ffffff 0%, #fbfeff 48%, #ffffff 100%);
+  background: transparent;
 }
 
 .neon-app-shell::before {
@@ -220,10 +228,16 @@ textarea {
 /* Small screens keep the same readable scale as the reference phone views;
    desktop layouts remain fluid without creating a second horizontal canvas. */
 @media screen and (max-width: 1023px), screen and (pointer: coarse) {
+  .neon-app-shell-viewport {
+    /* Keep the viewport background continuous while the inner canvas is
+       resized by the A+/A− controls. */
+    padding-top: var(--pwa-top-clearance);
+  }
+
   .neon-app-shell {
     /* Keep the first page content below iPhone Dynamic Island/status bar even
        when Safari reports a zero safe-area inset in browser mode. */
-    padding-top: var(--pwa-top-clearance);
+    padding-top: 0;
   }
 
   .neon-app-shell,

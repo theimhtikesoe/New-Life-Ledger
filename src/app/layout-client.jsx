@@ -157,12 +157,14 @@ export default function RootLayoutClient({ children }) {
           <BackgroundMusicPlayer />
           <RefreshOverlay />
           <AppZoomControls appZoom={appZoom} onChange={setAppZoom} />
-          <div
-            className="neon-app-shell"
-            data-app-zoom={appZoom}
-            style={{ zoom: appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
-          >
-            {children}
+          <div className="neon-app-shell-viewport">
+            <div
+              className="neon-app-shell"
+              data-app-zoom={appZoom}
+              style={{ zoom: appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
+            >
+              {children}
+            </div>
           </div>
         </>
       )}
