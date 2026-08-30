@@ -1546,19 +1546,21 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                <label htmlFor="dashboard-kpi-date" className="text-[11px] font-semibold text-cyan-700">KPI ရက်စွဲ</label>
-                <input
-                  id="dashboard-kpi-date"
-                  type="date"
-                  value={selectedKpiDate}
-                  onChange={(event) => setSelectedKpiDate(event.target.value)}
-                  className="rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
-                  aria-label="KPI ရက်စွဲရွေးရန်"
-                />
-                {kpiDateLoading ? <span className="text-[10px] text-cyan-600">ပြောင်းနေသည်...</span> : null}
-                {kpiDateError ? <span className="text-[10px] text-rose-600">ပြန်စမ်းပါ</span> : null}
-              </div>
+              {!isLedgerView ? (
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                  <label htmlFor="dashboard-kpi-date" className="text-[11px] font-semibold text-cyan-700">KPI ရက်စွဲ</label>
+                  <input
+                    id="dashboard-kpi-date"
+                    type="date"
+                    value={selectedKpiDate}
+                    onChange={(event) => setSelectedKpiDate(event.target.value)}
+                    className="rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
+                    aria-label="KPI ရက်စွဲရွေးရန်"
+                  />
+                  {kpiDateLoading ? <span className="text-[10px] text-cyan-600">ပြောင်းနေသည်...</span> : null}
+                  {kpiDateError ? <span className="text-[10px] text-rose-600">ပြန်စမ်းပါ</span> : null}
+                </div>
+              ) : null}
             </div>
             <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
               <div className="col-span-2 flex min-w-0 [&>button]:w-full">

@@ -36,6 +36,7 @@ describe("Dashboard KPI aggregate route", () => {
   it("provides an isolated date selector for date-sensitive KPI cards", () => {
     expect(dashboardSource).toContain('id="dashboard-kpi-date"');
     expect(dashboardSource).toContain('type="date"');
+    expect(dashboardSource).toContain("{!isLedgerView ? (");
     expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`');
     expect(dashboardSource).toContain("const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;");
     expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
