@@ -131,9 +131,9 @@ describe("Telegram daily report CashSale data", () => {
     expect(html).toContain("စုစုပေါင်း 2,201,500 Ks");
     expect(html).toContain(".payment-row strong{font-size:23px;font-weight:700");
     expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:15%}");
-    expect(html).toContain(".activity-table .activity-actor{font-size:14px;color:#64748b;font-weight:400}");
-    expect(html).toContain(".activity-table .activity-amount{font-size:23px;font-weight:700");
-    expect(html).toContain(".activity-table .payment-cell{font-size:21px;font-weight:700");
+    expect(html).toContain(".activity-table .activity-actor{font-size:14px;color:#475569;font-weight:600");
+    expect(html).toContain(".activity-table .activity-amount{font-size:23px;font-weight:800");
+    expect(html).toContain(".activity-table .payment-cell{font-size:21px;font-weight:800");
     expect(html).not.toContain("<th>Source</th>");
     expect(html).not.toContain("အသစ်မှတ်တမ်း");
   });
