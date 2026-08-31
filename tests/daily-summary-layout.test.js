@@ -12,6 +12,12 @@ describe("Daily Summary customer amount layout", () => {
     expect(source).toContain('className="block whitespace-nowrap">လက်လီ');
     expect(source).toContain('className="block whitespace-nowrap">လက်ကား');
     expect(source).toContain("text-[clamp(0.72rem,3.6vw,1rem)]");
+    expect(source).toContain("const paymentTotal = useMemo");
+    expect(source).toContain("Ledger ငွေချေမှုစုစုပေါင်း · Payment Total");
+    expect(source).toContain("အောက်က Ledger payment အမျိုးအစားများကိုသာ ပေါင်းထားတာဖြစ်ပြီး လက်ငင်းရောင်းရငွေ မပါဝင်ပါ။");
+    expect(source).toContain("ဒီအောက်က CASH / KPAY တွေက လက်ငင်းရောင်းရငွေ စုစုပေါင်းရဲ့ ခွဲခြမ်းချက်ဖြစ်ပြီး အပေါ်က Ledger Payment Total ထဲ မပါဝင်ပါ။");
+    expect(source).toContain("text-[clamp(0.72rem,3.6vw,1rem)]");
+    expect(source).toContain("mt-3 space-y-2.5");
   });
 });
 

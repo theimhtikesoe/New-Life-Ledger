@@ -98,6 +98,9 @@ describe("Telegram daily report CashSale data", () => {
       wholesaleTotal: 7389000,
       enteredBy: "Staff",
     });
+    const html = createReportHtml({ ...report, summary: {}, customers: [], activityLogs: [] }, "", "");
+    expect(html).not.toContain("နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ");
+    expect(html).not.toContain('<section class="daily-sales-summary">');
     expect(mocks.dailySalesSummaryFindUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { date: "2026-08-28" } }));
   });
 
@@ -123,12 +126,16 @@ describe("Telegram daily report CashSale data", () => {
     }, "", "");
     expect(html).toContain("<td class=\"activity-action\">လက်ငင်းရောင်း</td><td class=\"activity-entity\">လက်ငင်း Customer</td><td class=\"activity-amount\">50,000 Ks</td><td class=\"payment-cell\">CASH · လက်ကား</td>");
     expect(html).toContain(".summary-table .summary-amount{font-size:22px;font-weight:700");
-    expect(html).toContain("ငွေချေမှုစုစုပေါင်း · Payment Total");
+    expect(html).toContain("Ledger ငွေချေမှုစုစုပေါင်း · Payment Total");
+    expect(html).toContain("Ledger စုစုပေါင်း 1,155,000 Ks");
     expect(html).toContain("လက်ငင်းရောင်းရငွေ · Cash Sales");
+    expect(html).toContain("ဒီအောက်က CASH / KPAY တွေက လက်ငင်းရောင်းရငွေ စုစုပေါင်းရဲ့ ခွဲခြမ်းချက်");
+    expect(html).toContain("လက်ငင်းရောင်းရငွေ စုစုပေါင်း 2,201,500 Ks");
     expect(html).toContain("ရောင်းအမျိုးအစား · Sale Breakdown");
     expect(html).toContain(".retail-row{background:#f5f3ff;color:#6d28d9");
     expect(html).toContain(".wholesale-row{background:#fffbeb;color:#b45309");
     expect(html).toContain("စုစုပေါင်း 2,201,500 Ks");
+    expect(html).toContain(".payment-row{display:flex;justify-content:space-between;align-items:baseline;gap:20px;padding:14px 0");
     expect(html).toContain(".payment-row strong{font-size:23px;font-weight:700");
     expect(html).toContain(".activity-table th:nth-child(6),.activity-table td:nth-child(6){width:15%}");
     expect(html).toContain(".activity-table .activity-actor{font-size:14px;color:#475569;font-weight:600");
