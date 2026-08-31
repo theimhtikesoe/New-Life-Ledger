@@ -60,9 +60,9 @@
 
 :root {
   color-scheme: light;
-  /* iPhone Dynamic Island/status-bar clearance. The 6.5rem fallback also
-     protects Safari browser mode where the inset can be reported as zero. */
-  --pwa-top-clearance: max(env(safe-area-inset-top, 0px), 6.5rem);
+  /* Safari website pages already begin below the browser chrome. Reserve the
+     larger Dynamic Island clearance only for the installed standalone PWA. */
+  --pwa-top-clearance: env(safe-area-inset-top, 0px);
 }
 
 html {
@@ -229,14 +229,12 @@ textarea {
    desktop layouts remain fluid without creating a second horizontal canvas. */
 @media screen and (max-width: 1023px), screen and (pointer: coarse) {
   .neon-app-shell-viewport {
-    /* Keep the viewport background continuous while the inner canvas is
-       resized by the A+/A− controls. */
-    padding-top: var(--pwa-top-clearance);
+    /* Browser mode stays flush with the visible web viewport. */
+    padding-top: 0;
   }
 
   .neon-app-shell {
-    /* Keep the first page content below iPhone Dynamic Island/status bar even
-       when Safari reports a zero safe-area inset in browser mode. */
+    /* The visible Safari viewport already excludes its browser chrome. */
     padding-top: 0;
   }
 
@@ -253,6 +251,18 @@ textarea {
   .neon-app-shell .overflow-x-auto {
     max-width: 100%;
     -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Home-screen PWA mode needs room for the iPhone status bar/Dynamic Island;
+   Safari website mode intentionally does not use this extra page-level gap. */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  :root {
+    --pwa-top-clearance: max(env(safe-area-inset-top, 0px), 6.5rem);
+  }
+
+  .neon-app-shell-viewport {
+    padding-top: var(--pwa-top-clearance);
   }
 }
 
