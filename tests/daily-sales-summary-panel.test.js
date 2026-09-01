@@ -13,9 +13,11 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).not.toContain(">လက်ကား ငွေသား</p>");
   });
 
-  it("auto-saves existing CashSale values and edited daily inputs", () => {
-    expect(source).toContain('setIsEditing(body.data.selectedDay?.source === "CASH_SALE")');
-    expect(source).toContain("window.setTimeout(() => { saveDaily(); }, 900)");
+  it("shows calculated values as a non-destructive Preview and saves only explicitly", () => {
+    expect(source).toContain('setDraft(toDraft(body.data.autoPreview || body.data.selectedDay))');
+    expect(source).not.toContain('setIsEditing(body.data.selectedDay?.source === "CASH_SALE")');
+    expect(source).not.toContain("window.setTimeout(() => { saveDaily(); }, 900)");
+    expect(source).toContain('Auto Preview (မသိမ်းရသေး)');
     expect(source).toContain('calculationMode: hasManualDifference ? "MANUAL" : "AUTO"');
     expect(source).toContain('adjustmentReason: hasManualDifference ?');
     expect(source).toContain('body: JSON.stringify({ action: "opening", month: date.slice(0, 7), selectedDate: date, ...openingDraft })');

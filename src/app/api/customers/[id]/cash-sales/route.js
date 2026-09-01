@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
+import { paymentSplitForInput } from "@/lib/payment-split";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ const cashSaleSelect = {
   amount: true,
   note: true,
   paymentType: true,
+  paymentBreakdown: true,
   createdAt: true,
 };
 
@@ -69,6 +71,7 @@ export async function POST(request, { params }) {
     await ensureDatabase();
     const body = await request.json();
     const amount = parseAmount(body.amount);
+    const paymentBreakdown = paymentSplitForInput(body, amount);
     const date = parseDate(body.date);
     const customer = await prisma.customer.findUnique({ where: { id: params.id }, select: { id: true, name: true, deletedAt: true } });
     if (!customer || customer.deletedAt) return NextResponse.json({ error: "Customer မတွေ့ပါ သို့မဟုတ် Recycle Bin ထဲ ရှိနေပါသည်။" }, { status: 404 });
@@ -85,6 +88,7 @@ export async function POST(request, { params }) {
           amount,
           note: body.note?.trim() || null,
           paymentType: body.paymentType?.trim() || "CASH",
+          paymentBreakdown,
           date,
         },
         select: cashSaleSelect,
@@ -101,6 +105,7 @@ export async function POST(request, { params }) {
           customerId: customer.id,
           amount,
           paymentType: cashSale.paymentType,
+          paymentBreakdown: cashSale.paymentBreakdown,
           saleType: cashSale.saleType,
           note: cashSale.note,
           date: cashSale.date,

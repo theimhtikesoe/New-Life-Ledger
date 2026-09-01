@@ -98,8 +98,8 @@ export default function DailySalesSummaryPanel() {
       if (!response.ok || !body.ok) throw new Error(body.error || "နေ့စဉ်ရောင်းရငွေ data မရသေးပါ။");
       if (active) {
         setSummary(body.data);
-        setDraft(toDraft(body.data.selectedDay));
-        setIsEditing(body.data.selectedDay?.source === "CASH_SALE");
+        setDraft(toDraft(body.data.autoPreview || body.data.selectedDay));
+        setIsEditing(false);
         if (body.data.opening?.updatedAt) {
           setOpeningForm({ amount: body.data.opening.amount, asOfDate: body.data.opening.asOfDate, note: body.data.opening.note });
         } else if (targetDate.startsWith(AUGUST_NOTEBOOK_OPENING.month) && targetDate >= AUGUST_NOTEBOOK_OPENING.asOfDate) {
@@ -123,7 +123,7 @@ export default function DailySalesSummaryPanel() {
     load();
   }, [isOpen, load]);
 
-  const automatic = summary?.selectedDay || EMPTY_DAY;
+  const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
   const values = draft || toDraft(automatic);
   const dailyTotal = Number(values.retailTotal || 0) + Number(values.wholesaleTotal || 0);
   const automaticDailyTotal = Number(automatic.retailTotal || 0) + Number(automatic.wholesaleTotal || 0);
@@ -232,12 +232,6 @@ export default function DailySalesSummaryPanel() {
     }
   };
 
-  useEffect(() => {
-    if (!isOpen || !summary || !isEditing || saving || invalidCashInput) return undefined;
-    const timer = window.setTimeout(() => { saveDaily(); }, 900);
-    return () => window.clearTimeout(timer);
-  }, [draft, isEditing, isOpen, saving, invalidCashInput, summary, saveDaily]);
-
   return (
     <>
       <button
@@ -269,7 +263,7 @@ export default function DailySalesSummaryPanel() {
                 <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="min-h-10 min-w-0 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-medium text-slate-800" />
               </label>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-indigo-700">{currentLabel}{summary ? ` · ${summary.selectedDay?.source === "DAILY_SUMMARY" ? "Saved" : `CashSale ${summary.selectedDay?.recordCount || 0} ခု`}` : ""}</span>
+                <span className="text-xs font-semibold text-indigo-700">{currentLabel}{summary ? " · Auto Preview (မသိမ်းရသေး)" : ""}</span>
                 <button type="button" onClick={() => setShowOpeningForm(!showOpeningForm)} className="text-xs font-bold text-indigo-600 underline">Opening ညှိရန်</button>
               </div>
             </div>
@@ -326,7 +320,7 @@ export default function DailySalesSummaryPanel() {
             </div>
 
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs leading-5 text-slate-700 sm:flex-row sm:items-center sm:justify-between">
-              <p>{saving ? "နေ့စဉ်စာရင်းကို auto သိမ်းနေပါသည်..." : hasManualDifference ? "Input ပြောင်းပြီး ၀.၉ စက္ကန့်အတွင်း auto သိမ်းပါမည်။" : automatic.source === "CASH_SALE" ? "ရှိပြီးသား CashSale data ကို နေ့စဉ်စာရင်းအဖြစ် auto သိမ်းပါမည်။" : "အခုတန်ဖိုးများသည် ရှိပြီးသား data မှ auto တွက်ထားခြင်းဖြစ်ပါသည်။"}</p>
+              <p>{saving ? "နေ့စဉ်စာရင်းကို သိမ်းနေပါသည်..." : hasManualDifference ? "Preview တန်ဖိုးကို ပြင်ထားပါသည်။ Live row ကို မပြင်သေးပါ။" : "အခုတန်ဖိုးများသည် ရှိပြီးသား CashSale/Ledger data မှ auto preview တွက်ထားခြင်းဖြစ်ပါသည်။"}</p>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                 <button type="button" onClick={resetToAutomatic} disabled={!summary || saving} className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 font-semibold text-indigo-800 hover:bg-indigo-50 disabled:opacity-50 sm:w-auto">Auto data ပြန်ထားရန်</button>
                 <button type="button" onClick={saveDaily} disabled={saving || invalidCashInput} className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto">{saving ? "သိမ်းနေသည်..." : "နေ့စဉ်စာရင်း သိမ်းမည်"}</button>
