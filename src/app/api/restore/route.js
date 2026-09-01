@@ -7,7 +7,7 @@ import { getActorName, writeAuditLog } from "@/lib/audit";
 export const dynamic = "force-dynamic";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
-const SUPPORTED_BACKUP_VERSION = 4;
+const SUPPORTED_BACKUP_VERSION = 5;
 const REQUIRED_SHEETS = ["Backup Info", "Customers", "Transactions", "Audit History"];
 const OPTIONAL_SHEETS = ["KPay Aliases", "Pending KPay", "Cash Sales", "Integrity", "Orders", "Order Lines", "Order Caps", "Order Deliveries", "Order Automation", "Order Batch Runs"];
 
@@ -94,6 +94,7 @@ function normalize(workbook) {
     amount: asNumber(row.amount ?? row.Amount),
     note: row.note ?? row.Note ?? null,
     paymentType: row.paymentType ?? row.PaymentType ?? null,
+    paymentBreakdown: parseJsonCell(row.paymentBreakdown ?? row.PaymentBreakdown),
     createdAt: asDate(row.createdAt || row.CreatedAt) || asDate(row.date || row.Date) || new Date(),
   }));
   const kpayAliases = rowsFromSheet(workbook, "KPay Aliases").map((row) => ({

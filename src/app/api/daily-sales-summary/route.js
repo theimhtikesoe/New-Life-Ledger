@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
+import { getPaymentSplit } from "@/lib/payment-split";
 
 export const dynamic = "force-dynamic";
 
@@ -46,13 +47,14 @@ async function getSourceSnapshot(date) {
   const { range } = parseDate(date);
   const [ledgers, cashSales] = await Promise.all([
     prisma.ledger?.findMany
-      ? prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
+      ? prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true, type: true } })
       : Promise.resolve([]),
     prisma.cashSale?.findMany
       ? prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
       : Promise.resolve([]),
   ]);
-  const amounts = [...ledgers, ...cashSales].map((row) => toAmount(row.amount));
+  const includedLedgers = ledgers.filter((row) => row.type === "DEBIT");
+  const amounts = [...includedLedgers, ...cashSales].map((row) => toAmount(row.amount));
   return {
     capturedAt: new Date(),
     transactionCount: amounts.length,
@@ -79,24 +81,61 @@ function emptySummary() {
   };
 }
 
+function addPaymentTypes(target, split) {
+  for (const [key, amount] of Object.entries(split)) {
+    if (amount > 0) target[key] = (target[key] || 0) + amount;
+  }
+}
+
 function summarizeCashSales(sales) {
   const summary = emptySummary();
   for (const sale of sales) {
     const amount = toAmount(sale.amount);
     const saleType = normalizeCashSaleType(sale.saleType);
-    const paymentType = String(sale.paymentType || CASH_PAYMENT_TYPE).trim().toUpperCase() || CASH_PAYMENT_TYPE;
+    const split = getPaymentSplit(sale);
     summary.recordCount += 1;
     if (saleType === "WHOLESALE") summary.wholesaleTotal += amount;
     else summary.retailTotal += amount;
-    if (paymentType === CASH_PAYMENT_TYPE) {
-      if (saleType === "WHOLESALE") summary.wholesaleCash += amount;
-      else summary.retailCash += amount;
-    }
-    summary.paymentTypes[paymentType] = (summary.paymentTypes[paymentType] || 0) + amount;
+    if (saleType === "WHOLESALE") summary.wholesaleCash += split.CASH;
+    else summary.retailCash += split.CASH;
+    addPaymentTypes(summary.paymentTypes, split);
   }
   summary.dailyTotal = summary.retailTotal + summary.wholesaleTotal;
   summary.cashDailyTotal = summary.retailCash + summary.wholesaleCash;
   return summary;
+}
+
+function summarizeLedgerPayments(ledgers) {
+  const summary = emptySummary();
+  for (const ledger of ledgers) {
+    if (String(ledger.type || "").toUpperCase() !== "DEBIT") continue;
+    const amount = toAmount(ledger.amount);
+    const split = getPaymentSplit(ledger);
+    summary.recordCount += 1;
+    summary.wholesaleTotal += amount;
+    summary.wholesaleCash += split.CASH;
+    addPaymentTypes(summary.paymentTypes, split);
+  }
+  summary.dailyTotal = summary.retailTotal + summary.wholesaleTotal;
+  summary.cashDailyTotal = summary.retailCash + summary.wholesaleCash;
+  return summary;
+}
+
+function combineSummaries(...summaries) {
+  const result = emptySummary();
+  for (const summary of summaries) {
+    result.retailTotal += summary.retailTotal;
+    result.wholesaleTotal += summary.wholesaleTotal;
+    result.retailCash += summary.retailCash;
+    result.wholesaleCash += summary.wholesaleCash;
+    result.recordCount += summary.recordCount;
+    for (const [key, amount] of Object.entries(summary.paymentTypes || {})) {
+      result.paymentTypes[key] = (result.paymentTypes[key] || 0) + amount;
+    }
+  }
+  result.dailyTotal = result.retailTotal + result.wholesaleTotal;
+  result.cashDailyTotal = result.retailCash + result.wholesaleCash;
+  return result;
 }
 
 function summarizeSavedRow(row) {
@@ -191,12 +230,19 @@ async function readSummary(date) {
   const { range } = parseDate(date);
   const month = date.slice(0, 7);
   const monthStart = getMyanmarDayRange(`${month}-01`).start;
-  const [cashSales, savedRows, opening] = await Promise.all([
+  const [cashSales, ledgers, savedRows, opening] = await Promise.all([
     prisma.cashSale.findMany({
       where: { date: { gte: monthStart, lt: range.end } },
-      select: { date: true, saleType: true, paymentType: true, amount: true },
+      select: { date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true },
       orderBy: [{ date: "asc" }, { id: "asc" }],
     }),
+    prisma.ledger?.findMany
+      ? prisma.ledger.findMany({
+          where: { date: { gte: monthStart, lt: range.end } },
+          select: { date: true, type: true, paymentType: true, note: true, amount: true },
+          orderBy: [{ date: "asc" }, { id: "asc" }],
+        })
+      : Promise.resolve([]),
     prisma.dailySalesSummary.findMany({
       where: { date: { gte: `${month}-01`, lte: date } },
       select: SUMMARY_SELECT,
@@ -212,9 +258,18 @@ async function readSummary(date) {
     current.push(sale);
     cashByDate.set(saleDate, current);
   }
+  const ledgerByDate = new Map();
+  for (const ledger of ledgers) {
+    const ledgerDate = getMyanmarDateInputValue(ledger.date);
+    const current = ledgerByDate.get(ledgerDate) || [];
+    current.push(ledger);
+    ledgerByDate.set(ledgerDate, current);
+  }
   const savedByDate = new Map(savedRows.map((row) => [row.date, row]));
-  const selectedSaved = savedByDate.get(date);
   const selectedCash = summarizeCashSales(cashByDate.get(date) || []);
+  const selectedLedgerPayments = summarizeLedgerPayments(ledgerByDate.get(date) || []);
+  const selectedAuto = combineSummaries(selectedCash, selectedLedgerPayments);
+  const selectedSaved = savedByDate.get(date);
   const selectedDay = selectedSaved
     ? {
         ...summarizeSavedRow(selectedSaved),
@@ -223,11 +278,16 @@ async function readSummary(date) {
         enteredAt: selectedSaved.enteredAt || null,
         enteredBy: selectedSaved.enteredBy || null,
       }
-    : { ...selectedCash, source: selectedCash.recordCount ? "CASH_SALE" : "NONE", savedAt: null };
+    : { ...selectedAuto, source: selectedAuto.recordCount ? "AUTO_PREVIEW" : "NONE", savedAt: null };
 
   const rows = new Map();
-  for (const [rowDate, sales] of cashByDate.entries()) {
-    rows.set(rowDate, serializeRow(rowDate, summarizeCashSales(sales), "CASH_SALE", null));
+  const autoRows = new Map();
+  const allDates = new Set([...cashByDate.keys(), ...ledgerByDate.keys()]);
+  for (const rowDate of allDates) {
+    autoRows.set(rowDate, serializeRow(rowDate, combineSummaries(summarizeCashSales(cashByDate.get(rowDate) || []), summarizeLedgerPayments(ledgerByDate.get(rowDate) || [])), "AUTO_PREVIEW", null));
+  }
+  for (const [rowDate, row] of autoRows.entries()) {
+    rows.set(rowDate, row);
   }
   for (const row of savedRows) {
     rows.set(row.date, serializeRow(row.date, summarizeSavedRow(row), "DAILY_SUMMARY", row.updatedAt, {
@@ -245,6 +305,8 @@ async function readSummary(date) {
   return {
     date,
     selectedDay,
+    autoPreview: selectedAuto,
+    autoRows: [...autoRows.values()].sort((a, b) => a.date.localeCompare(b.date)),
     monthlyTotal,
     opening: opening
       ? { amount: openingAmount, asOfDate: openingAsOfDate, note: opening.note || "", updatedAt: opening.updatedAt }
