@@ -38,6 +38,13 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain("w-full rounded-lg bg-indigo-600");
   });
 
+  it("uses the current table Opening value in the green card", () => {
+    expect(source).toContain("const currentTableOpening = tableRows.find((row) => row.date === date)?.monthlyCumulative;");
+    expect(source).toContain("const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;");
+    expect(source).toContain("{formatMoney(displayedOpening)}");
+    expect(source).toContain("အောက်ကဇယားရဲ့ လက်ရှိ Opening တန်ဖိုးအတိုင်း ပြထားသည်");
+  });
+
   it("keeps six summary cards in an even two-column grid with centered monthly opening", () => {
     const outputStart = source.indexOf('<div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 sm:items-stretch">');
     const outputEnd = source.indexOf('<div className="mt-4 flex flex-col gap-3', outputStart);

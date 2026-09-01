@@ -160,6 +160,9 @@ export default function DailySalesSummaryPanel() {
     });
   }, [summary, date, values, dailyTotal, cashDailyTotal]);
 
+  const currentTableOpening = tableRows.find((row) => row.date === date)?.monthlyCumulative;
+  const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;
+
   const currentLabel = useMemo(() => {
     if (!date) return "ရက်စွဲရွေးရန်";
     const [year, month, day] = date.split("-");
@@ -314,8 +317,8 @@ export default function DailySalesSummaryPanel() {
               </div>
               <div className="col-span-2 flex h-full w-full flex-col justify-self-center rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 sm:w-1/2">
                 <p className="text-xs font-semibold text-emerald-800">လစဉ်စုစုပေါင်း / နောက်နေ့ Opening</p>
-                <p className="mt-1 text-xl font-bold text-emerald-900">{formatMoney(monthlyTotal)}</p>
-                <p className="mt-1 text-[11px] text-emerald-700">ဒီနေ့စာရင်းသိမ်းပြီးနောက် နောက်နေ့ Opening အဖြစ် ဆက်သွားမည်</p>
+                <p className="mt-1 text-xl font-bold text-emerald-900">{formatMoney(displayedOpening)}</p>
+                <p className="mt-1 text-[11px] text-emerald-700">အောက်ကဇယားရဲ့ လက်ရှိ Opening တန်ဖိုးအတိုင်း ပြထားသည်</p>
               </div>
             </div>
 
