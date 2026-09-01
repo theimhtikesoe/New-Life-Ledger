@@ -224,7 +224,7 @@ export default function BalanceDetailPage() {
           <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Customer Management</h1>
-              <p className="mt-1 text-sm text-slate-600">Customer အချက်အလက်၊ လက်လီ/လက်ကား လက်ရှိယူနေငွေနဲ့ Update / Delete လုပ်ဆောင်ချက်များ</p>
+              <p className="mt-1 text-sm text-slate-600">Customer အချက်အလက်နဲ့ Update / Delete လုပ်ဆောင်ချက်များ</p>
             </div>
           </div>
         </header>
