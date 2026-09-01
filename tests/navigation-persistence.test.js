@@ -22,7 +22,7 @@ function readSource(relativePath) {
 describe("Persistent audio navigation", () => {
   it("mounts the background player beside children in the authenticated root shell", () => {
     expect(layoutSource).toContain("{children}");
-    expect(layoutSource).toContain("<BackgroundMusicPlayer />");
+    expect(layoutSource).toContain("<BackgroundMusicPlayer settingsOpen={settingsOpen} />");
   });
 
   it("uses Next Link for internal routes instead of full document anchors", () => {

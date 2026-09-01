@@ -1709,11 +1709,11 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
 
             {/* Customer Count */}
-            <div className="neon-card neon-sweep neon-card-blue flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-blue-200 bg-blue-50/85 p-4 text-left hover:shadow-md transition-shadow sm:min-h-[158px]">
+            <Link href="/balance-detail" aria-label="Customer Management ဖွင့်ရန်" className="neon-card neon-sweep neon-card-blue flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-blue-200 bg-blue-50/85 p-4 text-left hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-300 sm:min-h-[158px]">
               <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Customer အရေအတွက်</p>
               <p className="mt-2 text-2xl font-bold text-blue-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p>
-              <p className="mt-1 text-xs text-blue-500">Total Customers</p>
-            </div>
+              <p className="mt-1 text-xs text-blue-500">Customer Management · အသေးစိတ်ကြည့်ရန် →</p>
+            </Link>
 
             {/* Today&apos;s Transactions */}
             <button
