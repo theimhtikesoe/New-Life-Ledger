@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build:ci": "prisma generate && next build",
-    "build": "DATABASE_URL=${DATABASE_URL:-'postgresql://dummy:dummy@localhost:5432/dummy'} DIRECT_URL=${DIRECT_URL:-$DATABASE_URL} sh -c 'if [ \"$DATABASE_URL\" != \"postgresql://dummy:dummy@localhost:5432/dummy\" ]; then prisma migrate deploy; fi; prisma generate; next build'",
+    "build": "DATABASE_URL=${DATABASE_URL:-'postgresql://dummy:dummy@localhost:5432/dummy'} DIRECT_URL=${DIRECT_URL:-$DATABASE_URL} sh -c 'set -e; if [ \"$DATABASE_URL\" != \"postgresql://dummy:dummy@localhost:5432/dummy\" ]; then prisma db execute --file prisma/migrations/20260901180000_add_cash_sale_payment_breakdown/migration.sql; fi; prisma generate; next build'",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
