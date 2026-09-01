@@ -30,6 +30,7 @@ export async function GET(request) {
       name: true,
       phone: true,
       routeTag: true,
+      customerType: true,
       current_balance: true,
       deletedAt: true,
     };
@@ -116,12 +117,14 @@ export async function POST(request) {
     }
 
     const currentBalance = Number(body.current_balance || 0);
+    const customerType = String(body.customerType || "RETAIL").toUpperCase() === "WHOLESALE" ? "WHOLESALE" : "RETAIL";
     const customer = await prisma.$transaction(async (tx) => {
       const newCustomer = await tx.customer.create({
         data: {
           name,
           phone: body.phone?.trim() || null,
           routeTag: body.routeTag?.trim() || null,
+          customerType,
           current_balance: currentBalance,
         },
       });

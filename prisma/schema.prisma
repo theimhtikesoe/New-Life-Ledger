@@ -13,6 +13,7 @@ model Customer {
   name            String
   phone           String?
   routeTag        String?
+  customerType    String           @default("RETAIL")
   current_balance Int              @default(0)
   kpayAliases     KpayAlias[]
   ledgers         Ledger[]

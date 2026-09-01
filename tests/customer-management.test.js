@@ -20,13 +20,14 @@ describe("Customer Management workflow", () => {
     expect(customerManagementRouteSource).toContain('title: "Customer Management | New Life Ledger"');
   });
 
-  it("loads retail and wholesale history and exposes profile actions", () => {
-    expect(pageSource).toContain("includeLedgers=true&includeCashSales=true");
-    expect(pageSource).toContain("function saleTypeSummary(customer, saleType)");
-    expect(pageSource).toContain("normalizeCashSaleType(row.saleType) === normalizedType");
-    expect(pageSource).toContain("matchingLedgers");
-    expect(pageSource).toContain("လက်လီ လက်ရှိယူနေ");
-    expect(pageSource).toContain("လက်ကား လက်ရှိယူနေ");
+  it("renders one customer per row with prepaid, debt, and editable customer type", () => {
+    expect(pageSource).toContain("ကြိုတင်ငွေချေ");
+    expect(pageSource).toContain("လက်ကျန်အကြွေး");
+    expect(pageSource).toContain("Customer Type");
+    expect(pageSource).toContain("လက်လီ Customer");
+    expect(pageSource).toContain("လက်ကား Customer");
+    expect(pageSource).toContain("updateCustomerType");
+    expect(pageSource).toContain('body: JSON.stringify({ customerType })');
     expect(pageSource).toContain('method: "PATCH"');
     expect(pageSource).toContain('method: "DELETE"');
     expect(pageSource).toContain("Customer အချက်အလက် ပြင်ဆင်ရန်");

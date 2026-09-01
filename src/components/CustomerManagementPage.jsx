@@ -87,64 +87,6 @@ async function fetchCustomers() {
   return Array.isArray(rows) ? rows.filter((customer) => !customer.deletedAt) : [];
 }
 
-function saleTypeSummary(customer, saleType) {
-  const normalizedType = saleType === "WHOLESALE" ? "WHOLESALE" : "RETAIL";
-  const ledgers = Array.isArray(customer?.ledgers) ? customer.ledgers : [];
-  const cashSales = Array.isArray(customer?.cashSales) ? customer.cashSales : [];
-  const matchingLedgers = ledgers.filter((row) => normalizeCashSaleType(row.saleType) === normalizedType);
-  const matchingCashSales = cashSales.filter((row) => normalizeCashSaleType(row.saleType) === normalizedType);
-  const debt = matchingLedgers
-    .filter((row) => row.type === "CREDIT")
-    .reduce((total, row) => total + Number(row.amount || 0), 0);
-  const paid = matchingLedgers
-    .filter((row) => row.type === "DEBIT")
-    .reduce((total, row) => total + Number(row.amount || 0), 0);
-  const cash = matchingCashSales.reduce((total, row) => total + Number(row.amount || 0), 0);
-  return { debt, paid, cash, balance: debt - paid, count: matchingLedgers.length + matchingCashSales.length };
-}
-
-function saleTypeLabel(saleType) {
-  return saleType === "WHOLESALE" ? "လက်ကား" : "လက်လီ";
-}
-
-function CustomerRow({ customer, onEdit, onDelete }) {
-  const info = balanceInfo(customer.current_balance);
-  const badgeClass = {
-    debt: "bg-rose-100 text-rose-800",
-    prepaid: "bg-emerald-100 text-emerald-800",
-    zero: "bg-slate-100 text-slate-700",
-  }[info.key];
-  const retail = saleTypeSummary(customer, "RETAIL");
-  const wholesale = saleTypeSummary(customer, "WHOLESALE");
-  return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate font-semibold text-slate-900">{customer.name}</p>
-          <p className="mt-1 truncate text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p>
-        </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span>
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        {[["RETAIL", retail], ["WHOLESALE", wholesale]].map(([saleType, sale]) => (
-          <div key={saleType} className="rounded-lg bg-slate-50 p-2">
-            <p className="font-bold text-slate-700">{saleTypeLabel(saleType)}</p>
-            <p className="mt-1 text-slate-600">ယူငွေ {formatMoney(sale.debt)}</p>
-            <p className="text-slate-600">ပေးပြီး {formatMoney(sale.paid)}</p>
-            <p className="text-slate-600">လက်ငင်းရောင်း {formatMoney(sale.cash)}</p>
-            <p className="font-semibold text-cyan-700">လက်ရှိယူနေ {formatMoney(sale.balance)}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-        <Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="rounded-lg bg-cyan-50 px-3 py-2 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Ledger အသေးစိတ်</Link>
-        <button type="button" onClick={() => onEdit(customer)} className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100">ပြင်ဆင်ရန်</button>
-        <button type="button" onClick={() => onDelete(customer)} className="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100">ဖျက်ရန်</button>
-      </div>
-    </article>
-  );
-}
-
 export default function BalanceDetailPage() {
   const [customers, setCustomers] = useState([]);
   const [query, setQuery] = useState("");
@@ -153,7 +95,7 @@ export default function BalanceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingCustomer, setEditingCustomer] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", phone: "", routeTag: "" });
+  const [editForm, setEditForm] = useState({ name: "", phone: "", routeTag: "", customerType: "RETAIL" });
   const [savingCustomer, setSavingCustomer] = useState(false);
 
   useEffect(() => {
@@ -201,8 +143,29 @@ export default function BalanceDetailPage() {
 
   const beginEdit = (customer) => {
     setEditingCustomer(customer);
-    setEditForm({ name: customer.name || "", phone: customer.phone || "", routeTag: customer.routeTag || "" });
+    setEditForm({ name: customer.name || "", phone: customer.phone || "", routeTag: customer.routeTag || "", customerType: customer.customerType === "WHOLESALE" ? "WHOLESALE" : "RETAIL" });
     setError("");
+  };
+
+  const updateCustomerType = async (customer, customerType) => {
+    if (!customer || savingCustomer) return;
+    setSavingCustomer(true);
+    try {
+      const actorName = localStorage.getItem("actorName") || "";
+      const response = await fetch(`/api/customers/${encodeURIComponent(customer.id)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json", "x-actor-name": encodeActorHeader(actorName) },
+        body: JSON.stringify({ customerType }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Customer type ပြောင်း၍ မရပါ။");
+      setCustomers((current) => current.map((row) => row.id === customer.id ? { ...row, customerType } : row));
+      setError("");
+    } catch (requestError) {
+      setError(requestError.message || "Customer type ပြောင်း၍ မရပါ။");
+    } finally {
+      setSavingCustomer(false);
+    }
   };
 
   const updateCustomer = async (event) => {
@@ -296,22 +259,16 @@ export default function BalanceDetailPage() {
             <span>Active customer only</span>
           </div>
 
-          {loading ? <p className="py-12 text-center text-slate-500">Customer လက်ကျန်များ ရယူနေသည်...</p> : visibleCustomers.length ? (
-            <>
-              <div className="mt-4 grid gap-3 md:hidden">{visibleCustomers.map((customer) => <CustomerRow key={customer.id} customer={customer} onEdit={beginEdit} onDelete={deleteCustomer} />)}</div>
-              <div className="mt-4 hidden overflow-x-auto md:block">
-                <table className="w-full min-w-[1050px] text-left text-sm">
-                  <thead className="border-b border-slate-200 text-xs uppercase text-slate-500"><tr><th className="px-3 py-3">Customer</th><th className="px-3 py-3">အခြေအနေ</th><th className="px-3 py-3 text-right">လက်ရှိလက်ကျန်</th><th className="px-3 py-3">လက်လီ / လက်ကား</th><th className="px-3 py-3 text-right">လုပ်ဆောင်ချက်</th></tr></thead>
-                  <tbody className="divide-y divide-slate-100">{visibleCustomers.map((customer) => {
-                    const info = balanceInfo(customer.current_balance);
-                    const retail = saleTypeSummary(customer, "RETAIL");
-                    const wholesale = saleTypeSummary(customer, "WHOLESALE");
-                    const badgeClass = info.key === "debt" ? "bg-rose-100 text-rose-800" : info.key === "prepaid" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700";
-                    return <tr key={customer.id} className="hover:bg-slate-50"><td className="px-3 py-3"><p className="font-semibold text-slate-900">{customer.name}</p><p className="mt-1 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p></td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span></td><td className={`px-3 py-3 text-right font-bold ${info.key === "debt" ? "text-rose-700" : info.key === "prepaid" ? "text-emerald-700" : "text-slate-700"}`}>{info.amount ? formatMoney(info.amount) : "0 Ks"}</td><td className="px-3 py-3 text-xs"><p className="font-semibold text-violet-700">လက်လီ လက်ရှိယူနေ {formatMoney(retail.balance)}</p><p className="mt-1 font-semibold text-amber-700">လက်ကား လက်ရှိယူနေ {formatMoney(wholesale.balance)}</p><p className="mt-1 text-slate-500">Ledger ယူငွေ {formatMoney(retail.debt + wholesale.debt)}</p><p className="text-slate-500">လက်ငင်းရောင်း {formatMoney(retail.cash + wholesale.cash)}</p></td><td className="px-3 py-3 text-right"><div className="flex flex-wrap justify-end gap-2"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="rounded-lg bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Ledger</Link><button type="button" onClick={() => beginEdit(customer)} className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100">ပြင်</button><button type="button" onClick={() => deleteCustomer(customer)} className="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">ဖျက်</button></div></td></tr>;
-                  })}</tbody>
-                </table>
-              </div>
-            </>
+          {loading ? <p className="py-12 text-center text-slate-500">Customer စာရင်း ရယူနေသည်...</p> : visibleCustomers.length ? (
+            <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="bg-slate-50 text-xs font-semibold text-slate-600"><tr><th className="px-3 py-3">Name</th><th className="px-3 py-3 text-right">ကြိုတင်ငွေချေ</th><th className="px-3 py-3 text-right">လက်ကျန်အကြွေး</th><th className="px-3 py-3">Customer Type</th><th className="px-3 py-3">ဖုန်း / Route</th><th className="px-3 py-3 text-right">လုပ်ဆောင်ချက်</th></tr></thead>
+                <tbody className="divide-y divide-slate-100">{visibleCustomers.map((customer) => {
+                  const balance = Number(customer.current_balance || 0);
+                  return <tr key={customer.id} className="bg-white hover:bg-slate-50"><td className="px-3 py-3 font-semibold text-slate-900">{customer.name}</td><td className="px-3 py-3 text-right font-semibold text-emerald-700">{balance < 0 ? formatMoney(Math.abs(balance)) : "0 Ks"}</td><td className="px-3 py-3 text-right font-semibold text-rose-700">{balance > 0 ? formatMoney(balance) : "0 Ks"}</td><td className="px-3 py-3"><select aria-label={`${customer.name} customer type`} value={customer.customerType === "WHOLESALE" ? "WHOLESALE" : "RETAIL"} disabled={savingCustomer} onChange={(event) => updateCustomerType(customer, event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-400"><option value="RETAIL">လက်လီ Customer</option><option value="WHOLESALE">လက်ကား Customer</option></select></td><td className="px-3 py-3 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</td><td className="px-3 py-3 text-right"><div className="flex flex-wrap justify-end gap-2"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="rounded-lg bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Detail</Link><button type="button" onClick={() => beginEdit(customer)} className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100">ပြင်</button><button type="button" onClick={() => deleteCustomer(customer)} className="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">ဖျက်</button></div></td></tr>;
+                })}</tbody>
+              </table>
+            </div>
           ) : <div className="mt-4 rounded-xl border border-slate-200 px-4 py-10 text-center text-sm text-slate-500">ကိုက်ညီသော customer မတွေ့ပါ။</div>}
         </section>
       </div>

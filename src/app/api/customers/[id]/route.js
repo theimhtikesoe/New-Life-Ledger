@@ -48,6 +48,7 @@ export async function GET(request, { params }) {
         name: true,
         phone: true,
         routeTag: true,
+        customerType: true,
         current_balance: true,
         createdAt: true,
         deletedAt: true,
@@ -96,6 +97,7 @@ export async function PATCH(request, { params }) {
     if (body.name !== undefined) data.name = body.name.trim();
     if (body.phone !== undefined) data.phone = body.phone?.trim() || null;
     if (body.routeTag !== undefined) data.routeTag = body.routeTag?.trim() || null;
+    if (body.customerType !== undefined) data.customerType = String(body.customerType).toUpperCase() === "WHOLESALE" ? "WHOLESALE" : "RETAIL";
     if (body.restore === true) data.deletedAt = null;
 
     const customer = await prisma.customer.update({
@@ -106,6 +108,7 @@ export async function PATCH(request, { params }) {
         name: true,
         phone: true,
         routeTag: true,
+        customerType: true,
         current_balance: true,
         createdAt: true,
         deletedAt: true,

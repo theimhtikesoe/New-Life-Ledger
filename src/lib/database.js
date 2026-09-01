@@ -24,6 +24,7 @@ const REQUIRED_TABLES = [
   "AiExplanationCache",
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
+const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
 const REQUIRED_DAILY_SALES_COLUMNS = [
   "enteredAt",
   "enteredBy",
@@ -56,12 +57,20 @@ async function hasExpectedSchema() {
         SELECT COUNT(*)::int
         FROM information_schema.columns
         WHERE table_schema = 'public'
+          AND table_name = 'Customer'
+          AND column_name IN (${Prisma.join(REQUIRED_CUSTOMER_COLUMNS)})
+      ) AS customer_column_count,
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
           AND table_name = 'DailySalesSummary'
           AND column_name IN (${Prisma.join(REQUIRED_DAILY_SALES_COLUMNS)})
       ) AS daily_sales_column_count
   `;
   return Number(result[0]?.table_count || 0) === REQUIRED_TABLES.length
     && Number(result[0]?.auto_report_column_count || 0) === REQUIRED_AUTO_REPORT_COLUMNS.length
+    && Number(result[0]?.customer_column_count || 0) === REQUIRED_CUSTOMER_COLUMNS.length
     && Number(result[0]?.daily_sales_column_count || 0) === REQUIRED_DAILY_SALES_COLUMNS.length;
 }
 
@@ -132,6 +141,7 @@ export async function ensureDatabase() {
       `.catch(() => [{ count: 0 }]);
 
       if (Number(tableCheck[0]?.count || 0) > 0) {
+        await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "customerType" TEXT NOT NULL DEFAULT 'RETAIL'`);
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "AuditLog" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -300,11 +310,13 @@ export async function ensureDatabase() {
           "name" TEXT NOT NULL,
           "phone" TEXT,
           "routeTag" TEXT,
+          "customerType" TEXT NOT NULL DEFAULT 'RETAIL',
           "current_balance" INTEGER NOT NULL DEFAULT 0,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "deletedAt" TIMESTAMP(3)
         )
       `);
+      await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "customerType" TEXT NOT NULL DEFAULT 'RETAIL'`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "KpayAlias" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
