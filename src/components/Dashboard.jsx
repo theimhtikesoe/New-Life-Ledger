@@ -7,7 +7,7 @@ import TransactionFilter from "./TransactionFilter";
 import OverdueNotificationBell from "./OverdueNotificationBell";
 import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
-import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
+import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-utils";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
@@ -973,6 +973,7 @@ export default function Dashboard({ view = "overview" }) {
       const amount = Number(ledgerForm.amount);
       const type = ledgerForm.type;
       const isCashSale = type === "CASH_SALE";
+      const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
       
       // Cash sales are stored outside Ledger and never change Customer.current_balance.
       if (!isCashSale) {
@@ -987,7 +988,7 @@ export default function Dashboard({ view = "overview" }) {
         method: "POST",
         body: JSON.stringify({
           type: ledgerForm.type,
-          saleType: ledgerForm.saleType,
+          saleType: isCashSale ? effectiveCashSaleType : ledgerForm.saleType,
           itemSize: ledgerForm.itemSize,
           cartons: Number(ledgerForm.cartons || 0) || null,
           rate: Number(ledgerForm.rate || 0) || null,
@@ -1454,6 +1455,8 @@ export default function Dashboard({ view = "overview" }) {
     
     showAlert(`"${selectedCustomer.name}" ရဲ့ transaction တွေ အောင်မြင်စွာ ထုတ်ယူပြီးပါပြီ။`, "success");
   };
+
+  const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
 
   const computedSaleAmount = useMemo(() => {
     if (ledgerForm.type !== "CREDIT" || ledgerForm.saleType !== "RETAIL") return null;
@@ -2079,7 +2082,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-cyan-500 text-slate-950 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CASH_SALE", paymentType: ledgerForm.paymentType || "CASH" })}
+                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CASH_SALE", saleType: ledgerForm.type === "CASH_SALE" ? ledgerForm.saleType : "", paymentType: ledgerForm.paymentType || "CASH" })}
                           disabled={isSubmitting}
                         >
                           လက်ငင်းရောင်း
@@ -2116,10 +2119,11 @@ export default function Dashboard({ view = "overview" }) {
                       {ledgerForm.type === "CASH_SALE" && (
                         <div className="space-y-1">
                           <label className="text-xs text-slate-700 font-medium">လက်ငင်းရောင်းအမျိုးအစား</label>
+                          <p className="text-[11px] leading-4 text-cyan-800">မရွေးထားပါက Customer အမျိုးအစားအတိုင်း အလိုအလျောက်သိမ်းမည် — {cashSaleTypeLabel(effectiveCashSaleType)}</p>
                           <div className="grid grid-cols-2 gap-2 rounded-lg border border-cyan-200 bg-cyan-50/60 p-1">
                             <button
                               type="button"
-                              className={`min-h-10 rounded-md px-3 py-2 text-sm font-semibold transition-all ${ledgerForm.saleType === "RETAIL" ? "bg-cyan-600 text-white shadow-sm" : "text-cyan-800 hover:bg-cyan-100"}`}
+                              className={`min-h-10 rounded-md px-3 py-2 text-sm font-semibold transition-all ${effectiveCashSaleType === "RETAIL" ? "bg-cyan-600 text-white shadow-sm" : "text-cyan-800 hover:bg-cyan-100"}`}
                               onClick={() => setLedgerForm({ ...ledgerForm, saleType: "RETAIL" })}
                               disabled={isSubmitting}
                             >
@@ -2127,7 +2131,7 @@ export default function Dashboard({ view = "overview" }) {
                             </button>
                             <button
                               type="button"
-                              className={`min-h-10 rounded-md px-3 py-2 text-sm font-semibold transition-all ${ledgerForm.saleType === "WHOLESALE" ? "bg-cyan-600 text-white shadow-sm" : "text-cyan-800 hover:bg-cyan-100"}`}
+                              className={`min-h-10 rounded-md px-3 py-2 text-sm font-semibold transition-all ${effectiveCashSaleType === "WHOLESALE" ? "bg-cyan-600 text-white shadow-sm" : "text-cyan-800 hover:bg-cyan-100"}`}
                               onClick={() => setLedgerForm({ ...ledgerForm, saleType: "WHOLESALE" })}
                               disabled={isSubmitting}
                             >

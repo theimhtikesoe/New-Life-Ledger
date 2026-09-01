@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
+import { customerDefaultCashSaleType, normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 import { paymentSplitForInput } from "@/lib/payment-split";
 
@@ -73,14 +73,15 @@ export async function POST(request, { params }) {
     const amount = parseAmount(body.amount);
     const paymentBreakdown = paymentSplitForInput(body, amount);
     const date = parseDate(body.date);
-    const customer = await prisma.customer.findUnique({ where: { id: params.id }, select: { id: true, name: true, deletedAt: true } });
+    const customer = await prisma.customer.findUnique({ where: { id: params.id }, select: { id: true, name: true, customerType: true, deletedAt: true } });
     if (!customer || customer.deletedAt) return NextResponse.json({ error: "Customer မတွေ့ပါ သို့မဟုတ် Recycle Bin ထဲ ရှိနေပါသည်။" }, { status: 404 });
+    const saleType = body.saleType ? normalizeCashSaleType(body.saleType) : customerDefaultCashSaleType(customer);
 
     const result = await prisma.$transaction(async (tx) => {
       const cashSale = await tx.cashSale.create({
         data: {
           customerId: customer.id,
-          saleType: normalizeCashSaleType(body.saleType),
+          saleType,
           itemSize: body.itemSize?.trim() || null,
           cartons: parseOptionalInteger(body.cartons),
           rate: parseOptionalInteger(body.rate),

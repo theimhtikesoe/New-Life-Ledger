@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
+import { cashSaleTypeLabel, customerDefaultCashSaleType, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
 
 describe("CashSale type helpers", () => {
   it("normalizes known types and defaults unknown values to retail", () => {
@@ -8,6 +8,12 @@ describe("CashSale type helpers", () => {
     expect(normalizeCashSaleType("unknown")).toBe("RETAIL");
     expect(cashSaleTypeLabel("WHOLESALE")).toBe("လက်ကား");
     expect(cashSaleTypeLabel("RETAIL")).toBe("လက်လီ");
+  });
+
+  it("uses the customer classification for an omitted cash-sale type", () => {
+    expect(customerDefaultCashSaleType({ customerType: "RETAIL" })).toBe("RETAIL");
+    expect(customerDefaultCashSaleType({ customerType: "WHOLESALE" })).toBe("WHOLESALE");
+    expect(customerDefaultCashSaleType({})).toBe("WHOLESALE");
   });
 
   it("summarizes retail and wholesale sales separately", () => {

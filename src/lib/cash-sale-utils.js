@@ -5,6 +5,11 @@ export function normalizeCashSaleType(value) {
   return normalized === "WHOLESALE" || normalized.includes("လက်ကား") ? "WHOLESALE" : "RETAIL";
 }
 
+export function customerDefaultCashSaleType(customer) {
+  const normalized = String(customer?.customerType || "").trim().toUpperCase();
+  return normalized === "RETAIL" ? "RETAIL" : "WHOLESALE";
+}
+
 export function cashSaleTypeLabel(value) {
   return normalizeCashSaleType(value) === "WHOLESALE" ? "လက်ကား" : "လက်လီ";
 }

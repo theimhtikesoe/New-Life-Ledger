@@ -23,7 +23,7 @@ vi.mock("@/lib/audit", () => ({ getActorName: mocks.getActorName, writeAuditLog:
 
 import { GET, POST } from "@/app/api/customers/[id]/cash-sales/route";
 
-const customer = { id: "customer-1", name: "စမ်းသပ် Customer", deletedAt: null };
+const customer = { id: "customer-1", name: "စမ်းသပ် Customer", customerType: "RETAIL", deletedAt: null };
 const cashSale = {
   id: "cash-sale-1",
   date: new Date("2026-08-26T00:00:00.000Z"),
@@ -63,13 +63,26 @@ describe("CashSale route", () => {
     const body = await response.json();
     expect(response.status).toBe(201);
     expect(body.data.cashSale).toMatchObject({ ...cashSale, date: cashSale.date.toISOString(), createdAt: cashSale.createdAt.toISOString() });
-    expect(mocks.customerFindUnique).toHaveBeenCalledWith({ where: { id: customer.id }, select: { id: true, name: true, deletedAt: true } });
+    expect(mocks.customerFindUnique).toHaveBeenCalledWith({ where: { id: customer.id }, select: { id: true, name: true, customerType: true, deletedAt: true } });
     expect(mocks.cashSaleCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ customerId: customer.id, amount: 1000000, paymentType: "CASH" }) }));
     expect(mocks.customerUpdate).not.toHaveBeenCalled();
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "CASH_SALE", entityType: "CashSale", entityId: cashSale.id, entityLabel: customer.name }));
   });
 
-  it("normalizes and records the wholesale cash-sale type without touching balance", async () => {
+  it("uses the customer type when the cash-sale type is omitted", async () => {
+    const wholesaleCustomer = { ...customer, customerType: "WHOLESALE" };
+    const wholesale = { ...cashSale, saleType: "WHOLESALE" };
+    mocks.customerFindUnique.mockResolvedValue(wholesaleCustomer);
+    mocks.cashSaleCreate.mockResolvedValue(wholesale);
+    const response = await POST(request({ amount: 1000000, paymentType: "CASH", date: "2026-08-26" }), { params: { id: customer.id } });
+    const body = await response.json();
+    expect(response.status).toBe(201);
+    expect(body.data.cashSale.saleType).toBe("WHOLESALE");
+    expect(mocks.cashSaleCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ saleType: "WHOLESALE" }) }));
+    expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ saleType: "WHOLESALE" }) }));
+  });
+
+  it("normalizes and records the explicit wholesale cash-sale type without touching balance", async () => {
     const wholesale = { ...cashSale, saleType: "WHOLESALE" };
     mocks.cashSaleCreate.mockResolvedValue(wholesale);
     const response = await POST(request({ amount: 1000000, saleType: "wholesale", paymentType: "CASH", date: "2026-08-26" }), { params: { id: customer.id } });
