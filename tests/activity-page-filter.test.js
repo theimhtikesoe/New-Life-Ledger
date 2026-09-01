@@ -5,9 +5,10 @@ import { resolve } from "node:path";
 const source = readFileSync(resolve(process.cwd(), "src/app/activity/page.js"), "utf8");
 
 describe("Activity History client filter", () => {
-  it("filters Daily Sales bookkeeping actions from fetched and cached logs", () => {
-    expect(source).toContain("isDailySalesActivity, isOrderWorkflowActivity");
-    expect(source).toContain("!isOrderWorkflowActivity(log) && !isDailySalesActivity(log)");
+  it("filters Daily Sales bookkeeping actions and Customer edits from fetched and cached logs", () => {
+    expect(source).toContain("isCustomerEditActivity, isDailySalesActivity, isOrderWorkflowActivity");
+    expect(source).toContain("!isOrderWorkflowActivity(log) && !isDailySalesActivity(log) && !isCustomerEditActivity(log)");
+    expect(source).toContain('excludeCustomerEdits: "true"');
   });
 
   it("does not add Daily Sales bookkeeping actions to the action picker", () => {

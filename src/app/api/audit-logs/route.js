@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ACTORS } from "@/lib/audit";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
+import { accountingAuditLogWhere, isCustomerEditActivity, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +28,7 @@ export async function GET(request) {
     const actor = searchParams.get("actor");
     const action = searchParams.get("action");
     const includeOrders = searchParams.get("includeOrders") === "true";
+    const excludeCustomerEdits = searchParams.get("excludeCustomerEdits") === "true";
     const limitParam = Number(searchParams.get("limit") || 100);
     const limit = Math.min(Math.max(Number.isFinite(limitParam) ? Math.floor(limitParam) : 100, 1), 500);
     const range = dateRange(dateParam);
@@ -39,6 +40,7 @@ export async function GET(request) {
       ACTORS.includes(actor) ? { actorName: actor } : null,
       isHiddenReportAction ? { action: "__HIDDEN_DAILY_REPORT_SENT__" } : action ? { action } : null,
       !includeOrders ? accountingAuditLogWhere() : null,
+      excludeCustomerEdits ? { NOT: { AND: [{ entityType: "Customer" }, { action: "UPDATE" }] } } : null,
       !action && !isHiddenReportAction ? { NOT: { action: "DAILY_REPORT_SENT" } } : null,
     ].filter(Boolean);
     const [allAuditLogs, legacyLedgers] = await Promise.all([
@@ -74,7 +76,7 @@ export async function GET(request) {
         : [],
     ]);
 
-    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && (includeOrders || !isOrderWorkflowActivity(log)));
+    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && (includeOrders || !isOrderWorkflowActivity(log)) && (!excludeCustomerEdits || !isCustomerEditActivity(log)));
     const cashSaleIds = allAuditLogs
       .filter((log) => log.entityType === "CashSale" && log.entityId)
       .map((log) => String(log.entityId));

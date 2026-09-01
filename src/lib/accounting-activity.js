@@ -11,6 +11,12 @@ export function isOrderWorkflowActivity(log) {
   return ORDER_ENTITY_TYPES.has(entityType) || action.startsWith("ORDER_");
 }
 
+export function isCustomerEditActivity(log) {
+  const entityType = String(log?.entityType || "").trim().toLowerCase();
+  const action = String(log?.action || "").trim().toUpperCase();
+  return entityType === "customer" && action === "UPDATE";
+}
+
 export function accountingAuditLogWhere() {
   return {
     NOT: [

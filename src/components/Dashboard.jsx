@@ -265,10 +265,8 @@ export default function Dashboard({ view = "overview" }) {
     note: "",
     date: "",
     paymentType: "",
-    paymentBreakdown: { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" },
   });
   const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [showPaymentBreakdown, setShowPaymentBreakdown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState("Dashboard data ရယူနေပါသည်");
   const [loadingDeleted, setLoadingDeleted] = useState(false);
@@ -998,11 +996,6 @@ export default function Dashboard({ view = "overview" }) {
           note: ledgerForm.note,
           paymentType: ledgerForm.paymentType || (isCashSale ? "CASH" : null),
           date: ledgerForm.date || null,
-          ...(isCashSale ? {
-            paymentBreakdown: Object.fromEntries(
-              Object.entries(ledgerForm.paymentBreakdown || {}).map(([key, value]) => [key, Number(value || 0)])
-            ),
-          } : {}),
         }),
       });
       
@@ -1027,7 +1020,6 @@ export default function Dashboard({ view = "overview" }) {
         note: "",
         date: "",
         paymentType: "",
-        paymentBreakdown: { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" },
       });
       clearDashboardDraftFields(["ledgerForm"]);
       
@@ -2162,40 +2154,7 @@ export default function Dashboard({ view = "overview" }) {
                               <option value="WAVE">Wave Money</option>
                             </select>
                           </div>
-                          {ledgerForm.type === "CASH_SALE" && (
-                            <div className="rounded-lg border border-cyan-200 bg-cyan-50/60 p-3">
-                              <button
-                                type="button"
-                                aria-expanded={showPaymentBreakdown}
-                                onClick={() => setShowPaymentBreakdown((open) => !open)}
-                                className="flex min-h-10 w-full items-center justify-between gap-3 rounded-md px-1 text-left text-xs font-semibold text-cyan-900 transition-colors hover:bg-cyan-100/70"
-                                disabled={isSubmitting}
-                              >
-                                <span>Payment ခွဲထည့်ရန် (မရောအောင်)</span>
-                                <span className="text-[11px] font-bold text-cyan-700">{showPaymentBreakdown ? "ဖျောက်ရန် ▲" : "ပြရန် ▼"}</span>
-                              </button>
-                              {showPaymentBreakdown && (
-                                <>
-                                  <p className="mt-1 text-[11px] leading-4 text-cyan-800">စုစုပေါင်းပမာဏနှင့် Cash/KPay/Bank/Wave/Special ပေါင်းလဒ် တူရပါမယ်။</p>
-                                  <div className="mt-3 grid grid-cols-2 gap-2">
-                                    {[['CASH', 'Cash'], ['KPAY', 'KPay'], ['BANK', 'Bank'], ['WAVE', 'Wave'], ['SPECIAL', 'Special']].map(([key, label]) => (
-                                      <label key={key} className="space-y-1">
-                                        <span className="text-[11px] font-semibold text-cyan-900">{label} (Ks)</span>
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          value={ledgerForm.paymentBreakdown?.[key] || ""}
-                                          onChange={(e) => setLedgerForm({ ...ledgerForm, paymentBreakdown: { ...(ledgerForm.paymentBreakdown || {}), [key]: e.target.value } })}
-                                          className="h-10 w-full rounded-md border border-cyan-200 bg-white px-2.5 text-sm text-slate-900"
-                                          disabled={isSubmitting}
-                                        />
-                                      </label>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          )}
+
                         </div>
                       )}
 

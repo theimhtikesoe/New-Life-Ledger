@@ -61,4 +61,18 @@ describe("Activity History Order separation", () => {
     expect(where.AND).toEqual(expect.arrayContaining([{ NOT: { action: "DAILY_REPORT_SENT" } }]));
     expect(where.AND).not.toContainEqual({ NOT: { entityType: "Order" } });
   });
+
+  it("excludes Customer UPDATE records when requested by Activity History", async () => {
+    mocks.auditFindMany.mockReset().mockResolvedValue([
+      { id: "customer-edit", entityType: "Customer", action: "UPDATE", hiddenAt: null },
+      { id: "payment", entityType: "Ledger", action: "PAYMENT", hiddenAt: null },
+    ]);
+    mocks.ledgerFindMany.mockReset().mockResolvedValue([]);
+    const response = await GET(request("excludeCustomerEdits=true&limit=500"));
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.data.map((log) => log.id)).toEqual(["payment"]);
+    const where = mocks.auditFindMany.mock.calls[0][0].where;
+    expect(where.AND).toContainEqual({ NOT: { AND: [{ entityType: "Customer" }, { action: "UPDATE" }] } });
+  });
 });
