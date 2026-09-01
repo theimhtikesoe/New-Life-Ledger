@@ -31,7 +31,7 @@ function downloadBackup(data) {
   ];
   const customers = (data.customers || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), deletedAt: iso(item.deletedAt) }));
   const transactions = (data.transactions || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
-  const cashSales = (data.cashSales || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
+  const cashSales = (data.cashSales || []).map((item) => ({ ...item, paymentBreakdown: item.paymentBreakdown ? JSON.stringify(item.paymentBreakdown) : "", date: iso(item.date), createdAt: iso(item.createdAt) }));
   const kpayAliases = (data.kpayAliases || []).map((item) => ({ ...item }));
   const unverifiedKpay = (data.unverifiedKpay || []).map((item) => ({ ...item, createdAt: iso(item.createdAt) }));
   const auditLogs = (data.auditLogs || []).map((item) => ({ ...item, metadata: item.metadata ? JSON.stringify(item.metadata) : "", createdAt: iso(item.createdAt) }));

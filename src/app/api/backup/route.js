@@ -57,6 +57,7 @@ export async function GET() {
           amount: true,
           note: true,
           paymentType: true,
+          paymentBreakdown: true,
           createdAt: true,
         },
       }),
@@ -130,7 +131,7 @@ export async function GET() {
     return NextResponse.json({
       data: {
         format: "new-life-ledger-backup",
-        version: 4,
+        version: 5,
         generatedAt: new Date().toISOString(),
         counts: {
           customers: customers.length,
