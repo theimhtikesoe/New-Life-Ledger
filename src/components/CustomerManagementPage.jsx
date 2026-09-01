@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
+import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 
 const money = new Intl.NumberFormat("en-US");
 
@@ -90,16 +91,16 @@ function saleTypeSummary(customer, saleType) {
   const normalizedType = saleType === "WHOLESALE" ? "WHOLESALE" : "RETAIL";
   const ledgers = Array.isArray(customer?.ledgers) ? customer.ledgers : [];
   const cashSales = Array.isArray(customer?.cashSales) ? customer.cashSales : [];
-  const debt = ledgers
-    .filter((row) => row.saleType === normalizedType && row.type === "CREDIT")
+  const matchingLedgers = ledgers.filter((row) => normalizeCashSaleType(row.saleType) === normalizedType);
+  const matchingCashSales = cashSales.filter((row) => normalizeCashSaleType(row.saleType) === normalizedType);
+  const debt = matchingLedgers
+    .filter((row) => row.type === "CREDIT")
     .reduce((total, row) => total + Number(row.amount || 0), 0);
-  const paid = ledgers
-    .filter((row) => row.saleType === normalizedType && row.type === "DEBIT")
+  const paid = matchingLedgers
+    .filter((row) => row.type === "DEBIT")
     .reduce((total, row) => total + Number(row.amount || 0), 0);
-  const cash = cashSales
-    .filter((row) => row.saleType === normalizedType)
-    .reduce((total, row) => total + Number(row.amount || 0), 0);
-  return { debt, paid, cash, balance: debt - paid };
+  const cash = matchingCashSales.reduce((total, row) => total + Number(row.amount || 0), 0);
+  return { debt, paid, cash, balance: debt - paid, count: matchingLedgers.length + matchingCashSales.length };
 }
 
 function saleTypeLabel(saleType) {

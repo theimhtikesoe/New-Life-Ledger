@@ -23,6 +23,8 @@ describe("Customer Management workflow", () => {
   it("loads retail and wholesale history and exposes profile actions", () => {
     expect(pageSource).toContain("includeLedgers=true&includeCashSales=true");
     expect(pageSource).toContain("function saleTypeSummary(customer, saleType)");
+    expect(pageSource).toContain("normalizeCashSaleType(row.saleType) === normalizedType");
+    expect(pageSource).toContain("matchingLedgers");
     expect(pageSource).toContain("လက်လီ လက်ရှိယူနေ");
     expect(pageSource).toContain("လက်ကား လက်ရှိယူနေ");
     expect(pageSource).toContain('method: "PATCH"');
