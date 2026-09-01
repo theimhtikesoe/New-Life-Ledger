@@ -106,23 +106,6 @@ function saleTypeLabel(saleType) {
   return saleType === "WHOLESALE" ? "လက်ကား" : "လက်လီ";
 }
 
-function SummaryCard({ title, subtitle, value, count, countLabel = "ယောက်", tone }) {
-  const tones = {
-    rose: "border-rose-200 bg-rose-50 text-rose-800",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    blue: "border-blue-200 bg-blue-50 text-blue-800",
-    slate: "border-slate-200 bg-slate-50 text-slate-800",
-  };
-  return (
-    <article className={`rounded-xl border p-5 shadow-sm ${tones[tone] || tones.slate}`}>
-      <p className="text-sm font-semibold">{title}</p>
-      <p className="mt-2 text-2xl font-bold">{value}</p>
-      <p className="mt-1 text-xs opacity-80">{subtitle}</p>
-      {count !== undefined ? <p className="mt-3 text-sm font-semibold">{count} {countLabel}</p> : null}
-    </article>
-  );
-}
-
 function CustomerRow({ customer, onEdit, onDelete }) {
   const info = balanceInfo(customer.current_balance);
   const badgeClass = {
@@ -161,14 +144,8 @@ function CustomerRow({ customer, onEdit, onDelete }) {
   );
 }
 
-async function fetchTodaySummary() {
-  const data = await fetchJson("/api/daily-summary");
-  return data?.summary || {};
-}
-
 export default function BalanceDetailPage() {
   const [customers, setCustomers] = useState([]);
-  const [cashSummary, setCashSummary] = useState({ cashCount: 0, cashAmount: 0, cashSaleTypes: {} });
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
   const [sortBy, setSortBy] = useState("amount-desc");
@@ -186,8 +163,6 @@ export default function BalanceDetailPage() {
       setCustomers(cachedCustomers);
       setLoading(false);
     }
-    if (cached?.cashSummary && typeof cached.cashSummary === "object") setCashSummary(cached.cashSummary);
-
     fetchCustomers()
       .then((rows) => {
         if (!active) return;
@@ -202,41 +177,8 @@ export default function BalanceDetailPage() {
         setLoading(false);
       });
 
-    // CashSale summary is useful but secondary; it never blocks the customer balance list.
-    fetchTodaySummary()
-      .then((summary) => {
-        if (!active) return;
-        setCashSummary(summary);
-        saveBalanceSnapshot({ cashSummary: summary });
-      })
-      .catch(() => {});
-
     return () => { active = false; };
   }, []);
-
-  const totals = useMemo(() => customers.reduce((result, customer) => {
-    const balance = Number(customer.current_balance || 0);
-    result.customerCount += 1;
-    if (balance > 0) {
-      result.debtCustomers += 1;
-      result.debtTotal += balance;
-    } else if (balance < 0) {
-      result.prepaidCustomers += 1;
-      result.prepaidTotal += Math.abs(balance);
-    } else {
-      result.zeroCustomers += 1;
-    }
-    return result;
-  }, {
-    customerCount: 0,
-    debtCustomers: 0,
-    debtTotal: 0,
-    prepaidCustomers: 0,
-    prepaidTotal: 0,
-    zeroCustomers: 0,
-  }), [customers]);
-
-  const netBalance = totals.debtTotal - totals.prepaidTotal;
 
   const visibleCustomers = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -255,8 +197,6 @@ export default function BalanceDetailPage() {
     });
   }, [customers, query, sortBy, status]);
 
-  const netTone = netBalance > 0 ? "rose" : netBalance < 0 ? "emerald" : "slate";
-  const netLabel = netBalance > 0 ? "Customer တွေဆီက အသားတင်ရရန်" : netBalance < 0 ? "Customer တွေက ပိုငွေချေထားခြင်း" : "အသားတင်လက်ကျန် မရှိပါ";
 
   const beginEdit = (customer) => {
     setEditingCustomer(customer);
@@ -320,33 +260,13 @@ export default function BalanceDetailPage() {
           <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Customer Management</h1>
-              <p className="mt-1 text-sm text-slate-600">Customer အချက်အလက်၊ လက်လီ/လက်ကား လက်ရှိယူနေငွေနဲ့ လုပ်ဆောင်ချက်များကို စီမံရန်</p>
+              <p className="mt-1 text-sm text-slate-600">Customer အချက်အလက်၊ လက်လီ/လက်ကား လက်ရှိယူနေငွေနဲ့ Update / Delete လုပ်ဆောင်ချက်များ</p>
             </div>
-            <nav aria-label="စာမျက်နှာများ" className="flex flex-wrap gap-2 text-xs font-semibold">
-              <Link href="/daily-summary" className="rounded-full bg-violet-50 px-3 py-2 text-violet-700 hover:bg-violet-100">Daily Summary</Link>
-              <Link href="/activity" className="rounded-full bg-amber-50 px-3 py-2 text-amber-700 hover:bg-amber-100">Activity History</Link>
-              <Link href="/ledger" className="rounded-full bg-cyan-50 px-3 py-2 text-cyan-700 hover:bg-cyan-100">Customer Ledger</Link>
-            </nav>
           </div>
         </header>
 
         {error ? <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">{error}</section> : null}
 
-        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <SummaryCard title="အသားတင်ရရန်လက်ကျန်" subtitle={netLabel} value={loading && !customers.length ? "ရယူနေသည်..." : formatMoney(Math.abs(netBalance))} tone={netTone} />
-          <SummaryCard title="လက်ကျန်အကြွေးစုစုပေါင်း" subtitle="အနီရောင် balance များ" value={loading && !customers.length ? "ရယူနေသည်..." : formatMoney(totals.debtTotal)} count={totals.debtCustomers} tone="rose" />
-          <SummaryCard title="လက်ကျန်ကြိုတင်ငွေချေ" subtitle="အစိမ်းရောင် balance များ" value={loading && !customers.length ? "ရယူနေသည်..." : formatMoney(totals.prepaidTotal)} count={totals.prepaidCustomers} tone="emerald" />
-          <SummaryCard title="လက်ကျန်မရှိသူ" subtitle="လက်ရှိ balance = 0" value={loading && !customers.length ? "ရယူနေသည်..." : `${totals.zeroCustomers} ယောက်`} tone="blue" />
-          <SummaryCard title="ဒီနေ့ လက်ငင်းရောင်း" subtitle="လက်ကျန်အကြွေးထဲ မထည့်ပါ" value={loading && !customers.length && !cashSummary.cashCount ? "ရယူနေသည်..." : formatMoney(cashSummary.cashAmount)} count={cashSummary.cashCount || 0} countLabel="ခု" tone="blue" />
-        </section>
-
-        <section className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 sm:p-5">
-          <h2 className="text-base font-bold text-cyan-950">ဒီလက်ကျန်ကို ဘယ်လိုတွက်ထားသလဲ</h2>
-          <p className="mt-2 text-sm leading-6 text-cyan-950"><strong>အသားတင်ရရန် = လက်ကျန်အကြွေးစုစုပေါင်း − လက်ကျန်ကြိုတင်ငွေချေ</strong></p>
-          <p className="mt-2 text-sm leading-6 text-cyan-900">ဥပမာ အကြွေး 300,000 Ks ရှိပြီး customer တချို့က 100,000 Ks ကြိုတင်ငွေချေထားရင် အသားတင်ရရန် 200,000 Ks ဖြစ်ပါတယ်။ အနီရောင်က customer ဆီက ရရန်ရှိတာ၊ အစိမ်းရောင်က customer က ပိုငွေချေထားတာကို ဆိုလိုပါတယ်။</p>
-          <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီနေ့ လက်ငင်းရောင်းမှာ လက်လီ {(cashSummary.cashSaleTypes?.RETAIL?.count || 0)} ခု၊ လက်ကား {(cashSummary.cashSaleTypes?.WHOLESALE?.count || 0)} ခု ပါဝင်ပါတယ်။ လက်ငင်းပမာဏကို အသားတင်ရရန်လက်ကျန်ထဲ မထည့်ပါ။</p>
-          <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီစာမျက်နှာက လက်ရှိ active customer balance တွေကိုပဲ စုပါတယ်။ Recycle Bin ထဲက customer များ မပါဝင်ပါ။ ယခင်က အားလုံးပေးချေခဲ့သည့် သမိုင်းပမာဏကို ကြည့်လိုပါက Customer Ledger၊ Daily Summary နှင့် Activity History ကို သုံးပါ။</p>
-        </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
