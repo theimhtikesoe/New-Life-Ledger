@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { ensureDatabase } from "@/lib/database";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
-import { getPaymentSplit } from "@/lib/payment-split";
 import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 
