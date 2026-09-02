@@ -24,6 +24,20 @@ describe("payment split", () => {
     expect(paymentSplitTotal(split)).toBe(1215000);
   });
 
+  it("rejects a breakdown that is larger than the main amount", () => {
+    expect(() => paymentSplitForInput({
+      paymentType: "CASH",
+      paymentBreakdown: { CASH: 60000, KPAY: 50000, BANK: 0, WAVE: 0, SPECIAL: 0 },
+    }, 100000)).toThrow(/ပိုနေပါသည်/);
+  });
+
+  it("rejects a breakdown that is smaller than the main amount", () => {
+    expect(() => paymentSplitForInput({
+      paymentType: "CASH",
+      paymentBreakdown: { CASH: 60000, KPAY: 20000, BANK: 10000, WAVE: 0, SPECIAL: 0 },
+    }, 100000)).toThrow(/လျော့နေပါသည်/);
+  });
+
   it("falls back to the selected payment type for legacy single-payment rows", () => {
     const split = getPaymentSplit({ amount: 500000, paymentType: "KPAY", note: null });
     expect(split).toEqual({ CASH: 0, KPAY: 500000, BANK: 0, WAVE: 0, SPECIAL: 0 });

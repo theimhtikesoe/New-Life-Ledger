@@ -66,6 +66,20 @@ export function paymentSplitTotal(split) {
   return PAYMENT_KEYS.reduce((sum, key) => sum + toAmount(split?.[key]), 0);
 }
 
+export function hasPaymentBreakdownInput(split) {
+  return Boolean(split && typeof split === "object" && PAYMENT_KEYS.some((key) => String(split[key] ?? "").trim() !== ""));
+}
+
+export function paymentBreakdownValidationMessage(split, amount) {
+  const total = paymentSplitTotal(split);
+  if (total === amount) return "";
+  const difference = total - amount;
+  const detail = difference > 0
+    ? `${difference.toLocaleString()} Ks ပိုနေပါသည်`
+    : `${Math.abs(difference).toLocaleString()} Ks လျော့နေပါသည်`;
+  return `ငွေပေးချေမှုခွဲပမာဏ ${total.toLocaleString()} Ks သည် ပမာဏ ${amount.toLocaleString()} Ks နှင့် မကိုက်ပါ။ ${detail}။`;
+}
+
 export function paymentSplitForInput(body, amount) {
   const candidate = body?.paymentBreakdown && typeof body.paymentBreakdown === "object"
     ? body.paymentBreakdown
@@ -73,6 +87,13 @@ export function paymentSplitForInput(body, amount) {
   const split = candidate ? emptySplit() : parseNote(body?.note);
   if (candidate) for (const key of PAYMENT_KEYS) split[key] = toAmount(candidate[key]);
   const total = paymentSplitTotal(split);
+
+  if (candidate) {
+    const mismatch = paymentBreakdownValidationMessage(split, amount);
+    if (mismatch) throw new Error(mismatch);
+    return split;
+  }
+
   if (!total) {
     split[normalizePaymentKey(body?.paymentType) || "CASH"] = amount;
     return split;

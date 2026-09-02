@@ -8,6 +8,7 @@ import OverdueNotificationBell from "./OverdueNotificationBell";
 import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-utils";
+import { hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitTotal } from "@/lib/payment-split";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
@@ -20,6 +21,14 @@ const RESUME_REFRESH_AFTER_MS = 30000;
 const API_REQUEST_TIMEOUT_MS = 20000;
 const MAX_GET_ATTEMPTS = 2;
 const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
+const EMPTY_PAYMENT_BREAKDOWN = { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" };
+const PAYMENT_BREAKDOWN_FIELDS = [
+  { key: "CASH", label: "Cash" },
+  { key: "KPAY", label: "KPay" },
+  { key: "BANK", label: "Bank" },
+  { key: "WAVE", label: "Wave" },
+  { key: "SPECIAL", label: "Special" },
+];
 
 function getDashboardDraftStorageKey(actorName) {
   return actorName ? `${DASHBOARD_DRAFT_STORAGE_PREFIX}-${encodeURIComponent(actorName)}` : "";
@@ -265,6 +274,7 @@ export default function Dashboard({ view = "overview" }) {
     note: "",
     date: "",
     paymentType: "",
+    paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
   });
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -374,7 +384,7 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     const resetDraftState = () => {
       setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
-      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "" });
+      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } });
       setEditForm({ name: "", phone: "", routeTag: "" });
       setEditingCustomer(null);
       setSearch("");
@@ -974,6 +984,12 @@ export default function Dashboard({ view = "overview" }) {
       const type = ledgerForm.type;
       const isCashSale = type === "CASH_SALE";
       const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
+      const hasCashSaleBreakdown = isCashSale && hasPaymentBreakdownInput(ledgerForm.paymentBreakdown);
+      const cashSaleBreakdownTotal = hasCashSaleBreakdown ? paymentSplitTotal(ledgerForm.paymentBreakdown) : 0;
+      const cashSaleAmount = Number.isFinite(amount) ? amount : 0;
+      if (hasCashSaleBreakdown && cashSaleBreakdownTotal !== cashSaleAmount) {
+        throw new Error(paymentBreakdownValidationMessage(ledgerForm.paymentBreakdown, cashSaleAmount));
+      }
       
       // Cash sales are stored outside Ledger and never change Customer.current_balance.
       if (!isCashSale) {
@@ -996,6 +1012,7 @@ export default function Dashboard({ view = "overview" }) {
           amount: Number(ledgerForm.amount),
           note: ledgerForm.note,
           paymentType: ledgerForm.paymentType || (isCashSale ? "CASH" : null),
+          paymentBreakdown: hasCashSaleBreakdown ? ledgerForm.paymentBreakdown : undefined,
           date: ledgerForm.date || null,
         }),
       });
@@ -1021,6 +1038,7 @@ export default function Dashboard({ view = "overview" }) {
         note: "",
         date: "",
         paymentType: "",
+        paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
       });
       clearDashboardDraftFields(["ledgerForm"]);
       
@@ -1457,6 +1475,16 @@ export default function Dashboard({ view = "overview" }) {
   };
 
   const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
+  const cashSaleBreakdownInput = ledgerForm.paymentBreakdown || EMPTY_PAYMENT_BREAKDOWN;
+  const hasCashSaleBreakdown = hasPaymentBreakdownInput(cashSaleBreakdownInput);
+  const cashSaleBreakdownTotal = paymentSplitTotal(cashSaleBreakdownInput);
+  const cashSaleBreakdownAmount = Number(ledgerForm.amount || 0);
+  const cashSaleBreakdownMismatch = ledgerForm.type === "CASH_SALE"
+    && hasCashSaleBreakdown
+    && cashSaleBreakdownTotal !== cashSaleBreakdownAmount;
+  const cashSaleBreakdownMessage = cashSaleBreakdownMismatch
+    ? paymentBreakdownValidationMessage(cashSaleBreakdownInput, cashSaleBreakdownAmount)
+    : "";
 
   const computedSaleAmount = useMemo(() => {
     if (ledgerForm.type !== "CREDIT" || ledgerForm.saleType !== "RETAIL") return null;
@@ -2058,7 +2086,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-rose-600 text-slate-900 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CREDIT" })}
+                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CREDIT", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } })}
                           disabled={isSubmitting}
                         >
                           အကြွေးတိုး
@@ -2070,7 +2098,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-emerald-600 text-slate-900 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "DEBIT" })}
+                          onClick={() => setLedgerForm({ ...ledgerForm, type: "DEBIT", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } })}
                           disabled={isSubmitting}
                         >
                           ငွေချေ
@@ -2082,7 +2110,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-cyan-500 text-slate-950 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CASH_SALE", saleType: ledgerForm.type === "CASH_SALE" ? ledgerForm.saleType : "", paymentType: ledgerForm.paymentType || "CASH" })}
+                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CASH_SALE", saleType: ledgerForm.type === "CASH_SALE" ? ledgerForm.saleType : "", paymentType: ledgerForm.paymentType || "CASH", paymentBreakdown: ledgerForm.type === "CASH_SALE" ? ledgerForm.paymentBreakdown : { ...EMPTY_PAYMENT_BREAKDOWN } })}
                           disabled={isSubmitting}
                         >
                           လက်ငင်းရောင်း
@@ -2159,6 +2187,43 @@ export default function Dashboard({ view = "overview" }) {
                             </select>
                           </div>
 
+                          {ledgerForm.type === "CASH_SALE" && (
+                            <div className="space-y-3 rounded-xl border border-cyan-200 bg-cyan-50/60 p-3">
+                              <div>
+                                <p className="text-xs font-bold text-cyan-950">ငွေပေးချေမှု ခွဲထည့်ရန် (Optional)</p>
+                                <p className="mt-1 text-[11px] leading-4 text-cyan-800">ဥပမာ — ပမာဏ 100,000 Ks = Cash 60,000 + KPay 20,000 + Bank 20,000</p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                {PAYMENT_BREAKDOWN_FIELDS.map((field) => (
+                                  <label key={field.key} className="space-y-1">
+                                    <span className="block text-[11px] font-semibold text-cyan-950">{field.label}</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      inputMode="numeric"
+                                      placeholder="0"
+                                      value={cashSaleBreakdownInput[field.key]}
+                                      onChange={(event) => setLedgerForm({
+                                        ...ledgerForm,
+                                        paymentBreakdown: { ...cashSaleBreakdownInput, [field.key]: event.target.value },
+                                      })}
+                                      className="h-10 w-full rounded-lg border border-cyan-200 bg-white px-2.5 text-sm font-semibold text-slate-900 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20"
+                                      disabled={isSubmitting}
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              <div className="flex flex-col gap-1 rounded-lg border border-cyan-200 bg-white/80 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+                                <span className="font-semibold text-slate-700">ခွဲပေါင်း: {formatMoney(cashSaleBreakdownTotal)}</span>
+                                <span className="font-semibold text-slate-700">ပမာဏ: {formatMoney(cashSaleBreakdownAmount)}</span>
+                              </div>
+                              {cashSaleBreakdownMismatch ? (
+                                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold leading-5 text-rose-800" role="alert">{cashSaleBreakdownMessage} စာရင်းသိမ်း၍ မရပါ။</p>
+                              ) : hasCashSaleBreakdown ? (
+                                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">ခွဲပမာဏ စုစုပေါင်းသည် ပမာဏနှင့် ကိုက်ညီပါသည်။</p>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -2173,7 +2238,7 @@ export default function Dashboard({ view = "overview" }) {
 
                       <button 
                         className="w-full min-h-11 rounded-md bg-cyan-400 py-2.5 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed sm:min-h-12 sm:py-3"
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || cashSaleBreakdownMismatch}
                       >
                         {isSubmitting ? "သိမ်းဆည်းနေသည်..." : "စာရင်းသိမ်းမည်"}
                       </button>

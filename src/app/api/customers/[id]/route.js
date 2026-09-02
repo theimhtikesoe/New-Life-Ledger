@@ -30,6 +30,7 @@ const cashSaleSelect = {
   amount: true,
   note: true,
   paymentType: true,
+  paymentBreakdown: true,
   createdAt: true,
 };
 

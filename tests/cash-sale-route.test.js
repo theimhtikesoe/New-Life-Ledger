@@ -94,6 +94,20 @@ describe("CashSale route", () => {
     expect(mocks.customerUpdate).not.toHaveBeenCalled();
   });
 
+  it("rejects a mismatched payment breakdown before creating a cash sale", async () => {
+    const response = await POST(request({
+      amount: 100000,
+      paymentType: "CASH",
+      paymentBreakdown: { CASH: 60000, KPAY: 50000, BANK: 0, WAVE: 0, SPECIAL: 0 },
+      date: "2026-08-26",
+    }), { params: { id: customer.id } });
+    const body = await response.json();
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/မကိုက်ပါ/);
+    expect(mocks.cashSaleCreate).not.toHaveBeenCalled();
+    expect(mocks.writeAuditLog).not.toHaveBeenCalled();
+  });
+
   it("lists cash-sale records separately", async () => {
     mocks.cashSaleFindMany.mockResolvedValue([cashSale]);
     mocks.cashSaleCount.mockResolvedValue(1);
