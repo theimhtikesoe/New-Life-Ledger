@@ -369,6 +369,7 @@ export default function DailySummaryPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [aiExplanation, setAiExplanation] = useState(null);
+  const [aiExplanationOpen, setAiExplanationOpen] = useState(true);
   const [, setAiRefreshMessage] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [, setAiUsage] = useState(0);
@@ -416,6 +417,7 @@ export default function DailySummaryPage() {
   const paymentTotal = useMemo(() => paymentEntries.reduce((total, [, amount]) => total + Number(amount || 0), 0), [paymentEntries]);
   const cashPaymentEntries = useMemo(() => Object.entries(data?.summary?.cashPaymentTypes || {}), [data]);
   const cashSaleTypeEntries = useMemo(() => Object.entries(data?.summary?.cashSaleTypes || {}).filter(([, detail]) => Number(detail?.count || 0) > 0), [data]);
+  const cashSaleTypeTotal = useMemo(() => cashSaleTypeEntries.reduce((total, [, detail]) => ({ count: total.count + Number(detail?.count || 0), amount: total.amount + Number(detail?.amount || 0) }), { count: 0, amount: 0 }), [cashSaleTypeEntries]);
 
   const handleReconciliation = async () => {
     if (reconciliationOpen) {
@@ -443,6 +445,7 @@ export default function DailySummaryPage() {
     const actorName = localStorage.getItem("actorName") || "Staff";
     const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
     setAiExplanation(localExplanation);
+    setAiExplanationOpen(true);
     if (localExplanation) saveAiExplanationCache(date, localExplanation, actorName);
     setAiSource(localExplanation ? "browser" : "");
     setAiUsage(getDailyAiUsage(actorName, date));
@@ -609,7 +612,7 @@ export default function DailySummaryPage() {
           </div>
         </header>
 
-        {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} />}
+        {aiExplanation && <div className="rounded-2xl border border-violet-200 bg-violet-50/50 p-2 shadow-sm sm:p-3"><div className="flex items-center justify-between gap-3 px-1"><p className="text-sm font-bold text-violet-900 sm:text-base">AI ရှင်းပြချက်</p><button type="button" onClick={() => setAiExplanationOpen((open) => !open)} className="min-h-10 rounded-lg border border-violet-300 bg-white px-3 py-2 text-xs font-bold text-violet-800 shadow-sm transition hover:bg-violet-100 sm:text-sm">{aiExplanationOpen ? "AI ရှင်းပြချက် ဖျောက်မည်" : "AI ရှင်းပြချက် ပြမည်"}</button></div>{aiExplanationOpen && <div className="mt-2"><AiExplanationPanel explanation={aiExplanation} date={date} /></div>}</div>}
         {reconciliationOpen && <ReconciliationPanel reconciliation={reconciliation} loading={reconciliationLoading} error={reconciliationError} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}
@@ -638,7 +641,7 @@ export default function DailySummaryPage() {
                 <div className="mt-3 space-y-3">
                   {paymentEntries.length ? (
                     <section className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
-                      <p className="text-xs font-bold text-emerald-700 sm:text-sm">အကြွေးပြန်ဆပ်(ငွေချေ) အသေးစိတ်</p>
+                      <p className="text-base font-bold text-emerald-700 sm:text-lg">အကြွေးပြန်ဆပ်(ငွေချေ) အသေးစိတ်</p>
                       <p className="mt-1 text-xs leading-5 text-emerald-800">အောက်မှာရှိတဲ့ payment နည်းလမ်းတစ်ခုချင်းစီက Ledger မှာ ငွေချေပြီးသား မှတ်တမ်းတွေပါ။ လက်ငင်းရောင်းငွေ မပါဝင်ပါ။</p>
                       <div className="mt-2 space-y-1.5">
                         {paymentEntries.map(([type, amount]) => <div key={type} className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-3 py-2"><span className="text-sm font-semibold text-emerald-800 sm:text-base">{paymentMethodLabel(type)}</span><strong className="whitespace-nowrap text-base font-bold text-emerald-900 sm:text-lg">{formatMoney(amount)}</strong></div>)}
@@ -652,7 +655,7 @@ export default function DailySummaryPage() {
 
                   {cashPaymentEntries.length ? (
                     <section className="rounded-lg border border-cyan-200 bg-cyan-50/80 p-3">
-                      <p className="text-xs font-bold text-cyan-700 sm:text-sm">လက်ငင်း(လက်လီ၊လက်ကား) အသေးစိတ်</p>
+                      <p className="text-base font-bold text-cyan-700 sm:text-lg">လက်ငင်း(လက်လီ၊လက်ကား) အသေးစိတ်</p>
                       <p className="mt-1 text-xs leading-5 text-cyan-800">အောက်မှာရှိတဲ့ payment နည်းလမ်းတစ်ခုချင်းစီက Cash Sale မှာ ထည့်ထားတဲ့ လက်ငင်းရောင်းငွေထဲက ခွဲခြမ်းချက်ပါ။ Ledger စုစုပေါင်းနဲ့ မပေါင်းပါ။</p>
                       <div className="mt-2 space-y-1.5">
                         {cashPaymentEntries.map(([type, amount]) => <div key={`cash-${type}`} className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-3 py-2"><span className="text-sm font-semibold text-cyan-800 sm:text-base">{paymentMethodLabel(type)}</span><strong className="whitespace-nowrap text-base font-bold text-cyan-900 sm:text-lg">{formatMoney(amount)}</strong></div>)}
@@ -666,10 +669,14 @@ export default function DailySummaryPage() {
 
                   {cashSaleTypeEntries.length ? (
                     <section className="rounded-lg border border-violet-200 bg-violet-50/80 p-3">
-                      <p className="text-xs font-bold text-violet-700 sm:text-sm">လက်ငင်းရောင်းအား အမျိုးအစား ခွဲခြမ်းချက်</p>
+                      <p className="text-base font-bold text-violet-700 sm:text-lg">လက်ငင်း လက်လီ/လက်ကား ရောင်းအား</p>
                       <p className="mt-1 text-xs leading-5 text-violet-800">လက်ငင်းရောင်းငွေကို Customer အမျိုးအစားအလိုက် လက်လီ/လက်ကား ခွဲပြထားတာပါ။ ဒီအပိုင်းက payment နည်းလမ်း မဟုတ်ဘဲ ရောင်းအားအမျိုးအစား ဖြစ်ပါတယ်။</p>
                       <div className="mt-3 space-y-2.5">
                         {cashSaleTypeEntries.map(([type, detail]) => <div key={`cash-sale-type-${type}`} className={`flex items-center justify-between gap-3 rounded-md bg-white/80 px-3 py-2.5 ${type === "WHOLESALE" ? "text-amber-800" : "text-violet-800"}`}><span className="text-sm font-semibold sm:text-base">{cashSaleTypeLabel(type)}</span><strong className="whitespace-nowrap text-base font-bold sm:text-lg">{detail.count} ဦး / {formatMoney(detail.amount)}</strong></div>)}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-3 rounded-md bg-violet-100/90 px-3 py-2.5">
+                        <span className="text-sm font-bold text-violet-800 sm:text-base">စုစုပေါင်း</span>
+                        <strong className="whitespace-nowrap text-base font-bold text-violet-900 sm:text-lg">{cashSaleTypeTotal.count} ဦး / {formatMoney(cashSaleTypeTotal.amount)}</strong>
                       </div>
                     </section>
                   ) : null}
