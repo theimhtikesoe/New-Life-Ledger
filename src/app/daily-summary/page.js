@@ -638,30 +638,28 @@ export default function DailySummaryPage() {
                 <div className="mt-3 space-y-3">
                   {paymentEntries.length ? (
                     <section className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-bold text-emerald-700 sm:text-sm">Ledger ငွေချေမှု စုစုပေါင်း</p>
-                          <p className="mt-1 text-xs leading-5 text-emerald-800">ဒီပမာဏက Ledger မှာ ငွေချေပြီးသား မှတ်တမ်းများ၏ စုစုပေါင်းဖြစ်ပြီး အောက်က payment နည်းလမ်းများ၏ ပေါင်းလဒ်ပါ။ လက်ငင်းရောင်းငွေ မပါဝင်ပါ။</p>
-                        </div>
-                        <strong className="whitespace-nowrap text-base font-bold text-emerald-900 sm:text-lg">{formatMoney(paymentTotal)}</strong>
-                      </div>
+                      <p className="text-xs font-bold text-emerald-700 sm:text-sm">Ledger ငွေချေမှု အသေးစိတ်</p>
+                      <p className="mt-1 text-xs leading-5 text-emerald-800">အောက်မှာရှိတဲ့ payment နည်းလမ်းတစ်ခုချင်းစီက Ledger မှာ ငွေချေပြီးသား မှတ်တမ်းတွေပါ။ လက်ငင်းရောင်းငွေ မပါဝင်ပါ။</p>
                       <div className="mt-2 space-y-1.5">
                         {paymentEntries.map(([type, amount]) => <div key={type} className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-3 py-2"><span className="text-sm font-semibold text-emerald-800 sm:text-base">{paymentMethodLabel(type)}</span><strong className="whitespace-nowrap text-base font-bold text-emerald-900 sm:text-lg">{formatMoney(amount)}</strong></div>)}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-3 rounded-md bg-emerald-100/90 px-3 py-2.5">
+                        <span className="text-sm font-bold text-emerald-800 sm:text-base">Ledger ငွေချေမှု စုစုပေါင်း</span>
+                        <strong className="whitespace-nowrap text-base font-bold text-emerald-900 sm:text-lg">{formatMoney(paymentTotal)}</strong>
                       </div>
                     </section>
                   ) : <p className="text-[13px] text-slate-500 sm:text-sm">ဒီနေ့ Ledger ငွေချေမှု မရှိသေးပါ။</p>}
 
                   {cashPaymentEntries.length ? (
                     <section className="rounded-lg border border-cyan-200 bg-cyan-50/80 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-bold text-cyan-700 sm:text-sm">လက်ငင်းရောင်းငွေ စုစုပေါင်း (Cash Sales)</p>
-                          <p className="mt-1 text-xs leading-5 text-cyan-800">ဒီပမာဏက Cash Sale မှာ ထည့်ထားတဲ့ လက်ငင်းရောင်းငွေ စုစုပေါင်းပါ။ အောက်က payment နည်းလမ်းတွေက ဒီပမာဏအတွင်း ပါဝင်ပြီး အပေါ်က Ledger စုစုပေါင်းနဲ့ မပေါင်းပါ။</p>
-                        </div>
-                        <strong className="whitespace-nowrap text-sm font-bold text-cyan-900 sm:text-base">{formatMoney(data.summary.cashAmount)}</strong>
-                      </div>
+                      <p className="text-xs font-bold text-cyan-700 sm:text-sm">လက်ငင်းရောင်းငွေ အသေးစိတ် (Cash Sales)</p>
+                      <p className="mt-1 text-xs leading-5 text-cyan-800">အောက်မှာရှိတဲ့ payment နည်းလမ်းတစ်ခုချင်းစီက Cash Sale မှာ ထည့်ထားတဲ့ လက်ငင်းရောင်းငွေထဲက ခွဲခြမ်းချက်ပါ။ Ledger စုစုပေါင်းနဲ့ မပေါင်းပါ။</p>
                       <div className="mt-2 space-y-1.5">
                         {cashPaymentEntries.map(([type, amount]) => <div key={`cash-${type}`} className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-3 py-2"><span className="text-sm font-semibold text-cyan-800 sm:text-base">{paymentMethodLabel(type)}</span><strong className="whitespace-nowrap text-base font-bold text-cyan-900 sm:text-lg">{formatMoney(amount)}</strong></div>)}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between gap-3 rounded-md bg-cyan-100/90 px-3 py-2.5">
+                        <span className="text-sm font-bold text-cyan-800 sm:text-base">လက်ငင်းရောင်းငွေ စုစုပေါင်း</span>
+                        <strong className="whitespace-nowrap text-base font-bold text-cyan-900 sm:text-lg">{formatMoney(data.summary.cashAmount)}</strong>
                       </div>
                     </section>
                   ) : null}
