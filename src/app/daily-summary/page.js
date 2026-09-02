@@ -369,7 +369,7 @@ export default function DailySummaryPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [aiExplanation, setAiExplanation] = useState(null);
-  const [aiExplanationOpen, setAiExplanationOpen] = useState(true);
+  const [aiExplanationOpen, setAiExplanationOpen] = useState(false);
   const [, setAiRefreshMessage] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [, setAiUsage] = useState(0);
@@ -445,7 +445,7 @@ export default function DailySummaryPage() {
     const actorName = localStorage.getItem("actorName") || "Staff";
     const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
     setAiExplanation(localExplanation);
-    setAiExplanationOpen(true);
+    setAiExplanationOpen(false);
     if (localExplanation) saveAiExplanationCache(date, localExplanation, actorName);
     setAiSource(localExplanation ? "browser" : "");
     setAiUsage(getDailyAiUsage(actorName, date));
@@ -603,8 +603,8 @@ export default function DailySummaryPage() {
               </label>
               <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
                 <button type="button" onClick={handleReconciliation} disabled={loading || reconciliationLoading} className={`min-h-11 w-full rounded-lg border px-4 py-2 text-[13px] font-semibold shadow-sm transition active:scale-[0.98] disabled:opacity-60 sm:w-auto sm:text-sm ${reconciliationOpen ? "border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100" : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"}`}>{reconciliationLoading ? "ပြန်စစ်နေသည်..." : reconciliationOpen ? "ပြန်စစ်ရန် ပိတ်မည်" : "ပြန်စစ်ရန်"}</button>
-                <button type="button" onClick={() => handleAiExplain()} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
-                  {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanation ? "AI ရှင်းပြချက် ပြန်ကြည့်ရန်" : "AI ဖြင့် ရှင်းပြရန်"}
+                <button type="button" onClick={() => { if (aiExplanation) setAiExplanationOpen((open) => !open); else handleAiExplain(); }} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
+                  {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanationOpen ? "AI ရှင်းပြချက် ဖျောက်မည်" : "AI ရှင်းပြချက် ပြမည်"}
                 </button>
               </div>
 
@@ -612,7 +612,7 @@ export default function DailySummaryPage() {
           </div>
         </header>
 
-        {aiExplanation && <div className="rounded-2xl border border-violet-200 bg-violet-50/50 p-2 shadow-sm sm:p-3"><div className="flex items-center justify-between gap-3 px-1"><p className="text-sm font-bold text-violet-900 sm:text-base">AI ရှင်းပြချက်</p><button type="button" onClick={() => setAiExplanationOpen((open) => !open)} className="min-h-10 rounded-lg border border-violet-300 bg-white px-3 py-2 text-xs font-bold text-violet-800 shadow-sm transition hover:bg-violet-100 sm:text-sm">{aiExplanationOpen ? "AI ရှင်းပြချက် ဖျောက်မည်" : "AI ရှင်းပြချက် ပြမည်"}</button></div>{aiExplanationOpen && <div className="mt-2"><AiExplanationPanel explanation={aiExplanation} date={date} /></div>}</div>}
+        {aiExplanation && aiExplanationOpen && <AiExplanationPanel explanation={aiExplanation} date={date} />}
         {reconciliationOpen && <ReconciliationPanel reconciliation={reconciliation} loading={reconciliationLoading} error={reconciliationError} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}
