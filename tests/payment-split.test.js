@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPaymentSplit, paymentSplitForInput, paymentSplitTotal } from "@/lib/payment-split";
+import { getPaymentSplit, paymentSplitForInput, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
 
 describe("payment split", () => {
   it("parses a legacy mixed-payment note without changing the full total", () => {
@@ -22,6 +22,10 @@ describe("payment split", () => {
     expect(split.CASH).toBe(700000);
     expect(split.KPAY).toBe(515000);
     expect(paymentSplitTotal(split)).toBe(1215000);
+  });
+
+  it("formats each non-zero payment category for display", () => {
+    expect(paymentSplitLabel({ CASH: 60000, KPAY: 20000, BANK: 20000, WAVE: 0, SPECIAL: 0 })).toBe("CASH 60,000 Ks + KPAY 20,000 Ks + BANK 20,000 Ks");
   });
 
   it("rejects a breakdown that is larger than the main amount", () => {

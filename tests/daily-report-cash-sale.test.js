@@ -124,7 +124,7 @@ describe("Telegram daily report CashSale data", () => {
       }],
       periodLabel: "2026-08-25",
     }, "", "");
-    expect(html).toContain("<td class=\"activity-action\">လက်ငင်းရောင်း</td><td class=\"activity-entity\">လက်ငင်း Customer</td><td class=\"activity-amount\">50,000 Ks</td><td class=\"payment-cell\">CASH · လက်ကား</td>");
+    expect(html).toContain("<td class=\"activity-action\">လက်ငင်းရောင်း</td><td class=\"activity-entity\">လက်ငင်း Customer</td><td class=\"activity-amount\">50,000 Ks</td><td class=\"payment-cell\">CASH 50,000 Ks · လက်ကား</td>");
     expect(html).toContain(".summary-table .summary-amount{font-size:22px;font-weight:700");
     expect(html).toContain("Ledger ငွေချေမှုစုစုပေါင်း · Payment Total");
     expect(html).toContain("Ledger စုစုပေါင်း 1,155,000 Ks");
@@ -145,6 +145,40 @@ describe("Telegram daily report CashSale data", () => {
     expect(html).not.toContain("အသစ်မှတ်တမ်း");
   });
 
+  it("aggregates split cash-sale payments by category", async () => {
+    mocks.cashSaleFindMany.mockResolvedValue([{
+      ...cashSale,
+      amount: 100000,
+      paymentType: "MIXED",
+      paymentBreakdown: { CASH: 60000, KPAY: 20000, BANK: 20000, WAVE: 0, SPECIAL: 0 },
+    }]);
+    const report = await getDailyReportData(period);
+    expect(report.summary.cashPaymentTypes).toEqual({ CASH: 60000, KPAY: 20000, BANK: 20000 });
+  });
+
+  it("renders all split cash-sale categories in an Activity Payment cell", () => {
+    const html = createReportHtml({
+      summary: {},
+      customers: [],
+      activityLogs: [{
+        createdAt: cashSale.date,
+        actorName: "Staff",
+        action: "CASH_SALE",
+        entityType: "CashSale",
+        entityLabel: "ခွဲပေး Customer",
+        metadata: {
+          amount: 100000,
+          paymentType: "MIXED",
+          paymentBreakdown: { CASH: 60000, KPAY: 20000, BANK: 20000, WAVE: 0, SPECIAL: 0 },
+          saleType: "WHOLESALE",
+        },
+        eventSource: "audit",
+      }],
+      periodLabel: "2026-08-25",
+    }, "", "");
+    expect(html).toContain("CASH 60,000 Ks + KPAY 20,000 Ks + BANK 20,000 Ks · လက်ကား");
+  });
+
   it("keeps cash sales separate from debt totals and includes one activity event", async () => {
     const report = await getDailyReportData(period);
     expect(report.summary).toMatchObject({
@@ -154,7 +188,7 @@ describe("Telegram daily report CashSale data", () => {
       cashCount: 1,
       cashAmount: 50000,
       totalTransactions: 1,
-      cashPaymentTypes: { KPay: 50000 },
+      cashPaymentTypes: { KPAY: 50000 },
       cashSaleTypes: { RETAIL: { count: 0, amount: 0 }, WHOLESALE: { count: 1, amount: 50000 } },
     });
     expect(report.customers).toEqual(expect.arrayContaining([

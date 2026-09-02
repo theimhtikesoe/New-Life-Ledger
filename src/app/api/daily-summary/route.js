@@ -3,6 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
+import { getPaymentSplit } from "@/lib/payment-split";
 import { accountingAuditLogWhere } from "@/lib/accounting-activity";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,7 @@ export async function GET(request) {
           amount: true,
           note: true,
           paymentType: true,
+          paymentBreakdown: true,
           customer: { select: { id: true, name: true } },
         },
         orderBy: [{ date: "desc" }, { id: "desc" }],
@@ -150,8 +152,9 @@ export async function GET(request) {
         current.cashRetailCount += 1;
         current.cashRetailAmount += cashAmount;
       }
-      const paymentType = cashSale.paymentType || "CASH";
-      summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + Number(cashSale.amount || 0);
+      for (const [paymentType, paymentAmount] of Object.entries(getPaymentSplit(cashSale))) {
+        if (paymentAmount > 0) summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + paymentAmount;
+      }
       customerMap.set(cashSale.customer.id, current);
     }
 

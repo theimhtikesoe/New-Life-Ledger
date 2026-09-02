@@ -5,6 +5,7 @@ import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { buildDailySummaryReviewChecks } from "@/lib/daily-summary-review";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
 import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
+import { getPaymentSplit } from "@/lib/payment-split";
 
 const DEFAULT_MODEL = "gpt-5-mini";
 const MANUS_API_BASE = "https://api.manus.ai";
@@ -157,6 +158,7 @@ export async function getAiDailySummaryPayload(dateParam) {
         saleType: true,
         amount: true,
         paymentType: true,
+        paymentBreakdown: true,
         customer: { select: { name: true } },
       },
       orderBy: [{ date: "asc" }, { id: "asc" }],
@@ -256,8 +258,9 @@ export async function getAiDailySummaryPayload(dateParam) {
       current.cashRetailCount += 1;
       current.cashRetailAmount += amount;
     }
-    const paymentType = cashSale.paymentType || "CASH";
-    summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + amount;
+    for (const [paymentType, paymentAmount] of Object.entries(getPaymentSplit(cashSale))) {
+      if (paymentAmount > 0) summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + paymentAmount;
+    }
     customerMap.set(name, current);
   }
 

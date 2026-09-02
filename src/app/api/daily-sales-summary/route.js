@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { getPaymentSplit } from "@/lib/payment-split";
+import { getPaymentSplit, hasPaymentBreakdownInput } from "@/lib/payment-split";
 
 export const dynamic = "force-dynamic";
 
@@ -170,7 +170,7 @@ async function captureFutureSourceLinks(summaryId, date) {
     }),
     prisma.cashSale.findMany({
       where: { date: { gte: range.start, lt: range.end } },
-      select: { id: true, amount: true, paymentType: true, saleType: true },
+      select: { id: true, amount: true, paymentType: true, paymentBreakdown: true, saleType: true },
     }),
   ]);
   const links = [
@@ -186,7 +186,7 @@ async function captureFutureSourceLinks(summaryId, date) {
       sourceId: sale.id,
       contributionType: normalizeCashSaleType(sale.saleType) === "WHOLESALE" ? "WHOLESALE_TOTAL" : "RETAIL_TOTAL",
       amount: toAmount(sale.amount),
-      paymentType: sale.paymentType || CASH_PAYMENT_TYPE,
+      paymentType: hasPaymentBreakdownInput(sale.paymentBreakdown) ? "MIXED" : sale.paymentType || CASH_PAYMENT_TYPE,
     })),
   ];
   await Promise.all(links.map((link) => prisma.dailySalesSummarySource.upsert({

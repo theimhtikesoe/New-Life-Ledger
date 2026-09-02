@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { customerDefaultCashSaleType, normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
-import { paymentSplitForInput } from "@/lib/payment-split";
+import { hasPaymentBreakdownInput, paymentSplitForInput } from "@/lib/payment-split";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +72,8 @@ export async function POST(request, { params }) {
     const body = await request.json();
     const amount = parseAmount(body.amount);
     const paymentBreakdown = paymentSplitForInput(body, amount);
+    const hasBreakdown = hasPaymentBreakdownInput(body.paymentBreakdown);
+    const storedPaymentType = hasBreakdown ? "MIXED" : body.paymentType?.trim() || "CASH";
     const date = parseDate(body.date);
     const customer = await prisma.customer.findUnique({ where: { id: params.id }, select: { id: true, name: true, customerType: true, deletedAt: true } });
     if (!customer || customer.deletedAt) return NextResponse.json({ error: "Customer မတွေ့ပါ သို့မဟုတ် Recycle Bin ထဲ ရှိနေပါသည်။" }, { status: 404 });
@@ -88,7 +90,7 @@ export async function POST(request, { params }) {
           deductions: parseOptionalInteger(body.deductions) || 0,
           amount,
           note: body.note?.trim() || null,
-          paymentType: body.paymentType?.trim() || "CASH",
+          paymentType: storedPaymentType,
           paymentBreakdown,
           date,
         },

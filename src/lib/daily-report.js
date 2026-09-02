@@ -8,6 +8,7 @@ import { ensureDatabase } from "@/lib/database";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
 import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
+import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
 const REMOTE_CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
@@ -152,6 +153,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
         saleType: true,
         amount: true,
         paymentType: true,
+        paymentBreakdown: true,
         customer: { select: { id: true, name: true } },
       },
       orderBy: [{ date: "asc" }, { id: "asc" }],
@@ -220,8 +222,9 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
       current.cashRetailCount += 1;
       current.cashRetailAmount += cashAmount;
     }
-    const paymentType = cashSale.paymentType || "CASH";
-    summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + Number(cashSale.amount || 0);
+    for (const [paymentType, paymentAmount] of Object.entries(getPaymentSplit(cashSale))) {
+      if (paymentAmount > 0) summary.cashPaymentTypes[paymentType] = (summary.cashPaymentTypes[paymentType] || 0) + paymentAmount;
+    }
     customerMap.set(cashSale.customer.id, current);
   }
   const customers = Array.from(customerMap.values()).sort((a, b) =>
@@ -264,6 +267,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
     metadata: {
       amount: sale.amount,
       paymentType: sale.paymentType || "CASH",
+      paymentBreakdown: sale.paymentBreakdown || null,
       saleType: normalizeCashSaleType(sale.saleType),
       note: sale.note,
     },
@@ -335,7 +339,7 @@ export function createReportHtml(report, fontDataUri, latinDataUri) {
   const activityRows = logs.map((log) => {
     const metadata = log.metadata || {};
     const paymentDisplay = log.action === "CASH_SALE" && metadata.saleType
-      ? `${metadata.paymentType || "CASH"} · ${cashSaleTypeLabel(metadata.saleType)}`
+      ? `${paymentSplitLabel(getPaymentSplit(metadata)) || metadata.paymentType || "CASH"} · ${cashSaleTypeLabel(metadata.saleType)}`
       : metadata.paymentType || "";
     return `<tr class="${activityToneClass(log.action)}"><td class="activity-time">${esc(formatMyanmarDate(log.createdAt))}</td><td class="activity-actor">${esc(log.actorName || "")}</td><td class="activity-action">${esc(actionLabel(log.action))}</td><td class="activity-entity">${esc(log.entityLabel || log.entityType || "")}</td><td class="activity-amount">${esc(metadata.amount == null ? "" : amount(metadata.amount))}</td><td class="payment-cell">${esc(paymentDisplay)}</td><td class="activity-note">${esc(metadata.note || "")}</td></tr>`;
   }).join("");

@@ -82,6 +82,18 @@ describe("CashSale route", () => {
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ saleType: "WHOLESALE" }) }));
   });
 
+  it("stores MIXED when an exact payment breakdown is submitted", async () => {
+    const split = { CASH: 60000, KPAY: 20000, BANK: 20000, WAVE: 0, SPECIAL: 0 };
+    const mixed = { ...cashSale, amount: 100000, paymentType: "MIXED", paymentBreakdown: split };
+    mocks.cashSaleCreate.mockResolvedValue(mixed);
+    const response = await POST(request({ amount: 100000, paymentType: "BANK", paymentBreakdown: split, date: "2026-08-26" }), { params: { id: customer.id } });
+    const body = await response.json();
+    expect(response.status).toBe(201);
+    expect(body.data.cashSale.paymentType).toBe("MIXED");
+    expect(body.data.cashSale.paymentBreakdown).toEqual(split);
+    expect(mocks.cashSaleCreate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ paymentType: "MIXED", paymentBreakdown: split }) }));
+  });
+
   it("normalizes and records the explicit wholesale cash-sale type without touching balance", async () => {
     const wholesale = { ...cashSale, saleType: "WHOLESALE" };
     mocks.cashSaleCreate.mockResolvedValue(wholesale);

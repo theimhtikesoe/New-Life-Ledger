@@ -68,4 +68,25 @@ describe("Daily Summary activity count", () => {
       ] },
     ]));
   });
+
+  it("aggregates a cash-sale breakdown under each payment category", async () => {
+    mocks.ensureDatabase.mockResolvedValue(undefined);
+    mocks.auditFindMany.mockResolvedValue([]);
+    mocks.ledgerFindMany.mockResolvedValue([]);
+    mocks.cashSaleFindMany.mockResolvedValue([{
+      id: "cash-sale-split",
+      date: new Date("2026-08-25T09:00:00.000Z"),
+      saleType: "WHOLESALE",
+      amount: 100000,
+      note: null,
+      paymentType: "MIXED",
+      paymentBreakdown: { CASH: 60000, KPAY: 20000, BANK: 20000, WAVE: 0, SPECIAL: 0 },
+      customer: { id: "customer-split", name: "ခွဲပေး Customer" },
+    }]);
+
+    const response = await GET(request());
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.data.summary.cashPaymentTypes).toEqual({ CASH: 60000, KPAY: 20000, BANK: 20000 });
+  });
 });

@@ -8,7 +8,7 @@ import OverdueNotificationBell from "./OverdueNotificationBell";
 import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-utils";
-import { hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitTotal } from "@/lib/payment-split";
+import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
@@ -1011,7 +1011,7 @@ export default function Dashboard({ view = "overview" }) {
           deductions: Number(ledgerForm.deductions || 0),
           amount: Number(ledgerForm.amount),
           note: ledgerForm.note,
-          paymentType: ledgerForm.paymentType || (isCashSale ? "CASH" : null),
+          paymentType: hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType || (isCashSale ? "CASH" : null),
           paymentBreakdown: hasCashSaleBreakdown ? ledgerForm.paymentBreakdown : undefined,
           date: ledgerForm.date || null,
         }),
@@ -1123,6 +1123,9 @@ export default function Dashboard({ view = "overview" }) {
           : "Transaction ကို ဖျက်ပြီးပါပြီ။",
         "success",
       );
+      setShowPinModal(false);
+      setPinValue("");
+      setPinError("");
       setDeletingTransaction(null);
     } catch (error) {
       showAlert(error.message, "error");
@@ -1147,9 +1150,10 @@ export default function Dashboard({ view = "overview" }) {
       setPinValue("");
       setMessage("");
       setDataLoadError("");
-      await loadDashboard();
       if (deletingTransaction) {
         await deleteTransaction(deletingTransaction);
+      } else {
+        await loadDashboard();
       }
     } catch (error) {
       setPinError(error.message || "PIN code မှားနေပါသည်။");
@@ -2173,12 +2177,16 @@ export default function Dashboard({ view = "overview" }) {
                         <div className="space-y-3">
                           <div className="space-y-1">
                             <label className="text-xs text-slate-700 font-medium">{ledgerForm.type === "CASH_SALE" ? "လက်ငင်းငွေပေးချေမှုပုံစံ" : "ငွေပေးချေမှုပုံစံ"}</label>
+                            {ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown ? (
+                              <p className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-[11px] leading-4 text-cyan-800">အောက်မှာ Payment ခွဲထည့်ထားသောကြောင့် အပေါ်က တစ်မျိုးတည်းရွေးရန် မလိုပါ။ Breakdown အတိုင်း data သိမ်းမည်။</p>
+                            ) : null}
                             <select
-                              className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 py-2 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
-                              value={ledgerForm.paymentType}
+                              className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 py-2 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+                              value={ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType}
                               onChange={(e) => setLedgerForm({ ...ledgerForm, paymentType: e.target.value })}
-                              disabled={isSubmitting}
+                              disabled={isSubmitting || (ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown)}
                             >
+                              {ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown ? <option value="MIXED">Breakdown အတိုင်း ခွဲထားသည်</option> : null}
                               <option value="">Select Payment Type</option>
                               <option value="CASH">Cash</option>
                               <option value="KPAY">KPay</option>
@@ -2274,7 +2282,7 @@ export default function Dashboard({ view = "overview" }) {
                       </div>
                       <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CASH_SALE" ? "text-cyan-600" : ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
                       <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[11px]">
-                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.type === "CASH_SALE" ? `${ledger.paymentType || "CASH"} · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.paymentType || "-"}</p></div>
+                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.type === "CASH_SALE" ? `${paymentSplitLabel(getPaymentSplit(ledger)) || ledger.paymentType || "CASH"} · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.paymentType || "-"}</p></div>
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
                       </div>
                       <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
@@ -2321,7 +2329,7 @@ export default function Dashboard({ view = "overview" }) {
                                 {formatMoney(ledger.amount)}
                               </td>
                               <td className="px-4 py-3 text-xs text-slate-600">
-                                {ledger.paymentType || "-"}
+                                {ledger.type === "CASH_SALE" ? (paymentSplitLabel(getPaymentSplit(ledger)) || ledger.paymentType || "CASH") : ledger.paymentType || "-"}
                               </td>
                               <td className="px-4 py-3 text-xs text-slate-600 max-w-[200px] truncate">
                                 {ledger.note || "-"}

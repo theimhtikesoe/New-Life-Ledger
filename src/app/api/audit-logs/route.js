@@ -68,6 +68,7 @@ export async function GET(request) {
               amount: true,
               note: true,
               paymentType: true,
+              paymentBreakdown: true,
               customer: { select: { id: true, name: true } },
             },
             orderBy: [{ date: "desc" }, { id: "desc" }],
@@ -81,7 +82,7 @@ export async function GET(request) {
       .filter((log) => log.entityType === "CashSale" && log.entityId)
       .map((log) => String(log.entityId));
     const cashSaleRows = cashSaleIds.length
-      ? await prisma.cashSale.findMany({ where: { id: { in: cashSaleIds } }, select: { id: true, saleType: true, amount: true, paymentType: true } })
+      ? await prisma.cashSale.findMany({ where: { id: { in: cashSaleIds } }, select: { id: true, saleType: true, amount: true, paymentType: true, paymentBreakdown: true } })
       : [];
     const cashSaleById = new Map(cashSaleRows.map((sale) => [String(sale.id), sale]));
     const auditedLedgerIds = new Set(
@@ -131,6 +132,7 @@ export async function GET(request) {
           ...(log.metadata && typeof log.metadata === "object" ? log.metadata : {}),
           amount: cashSale.amount,
           paymentType: cashSale.paymentType || "CASH",
+          paymentBreakdown: cashSale.paymentBreakdown || null,
           saleType: normalizeCashSaleType(cashSale.saleType),
         },
       };

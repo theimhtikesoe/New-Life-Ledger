@@ -1,4 +1,5 @@
 const PAYMENT_KEYS = ["CASH", "KPAY", "BANK", "WAVE", "SPECIAL"];
+const PAYMENT_LABELS = { CASH: "CASH", KPAY: "KPAY", BANK: "BANK", WAVE: "WAVE", SPECIAL: "SPECIAL" };
 
 function toAmount(value) {
   const amount = Math.round(Number(value || 0));
@@ -105,6 +106,14 @@ export function paymentSplitForInput(body, amount) {
 
 export function nonCashAmount(split) {
   return PAYMENT_KEYS.filter((key) => key !== "CASH").reduce((sum, key) => sum + toAmount(split?.[key]), 0);
+}
+
+export function paymentSplitLabel(row) {
+  return PAYMENT_KEYS
+    .map((key) => [key, toAmount(row?.[key])])
+    .filter(([, amount]) => amount > 0)
+    .map(([key, amount]) => `${PAYMENT_LABELS[key]} ${amount.toLocaleString()} Ks`)
+    .join(" + ");
 }
 
 export const PAYMENT_SPLIT_KEYS = PAYMENT_KEYS;
