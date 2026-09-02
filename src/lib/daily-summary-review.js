@@ -45,7 +45,7 @@ export function buildDailySummaryReviewChecks({ totalTransactions = 0, events = 
   const paymentTypes = summary?.paymentTypes && typeof summary.paymentTypes === "object" ? Object.values(summary.paymentTypes).reduce((sum, amount) => sum + Math.round(Number(amount || 0)), 0) : null;
   const paidAmount = Number(summary?.paidAmount ?? 0);
   if (paymentTypes !== null && paymentTypes !== paidAmount) {
-    checks.push(`Ledger ငွေချေမှု စုစုပေါင်း ${formatAmount(paidAmount)} Ks နှင့် payment နည်းလမ်းများ၏ ပေါင်းလဒ် ${formatAmount(paymentTypes)} Ks မကိုက်ပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။`);
+    checks.push(`အကြွေးပြန်ဆပ်(ငွေချေ) စုစုပေါင်း ${formatAmount(paidAmount)} Ks နှင့် payment နည်းလမ်းများ၏ ပေါင်းလဒ် ${formatAmount(paymentTypes)} Ks မကိုက်ပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။`);
   }
 
   const customerRows = Array.isArray(customers) ? customers : [];

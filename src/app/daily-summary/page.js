@@ -644,7 +644,7 @@ export default function DailySummaryPage() {
                         {paymentEntries.map(([type, amount]) => <div key={type} className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-3 py-2"><span className="text-sm font-semibold text-emerald-800 sm:text-base">{paymentMethodLabel(type)}</span><strong className="whitespace-nowrap text-base font-bold text-emerald-900 sm:text-lg">{formatMoney(amount)}</strong></div>)}
                       </div>
                       <div className="mt-2 flex items-center justify-between gap-3 rounded-md bg-emerald-100/90 px-3 py-2.5">
-                        <span className="text-sm font-bold text-emerald-800 sm:text-base">Ledger ငွေချေမှု စုစုပေါင်း</span>
+                        <span className="text-sm font-bold text-emerald-800 sm:text-base">အကြွေးပြန်ဆပ်(ငွေချေ) စုစုပေါင်း</span>
                         <strong className="whitespace-nowrap text-base font-bold text-emerald-900 sm:text-lg">{formatMoney(paymentTotal)}</strong>
                       </div>
                     </section>
@@ -658,7 +658,7 @@ export default function DailySummaryPage() {
                         {cashPaymentEntries.map(([type, amount]) => <div key={`cash-${type}`} className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-3 py-2"><span className="text-sm font-semibold text-cyan-800 sm:text-base">{paymentMethodLabel(type)}</span><strong className="whitespace-nowrap text-base font-bold text-cyan-900 sm:text-lg">{formatMoney(amount)}</strong></div>)}
                       </div>
                       <div className="mt-2 flex items-center justify-between gap-3 rounded-md bg-cyan-100/90 px-3 py-2.5">
-                        <span className="text-sm font-bold text-cyan-800 sm:text-base">လက်ငင်းရောင်းငွေ စုစုပေါင်း</span>
+                        <span className="text-sm font-bold text-cyan-800 sm:text-base">လက်ငင်း(လက်လီ၊လက်ကား) စုစုပေါင်း</span>
                         <strong className="whitespace-nowrap text-base font-bold text-cyan-900 sm:text-lg">{formatMoney(data.summary.cashAmount)}</strong>
                       </div>
                     </section>
