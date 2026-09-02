@@ -12,7 +12,7 @@ export async function GET() {
   try {
     await ensureDatabase();
 
-    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns] = await Promise.all([
+    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings] = await Promise.all([
       prisma.customer.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -20,6 +20,7 @@ export async function GET() {
           name: true,
           phone: true,
           routeTag: true,
+          customerType: true,
           current_balance: true,
           createdAt: true,
           deletedAt: true,
@@ -92,6 +93,8 @@ export async function GET() {
           entityLabel: true,
           summary: true,
           metadata: true,
+          hiddenAt: true,
+          hiddenBy: true,
           createdAt: true,
         },
       }),
@@ -101,6 +104,11 @@ export async function GET() {
       prisma.orderDelivery.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       prisma.orderAutomationSetting.findUnique({ where: { id: 1 } }),
       prisma.orderBatchRun.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      prisma.aiExplanationCache.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      prisma.autoReportRun.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      prisma.dailySalesSummary.findMany({ orderBy: [{ date: "asc" }, { id: "asc" }] }),
+      prisma.dailySalesSummarySource.findMany({ orderBy: [{ linkedAt: "asc" }, { id: "asc" }] }),
+      prisma.dailySalesOpening.findMany({ orderBy: [{ month: "asc" }, { id: "asc" }] }),
     ]);
 
     const ledgerTotals = new Map();
@@ -131,7 +139,7 @@ export async function GET() {
     return NextResponse.json({
       data: {
         format: "new-life-ledger-backup",
-        version: 5,
+        version: 6,
         generatedAt: new Date().toISOString(),
         counts: {
           customers: customers.length,
@@ -145,6 +153,12 @@ export async function GET() {
           orderCaps: orderCaps.length,
           orderDeliveries: orderDeliveries.length,
           orderBatchRuns: orderBatchRuns.length,
+          orderAutomationSetting: orderAutomationSetting ? 1 : 0,
+          aiExplanationCaches: aiExplanationCaches.length,
+          autoReportRuns: autoReportRuns.length,
+          dailySalesSummaries: dailySalesSummaries.length,
+          dailySalesSummarySources: dailySalesSummarySources.length,
+          dailySalesOpenings: dailySalesOpenings.length,
         },
         integrity: {
           algorithm: "Customer.current_balance = sum(CREDIT amounts) - sum(DEBIT amounts)",
@@ -168,6 +182,11 @@ export async function GET() {
         orderDeliveries,
         orderAutomationSetting,
         orderBatchRuns,
+        aiExplanationCaches,
+        autoReportRuns,
+        dailySalesSummaries,
+        dailySalesSummarySources,
+        dailySalesOpenings,
       },
     });
   } catch (error) {

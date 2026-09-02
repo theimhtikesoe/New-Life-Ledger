@@ -13,9 +13,15 @@ describe("Daily Summary customer amount layout", () => {
     expect(source).toContain('className="block whitespace-nowrap">လက်ကား');
     expect(source).toContain("text-[clamp(0.72rem,3.6vw,1rem)]");
     expect(source).toContain("const paymentTotal = useMemo");
-    expect(source).toContain("Ledger ငွေချေမှုစုစုပေါင်း · Payment Total");
-    expect(source).toContain("အောက်က Ledger payment အမျိုးအစားများကိုသာ ပေါင်းထားတာဖြစ်ပြီး လက်ငင်းရောင်းရငွေ မပါဝင်ပါ။");
-    expect(source).toContain("ဒီအောက်က CASH / KPAY တွေက လက်ငင်းရောင်းရငွေ စုစုပေါင်းရဲ့ ခွဲခြမ်းချက်ဖြစ်ပြီး အပေါ်က Ledger Payment Total ထဲ မပါဝင်ပါ။");
+    expect(source).toContain("ငွေချေမှုနှင့် လက်ငင်းရောင်း စာရင်းရှင်းလင်းချက်");
+    expect(source).toContain("Ledger ငွေချေမှု စုစုပေါင်း");
+    expect(source).toContain("ဒီပမာဏက Ledger မှာ ငွေချေပြီးသား မှတ်တမ်းများ၏ စုစုပေါင်းဖြစ်ပြီး အောက်က payment နည်းလမ်းများ၏ ပေါင်းလဒ်ပါ။ လက်ငင်းရောင်းငွေ မပါဝင်ပါ။");
+    expect(source).toContain("လက်ငင်းရောင်းငွေ စုစုပေါင်း (Cash Sales)");
+    expect(source).toContain("အပေါ်က Ledger စုစုပေါင်းနဲ့ မပေါင်းပါ");
+    expect(source).toContain("လက်ငင်းရောင်းအား အမျိုးအစား ခွဲခြမ်းချက်");
+    expect(source).toContain("ဒီအပိုင်းက payment နည်းလမ်း မဟုတ်ဘဲ ရောင်းအားအမျိုးအစား ဖြစ်ပါတယ်။");
+    expect(source).toContain("function paymentMethodLabel");
+    expect(source).not.toContain(">Payment Type</h2>");
     expect(source).toContain("text-[clamp(0.72rem,3.6vw,1rem)]");
     expect(source).toContain("mt-3 space-y-2.5");
   });

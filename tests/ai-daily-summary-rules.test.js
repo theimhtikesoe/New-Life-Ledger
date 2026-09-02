@@ -50,7 +50,7 @@ describe("Daily Summary automatic review rules", () => {
       customers: [],
       events: [],
     });
-    expect(checks.some((check) => check.includes("Payment Type") && check.includes("မကိုက်ပါ"))).toBe(true);
+    expect(checks.some((check) => check.includes("Ledger ငွေချေမှု စုစုပေါင်း") && check.includes("မကိုက်ပါ"))).toBe(true);
   });
 
   it("flags duplicate customer display names with different customer ids", () => {

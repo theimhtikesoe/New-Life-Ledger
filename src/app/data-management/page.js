@@ -28,6 +28,12 @@ function downloadBackup(data) {
     ["orderCaps", counts.orderCaps || 0],
     ["orderDeliveries", counts.orderDeliveries || 0],
     ["orderBatchRuns", counts.orderBatchRuns || 0],
+    ["orderAutomationSetting", counts.orderAutomationSetting || 0],
+    ["aiExplanationCaches", counts.aiExplanationCaches || 0],
+    ["autoReportRuns", counts.autoReportRuns || 0],
+    ["dailySalesSummaries", counts.dailySalesSummaries || 0],
+    ["dailySalesSummarySources", counts.dailySalesSummarySources || 0],
+    ["dailySalesOpenings", counts.dailySalesOpenings || 0],
   ];
   const customers = (data.customers || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), deletedAt: iso(item.deletedAt) }));
   const transactions = (data.transactions || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
@@ -41,6 +47,11 @@ function downloadBackup(data) {
   const orderDeliveries = (data.orderDeliveries || []).map((item) => ({ ...item, sentAt: iso(item.sentAt), createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt) }));
   const orderAutomationSetting = data.orderAutomationSetting ? [{ ...data.orderAutomationSetting, updatedAt: iso(data.orderAutomationSetting.updatedAt) }] : [];
   const orderBatchRuns = (data.orderBatchRuns || []).map((item) => ({ ...item, sentAt: iso(item.sentAt), createdAt: iso(item.createdAt) }));
+  const aiExplanationCaches = (data.aiExplanationCaches || []).map((item) => ({ ...item, explanation: item.explanation ? JSON.stringify(item.explanation) : "", createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt) }));
+  const autoReportRuns = (data.autoReportRuns || []).map((item) => ({ ...item, counts: item.counts ? JSON.stringify(item.counts) : "", manualNoticeClaimedAt: iso(item.manualNoticeClaimedAt), manualNoticeSentAt: iso(item.manualNoticeSentAt), createdAt: iso(item.createdAt) }));
+  const dailySalesSummaries = (data.dailySalesSummaries || []).map((item) => ({ ...item, enteredAt: iso(item.enteredAt), sourceSnapshotAt: iso(item.sourceSnapshotAt), lastCalculatedAt: iso(item.lastCalculatedAt), createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt) }));
+  const dailySalesSummarySources = (data.dailySalesSummarySources || []).map((item) => ({ ...item, linkedAt: iso(item.linkedAt) }));
+  const dailySalesOpenings = (data.dailySalesOpenings || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt) }));
   const integrityRows = Object.entries(data.integrity || {}).map(([key, value]) => [key, typeof value === "object" ? JSON.stringify(value) : value ?? ""]);
 
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(infoRows), "Backup Info");
@@ -56,6 +67,11 @@ function downloadBackup(data) {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderDeliveries), "Order Deliveries");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderAutomationSetting), "Order Automation");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(orderBatchRuns), "Order Batch Runs");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(aiExplanationCaches), "AI Explanation Cache");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(autoReportRuns), "Auto Report Runs");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(dailySalesSummaries), "Daily Summaries");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(dailySalesSummarySources), "Summary Sources");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(dailySalesOpenings), "Daily Openings");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["key", "value"], ...integrityRows]), "Integrity");
   workbook.Workbook = { Props: { Title: "New Life Ledger Backup", Subject: "Official restore backup with all entities and integrity checks" } };
   XLSX.writeFile(workbook, `New-Life-Ledger-Backup-v${data.version || 2}-${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -185,7 +201,7 @@ export default function DataManagementPage() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Backup export မအောင်မြင်ပါ။");
       downloadBackup(body.data);
-      setMessage(`Backup export အောင်မြင်ပါပြီ။ Customers ${body.data.counts.customers}၊ Transactions ${body.data.counts.transactions}၊ Cash Sales ${body.data.counts.cashSales || 0}၊ KPay Alias ${body.data.counts.kpayAliases}၊ Pending KPay ${body.data.counts.unverifiedKpay}၊ Audit ${body.data.counts.auditLogs} ခု ပါဝင်ပြီး balance mismatch ${body.data.integrity.balanceMismatchCount} ခု ဖြစ်ပါတယ်။`);
+      setMessage(`Backup export အောင်မြင်ပါပြီ။ Customers ${body.data.counts.customers}၊ Transactions ${body.data.counts.transactions}၊ Cash Sales ${body.data.counts.cashSales || 0}၊ KPay Alias ${body.data.counts.kpayAliases}၊ Pending KPay ${body.data.counts.unverifiedKpay}၊ Audit ${body.data.counts.auditLogs}၊ Daily Summary ${body.data.counts.dailySalesSummaries || 0}၊ Opening ${body.data.counts.dailySalesOpenings || 0} ခု ပါဝင်ပြီး balance mismatch ${body.data.integrity.balanceMismatchCount} ခု ဖြစ်ပါတယ်။`);
     } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
 
@@ -225,7 +241,7 @@ export default function DataManagementPage() {
         {error && <pre className="whitespace-pre-wrap rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</pre>}
 
         <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Data အားလုံး Export</h2><p className="mt-2 text-sm text-slate-600">Customers၊ Transactions၊ KPay Alias၊ Pending KPay၊ Activity History နှင့် Integrity စစ်ဆေးချက်များအားလုံးပါသော official Excel backup ကို download လုပ်ပါ။</p><button type="button" onClick={handleBackupExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "Backup Excel Download"}</button></div>
+          <div className="rounded-xl border border-emerald-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Data အားလုံး Export</h2><p className="mt-2 text-sm text-slate-600">Customers၊ Transactions၊ Cash Sales၊ KPay Alias၊ Pending KPay၊ Activity History၊ Orders၊ Daily Summary၊ Opening၊ AI cache နှင့် Integrity စစ်ဆေးချက်များအားလုံးပါသော official Excel backup ကို download လုပ်ပါ။</p><button type="button" onClick={handleBackupExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "Backup Excel Download"}</button></div>
           <div className="rounded-xl border border-blue-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold text-slate-900">Backup Restore</h2><p className="mt-2 text-sm text-slate-600">ဒီ website က ထုတ်ထားသော `New-Life-Ledger-Backup-*.xlsx` ဖိုင်ကိုသာ ပြန်တင်ပါ။ အရင်ဆုံး preview စစ်ပြီးမှ confirm restore လုပ်ရပါမယ်။</p><input type="file" accept=".xlsx,.xls" onChange={(e) => { setFile(e.target.files?.[0] || null); setPreview(null); setResult(null); setError(""); }} className="mt-4 block w-full rounded-lg border border-slate-300 bg-white p-2 text-sm" /><button type="button" onClick={handlePreview} disabled={!file || loading} className="mt-3 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-slate-400">Preview Restore</button></div>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm md:col-span-2"><h2 className="text-lg font-semibold text-emerald-900">📊 Report Excel</h2><p className="mt-2 text-sm text-emerald-800">Customer တစ်ယောက်ချင်းစီ၏ လက်ကျန်နှင့် ငွေချေ/အကြွေးတိုးစာရင်းများကို Excel ဖိုင်အဖြစ် ထုတ်ယူပါ။</p><button type="button" onClick={handleReportExport} disabled={loading} className="mt-5 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400">{loading ? "လုပ်ဆောင်နေသည်..." : "📊 Report Excel ထုတ်ရန်"}</button></div>
         </section>

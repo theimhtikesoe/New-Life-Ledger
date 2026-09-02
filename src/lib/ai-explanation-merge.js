@@ -16,6 +16,7 @@ function normalizeExplanationText(value) {
 
 function dedupeRepeatedSentences(value) {
   const seen = new Set();
+  const seenGenericDateSummaries = new Set();
   return cleanAiText(value)
     .split(/\n+|(?<=[။.!！?？])\s+/u)
     .map((part) => part.trim())
@@ -24,6 +25,20 @@ function dedupeRepeatedSentences(value) {
       const key = normalizeExplanationText(part);
       if (seen.has(key)) return false;
       seen.add(key);
+
+      // AI and code-first summaries sometimes repeat the same date-prefixed
+      // boilerplate with slightly different wording (for example, using both
+      // "အကျဉ်းချုပ်" and "အလိုအလျောက်"). Keep one such sentence while
+      // preserving later sentences that contain actual findings.
+      const date = part.match(/\b\d{4}-\d{2}-\d{2}\b/)?.[0];
+      const isGenericDateSummary = Boolean(date)
+        && /အတွက်/u.test(part)
+        && /စာရင်းအချက်အလက်|အနှစ်ချုပ်|အလိုအလျောက်/u.test(part)
+        && !/ငွေ|အကြွေး|လက်ငင်း|Customer|ဖောက်သည်|Payment|Ledger/iu.test(part);
+      if (isGenericDateSummary) {
+        if (seenGenericDateSummaries.has(date)) return false;
+        seenGenericDateSummaries.add(date);
+      }
       return true;
     })
     .join(" ");
@@ -66,5 +81,9 @@ export function mergeOverviewText(codeOverview, aiOverview) {
     return remaining || code;
   }
   if (normalizedCode.includes(normalizedAi)) return code;
-  return `${code}\n\nAI ထပ်ဖြည့်ရှင်းချက် — ${ai}`;
+  // The page already renders a single overview slot. Keeping both paragraphs here
+  // makes code-first and provider summaries look like duplicate explanations,
+  // especially when the provider uses different wording for the same day.
+  // Detailed differences remain available through findings and checks.
+  return ai;
 }

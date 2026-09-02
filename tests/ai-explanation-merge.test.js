@@ -28,6 +28,16 @@ describe("AI explanation deduplication", () => {
     expect(mergeOverviewText(code, ai)).toBe("လက်ငင်းရောင်းနှင့် ငွေချေမှုများကို သီးခြားစစ်ဆေးထားပါသည်။");
   });
 
+  it("removes differently worded duplicate date summaries from one overview", () => {
+    const cleaned = sanitizeExplanation({
+      overview: "2026-09-02 အတွက် စာရင်းအချက်အလက်ကို အကျဉ်းချုပ်ပြထားပါသည်။ 2026-09-02 အတွက် စာရင်းအချက်အလက်ကို အလိုအလျောက် အကျဉ်းချုပ်ပြထားပါသည်။",
+      findings: [],
+      checks: [],
+      caution: "",
+    });
+    expect(cleaned.overview).toBe("2026-09-02 အတွက် စာရင်းအချက်အလက်ကို အကျဉ်းချုပ်ပြထားပါသည်။");
+  });
+
   it("deduplicates repeated findings and checks ignoring final punctuation", () => {
     expect(normalizeAiItems(["စာရင်းရှိပါသည်။", "စာရင်းရှိပါသည်", "အသစ်တွေ့ရှိချက်"])).toEqual([
       "စာရင်းရှိပါသည်။",
