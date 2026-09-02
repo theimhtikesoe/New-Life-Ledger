@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureDatabase } from "@/lib/database";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
+import { getPaymentSplit } from "@/lib/payment-split";
 import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 
@@ -121,6 +122,73 @@ function summarizeLedgers(ledgers) {
       (a, b) => b.paidAmount + b.debtAmount - (a.paidAmount + a.debtAmount),
     ),
   };
+}
+
+function summarizeDailySalesRows(cashSales = [], ledgers = []) {
+  const result = { retailTotal: 0, wholesaleTotal: 0, retailCash: 0, wholesaleCash: 0, paymentTypes: {} };
+  for (const sale of cashSales) {
+    const saleAmount = Number(sale.amount || 0);
+    const split = getPaymentSplit(sale);
+    const saleType = normalizeCashSaleType(sale.saleType);
+    if (saleType === "WHOLESALE") {
+      result.wholesaleTotal += saleAmount;
+      result.wholesaleCash += Number(split.CASH || 0);
+    } else {
+      result.retailTotal += saleAmount;
+      result.retailCash += Number(split.CASH || 0);
+    }
+    for (const [type, value] of Object.entries(split)) result.paymentTypes[type] = (result.paymentTypes[type] || 0) + Number(value || 0);
+  }
+  for (const ledger of ledgers) {
+    if (String(ledger.type || "").toUpperCase() !== "DEBIT") continue;
+    const ledgerAmount = Number(ledger.amount || 0);
+    const split = getPaymentSplit(ledger);
+    result.wholesaleTotal += ledgerAmount;
+    result.wholesaleCash += Number(split.CASH || 0);
+    for (const [type, value] of Object.entries(split)) result.paymentTypes[type] = (result.paymentTypes[type] || 0) + Number(value || 0);
+  }
+  return {
+    ...result,
+    dailyTotal: result.retailTotal + result.wholesaleTotal,
+    cashDailyTotal: result.retailCash + result.wholesaleCash,
+  };
+}
+
+export async function getDailySalesSummaryCardData(dateLabel) {
+  const { start, end } = getMyanmarDayRange(dateLabel);
+  const month = dateLabel.slice(0, 7);
+  const monthStart = getMyanmarDayRange(`${month}-01`).start;
+  await ensureDatabase();
+  const [cashSales, ledgers, opening] = await Promise.all([
+    prisma.cashSale.findMany({
+      where: { date: { gte: monthStart, lt: end } },
+      select: { date: true, amount: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
+    }),
+    prisma.ledger.findMany({
+      where: { date: { gte: monthStart, lt: end } },
+      select: { date: true, amount: true, type: true, paymentType: true, note: true },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
+    }),
+    prisma.dailySalesOpening?.findUnique ? prisma.dailySalesOpening.findUnique({ where: { month } }) : Promise.resolve(null),
+  ]);
+  const cashByDate = new Map();
+  const ledgerByDate = new Map();
+  for (const sale of cashSales) {
+    const key = new Intl.DateTimeFormat("en-CA", { timeZone: MYANMAR_TIME_ZONE }).format(new Date(sale.date));
+    cashByDate.set(key, [...(cashByDate.get(key) || []), sale]);
+  }
+  for (const ledger of ledgers) {
+    const key = new Intl.DateTimeFormat("en-CA", { timeZone: MYANMAR_TIME_ZONE }).format(new Date(ledger.date));
+    ledgerByDate.set(key, [...(ledgerByDate.get(key) || []), ledger]);
+  }
+  const dates = [...new Set([...cashByDate.keys(), ...ledgerByDate.keys()])].sort();
+  const rows = dates.map((date) => ({ date, ...summarizeDailySalesRows(cashByDate.get(date) || [], ledgerByDate.get(date) || []) }));
+  const openingAmount = Number(opening?.amount || 0);
+  const openingAsOfDate = opening?.asOfDate || "";
+  const monthlyTotal = openingAmount + rows.filter((row) => (!openingAsOfDate || row.date > openingAsOfDate) && row.date <= dateLabel).reduce((sum, row) => sum + row.dailyTotal, 0);
+  const current = rows.find((row) => row.date === dateLabel) || summarizeDailySalesRows([], []);
+  return { dateLabel, opening: openingAmount, ...current, monthlyTotal };
 }
 
 export async function getDailyReportData({ start, end, dateLabel } = getPreviousMyanmarDayRange()) {
@@ -353,6 +421,21 @@ export function createReportHtml(report, fontDataUri, latinDataUri) {
   .cash-detail{font-size:18px;color:#155e75}  </style></head><body><main class="page"><section id="summary" class="panel"><h1>Daily Summary</h1><div class="subtitle">${esc(report.periodLabel)}</div><div class="cards"><div class="card"><div class="card-label">ငွေချေသူ</div><div class="card-value">${summary.paidCount}</div><div class="card-detail">${esc(amount(summary.paidAmount))}</div></div><div class="card"><div class="card-label">အကြွေးတိုးသူ</div><div class="card-value">${summary.debtCount}</div><div class="card-detail">${esc(amount(summary.debtAmount))}</div></div><div class="card"><div class="card-label">လက်ငင်းပေးသူ</div><div class="card-value">${summary.cashCount || 0}</div><div class="card-detail">${esc(amount(summary.cashAmount))}</div></div><div class="card"><div class="card-label">Transaction စုစုပေါင်း</div><div class="card-value">${summary.totalTransactions}</div></div><div class="card"><div class="card-label">လုပ်ဆောင်ချက်မှတ်တမ်း</div><div class="card-value">${summary.activityCount ?? summary.auditCount}</div></div></div><h2>Customer အလိုက် စာရင်းချုပ်</h2><table class="summary-table"><thead><tr><th>Customer</th><th>ငွေချေ</th><th>အကြွေးတိုး</th><th>လက်ငင်း</th></tr></thead><tbody>${customerRows || `<tr><td colspan="4">ဒီနေ့စာရင်းမရှိသေးပါ။</td></tr>`}</tbody></table><div class="payment"><h2 style="margin-top:0">Payment Type</h2><h2 style="margin-top:0;color:#047857">အကြွေးပြန်ဆပ်(ငွေချေ) အသေးစိတ်</h2><p class="payment-note">အောက်က Ledger payment အမျိုးအစားများကိုသာ ပေါင်းထားတာဖြစ်ပြီး လက်ငင်းရောင်းရငွေ မပါဝင်ပါ။</p><div class="cash-sales-total">အကြွေးပြန်ဆပ်(ငွေချေ) စုစုပေါင်း ${esc(amount(paymentTotal))}</div>${paymentRows}<h2 style="margin-top:24px;color:#0e7490">လက်ငင်း(လက်လီ၊လက်ကား) အသေးစိတ်</h2><p class="payment-note cash-note">ဒီအောက်က CASH / KPAY တွေက လက်ငင်းရောင်းရငွေ စုစုပေါင်းရဲ့ ခွဲခြမ်းချက်ဖြစ်ပြီး အပေါ်က Ledger Payment Total ထဲ မပါဝင်ပါ။</p><div class="cash-sales-total">လက်ငင်း(လက်လီ၊လက်ကား) စုစုပေါင်း ${esc(amount(summary.cashAmount))}</div>${cashPaymentRows}<h2 style="margin-top:24px;color:#6d28d9">လက်ငင်း လက်လီ/လက်ကား ရောင်းအား</h2>${cashSaleTypeRows}${cashSaleTypeTotalRow}</div></section><section id="activity" class="panel"><h1>Activity History</h1><div class="subtitle">${esc(report.dateLabel)} Activity — ${logs.length} actions</div><table class="activity-table" style="margin-top:18px"><thead><tr><th>စာရင်းနေ့/အချိန်</th><th>လုပ်သူ</th><th>လုပ်ဆောင်ချက်</th><th>Customer / အကြောင်းအရာ</th><th>ပမာဏ</th><th>Payment</th><th>Note</th></tr></thead><tbody>${activityRows || `<tr><td colspan="7">ဒီနေ့လုပ်ဆောင်ချက်မရှိသေးပါ။</td></tr>`}</tbody></table></section></main></body></html>`;
 }
 
+function formatReportDateLabel(dateLabel) {
+  const [year, month, day] = String(dateLabel || "").split("-");
+  return year && month && day ? `${day}/${month}/${year}` : String(dateLabel || "");
+}
+
+export function createDailySalesSummaryCardHtml(data, fontDataUri, latinDataUri) {
+  const esc = escapeXml;
+  const card = (label, value, tone) => `<div class="sales-card ${tone}"><div class="sales-label">${esc(label)}</div><div class="sales-value">${esc(amount(value))}</div></div>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    @font-face{font-family:Padauk;src:url(data:font/ttf;base64,${fontDataUri}) format('truetype');font-weight:400}
+    @font-face{font-family:DejaVu;src:url(data:font/ttf;base64,${latinDataUri}) format('truetype');font-weight:400}
+    *{box-sizing:border-box}body{margin:0;background:#f8fafc;color:#0f172a;font-family:Padauk,DejaVu,sans-serif}.sheet{width:1100px;padding:34px;background:#fff;border:1px solid #cbd5e1;border-radius:28px}.brand{font-family:DejaVu,Padauk,sans-serif;font-size:18px;letter-spacing:2px;color:#4338ca;font-weight:700}.title{font-size:38px;font-weight:700;margin-top:6px}.date{font-family:DejaVu,Padauk,sans-serif;font-size:21px;color:#475569;margin-top:6px}.rule{height:2px;background:#e2e8f0;margin:24px 0}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.sales-card{padding:22px 24px;border-radius:18px;min-height:126px;border:1px solid #e2e8f0}.sales-card.retail{background:#f5f3ff;border-color:#ddd6fe}.sales-card.wholesale{background:#fffbeb;border-color:#fde68a}.sales-card.daily{background:#fff1f2;border-color:#fecdd3}.sales-card.cash{background:#ecfeff;border-color:#a5f3fc}.sales-card.opening{background:#ecfdf5;border-color:#bbf7d0}.sales-label{font-size:22px;color:#334155}.sales-value{font-family:DejaVu,Padauk,sans-serif;font-size:33px;font-weight:700;margin-top:12px}.footer{margin-top:22px;text-align:center;color:#64748b;font-size:17px}.footer strong{color:#166534}.summary-box{margin-top:18px;padding:18px 22px;border-radius:16px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:20px}.summary-box b{font-family:DejaVu,Padauk,sans-serif;color:#166534}.noncash{margin-top:14px;padding:16px 20px;border-radius:14px;background:#f8fafc;color:#475569;font-size:18px}
+  </style></head><body><section id="sales-summary-card" class="sheet"><div class="brand">NEW LIFE LEDGER</div><div class="title">နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</div><div class="date">စာရင်းရက် — ${esc(formatReportDateLabel(data.dateLabel))}</div><div class="rule"></div><div class="grid">${card("လက်လီ (ငွေသား + KPay/Bank/Wave)", data.retailTotal, "retail")}${card("လက်ကား (ငွေသား + KPay/Bank/Wave)", data.wholesaleTotal, "wholesale")}${card("တစ်နေ့တာ ရောင်းရငွေစုစုပေါင်း", data.dailyTotal, "daily")}${card("တစ်နေ့တာ ငွေသားစုစုပေါင်း", data.cashDailyTotal, "cash")}${card("လက်လီ (ငွေသား)", data.retailCash, "retail")}${card("လက်ကား (ငွေသား)", data.wholesaleCash, "wholesale")}</div><div class="summary-box">လစဉ်စုစုပေါင်း / နောက်နေ့ Opening — <b>${esc(amount(data.monthlyTotal))}</b></div><div class="noncash">KPay / Bank / Wave / Special စုစုပေါင်း — <b>${esc(amount(data.dailyTotal - data.cashDailyTotal))}</b></div><div class="footer">Opening — <strong>${esc(amount(data.opening))}</strong> &nbsp; | &nbsp; Daily Sales Summary</div></section></body></html>`;
+}
+
 let chromiumExecutablePromise;
 const reportImageCache = new WeakMap();
 
@@ -386,7 +469,16 @@ async function renderReportImagesUncached(report) {
     await page.evaluate(() => document.fonts.ready);
     const summaryBuffer = Buffer.from(await page.locator("#summary").screenshot({ type: "png" }));
     const activityBuffer = Buffer.from(await page.locator("#activity").screenshot({ type: "png" }));
-    return { summaryBuffer, activityBuffer };
+    const salesData = await getDailySalesSummaryCardData(report.dateLabel);
+    const salesHtml = createDailySalesSummaryCardHtml(
+      salesData,
+      fs.readFileSync(fontPath).toString("base64"),
+      fs.readFileSync(latinFontPath).toString("base64"),
+    );
+    await page.setContent(salesHtml, { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
+    const salesSummaryBuffer = Buffer.from(await page.locator("#sales-summary-card").screenshot({ type: "png" }));
+    return { summaryBuffer, activityBuffer, salesSummaryBuffer };
   } finally {
     await browser.close();
   }
@@ -411,6 +503,11 @@ export async function createDailySummaryImage(report) {
 export async function createDailyActivityImage(report) {
   const { activityBuffer } = await renderReportImages(report);
   return activityBuffer;
+}
+
+export async function createDailySalesSummaryImage(report) {
+  const { salesSummaryBuffer } = await renderReportImages(report);
+  return salesSummaryBuffer;
 }
 
 export async function createDailyReportPdf(report) {

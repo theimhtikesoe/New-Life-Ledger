@@ -1,4 +1,4 @@
-import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailyActivityImage } from "@/lib/daily-report";
+import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailyActivityImage, createDailySalesSummaryImage } from "@/lib/daily-report";
 import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
@@ -6,10 +6,11 @@ import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 export async function runDailyReport({ date, lateByDays = 0 } = {}) {
   const startedAt = Date.now();
   const report = await getDailyReportData(date ? getMyanmarDayRange(date) : undefined);
-  const [pdfBuffer, imageBuffer, activityImageBuffer] = await Promise.all([
+  const [pdfBuffer, imageBuffer, activityImageBuffer, salesSummaryImageBuffer] = await Promise.all([
     createDailyReportPdf(report),
     createDailySummaryImage(report),
     createDailyActivityImage(report),
+    createDailySalesSummaryImage(report),
   ]);
   const activityCount = (report.activityLogs || []).length;
   const cashSaleTypeLines = Object.entries(report.summary.cashSaleTypes || {})
@@ -38,6 +39,7 @@ export async function runDailyReport({ date, lateByDays = 0 } = {}) {
     pdfBuffer,
     imageBuffer,
     activityImageBuffer,
+    salesSummaryImageBuffer,
     dateLabel: report.dateLabel,
     caption,
   });
