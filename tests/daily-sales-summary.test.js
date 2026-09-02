@@ -94,6 +94,26 @@ describe("Daily sales summary API", () => {
     expect(body.data.rows.find((row) => row.date === "2026-08-27")).toMatchObject({ dailyTotal: 750000, cashDailyTotal: 150000 });
   });
 
+  it("returns record-level reconciliation only when requested", async () => {
+    const sourceSale = { ...sale("2026-08-27", "WHOLESALE", "BANK", 60000), id: "sale-reconcile", note: "စာရင်းစစ်ရန်", paymentBreakdown: { CASH: 40000, KPAY: 20000, BANK: 0, WAVE: 0, SPECIAL: 0 }, customer: { id: "customer-reconcile", name: "စစ်ရန် Customer" } };
+    const row = savedRow("2026-08-27", { retailTotal: 0, wholesaleTotal: 0, retailCash: 0, wholesaleCash: 0 });
+    mocks.findCashSale.mockResolvedValue([sourceSale]);
+    mocks.findDaily.mockResolvedValue([row]);
+
+    const response = await GET(new Request("http://localhost/api/daily-sales-summary?date=2026-08-27&reconcile=true"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.reconciliation).toMatchObject({
+      status: "REVIEW",
+      autoTotals: { wholesaleTotal: 60000, wholesaleCash: 40000, dailyTotal: 60000 },
+      referenceTotals: { wholesaleTotal: 0, dailyTotal: 0 },
+      difference: { wholesaleTotal: 60000, dailyTotal: 60000 },
+      paymentMatrix: { WHOLESALE: { CASH: 40000, KPAY: 20000, BANK: 0 } },
+    });
+    expect(body.data.reconciliation.candidates).toEqual([expect.objectContaining({ id: "sale-reconcile", amount: 60000, paymentLabel: "CASH 40,000 Ks + KPAY 20,000 Ks" })]);
+  });
+
   it("saves the four daily inputs as a separate auditable row", async () => {
     const row = savedRow("2026-08-27", { retailTotal: 200000, wholesaleTotal: 450000, retailCash: 100000, wholesaleCash: 50000 });
     mocks.upsertDaily.mockResolvedValue(row);

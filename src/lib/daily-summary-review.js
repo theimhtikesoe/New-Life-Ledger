@@ -1,3 +1,7 @@
+import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
+
+const RECONCILIATION_PAYMENT_KEYS = ["CASH", "KPAY", "BANK", "WAVE", "SPECIAL"];
+
 function normalizeName(value) {
   return String(value || "")
     .normalize("NFKC")
@@ -107,4 +111,110 @@ export function transactionsToDailySummaryEvents(transactions = []) {
     eventAt: transaction?.date || null,
     source: "ledger",
   }));
+}
+
+function roundAmount(value) {
+  const amount = Math.round(Number(value || 0));
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function emptyPaymentMatrix() {
+  return Object.fromEntries(RECONCILIATION_PAYMENT_KEYS.map((key) => [key, 0]));
+}
+
+function addToPaymentMatrix(target, split) {
+  for (const key of RECONCILIATION_PAYMENT_KEYS) target[key] += roundAmount(split?.[key]);
+}
+
+function signedDifference(autoValue, referenceValue) {
+  return roundAmount(autoValue) - roundAmount(referenceValue);
+}
+
+export function buildPaymentMatrixSummary(records = []) {
+  const matrix = {
+    RETAIL: emptyPaymentMatrix(),
+    WHOLESALE: emptyPaymentMatrix(),
+  };
+  for (const record of Array.isArray(records) ? records : []) {
+    const saleType = String(record?.saleType || "").toUpperCase() === "WHOLESALE" ? "WHOLESALE" : "RETAIL";
+    addToPaymentMatrix(matrix[saleType], getPaymentSplit(record));
+  }
+  return matrix;
+}
+
+export function buildDailyReconciliation({ date, auto = {}, saved = null, cashSales = [], ledgerPayments = [] } = {}) {
+  const autoTotals = {
+    retailTotal: roundAmount(auto?.retailTotal),
+    wholesaleTotal: roundAmount(auto?.wholesaleTotal),
+    retailCash: roundAmount(auto?.retailCash),
+    wholesaleCash: roundAmount(auto?.wholesaleCash),
+    dailyTotal: roundAmount(auto?.retailTotal) + roundAmount(auto?.wholesaleTotal),
+  };
+  const savedTotals = saved
+    ? {
+        retailTotal: roundAmount(saved.retailTotal),
+        wholesaleTotal: roundAmount(saved.wholesaleTotal),
+        retailCash: roundAmount(saved.retailCash),
+        wholesaleCash: roundAmount(saved.wholesaleCash),
+        dailyTotal: roundAmount(saved.retailTotal) + roundAmount(saved.wholesaleTotal),
+      }
+    : null;
+  const referenceTotals = savedTotals || {
+    retailTotal: autoTotals.retailTotal,
+    wholesaleTotal: autoTotals.wholesaleTotal,
+    retailCash: autoTotals.retailCash,
+    wholesaleCash: autoTotals.wholesaleCash,
+    dailyTotal: autoTotals.dailyTotal,
+  };
+  const records = [
+    ...(Array.isArray(cashSales) ? cashSales : []).map((record) => ({
+      source: "CASH_SALE",
+      id: String(record.id),
+      customerName: record.customer?.name || record.customerName || "လက်ငင်း Customer",
+      date: record.date || null,
+      saleType: String(record.saleType || "").toUpperCase() === "WHOLESALE" ? "WHOLESALE" : "RETAIL",
+      amount: roundAmount(record.amount),
+      paymentType: record.paymentType || "CASH",
+      paymentBreakdown: record.paymentBreakdown || null,
+      paymentLabel: paymentSplitLabel(getPaymentSplit(record)) || record.paymentType || "CASH",
+      note: record.note || "",
+    })),
+    ...(Array.isArray(ledgerPayments) ? ledgerPayments : [])
+      .filter((record) => String(record.type || "").toUpperCase() === "DEBIT")
+      .map((record) => ({
+        source: "LEDGER",
+        id: String(record.id),
+        customerName: record.customer?.name || record.customerName || "Customer မသတ်မှတ်ရသေး",
+        date: record.date || null,
+        saleType: "WHOLESALE",
+        amount: roundAmount(record.amount),
+        paymentType: record.paymentType || "CASH",
+        paymentBreakdown: record.paymentBreakdown || null,
+        paymentLabel: paymentSplitLabel(getPaymentSplit(record)) || record.paymentType || "CASH",
+        note: record.note || "",
+      })),
+  ];
+  const difference = {
+    retailTotal: signedDifference(autoTotals.retailTotal, referenceTotals.retailTotal),
+    wholesaleTotal: signedDifference(autoTotals.wholesaleTotal, referenceTotals.wholesaleTotal),
+    retailCash: signedDifference(autoTotals.retailCash, referenceTotals.retailCash),
+    wholesaleCash: signedDifference(autoTotals.wholesaleCash, referenceTotals.wholesaleCash),
+    dailyTotal: signedDifference(autoTotals.dailyTotal, referenceTotals.dailyTotal),
+  };
+  const nonZeroDifference = Object.values(difference).some((value) => value !== 0);
+  const candidateAmount = Math.abs(difference.wholesaleTotal) || Math.abs(difference.retailTotal) || Math.abs(difference.dailyTotal);
+  const candidates = candidateAmount > 0
+    ? records.filter((record) => record.amount === candidateAmount).slice(0, 12)
+    : [];
+  return {
+    date,
+    status: nonZeroDifference ? "REVIEW" : "MATCHED",
+    reference: saved ? "SAVED_ROW" : "AUTO",
+    autoTotals,
+    referenceTotals,
+    difference,
+    paymentMatrix: buildPaymentMatrixSummary(cashSales),
+    records: records.slice(0, 100),
+    candidates,
+  };
 }

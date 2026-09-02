@@ -36,6 +36,14 @@ function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
 }
 
+function formatDifference(value) {
+  const amount = Math.round(Number(value || 0));
+  if (!amount) return "ကိုက်ညီ";
+  return `${amount > 0 ? "+" : "−"}${formatMoney(Math.abs(amount))}`;
+}
+
+const RECONCILIATION_PAYMENT_KEYS = ["CASH", "KPAY", "BANK", "WAVE", "SPECIAL"];
+
 function isValidDateInput(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return false;
   const date = new Date(`${value}T00:00:00+06:30`);
@@ -321,6 +329,26 @@ function AiExplanationPanel({ explanation, date, source }) {
   );
 }
 
+function ReconciliationPanel({ reconciliation, loading, error }) {
+  if (loading) return <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 shadow-sm sm:p-4"><h2 className="text-sm font-bold text-amber-900">ပြန်စစ်ရန် · Record-level Reconciliation</h2><p className="mt-2 text-[13px] text-amber-800">Source records တွေကို တစ်ကြောင်းချင်း စစ်နေပါသည်...</p></section>;
+  if (error) return <section className="rounded-2xl border border-rose-200 bg-rose-50 p-3 shadow-sm sm:p-4"><h2 className="text-sm font-bold text-rose-900">ပြန်စစ်ရန်</h2><p className="mt-2 text-[13px] text-rose-800">{error}</p></section>;
+  if (!reconciliation) return null;
+  const paymentMatrix = reconciliation.paymentMatrix || {};
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-3 shadow-sm sm:p-4" aria-labelledby="reconciliation-title">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div><h2 id="reconciliation-title" className="text-sm font-bold text-amber-950 sm:text-base">ပြန်စစ်ရန် · Record-level Reconciliation</h2><p className="mt-1 text-[11px] leading-4 text-amber-900">Auto data နဲ့ Saved/Reference row ကို တိုက်စစ်ပါသည်။ Record ကို အလိုအလျောက် မဖယ်ပါ။</p></div>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${reconciliation.status === "MATCHED" ? "bg-emerald-100 text-emerald-800" : "bg-amber-200 text-amber-900"}`}>{reconciliation.status === "MATCHED" ? "ကိုက်ညီ" : "ပြန်စစ်ရန်လို"}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3"><div className="rounded-lg bg-white p-3"><p className="text-[11px] font-semibold text-slate-500">Auto စုစုပေါင်း</p><p className="mt-1 text-lg font-bold text-slate-900">{formatMoney(reconciliation.autoTotals.dailyTotal)}</p></div><div className="rounded-lg bg-white p-3"><p className="text-[11px] font-semibold text-slate-500">Saved / Reference</p><p className="mt-1 text-lg font-bold text-slate-900">{formatMoney(reconciliation.referenceTotals.dailyTotal)}</p></div><div className={`rounded-lg p-3 ${reconciliation.difference.dailyTotal ? "bg-amber-100" : "bg-emerald-100"}`}><p className="text-[11px] font-semibold text-slate-600">ကွာဟချက်</p><p className="mt-1 text-lg font-bold text-slate-900">{formatDifference(reconciliation.difference.dailyTotal)}</p></div></div>
+      <div className="mt-3 overflow-x-auto rounded-lg border border-amber-100 bg-white"><table className="w-full min-w-[520px] text-left text-xs"><thead className="bg-amber-50 text-amber-950"><tr><th className="px-3 py-2">စစ်ချက်</th><th className="px-3 py-2 text-right">Auto</th><th className="px-3 py-2 text-right">Saved / Reference</th><th className="px-3 py-2 text-right">ကွာဟချက်</th></tr></thead><tbody className="divide-y divide-slate-100">{[{ key: "retailTotal", label: "လက်လီ Total" }, { key: "wholesaleTotal", label: "လက်ကား Total" }, { key: "retailCash", label: "လက်လီ ငွေသား" }, { key: "wholesaleCash", label: "လက်ကား ငွေသား" }].map((item) => <tr key={item.key}><td className="px-3 py-2 font-semibold text-slate-700">{item.label}</td><td className="px-3 py-2 text-right">{formatMoney(reconciliation.autoTotals[item.key])}</td><td className="px-3 py-2 text-right">{formatMoney(reconciliation.referenceTotals[item.key])}</td><td className={`px-3 py-2 text-right font-bold ${reconciliation.difference[item.key] ? "text-amber-700" : "text-emerald-700"}`}>{formatDifference(reconciliation.difference[item.key])}</td></tr>)}</tbody></table></div>
+      <div className="mt-3 overflow-x-auto rounded-lg border border-violet-100 bg-white"><div className="border-b border-violet-100 px-3 py-2"><h3 className="text-xs font-bold text-violet-950">Payment Matrix · လက်လီ / လက်ကား × Payment</h3><p className="mt-1 text-[10px] text-slate-500">Breakdown ရှိသော cash sale ကို payment category တစ်ခုချင်းစီအတိုင်း ဖတ်ထားပါသည်။</p></div><table className="w-full min-w-[620px] text-left text-xs"><thead className="bg-slate-50 text-slate-600"><tr><th className="px-3 py-2">Sale Type</th>{RECONCILIATION_PAYMENT_KEYS.map((key) => <th key={key} className="px-3 py-2 text-right">{key}</th>)}<th className="px-3 py-2 text-right">Total</th></tr></thead><tbody className="divide-y divide-slate-100">{["RETAIL", "WHOLESALE"].map((type) => { const row = paymentMatrix[type] || {}; const total = RECONCILIATION_PAYMENT_KEYS.reduce((sum, key) => sum + Number(row[key] || 0), 0); return <tr key={type}><td className="px-3 py-2 font-semibold text-slate-700">{type === "WHOLESALE" ? "လက်ကား" : "လက်လီ"}</td>{RECONCILIATION_PAYMENT_KEYS.map((key) => <td key={key} className="px-3 py-2 text-right">{formatMoney(row[key])}</td>)}<td className="px-3 py-2 text-right font-bold">{formatMoney(total)}</td></tr>; })}</tbody></table></div>
+      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3"><h3 className="text-xs font-bold text-amber-950">ကွာဟချက်နဲ့ ပမာဏတူနိုင်သော record</h3>{reconciliation.candidates?.length ? <div className="mt-2 space-y-2">{reconciliation.candidates.map((record) => <div key={`${record.source}-${record.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white px-3 py-2 text-xs"><span className="font-semibold text-slate-800">{record.customerName} · {record.paymentLabel} · {record.saleType === "WHOLESALE" ? "လက်ကား" : "လက်လီ"}</span><strong className="text-amber-800">{formatMoney(record.amount)}</strong></div>)}</div> : <p className="mt-1 text-[11px] leading-4 text-amber-800">ကွာဟချက်နဲ့ တိတိကျကျကိုက်သော record မတွေ့ပါ။ Saved/Reference စုစုပေါင်းကို ပြန်စစ်ရန်လိုပါသည်။</p>}</div>
+      <details className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2"><summary className="cursor-pointer text-xs font-bold text-slate-700">Source records အပြည့်အစုံ ({reconciliation.records?.length || 0})</summary><div className="mt-2 space-y-1">{(reconciliation.records || []).map((record) => <div key={`${record.source}-${record.id}`} className="flex flex-wrap justify-between gap-2 border-t border-slate-100 py-2 text-[11px]"><span className="text-slate-600">{record.customerName} · {record.saleType === "WHOLESALE" ? "လက်ကား" : "လက်လီ"} · {record.paymentLabel}</span><strong className="text-slate-800">{formatMoney(record.amount)}</strong></div>)}</div></details>
+    </section>
+  );
+}
+
 export default function DailySummaryPage() {
   const [date, setDate] = useState(getInitialReportDate);
   const [urlReady, setUrlReady] = useState(false);
@@ -334,6 +362,10 @@ export default function DailySummaryPage() {
   const [, setAiStale] = useState(false);
   const [, setAiFallback] = useState(false);
   const [, setAiSource] = useState("");
+  const [reconciliationOpen, setReconciliationOpen] = useState(false);
+  const [reconciliation, setReconciliation] = useState(null);
+  const [reconciliationLoading, setReconciliationLoading] = useState(false);
+  const [reconciliationError, setReconciliationError] = useState("");
   const aiAbortRef = useRef(null);
   const aiRequestStartedAtRef = useRef(0);
 
@@ -371,6 +403,24 @@ export default function DailySummaryPage() {
   const paymentTotal = useMemo(() => paymentEntries.reduce((total, [, amount]) => total + Number(amount || 0), 0), [paymentEntries]);
   const cashPaymentEntries = useMemo(() => Object.entries(data?.summary?.cashPaymentTypes || {}), [data]);
   const cashSaleTypeEntries = useMemo(() => Object.entries(data?.summary?.cashSaleTypes || {}).filter(([, detail]) => Number(detail?.count || 0) > 0), [data]);
+
+  const handleReconciliation = async () => {
+    if (reconciliationOpen) {
+      setReconciliationOpen(false);
+      return;
+    }
+    setReconciliationOpen(true);
+    setReconciliationLoading(true);
+    setReconciliationError("");
+    try {
+      const result = await fetchJson(`/api/daily-sales-summary?date=${encodeURIComponent(date)}&reconcile=true`, { timeoutMs: 15_000, maxAttempts: 2 });
+      setReconciliation(result?.reconciliation || null);
+    } catch (reconciliationRequestError) {
+      setReconciliationError(reconciliationRequestError.message || "ပြန်စစ်ရန် data မရသေးပါ။");
+    } finally {
+      setReconciliationLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!urlReady) return undefined;
@@ -533,17 +583,21 @@ export default function DailySummaryPage() {
               <label htmlFor="report-date" className="relative flex min-h-11 min-w-0 w-full max-w-full items-center justify-between gap-3 overflow-hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 sm:w-56">
                 <span className="truncate">{formatDateControlLabel(date)}</span>
                 <span aria-hidden="true" className="shrink-0 text-slate-400">▣</span>
-                <input id="report-date" type="date" value={date} aria-label="Report Date" onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) setDate(nextDate); }} className="daily-summary-date-input absolute inset-0 h-full w-full cursor-pointer opacity-0" />
+                <input id="report-date" type="date" value={date} aria-label="Report Date" onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) { setDate(nextDate); setReconciliationOpen(false); setReconciliation(null); setReconciliationError(""); } }} className="daily-summary-date-input absolute inset-0 h-full w-full cursor-pointer opacity-0" />
               </label>
-              <button type="button" onClick={() => handleAiExplain()} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
-                {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanation ? "AI ရှင်းပြချက် ပြန်ကြည့်ရန်" : "AI ဖြင့် ရှင်းပြရန်"}
-              </button>
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+                <button type="button" onClick={handleReconciliation} disabled={loading || reconciliationLoading} className={`min-h-11 w-full rounded-lg border px-4 py-2 text-[13px] font-semibold shadow-sm transition active:scale-[0.98] disabled:opacity-60 sm:w-auto sm:text-sm ${reconciliationOpen ? "border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100" : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"}`}>{reconciliationLoading ? "ပြန်စစ်နေသည်..." : reconciliationOpen ? "ပြန်စစ်ရန် ပိတ်မည်" : "ပြန်စစ်ရန်"}</button>
+                <button type="button" onClick={() => handleAiExplain()} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
+                  {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanation ? "AI ရှင်းပြချက် ပြန်ကြည့်ရန်" : "AI ဖြင့် ရှင်းပြရန်"}
+                </button>
+              </div>
 
             </div>
           </div>
         </header>
 
         {aiExplanation && <AiExplanationPanel explanation={aiExplanation} date={date} />}
+        {reconciliationOpen && <ReconciliationPanel reconciliation={reconciliation} loading={reconciliationLoading} error={reconciliationError} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}
         {loading ? <div className="rounded-xl bg-white p-6 text-center text-[13px] text-slate-600 shadow-sm sm:p-8 sm:text-sm">Summary ရယူနေသည်...</div> : data && (

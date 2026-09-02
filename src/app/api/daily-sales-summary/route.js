@@ -5,6 +5,7 @@ import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, hasPaymentBreakdownInput } from "@/lib/payment-split";
+import { buildDailyReconciliation } from "@/lib/daily-summary-review";
 
 export const dynamic = "force-dynamic";
 
@@ -226,20 +227,20 @@ function validateDailyInput(body) {
   };
 }
 
-async function readSummary(date) {
+async function readSummary(date, { includeReconciliation = false } = {}) {
   const { range } = parseDate(date);
   const month = date.slice(0, 7);
   const monthStart = getMyanmarDayRange(`${month}-01`).start;
   const [cashSales, ledgers, savedRows, opening] = await Promise.all([
     prisma.cashSale.findMany({
       where: { date: { gte: monthStart, lt: range.end } },
-      select: { date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true },
+      select: { id: true, date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
       orderBy: [{ date: "asc" }, { id: "asc" }],
     }),
     prisma.ledger?.findMany
       ? prisma.ledger.findMany({
           where: { date: { gte: monthStart, lt: range.end } },
-          select: { date: true, type: true, paymentType: true, note: true, amount: true },
+          select: { id: true, date: true, type: true, paymentType: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
           orderBy: [{ date: "asc" }, { id: "asc" }],
         })
       : Promise.resolve([]),
@@ -313,6 +314,9 @@ async function readSummary(date) {
       : { amount: 0, asOfDate: "", note: "", updatedAt: null },
     rows: sortedRows,
     source: selectedDay.source,
+    ...(includeReconciliation
+      ? { reconciliation: buildDailyReconciliation({ date, auto: selectedAuto, saved: selectedSaved, cashSales: cashByDate.get(date) || [], ledgerPayments: ledgerByDate.get(date) || [] }) }
+      : {}),
   };
 }
 
@@ -322,7 +326,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const requestedDate = searchParams.get("date") || getMyanmarDateInputValue(new Date());
     const { text: date } = parseDate(requestedDate);
-    const data = await readSummary(date);
+    const data = await readSummary(date, { includeReconciliation: searchParams.get("reconcile") === "true" });
     return NextResponse.json({ ok: true, data });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: error.message?.includes("မမှန်") || error.message?.includes("မကျော်") ? 400 : 500 });
