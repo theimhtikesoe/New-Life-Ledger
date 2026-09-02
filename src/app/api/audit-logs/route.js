@@ -68,7 +68,6 @@ export async function GET(request) {
               amount: true,
               note: true,
               paymentType: true,
-              paymentBreakdown: true,
               customer: { select: { id: true, name: true } },
             },
             orderBy: [{ date: "desc" }, { id: "desc" }],
