@@ -57,13 +57,32 @@ export function normalizeAiItems(items = []) {
     });
 }
 
+function normalizeReviewItemKey(value) {
+  return normalizeExplanationText(value)
+    .replace(/(?:ပြန်စစ်ရန်|ပြန်စစ်သင့်သည်|ပြန်စစ်ရန် လိုအပ်နိုင်သည်|ပြန်စစ်ရန် လိုအပ်ပါသည်).*$/u, "")
+    .trim();
+}
+
+export function normalizeReviewItems(items = []) {
+  const seen = new Set();
+  return (Array.isArray(items) ? items : [])
+    .map((item) => cleanAiText(item))
+    .filter((item) => {
+      if (!item) return false;
+      const key = normalizeReviewItemKey(item) || normalizeExplanationText(item);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
 export function sanitizeExplanation(explanation) {
   if (!explanation || typeof explanation !== "object") return null;
   return {
     ...explanation,
     overview: dedupeRepeatedSentences(explanation.overview),
     findings: normalizeAiItems(explanation.findings),
-    checks: normalizeAiItems(explanation.checks),
+    checks: normalizeReviewItems(explanation.checks),
     caution: dedupeRepeatedSentences(explanation.caution),
   };
 }

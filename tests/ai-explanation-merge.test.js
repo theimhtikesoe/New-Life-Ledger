@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeOverviewText, normalizeAiItems, sanitizeExplanation } from "@/lib/ai-explanation-merge";
+import { mergeOverviewText, normalizeAiItems, normalizeReviewItems, sanitizeExplanation } from "@/lib/ai-explanation-merge";
 
 describe("AI explanation deduplication", () => {
   it("keeps only one overview when AI repeats the code-based overview", () => {
@@ -42,6 +42,15 @@ describe("AI explanation deduplication", () => {
     expect(normalizeAiItems(["စာရင်းရှိပါသည်။", "စာရင်းရှိပါသည်", "အသစ်တွေ့ရှိချက်"])).toEqual([
       "စာရင်းရှိပါသည်။",
       "အသစ်တွေ့ရှိချက်",
+    ]);
+  });
+
+  it("deduplicates review checks with different generic review suffixes", () => {
+    expect(normalizeReviewItems([
+      "ငွေချေစုစုပေါင်း 100 Ks နှင့် Payment Type စုစုပေါင်း 100 Ks မကိုက်ပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။",
+      "ငွေချေစုစုပေါင်း 100 Ks နှင့် Payment Type စုစုပေါင်း 100 Ks မကိုက်ပါ။ ပြန်စစ်သင့်သည်။",
+    ])).toEqual([
+      "ငွေချေစုစုပေါင်း 100 Ks နှင့် Payment Type စုစုပေါင်း 100 Ks မကိုက်ပါ။ ပြန်စစ်ရန် လိုအပ်နိုင်သည်။",
     ]);
   });
 
