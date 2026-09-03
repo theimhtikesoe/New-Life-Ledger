@@ -205,11 +205,14 @@ describe("Telegram daily report CashSale data", () => {
       { id: "order", action: "ORDER_DRAFT", entityType: "Order", entityId: "order-1", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "batch", action: "ORDER_BATCH_NOTIFIED", entityType: "OrderBatch", entityId: "batch-1", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "prefixed", action: "ORDER_CUSTOM", entityType: "Operational", entityId: "op-1", hiddenAt: null, createdAt: ledger.createdAt },
+      { id: "customer-edit", action: "UPDATE", entityType: "Customer", entityId: "customer-1", entityLabel: "ပြင်ဆင်ထားသော Customer", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "payment", actorName: "Staff", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
     ]);
     const report = await getDailyReportData(period);
     expect(report.activityLogs.some((log) => String(log.action).startsWith("ORDER_"))).toBe(false);
     expect(report.activityLogs.some((log) => log.entityType === "OrderBatch")).toBe(false);
+    expect(report.activityLogs.some((log) => log.action === "UPDATE")).toBe(false);
+    expect(report.activityLogs.some((log) => String(log.summary || "").includes("ပြင်ဆင်ထားသော Customer"))).toBe(false);
     const where = mocks.auditFindMany.mock.calls[0][0].where;
     expect(where.AND).toEqual(expect.arrayContaining([
       { NOT: { action: "DAILY_REPORT_SENT" } },

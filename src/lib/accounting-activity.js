@@ -17,6 +17,11 @@ export function isCustomerEditActivity(log) {
   return entityType === "customer" && action === "UPDATE";
 }
 
+export function isEditActivity(log) {
+  const action = String(log?.action || "").trim().toUpperCase();
+  return action === "UPDATE" || action.endsWith("_UPDATE");
+}
+
 export function accountingAuditLogWhere() {
   return {
     NOT: [

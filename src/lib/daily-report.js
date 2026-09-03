@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ensureDatabase } from "@/lib/database";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
-import { accountingAuditLogWhere, isOrderWorkflowActivity } from "@/lib/accounting-activity";
+import { accountingAuditLogWhere, isEditActivity, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
@@ -269,7 +269,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
       : Promise.resolve(null),
   ]);
 
-  const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isOrderWorkflowActivity(log));
+  const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isOrderWorkflowActivity(log) && !isEditActivity(log));
   const { summary, customers: ledgerCustomers } = summarizeLedgers(ledgers);
   summary.cashCount = cashSales.length;
   summary.cashAmount = cashSales.reduce((total, sale) => total + Number(sale.amount || 0), 0);
