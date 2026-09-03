@@ -12,7 +12,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/daily-report", () => ({
   getDailyReportData: mocks.getDailyReportData,
   createDailyReportPdf: mocks.createDailyReportPdf,
-  createDailySummaryImage: mocks.createDailySummaryImage,
   createDailySalesSummaryImage: mocks.createDailySalesSummaryImage,
   createDailyActivityImage: mocks.createDailyActivityImage,
 }));
@@ -43,20 +42,20 @@ describe("Telegram daily report delivery attachments", () => {
     vi.clearAllMocks();
     mocks.getDailyReportData.mockResolvedValue(report);
     mocks.createDailyReportPdf.mockResolvedValue(Buffer.from("pdf"));
-    mocks.createDailySummaryImage.mockResolvedValue(Buffer.from("summary"));
     mocks.createDailySalesSummaryImage.mockResolvedValue(Buffer.from("sales"));
     mocks.sendDailyReportToTelegram.mockResolvedValue({ results: [{ chatId: "1984408250" }] });
   });
 
-  it("keeps Activity History inside the PDF and does not send an Activity PNG", async () => {
+  it("sends only the PDF and sales summary PNG", async () => {
     await runDailyReport({ date: "2026-09-02", recipientChatId: "1984408250" });
 
     expect(mocks.createDailyActivityImage).not.toHaveBeenCalled();
     expect(mocks.sendDailyReportToTelegram).toHaveBeenCalledWith(expect.objectContaining({
       pdfBuffer: expect.any(Buffer),
-      imageBuffer: expect.any(Buffer),
       salesSummaryImageBuffer: expect.any(Buffer),
     }));
+    expect(mocks.createDailySummaryImage).not.toHaveBeenCalled();
+    expect(mocks.sendDailyReportToTelegram.mock.calls[0][0]).not.toHaveProperty("imageBuffer");
     expect(mocks.sendDailyReportToTelegram.mock.calls[0][0]).not.toHaveProperty("activityImageBuffer");
   });
 });

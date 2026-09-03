@@ -254,21 +254,12 @@ export async function sendTelegramMessage(message) {
   return { results: [{ chatId: groupChatId, messageId: result.messageId }] };
 }
 
-export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, salesSummaryImageBuffer, recipientChatId = null, dateLabel, caption }) {
+export async function sendDailyReportToTelegram({ pdfBuffer, salesSummaryImageBuffer, recipientChatId = null, dateLabel, caption }) {
   const { token, groupChatId } = getTelegramConfig();
   const chatId = String(recipientChatId || groupChatId || "").trim();
   if (!token || !chatId) {
     throw new Error("TELEGRAM_BOT_TOKEN and a Telegram recipient chat ID are required");
   }
-  const image = await sendTelegramFile({
-    token,
-    chatId,
-    method: "sendPhoto",
-    buffer: imageBuffer,
-    filename: `new-life-ledger-${dateLabel}.png`,
-    mimeType: "image/png",
-    caption,
-  });
   const pdf = await sendTelegramFile({
     token,
     chatId,
@@ -287,7 +278,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, salesS
     mimeType: "image/png",
     caption: `📈 <b>နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</b>\n<code>${dateLabel}</code>\n<code>ယခင်နေ့ accounting date အတွက် card summary</code>`,
   }) : null;
-  return { results: [{ chatId, imageMessageId: image.result?.message_id, pdfMessageId: pdf.result?.message_id, salesSummaryImageMessageId: salesSummary?.result?.message_id }] };
+  return { results: [{ chatId, pdfMessageId: pdf.result?.message_id, salesSummaryImageMessageId: salesSummary?.result?.message_id }] };
 }
 
 export function telegramRecipientsConfigured() {
