@@ -268,15 +268,22 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
     mimeType: "image/png",
     caption,
   });
-  const activity = activityImageBuffer ? await sendTelegramFile({
-    token,
-    chatId: groupChatId,
-    method: "sendPhoto",
-    buffer: activityImageBuffer,
-    filename: `new-life-ledger-${dateLabel}-activity.png`,
-    mimeType: "image/png",
-    caption: `📊 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>\n<code>${dateLabel}</code>\n<code>မြန်မာစံတော်ချိန် 00:00–23:59</code>`,
-  }) : null;
+  const activity = activityImageBuffer ? await (async () => {
+    const activityPayload = {
+      token,
+      chatId: groupChatId,
+      buffer: activityImageBuffer,
+      filename: `new-life-ledger-${dateLabel}-activity.png`,
+      mimeType: "image/png",
+      caption: `📊 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>\n<code>${dateLabel}</code>\n<code>မြန်မာစံတော်ချိန် 00:00–23:59</code>`,
+    };
+    try {
+      return await sendTelegramFile({ ...activityPayload, method: "sendPhoto" });
+    } catch (error) {
+      if (!/PHOTO_INVALID_DIMENSIONS/i.test(String(error?.message || ""))) throw error;
+      return sendTelegramFile({ ...activityPayload, method: "sendDocument" });
+    }
+  })() : null;
   const pdf = await sendTelegramFile({
     token,
     chatId: groupChatId,
