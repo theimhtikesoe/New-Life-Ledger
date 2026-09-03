@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
@@ -152,10 +152,12 @@ export default function DataManagementPage() {
   const [customMessage, setCustomMessage] = useState("");
   const [customMessagePin, setCustomMessagePin] = useState("");
   const [customMessageSending, setCustomMessageSending] = useState(false);
+  const manualReportTestInFlightRef = useRef(false);
 
   const handleManualReportTest = async () => {
-    if (!cronSecret.trim()) return;
+    if (!cronSecret.trim() || loading || manualReportTestInFlightRef.current) return;
     if (!window.confirm("အရင်နေ့ Daily Summary ကို PDF + image အဖြစ် Telegram group တစ်ခုတည်းသို့ အခုချက်ချင်းပို့မည်။ ဆက်လုပ်မလား?")) return;
+    manualReportTestInFlightRef.current = true;
     setLoading(true); setError(""); setMessage("");
     try {
       const response = await fetch("/api/cron/daily-report", { method: "POST", headers: { Authorization: `Bearer ${cronSecret.trim()}` } });
@@ -163,7 +165,7 @@ export default function DataManagementPage() {
       if (!response.ok) throw new Error(body.error || "Telegram report test မအောင်မြင်ပါ။");
       setCronSecret("");
       setMessage(`Telegram test report အောင်မြင်ပါပြီ။ ${body.date} စာရင်း၏ PDF နှင့် image ကို Telegram group တစ်ခုတည်းသို့ ပို့ပြီးပါပြီ။`);
-    } catch (err) { setError(err.message); } finally { setLoading(false); }
+    } catch (err) { setError(err.message); } finally { manualReportTestInFlightRef.current = false; setLoading(false); }
   };
 
   const handleCustomMessageSend = async () => {

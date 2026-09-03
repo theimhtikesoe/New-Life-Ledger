@@ -321,6 +321,7 @@ export default function Dashboard({ view = "overview" }) {
   const kpiDateRequestRef = useRef(0);
   const telegramPreviewRequestRef = useRef(0);
   const telegramPreviewControllerRef = useRef(null);
+  const telegramReportSendInFlightRef = useRef(false);
   const lastDashboardAttemptAtRef = useRef(0);
   const dashboardDraftRestoredRef = useRef(false);
   const dashboardDraftActorRef = useRef("");
@@ -601,8 +602,11 @@ export default function Dashboard({ view = "overview" }) {
   const handleManualTelegramReport = useCallback(async (event) => {
     event.preventDefault();
     const pin = telegramReportPin.trim();
-    if (!pin || isSendingTelegramReport) return;
+    if (!pin || isSendingTelegramReport || telegramReportSendInFlightRef.current) return;
 
+    // Close the same-tick double-submit window before React renders the
+    // disabled state on the submit button.
+    telegramReportSendInFlightRef.current = true;
     setIsSendingTelegramReport(true);
     setTelegramReportError("");
     try {
@@ -632,6 +636,7 @@ export default function Dashboard({ view = "overview" }) {
         setTelegramReportError(error.message || "Telegram report ပို့ခြင်း မအောင်မြင်ပါ။");
       }
     } finally {
+      telegramReportSendInFlightRef.current = false;
       setIsSendingTelegramReport(false);
     }
   }, [isSendingTelegramReport, resetTelegramReportModal, showAlert, telegramReportPin, telegramReportPreview]);

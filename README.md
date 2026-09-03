@@ -70,15 +70,13 @@ Manual Report and Auto Report share the same per-report-date `AutoReportRun` cla
 
 ## 4. Auto Report schedule and tomorrow's behavior
 
-The current production code is configured with one primary and two retry windows for the same idempotent handler:
+The current production code is configured with one daily window for the idempotent handler:
 
 | Myanmar target | UTC cron in `vercel.json` | Purpose |
 |---|---:|---|
-| Around 08:00 | `30 1 * * *` | Primary previous-day report |
-| Around 09:00 | `30 2 * * *` | Retry if an earlier report date remains missing or failed |
-| Around 10:00 | `30 3 * * *` | Final bounded retry/catch-up window |
+| Around 08:00 | `30 1 * * *` | Previous-day report |
 
-Vercel Cron expressions are UTC-based. On Vercel Hobby, each configured cron job must run no more than once per day and the invocation may occur within the configured hour rather than at an exact minute. The three daily-report entries are therefore separate once-per-day jobs, not one hourly expression. If the project plan has stricter scheduling behavior, the exact arrival time cannot be guaranteed; the database claim/finish state and bounded catch-up are the safety mechanisms.
+Vercel Cron expressions are UTC-based, and the invocation may occur within the configured hour rather than at an exact minute. The handler's per-report-date claim/finish state remains as a safety net for an accidentally duplicated request, while the bounded previous-date scan can recover a missed date on the next daily invocation without creating a second normal report window.
 
 On each invocation, the handler scans up to three previous Myanmar dates oldest-first. A successful date is skipped. A failed or missing date is retried. A successful Manual row for the date is treated as already delivered: the full report is not sent again, and a one-time Manual-already-sent status notice is attempted. The handler is protected by `CRON_SECRET` and must not be manually called as a test unless an explicit delivery test is approved.
 

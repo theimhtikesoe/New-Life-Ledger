@@ -7,7 +7,11 @@ const cronPaths = config.crons.map((cron) => cron.path);
 
 describe("Vercel scheduled jobs", () => {
   it("keeps the daily report schedules enabled", () => {
-    expect(cronPaths.filter((pathName) => pathName === "/api/cron/daily-report")).toHaveLength(3);
+    expect(cronPaths.filter((pathName) => pathName === "/api/cron/daily-report")).toHaveLength(1);
+    expect(config.crons.find((cron) => cron.path === "/api/cron/daily-report")).toEqual({
+      path: "/api/cron/daily-report",
+      schedule: "30 1 * * *",
+    });
   });
 
   it("does not schedule the morning auto-order batch yet", () => {

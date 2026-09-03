@@ -243,7 +243,7 @@ Known local note:
 
 ## ၁၀။ Telegram Report Schedule
 
-နေ့စဉ် report သည် မနေ့က Myanmar calendar day ၏ `00:00–23:59` စာရင်းကို ဒီနေ့ Myanmar time မနက် `08:00` အနီးတွင် ပို့ရန်ဖြစ်သည်။ Vercel Cron failed invocation ကို အလိုအလျောက် retry မလုပ်နိုင်သောကြောင့် `/api/cron/daily-report` ကို 01:30 UTC (08:00 MMT) primary၊ 02:30 UTC (09:00 MMT) နှင့် 03:30 UTC (10:00 MMT) retry windows သုံးခုအဖြစ် configure လုပ်ထားသည်။ Handler သည် report-date claim/lock နှင့် bounded catch-up သုံး၍ missing/failed dates ကိုသာ ပြန်စစ်ပြီး success date ကို duplicate မပို့ပါ။ Successful Manual row ရှိလျှင် full duplicate report မပို့ဘဲ one-time status notice သာ ပို့သည်။ `Report Date` သည် ပို့သည့်နေ့မဟုတ်ဘဲ report ထဲတွင်ပါသော မနေ့ကစာရင်းနေ့ကို ဆိုလိုသည်။
+နေ့စဉ် report သည် မနေ့က Myanmar calendar day ၏ `00:00–23:59` စာရင်းကို ဒီနေ့ Myanmar time မနက် `08:00` အနီးတွင် ပို့ရန်ဖြစ်သည်။ `/api/cron/daily-report` ကို 01:30 UTC (08:00 MMT) daily window တစ်ခုတည်းအဖြစ် configure လုပ်ထားသည်။ Handler သည် report-date claim/lock နှင့် bounded catch-up သုံး၍ missing/failed dates ကိုသာ ပြန်စစ်ပြီး success date ကို duplicate မပို့ပါ။ Successful Manual row ရှိလျှင် full duplicate report မပို့ဘဲ one-time status notice သာ ပို့သည်။ `Report Date` သည် ပို့သည့်နေ့မဟုတ်ဘဲ report ထဲတွင်ပါသော မနေ့ကစာရင်းနေ့ကို ဆိုလိုသည်။
 
 ## ၁၁။ Next Milestones
 
