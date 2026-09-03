@@ -254,7 +254,7 @@ export async function sendTelegramMessage(message) {
   return { results: [{ chatId: groupChatId, messageId: result.messageId }] };
 }
 
-export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activityImageBuffer, salesSummaryImageBuffer, recipientChatId = null, dateLabel, caption }) {
+export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, salesSummaryImageBuffer, recipientChatId = null, dateLabel, caption }) {
   const { token, groupChatId } = getTelegramConfig();
   const chatId = String(recipientChatId || groupChatId || "").trim();
   if (!token || !chatId) {
@@ -269,22 +269,6 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
     mimeType: "image/png",
     caption,
   });
-  const activity = activityImageBuffer ? await (async () => {
-    const activityPayload = {
-      token,
-      chatId,
-      buffer: activityImageBuffer,
-      filename: `new-life-ledger-${dateLabel}-activity.png`,
-      mimeType: "image/png",
-      caption: `📊 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>\n<code>${dateLabel}</code>\n<code>မြန်မာစံတော်ချိန် 00:00–23:59</code>`,
-    };
-    try {
-      return await sendTelegramFile({ ...activityPayload, method: "sendPhoto" });
-    } catch (error) {
-      if (!/PHOTO_INVALID_DIMENSIONS/i.test(String(error?.message || ""))) throw error;
-      return sendTelegramFile({ ...activityPayload, method: "sendDocument" });
-    }
-  })() : null;
   const pdf = await sendTelegramFile({
     token,
     chatId,
@@ -303,7 +287,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
     mimeType: "image/png",
     caption: `📈 <b>နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</b>\n<code>${dateLabel}</code>\n<code>ယခင်နေ့ accounting date အတွက် card summary</code>`,
   }) : null;
-  return { results: [{ chatId, imageMessageId: image.result?.message_id, activityImageMessageId: activity?.result?.message_id, pdfMessageId: pdf.result?.message_id, salesSummaryImageMessageId: salesSummary?.result?.message_id }] };
+  return { results: [{ chatId, imageMessageId: image.result?.message_id, pdfMessageId: pdf.result?.message_id, salesSummaryImageMessageId: salesSummary?.result?.message_id }] };
 }
 
 export function telegramRecipientsConfigured() {

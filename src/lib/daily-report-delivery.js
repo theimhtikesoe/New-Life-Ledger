@@ -1,4 +1,4 @@
-import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailyActivityImage, createDailySalesSummaryImage } from "@/lib/daily-report";
+import { getDailyReportData, createDailyReportPdf, createDailySummaryImage, createDailySalesSummaryImage } from "@/lib/daily-report";
 import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
@@ -6,10 +6,9 @@ import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 export async function runDailyReport({ date, lateByDays = 0, recipientChatId = null } = {}) {
   const startedAt = Date.now();
   const report = await getDailyReportData(date ? getMyanmarDayRange(date) : undefined);
-  const [pdfBuffer, imageBuffer, activityImageBuffer, salesSummaryImageBuffer] = await Promise.all([
+  const [pdfBuffer, imageBuffer, salesSummaryImageBuffer] = await Promise.all([
     createDailyReportPdf(report),
     createDailySummaryImage(report),
-    createDailyActivityImage(report),
     createDailySalesSummaryImage(report),
   ]);
   const activityCount = (report.activityLogs || []).length;
@@ -32,13 +31,12 @@ export async function runDailyReport({ date, lateByDays = 0, recipientChatId = n
     `🔵 <b>စုစုပေါင်းစာရင်း</b>  <code>${report.summary.totalTransactions} ခု</code>`,
     activityCount > 0 ? `🟣 <b>လုပ်ဆောင်ချက်မှတ်တမ်း</b>  <code>${activityCount} ခု</code>` : null,
     "",
-    "📎 နေ့စဉ်စာရင်းချုပ်ပုံ၊ လုပ်ဆောင်ချက်မှတ်တမ်းပုံနှင့် PDF ဖိုင် ပူးတွဲပါရှိပါသည်။",
+    "📎 နေ့စဉ်စာရင်းချုပ်ပုံ၊ ရောင်းအားချုပ်ပုံနှင့် PDF ဖိုင် ပူးတွဲပါရှိပါသည်။ လုပ်ဆောင်ချက်မှတ်တမ်းကို PDF ထဲမှာ ကြည့်နိုင်ပါသည်။",
   ].filter(Boolean).join("\n");
 
   const delivery = await sendDailyReportToTelegram({
     pdfBuffer,
     imageBuffer,
-    activityImageBuffer,
     salesSummaryImageBuffer,
     recipientChatId,
     dateLabel: report.dateLabel,
