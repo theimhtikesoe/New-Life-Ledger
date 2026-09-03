@@ -22,6 +22,10 @@ export async function POST(request) {
   try {
     const requestBody = await request.json().catch(() => ({}));
     const requestedDate = requestBody?.date;
+    const recipientChatId = String(requestBody?.recipientChatId || "").trim() || null;
+    if (recipientChatId && !/^-?\d+$/.test(recipientChatId)) {
+      return NextResponse.json({ error: "Telegram recipient chat ID မမှန်ကန်ပါ။" }, { status: 400 });
+    }
     const reportDate = requestedDate || getPreviousMyanmarDayRange().dateLabel;
     getMyanmarDayRange(reportDate);
     const actorName = decodeActorHeader(request.headers.get("x-actor-name")) || "Manual User";
@@ -37,7 +41,7 @@ export async function POST(request) {
     }
 
     try {
-      const result = await runDailyReport({ date: reportDate });
+      const result = await runDailyReport({ date: reportDate, ...(recipientChatId ? { recipientChatId } : {}) });
       await finishAutoReportRun({
         runId: claim.runId,
         status: "SUCCESS",

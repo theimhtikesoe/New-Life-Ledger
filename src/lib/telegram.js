@@ -254,14 +254,15 @@ export async function sendTelegramMessage(message) {
   return { results: [{ chatId: groupChatId, messageId: result.messageId }] };
 }
 
-export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activityImageBuffer, salesSummaryImageBuffer, dateLabel, caption }) {
+export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activityImageBuffer, salesSummaryImageBuffer, recipientChatId = null, dateLabel, caption }) {
   const { token, groupChatId } = getTelegramConfig();
-  if (!token || !groupChatId) {
-    throw new Error("TELEGRAM_BOT_TOKEN and TELEGRAM_GROUP_CHAT_ID are required");
+  const chatId = String(recipientChatId || groupChatId || "").trim();
+  if (!token || !chatId) {
+    throw new Error("TELEGRAM_BOT_TOKEN and a Telegram recipient chat ID are required");
   }
   const image = await sendTelegramFile({
     token,
-    chatId: groupChatId,
+    chatId,
     method: "sendPhoto",
     buffer: imageBuffer,
     filename: `new-life-ledger-${dateLabel}.png`,
@@ -271,7 +272,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
   const activity = activityImageBuffer ? await (async () => {
     const activityPayload = {
       token,
-      chatId: groupChatId,
+      chatId,
       buffer: activityImageBuffer,
       filename: `new-life-ledger-${dateLabel}-activity.png`,
       mimeType: "image/png",
@@ -286,7 +287,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
   })() : null;
   const pdf = await sendTelegramFile({
     token,
-    chatId: groupChatId,
+    chatId,
     method: "sendDocument",
     buffer: pdfBuffer,
     filename: `New-Life-Ledger-Daily-${dateLabel}.pdf`,
@@ -295,14 +296,14 @@ export async function sendDailyReportToTelegram({ pdfBuffer, imageBuffer, activi
   });
   const salesSummary = salesSummaryImageBuffer ? await sendTelegramFile({
     token,
-    chatId: groupChatId,
+    chatId,
     method: "sendPhoto",
     buffer: salesSummaryImageBuffer,
     filename: `new-life-ledger-${dateLabel}-daily-sales-summary.png`,
     mimeType: "image/png",
     caption: `📈 <b>နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</b>\n<code>${dateLabel}</code>\n<code>ယခင်နေ့ accounting date အတွက် card summary</code>`,
   }) : null;
-  return { results: [{ chatId: groupChatId, imageMessageId: image.result?.message_id, activityImageMessageId: activity?.result?.message_id, pdfMessageId: pdf.result?.message_id, salesSummaryImageMessageId: salesSummary?.result?.message_id }] };
+  return { results: [{ chatId, imageMessageId: image.result?.message_id, activityImageMessageId: activity?.result?.message_id, pdfMessageId: pdf.result?.message_id, salesSummaryImageMessageId: salesSummary?.result?.message_id }] };
 }
 
 export function telegramRecipientsConfigured() {

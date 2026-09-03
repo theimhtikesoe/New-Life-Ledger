@@ -3,7 +3,7 @@ import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 
-export async function runDailyReport({ date, lateByDays = 0 } = {}) {
+export async function runDailyReport({ date, lateByDays = 0, recipientChatId = null } = {}) {
   const startedAt = Date.now();
   const report = await getDailyReportData(date ? getMyanmarDayRange(date) : undefined);
   const [pdfBuffer, imageBuffer, activityImageBuffer, salesSummaryImageBuffer] = await Promise.all([
@@ -40,6 +40,7 @@ export async function runDailyReport({ date, lateByDays = 0 } = {}) {
     imageBuffer,
     activityImageBuffer,
     salesSummaryImageBuffer,
+    recipientChatId,
     dateLabel: report.dateLabel,
     caption,
   });
