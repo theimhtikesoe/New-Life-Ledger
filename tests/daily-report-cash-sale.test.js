@@ -129,7 +129,7 @@ describe("Telegram daily report CashSale data", () => {
     expect(html).toContain("အကြွေးပြန်ဆပ်(ငွေချေ) အသေးစိတ်");
     expect(html).toContain("အကြွေးပြန်ဆပ်(ငွေချေ) စုစုပေါင်း 1,155,000 Ks");
     expect(html).toContain("လက်ငင်း(လက်လီ၊လက်ကား) အသေးစိတ်");
-    expect(html).toContain("ဒီအောက်က CASH / KPAY တွေက လက်ငင်းရောင်းရငွေ စုစုပေါင်းရဲ့ ခွဲခြမ်းချက်");
+    expect(html).toContain("အောက်မှာရှိတဲ့ payment နည်းလမ်းတစ်ခုချင်းစီက Cash Sale မှာ ထည့်ထားတဲ့ လက်ငင်းရောင်းငွေထဲက ခွဲခြမ်းချက်");
     expect(html).toContain("လက်ငင်း(လက်လီ၊လက်ကား) စုစုပေါင်း 2,201,500 Ks");
     expect(html).toContain("လက်ငင်း လက်လီ/လက်ကား ရောင်းအား");
     expect(html).toContain(".retail-row{background:#f5f3ff;color:#6d28d9");
