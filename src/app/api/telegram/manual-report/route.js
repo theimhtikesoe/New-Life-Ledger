@@ -29,6 +29,10 @@ export async function POST(request) {
     const reportDate = requestedDate || getPreviousMyanmarDayRange().dateLabel;
     getMyanmarDayRange(reportDate);
     const actorName = decodeActorHeader(request.headers.get("x-actor-name")) || "Manual User";
+    if (recipientChatId) {
+      const result = await runDailyReport({ date: reportDate, recipientChatId });
+      return NextResponse.json({ ok: true, testOnly: true, ...result, actorName });
+    }
     const claim = await beginAutoReportRun({ reportDate, trigger: "manual" });
     if (!claim.shouldRun) {
       return NextResponse.json({
@@ -41,7 +45,7 @@ export async function POST(request) {
     }
 
     try {
-      const result = await runDailyReport({ date: reportDate, ...(recipientChatId ? { recipientChatId } : {}) });
+      const result = await runDailyReport({ date: reportDate });
       await finishAutoReportRun({
         runId: claim.runId,
         status: "SUCCESS",
