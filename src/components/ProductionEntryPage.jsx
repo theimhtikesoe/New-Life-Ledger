@@ -19,6 +19,10 @@ function formatNumber(value) {
   return Number(value || 0).toLocaleString();
 }
 
+function entryIsBlue(entry) {
+  return String(entry.bottleType || "").includes("ပြာ") || String(entry.tubeColor || "").toUpperCase().includes("B");
+}
+
 export default function ProductionEntryPage() {
   const [reportDate, setReportDate] = useState(todayMyanmar);
   const [machineCode, setMachineCode] = useState("");
@@ -213,10 +217,14 @@ export default function ProductionEntryPage() {
           {category === "bottle" ? <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">{BOTTLE_GROUPS.map((group) => <button type="button" key={group.key} onClick={() => setActiveBottleGroup(group.key)} className={`min-w-0 rounded-xl border p-3 text-left transition ${activeBottleGroup === group.key ? "border-violet-600 bg-violet-600 text-white shadow-md" : "border-violet-100 bg-violet-50 text-violet-800 hover:border-violet-300"}`}><span className="block truncate text-sm font-black">{group.label}</span><span className={`mt-1 block text-[11px] leading-4 ${activeBottleGroup === group.key ? "text-violet-100" : "text-violet-600"}`}>{groupCounts[group.key] || 0} မျိုး</span></button>)}</div> : <div className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-sm font-bold text-cyan-800">Tube စက်အလိုက် ထုတ်လုပ်နိုင်သောအမျိုးအစားများ</div>}
           {category === "bottle" ? <p className="mb-3 text-xs font-semibold text-slate-500">{BOTTLE_GROUPS.find((group) => group.key === activeBottleGroup)?.description} — သက်ဆိုင်ရာ size များကိုသာ ပြထားပါသည်။</p> : null}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleEntries.map((entry) => <label key={entry.key} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-800">
-              <span className="block">{entry.label}</span><span className="text-xs font-medium text-slate-500">{entry.sub}</span>
-              <input type="number" min="0" step="1" value={lines[entry.key] || ""} onChange={(event) => updateLine(entry.key, event.target.value)} placeholder="0" className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-2 text-right font-black" />
-            </label>)}
+            {visibleEntries.map((entry) => {
+              const isBlue = entryIsBlue(entry);
+              return <label key={entry.key} className={`rounded-xl border p-3 text-sm font-bold shadow-sm ${isBlue ? "border-blue-200 bg-blue-50/70 text-blue-950" : "border-slate-200 bg-slate-50 text-slate-900"}`}>
+                <span className="flex items-center justify-between gap-2"><span className="text-base font-black leading-tight">{entry.label}</span><span className={`shrink-0 rounded-full px-2 py-1 text-sm font-black ${isBlue ? "bg-blue-600 text-white" : "border border-slate-300 bg-white text-slate-800"}`}>{entry.capacity.toLocaleString()} {category === "tube" ? "ခု/အိတ်" : "ဆံ့"}</span></span>
+                <span className={`mt-1 block text-xs font-bold ${isBlue ? "text-blue-700" : "text-slate-600"}`}>{category === "tube" ? entry.sub : `ကဒ်အရေအတွက် — ${entry.capacity.toLocaleString()} ဆံ့`}</span>
+                <input type="number" min="0" step="1" value={lines[entry.key] || ""} onChange={(event) => updateLine(entry.key, event.target.value)} placeholder="0" className={`mt-2 w-full rounded-lg border-2 bg-white p-3 text-right text-lg font-black outline-none ${isBlue ? "border-blue-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-200" : "border-slate-300 focus:border-slate-600 focus:ring-2 focus:ring-slate-200"}`} />
+              </label>;
+            })}
           </div>
           <div className="mt-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 p-4 text-center"><div className="text-xs font-bold text-emerald-700">စုစုပေါင်း ထွက်ရှိ</div><div className="text-3xl font-black text-emerald-800">{formatNumber(totalPieces)} <span className="text-sm">ခု</span></div><div className="text-xs text-emerald-700">{filledEntries.length} မျိုး ဖြည့်ထား</div></div>
         </section>
