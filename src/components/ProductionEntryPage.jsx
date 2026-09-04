@@ -207,8 +207,8 @@ export default function ProductionEntryPage() {
                 {MACHINES.filter((machine) => !machine.category || machine.category === category).map((machine) => <option key={machine.code} value={machine.code}>{machine.code} — {machine.name}</option>)}
               </select>
             </label>
-            <label className="flex min-w-0 flex-col gap-2 text-sm font-bold text-slate-700"><span>နေ့စွဲ</span>
-              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="box-border block h-12 min-h-12 min-w-0 w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-center font-semibold leading-normal align-middle" />
+            <label className="flex min-w-0 flex-col gap-2 overflow-hidden text-sm font-bold text-slate-700"><span>နေ့စွဲ</span>
+              <span className="block min-w-0 max-w-full overflow-hidden rounded-xl"><input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} style={{ minWidth: 0, width: "100%", maxWidth: "100%", boxSizing: "border-box" }} className="box-border block h-12 min-h-12 min-w-0 max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-center font-semibold leading-normal align-middle" /></span>
             </label>
           </div>
         </section>
