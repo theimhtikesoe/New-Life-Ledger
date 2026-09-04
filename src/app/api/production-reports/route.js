@@ -123,3 +123,58 @@ export async function POST(request) {
     return NextResponse.json({ error: error.message || "ထုတ်လုပ်မှုမှတ်တမ်း တင်သွင်း၍မရပါ။" }, { status: 400 });
   }
 }
+
+export async function PATCH(request) {
+  try {
+    await ensureDatabase();
+    const body = await request.json();
+    const submissionId = String(body.submissionId || "").trim();
+    if (!submissionId) throw new Error("ပြင်ဆင်မည့် report မတွေ့ပါ။");
+    const reportDate = parseDate(body.reportDate);
+    const machineCode = String(body.machineCode || "").trim().toUpperCase();
+    const machine = getMachine(machineCode);
+    if (!machine) throw new Error("စက်ရွေးပေးပါ။");
+    const requestedCategory = body.category === "tube" ? "tube" : "bottle";
+    if (machine.category === "tube" && requestedCategory !== "tube") throw new Error("ဤစက်အတွက် Tube အမျိုးအစားကိုရွေးပေးပါ။");
+    const rows = normalizeRows({ ...body, rows: body.rows?.map((row) => ({ ...row, category: requestedCategory })) });
+    const wasteQuantity = positiveInt(body.wasteQuantity, "ပျက်စီးအရေအတွက်");
+    const actorName = getActorName(request);
+    const involvedWorkers = Array.isArray(body.involvedWorkers) ? body.involvedWorkers.map((value) => String(value).trim()).filter(Boolean).slice(0, 20) : [];
+    const notes = String(body.notes || "").trim() || null;
+    const data = rows.map((row, index) => ({
+      submissionId, reportDate, actorName, machineCode: machine.code, machineName: machine.name,
+      category: row.category, outputQuantity: row.outputQuantity, outputUnit: row.outputUnit,
+      outputCapacity: row.outputCapacity, bottleType: row.bottleType, tubeG: row.tubeG, tubeColor: row.tubeColor,
+      wasteQuantity: index === 0 ? wasteQuantity : 0, wasteNote: index === 0 ? (String(body.wasteNote || "").trim() || null) : null,
+      damagedPieces: index === 0 ? wasteQuantity : 0, involvedWorkers, notes,
+    }));
+    const result = await prisma.$transaction(async (tx) => {
+      const existing = await tx.productionReport.findFirst({ where: { submissionId }, select: { id: true } });
+      if (!existing) throw new Error("ပြင်ဆင်မည့် report မတွေ့ပါ။");
+      await tx.productionReport.deleteMany({ where: { submissionId } });
+      return tx.productionReport.createMany({ data });
+    });
+    const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
+    await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ခု)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, involvedWorkers } });
+    return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: result.count, totalPieces, wasteQuantity } });
+  } catch (error) {
+    console.error("Production report update failed", error);
+    return NextResponse.json({ error: error.message || "ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင်၍မရပါ။" }, { status: 400 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    await ensureDatabase();
+    const submissionId = String(new URL(request.url).searchParams.get("submissionId") || "").trim();
+    if (!submissionId) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
+    const actorName = getActorName(request);
+    const result = await prisma.productionReport.deleteMany({ where: { submissionId } });
+    if (!result.count) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
+    await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_DELETE", entityType: "ProductionReport", entityId: submissionId, entityLabel: submissionId, summary: "ထုတ်လုပ်မှုမှတ်တမ်း ဖျက်လိုက်သည်", metadata: { submissionId, deletedRows: result.count } });
+    return NextResponse.json({ data: { submissionId, deletedRows: result.count } });
+  } catch (error) {
+    console.error("Production report delete failed", error);
+    return NextResponse.json({ error: error.message || "ထုတ်လုပ်မှုမှတ်တမ်း ဖျက်၍မရပါ။" }, { status: 400 });
+  }
+}

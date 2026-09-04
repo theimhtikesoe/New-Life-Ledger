@@ -1756,6 +1756,8 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-xs text-blue-500">Customer Management · အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
 
+            <DailySalesSummaryPanel />
+
             {/* Today&apos;s Transactions */}
             <button
               onClick={() => setShowTodayPaymentsModal(true)}
@@ -1769,24 +1771,22 @@ export default function Dashboard({ view = "overview" }) {
 
             <Link
               href="/daily-summary"
+              aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
+              className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ဒီနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
+              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
+              <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
+            </Link>
+
+            <Link
+              href="/daily-summary"
               className="neon-card neon-sweep neon-card-violet flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-violet-200 bg-violet-50/85 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
               <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary &amp; AI</p>
               <p className="mt-1 text-xs text-violet-600">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
-
-            <Link
-              href="/daily-summary"
-              aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
-              className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ဒီနေ့" : selectedKpiDate} လက်ငင်းရောင်း</p>
-              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
-              <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
-            </Link>
-
-            <DailySalesSummaryPanel />
 
             <Link
               href="/activity"
@@ -1805,6 +1805,7 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>
               <p className="mt-1 text-xs text-cyan-700">Customer စာရင်းသွင်းရန် →</p>
             </Link>
+
           </div>
             </section>
           </>

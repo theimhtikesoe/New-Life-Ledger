@@ -37,6 +37,7 @@ export default function ProductionEntryPage() {
   const [workerNameDraft, setWorkerNameDraft] = useState("");
   const [notes, setNotes] = useState("");
   const [history, setHistory] = useState([]);
+  const [editingSubmissionId, setEditingSubmissionId] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -137,6 +138,47 @@ export default function ProductionEntryPage() {
     setNotes("");
   }
 
+  function entryKeyForRow(row) {
+    return row.category === "tube" ? `${row.tubeG}|${row.tubeColor}` : `${row.bottleType}|${row.outputCapacity}`;
+  }
+
+  function startEdit(group) {
+    const first = group.rows[0];
+    setEditingSubmissionId(group.submissionId || group.id);
+    setReportDate(group.reportDate);
+    setMachineCode(group.machineCode);
+    setCategory(first.category);
+    setLines(Object.fromEntries(group.rows.map((row) => [entryKeyForRow(row), String(row.outputQuantity)])));
+    setWasteQuantity(String(group.wasteQuantity || 0));
+    setWasteNote(group.wasteNote || "");
+    setInvolvedWorkers(Array.isArray(first.involvedWorkers) ? first.involvedWorkers : []);
+    setNotes(first.notes || "");
+    setMessage("ဒီ report ကို အပေါ်မှာ ပြန်ပြင်နိုင်ပါပြီ။");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditingSubmissionId("");
+    resetForm();
+    setMessage("");
+  }
+
+  async function deleteReport(group) {
+    const submissionId = group.submissionId || group.id;
+    if (!window.confirm("ဒီထုတ်လုပ်မှုမှတ်တမ်းကို ဖျက်မှာ သေချာပါသလား။")) return;
+    setError("");
+    try {
+      const response = await fetch(`/api/production-reports?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: { "x-actor-name": encodeURIComponent(localStorage.getItem("actorName") || "Staff") } });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "ဖျက်၍မရပါ။");
+      if (editingSubmissionId === submissionId) cancelEdit();
+      await loadHistory(reportDate);
+      setMessage("ထုတ်လုပ်မှုမှတ်တမ်းကို ဖျက်ပြီးပါပြီ။");
+    } catch (deleteError) {
+      setError(deleteError.message);
+    }
+  }
+
   async function submit(event) {
     event.preventDefault();
     setError("");
@@ -147,10 +189,11 @@ export default function ProductionEntryPage() {
     try {
       const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") || "Staff" : "Staff";
       const response = await fetch("/api/production-reports", {
-        method: "POST",
+        method: editingSubmissionId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json", "x-actor-name": encodeURIComponent(actorName) },
         body: JSON.stringify({
           reportDate,
+          ...(editingSubmissionId ? { submissionId: editingSubmissionId } : {}),
           machineCode,
           category,
           rows: filledEntries,
@@ -162,7 +205,8 @@ export default function ProductionEntryPage() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "တင်သွင်း၍မရပါ။");
-      setMessage(`${body.data.lineCount} မျိုး၊ ${formatNumber(body.data.totalPieces)} ခု အောင်မြင်စွာ တင်ပြီးပါပြီ။`);
+      setMessage(`${body.data.lineCount} မျိုး၊ ${formatNumber(body.data.totalPieces)} ခု ${editingSubmissionId ? "Update ပြီးပါပြီ" : "အောင်မြင်စွာ တင်ပြီးပါပြီ"}။`);
+      setEditingSubmissionId("");
       resetForm();
       await loadHistory(reportDate);
     } catch (submitError) {
@@ -239,10 +283,10 @@ export default function ProductionEntryPage() {
 
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 font-bold text-red-700">{error}</div>}
         {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 font-bold text-emerald-700">{message}</div>}
-        <button disabled={submitting} className="w-full rounded-xl bg-orange-500 px-4 py-4 text-lg font-black text-white shadow-sm hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? "တင်နေပါသည်..." : `တင်သွင်းရန် (${filledEntries.length} မျိုး)`}</button>
+        <div className="flex flex-col gap-2 sm:flex-row"><button disabled={submitting} className="w-full rounded-xl bg-orange-500 px-4 py-4 text-lg font-black text-white shadow-sm hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? "တင်နေပါသည်..." : editingSubmissionId ? `Update လုပ်ရန် (${filledEntries.length} မျိုး)` : `တင်သွင်းရန် (${filledEntries.length} မျိုး)`}</button>{editingSubmissionId ? <button type="button" onClick={cancelEdit} className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-lg font-black text-slate-700 hover:bg-slate-50">မပြင်တော့ပါ</button> : null}</div>
       </form>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-black text-slate-800">ထွက်ရှိမှုမှတ်တမ်းများ</h2><span className="text-xs text-slate-500">{loadingHistory ? "ရယူနေသည်..." : `${groupedHistory.length} ကြိမ်`}</span></div>{groupedHistory.length === 0 && !loadingHistory ? <p className="rounded-xl border border-dashed p-5 text-center text-sm text-slate-500">ထွက်ရှိမှုမှတ်တမ်း မရှိသေးပါ</p> : <div className="space-y-3">{groupedHistory.map((group) => <div key={group.submissionId || group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div className="font-black text-slate-800">{group.machineCode} — {group.machineName}</div><div className="text-xs text-slate-500">{group.reportDate} · {group.actorName}</div></div><div className="mt-2 flex flex-wrap gap-2 text-sm">{group.rows.map((row) => <span key={row.id} className="rounded-lg bg-white px-2 py-1 font-semibold">{row.category === "tube" ? `${row.tubeG} ${row.tubeColor}` : row.bottleType} · {row.outputQuantity} {row.outputUnit} × {row.outputCapacity}</span>)}</div><div className="mt-2 text-sm font-black text-emerald-700">စုစုပေါင်း {formatNumber(group.totalPieces)} ခု · ပျက်စီး {formatNumber(group.wasteQuantity)} ခု</div></div>)}</div>}</section>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-black text-slate-800">ထွက်ရှိမှုမှတ်တမ်းများ</h2><span className="text-xs text-slate-500">{loadingHistory ? "ရယူနေသည်..." : `${groupedHistory.length} ကြိမ်`}</span></div>{groupedHistory.length === 0 && !loadingHistory ? <p className="rounded-xl border border-dashed p-5 text-center text-sm text-slate-500">ထွက်ရှိမှုမှတ်တမ်း မရှိသေးပါ</p> : <div className="space-y-3">{groupedHistory.map((group) => <div key={group.submissionId || group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><div className="font-black text-slate-800">{group.machineCode} — {group.machineName}</div><div className="text-xs text-slate-500">{group.reportDate} · {group.actorName}</div></div><div className="flex gap-2"><button type="button" onClick={() => startEdit(group)} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-black text-amber-800 hover:bg-amber-100">ပြင်</button><button type="button" onClick={() => deleteReport(group)} className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-black text-red-700 hover:bg-red-100">ဖျက်</button></div></div><div className="mt-2 flex flex-wrap gap-2 text-sm">{group.rows.map((row) => <span key={row.id} className="rounded-lg bg-white px-2 py-1 font-semibold">{row.category === "tube" ? `${row.tubeG} ${row.tubeColor}` : row.bottleType} · {row.outputQuantity} {row.outputUnit} × {row.outputCapacity}</span>)}</div><div className="mt-2 text-sm font-black text-emerald-700">စုစုပေါင်း {formatNumber(group.totalPieces)} ခု · ပျက်စီး {formatNumber(group.wasteQuantity)} ခု</div></div>)}</div>}</section>
     </main>
   );
 }
