@@ -36,7 +36,7 @@ export const BOTTLE_ITEMS = [
 export const BOTTLE_GROUPS = [
   { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူ နှင့် 8 ဒေါင့် ဖြူ" },
   { key: "03-blue", label: ".3 ပြာ", description: "0.3 ပြာ နှင့် 8 ဒေါင့် S+1 / S+S" },
-  { key: "special", label: "ရှယ်ရှယ်", description: "ဒိန်သေး၊ ဒိန်ကြီး၊ ရွှေဝိုင်း" },
+  { key: "special", label: "ဒိန်ချဉ်/ရွှေဝိုင်း", description: "ဒိန်သေး၊ ဒိန်ကြီး၊ ရွှေဝိုင်း" },
   { key: "025", label: ".25", description: "0.25 အမျိုးအစား" },
   { key: "candy", label: "ချိုချဉ် / လုံးချော", description: "အခြားအရွယ်အစား" },
   { key: "05", label: ".5", description: "0.5 ဖြူ" },
