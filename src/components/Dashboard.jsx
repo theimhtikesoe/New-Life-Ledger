@@ -1756,8 +1756,6 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-xs text-blue-500">Customer Management · အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
 
-            <DailySalesSummaryPanel />
-
             {/* Today&apos;s Transactions */}
             <button
               onClick={() => setShowTodayPaymentsModal(true)}
@@ -1796,6 +1794,8 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
               <p className="mt-1 text-xs text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
+
+            <DailySalesSummaryPanel />
 
             <Link
               href="/ledger"
