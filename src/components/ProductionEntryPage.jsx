@@ -208,7 +208,7 @@ export default function ProductionEntryPage() {
               </select>
             </label>
             <label className="flex min-w-0 flex-col gap-2 text-sm font-bold text-slate-700"><span>နေ့စွဲ</span>
-              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="block h-12 min-w-0 w-full max-w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 font-semibold leading-none" />
+              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="box-border block h-12 min-h-12 min-w-0 w-full max-w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-center font-semibold leading-normal align-middle" />
             </label>
           </div>
         </section>
