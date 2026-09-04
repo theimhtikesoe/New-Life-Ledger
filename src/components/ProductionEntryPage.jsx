@@ -190,20 +190,20 @@ export default function ProductionEntryPage() {
       <form onSubmit={submit} className="space-y-5">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-slate-800">အခြေခံ အချက်အလက်</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="text-sm font-bold text-slate-700">အမျိုးအစား
-              <select value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 font-semibold">
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
+            <label className="flex min-w-0 flex-col gap-2 text-sm font-bold text-slate-700"><span>အမျိုးအစား</span>
+              <select value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="h-12 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 font-semibold leading-none">
                 <option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option>
               </select>
             </label>
-            <label className="text-sm font-bold text-slate-700">စက်
-              <select value={machineCode} onChange={(event) => setMachineCode(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 font-semibold">
+            <label className="flex min-w-0 flex-col gap-2 text-sm font-bold text-slate-700"><span>စက်</span>
+              <select value={machineCode} onChange={(event) => setMachineCode(event.target.value)} className="h-12 w-full min-w-0 rounded-xl border border-slate-300 bg-white px-3 font-semibold leading-none">
                 <option value="">စက်ရွေးချယ်ရန်</option>
                 {MACHINES.filter((machine) => !machine.category || machine.category === category).map((machine) => <option key={machine.code} value={machine.code}>{machine.code} — {machine.name}</option>)}
               </select>
             </label>
-            <label className="min-w-0 text-sm font-bold text-slate-700">နေ့စွဲ
-              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="mt-1 block min-w-0 w-full max-w-full appearance-none rounded-xl border border-slate-300 bg-white p-3 font-semibold" />
+            <label className="flex min-w-0 flex-col gap-2 text-sm font-bold text-slate-700"><span>နေ့စွဲ</span>
+              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="block h-12 min-w-0 w-full max-w-full appearance-none rounded-xl border border-slate-300 bg-white px-3 font-semibold leading-none" />
             </label>
           </div>
         </section>
