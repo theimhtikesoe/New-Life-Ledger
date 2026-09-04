@@ -12,7 +12,7 @@ export async function GET() {
   try {
     await ensureDatabase();
 
-    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings] = await Promise.all([
+    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports] = await Promise.all([
       prisma.customer.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -109,6 +109,7 @@ export async function GET() {
       prisma.dailySalesSummary.findMany({ orderBy: [{ date: "asc" }, { id: "asc" }] }),
       prisma.dailySalesSummarySource.findMany({ orderBy: [{ linkedAt: "asc" }, { id: "asc" }] }),
       prisma.dailySalesOpening.findMany({ orderBy: [{ month: "asc" }, { id: "asc" }] }),
+      prisma.productionReport.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
     ]);
 
     const ledgerTotals = new Map();
@@ -159,6 +160,7 @@ export async function GET() {
           dailySalesSummaries: dailySalesSummaries.length,
           dailySalesSummarySources: dailySalesSummarySources.length,
           dailySalesOpenings: dailySalesOpenings.length,
+          productionReports: productionReports.length,
         },
         integrity: {
           algorithm: "Customer.current_balance = sum(CREDIT amounts) - sum(DEBIT amounts)",
@@ -187,6 +189,7 @@ export async function GET() {
         dailySalesSummaries,
         dailySalesSummarySources,
         dailySalesOpenings,
+        productionReports,
       },
     });
   } catch (error) {

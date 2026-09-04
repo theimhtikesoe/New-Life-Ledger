@@ -317,3 +317,29 @@ model DailySalesOpening {
 
   @@index([month])
 }
+
+model ProductionReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  submissionId    String
+  reportDate      String
+  actorName       String
+  machineCode     String
+  machineName     String?
+  category        String
+  outputQuantity  Int
+  outputUnit      String
+  outputCapacity  String?
+  bottleType      String?
+  tubeG           String?
+  tubeColor       String?
+  wasteQuantity   Int      @default(0)
+  wasteNote       String?
+  damagedPieces   Int      @default(0)
+  involvedWorkers Json?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([reportDate])
+  @@index([submissionId])
+  @@index([machineCode])
+}

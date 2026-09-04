@@ -34,6 +34,7 @@ function downloadBackup(data) {
     ["dailySalesSummaries", counts.dailySalesSummaries || 0],
     ["dailySalesSummarySources", counts.dailySalesSummarySources || 0],
     ["dailySalesOpenings", counts.dailySalesOpenings || 0],
+    ["productionReports", counts.productionReports || 0],
   ];
   const customers = (data.customers || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), deletedAt: iso(item.deletedAt) }));
   const transactions = (data.transactions || []).map((item) => ({ ...item, date: iso(item.date), createdAt: iso(item.createdAt) }));
@@ -52,6 +53,7 @@ function downloadBackup(data) {
   const dailySalesSummaries = (data.dailySalesSummaries || []).map((item) => ({ ...item, enteredAt: iso(item.enteredAt), sourceSnapshotAt: iso(item.sourceSnapshotAt), lastCalculatedAt: iso(item.lastCalculatedAt), createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt) }));
   const dailySalesSummarySources = (data.dailySalesSummarySources || []).map((item) => ({ ...item, linkedAt: iso(item.linkedAt) }));
   const dailySalesOpenings = (data.dailySalesOpenings || []).map((item) => ({ ...item, createdAt: iso(item.createdAt), updatedAt: iso(item.updatedAt) }));
+  const productionReports = (data.productionReports || []).map((item) => ({ ...item, involvedWorkers: item.involvedWorkers ? JSON.stringify(item.involvedWorkers) : "", createdAt: iso(item.createdAt) }));
   const integrityRows = Object.entries(data.integrity || {}).map(([key, value]) => [key, typeof value === "object" ? JSON.stringify(value) : value ?? ""]);
 
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(infoRows), "Backup Info");
@@ -72,6 +74,7 @@ function downloadBackup(data) {
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(dailySalesSummaries), "Daily Summaries");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(dailySalesSummarySources), "Summary Sources");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(dailySalesOpenings), "Daily Openings");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(productionReports), "Production Reports");
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([["key", "value"], ...integrityRows]), "Integrity");
   workbook.Workbook = { Props: { Title: "New Life Ledger Backup", Subject: "Official restore backup with all entities and integrity checks" } };
   XLSX.writeFile(workbook, `New-Life-Ledger-Backup-v${data.version || 2}-${new Date().toISOString().slice(0, 10)}.xlsx`);

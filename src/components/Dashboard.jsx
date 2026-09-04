@@ -1632,6 +1632,14 @@ export default function Dashboard({ view = "overview" }) {
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">📦</span>
                 <span>အော်ဒါများ</span>
               </Link>
+              <Link
+                href="/production"
+                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-2 py-2 text-center text-sm font-semibold leading-4 text-orange-700 shadow-sm transition-colors hover:bg-orange-100 sm:text-base"
+                title="ထုတ်လုပ်မှု မှတ်တမ်း"
+              >
+                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">🏭</span>
+                <span>ထုတ်လုပ်မှု</span>
+              </Link>
               <button
                 type="button"
                 onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}

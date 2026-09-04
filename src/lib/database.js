@@ -11,6 +11,7 @@ const REQUIRED_TABLES = [
   "UnverifiedKpay",
   "AuditLog",
   "AutoReportRun",
+  "ProductionReport",
   "CashSale",
   "DailySalesSummary",
   "DailySalesSummarySource",
@@ -181,6 +182,32 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
         await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeClaimedAt" TIMESTAMP(3)`);
         await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeSentAt" TIMESTAMP(3)`);
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "ProductionReport" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "submissionId" TEXT NOT NULL,
+            "reportDate" TEXT NOT NULL,
+            "actorName" TEXT NOT NULL,
+            "machineCode" TEXT NOT NULL,
+            "machineName" TEXT,
+            "category" TEXT NOT NULL,
+            "outputQuantity" INTEGER NOT NULL,
+            "outputUnit" TEXT NOT NULL,
+            "outputCapacity" TEXT,
+            "bottleType" TEXT,
+            "tubeG" TEXT,
+            "tubeColor" TEXT,
+            "wasteQuantity" INTEGER NOT NULL DEFAULT 0,
+            "wasteNote" TEXT,
+            "damagedPieces" INTEGER NOT NULL DEFAULT 0,
+            "involvedWorkers" JSONB,
+            "notes" TEXT,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "CashSale" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -494,6 +521,32 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AutoReportRun_status_idx" ON "AutoReportRun"("status")`);
       await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeClaimedAt" TIMESTAMP(3)`);
       await setupQuery(`ALTER TABLE "AutoReportRun" ADD COLUMN IF NOT EXISTS "manualNoticeSentAt" TIMESTAMP(3)`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "ProductionReport" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "submissionId" TEXT NOT NULL,
+          "reportDate" TEXT NOT NULL,
+          "actorName" TEXT NOT NULL,
+          "machineCode" TEXT NOT NULL,
+          "machineName" TEXT,
+          "category" TEXT NOT NULL,
+          "outputQuantity" INTEGER NOT NULL,
+          "outputUnit" TEXT NOT NULL,
+          "outputCapacity" TEXT,
+          "bottleType" TEXT,
+          "tubeG" TEXT,
+          "tubeColor" TEXT,
+          "wasteQuantity" INTEGER NOT NULL DEFAULT 0,
+          "wasteNote" TEXT,
+          "damagedPieces" INTEGER NOT NULL DEFAULT 0,
+          "involvedWorkers" JSONB,
+          "notes" TEXT,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
       const orderTableCheck = await prisma.$queryRaw`
         SELECT count(*)
         FROM information_schema.tables

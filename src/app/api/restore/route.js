@@ -282,13 +282,34 @@ function normalize(workbook) {
     createdAt: asDate(row.createdAt || row.CreatedAt) || new Date(),
     updatedAt: asDate(row.updatedAt || row.UpdatedAt) || asDate(row.createdAt || row.CreatedAt) || new Date(),
   }));
+  const productionReports = rowsFromSheet(workbook, "Production Reports").map((row) => ({
+    id: asUuid(row.id || row.ID),
+    submissionId: asText(row.submissionId ?? row.SubmissionId),
+    reportDate: asText(row.reportDate ?? row.ReportDate),
+    actorName: asText(row.actorName ?? row.ActorName, "Staff") || "Staff",
+    machineCode: asText(row.machineCode ?? row.MachineCode),
+    machineName: row.machineName ?? row.MachineName ?? null,
+    category: asText(row.category ?? row.Category, "bottle") || "bottle",
+    outputQuantity: asNumber(row.outputQuantity ?? row.OutputQuantity),
+    outputUnit: asText(row.outputUnit ?? row.OutputUnit),
+    outputCapacity: row.outputCapacity ?? row.OutputCapacity ?? null,
+    bottleType: row.bottleType ?? row.BottleType ?? null,
+    tubeG: row.tubeG ?? row.TubeG ?? null,
+    tubeColor: row.tubeColor ?? row.TubeColor ?? null,
+    wasteQuantity: asNumber(row.wasteQuantity ?? row.WasteQuantity),
+    wasteNote: row.wasteNote ?? row.WasteNote ?? null,
+    damagedPieces: asNumber(row.damagedPieces ?? row.DamagedPieces),
+    involvedWorkers: parseJsonCell(row.involvedWorkers ?? row.InvolvedWorkers) || [],
+    notes: row.notes ?? row.Notes ?? null,
+    createdAt: asDate(row.createdAt || row.CreatedAt) || new Date(),
+  }));
   const integrityRows = rowsFromSheet(workbook, "Integrity");
   const integrity = Object.fromEntries(
     integrityRows
       .filter((row) => row.key || row.Key)
       .map((row) => [String(row.key || row.Key), parseJsonCell(row.value ?? row.Value)]),
   );
-  return { info, customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, integrity };
+  return { info, customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports, integrity };
 }
 
 function computeIntegrity(data) {
@@ -461,6 +482,13 @@ function validate(data) {
     if (opening.month) openingMonths.add(opening.month);
   });
 
+  const productionReportIds = new Set();
+  data.productionReports.forEach((report, index) => {
+    if (!report.id || !report.submissionId || !report.reportDate || !report.machineCode || !report.category) errors.push(`Production Reports row ${index + 2}: id/submissionId/reportDate/machineCode/category မမှန်ပါ။`);
+    if (report.id && productionReportIds.has(report.id)) errors.push(`Production Reports row ${index + 2}: duplicate id ဖြစ်နေပါသည်။`);
+    if (report.id) productionReportIds.add(report.id);
+  });
+
   return errors.slice(0, 100);
 }
 
@@ -509,7 +537,7 @@ export async function POST(request) {
       }, { status: 409 });
     }
 
-    const [existingCustomers, existingTransactions, existingCashSales, existingAliases, existingPendingKpay, existingAuditLogs, existingOrders, existingOrderLines, existingOrderCaps, existingOrderDeliveries, existingAutomationSetting, existingBatchRuns, existingAiExplanationCaches, existingAutoReportRuns, existingDailySalesSummaries, existingDailySalesSummarySources, existingDailySalesOpenings] = await Promise.all([
+    const [existingCustomers, existingTransactions, existingCashSales, existingAliases, existingPendingKpay, existingAuditLogs, existingOrders, existingOrderLines, existingOrderCaps, existingOrderDeliveries, existingAutomationSetting, existingBatchRuns, existingAiExplanationCaches, existingAutoReportRuns, existingDailySalesSummaries, existingDailySalesSummarySources, existingDailySalesOpenings, existingProductionReports] = await Promise.all([
       prisma.customer.findMany({ select: { id: true, name: true, phone: true } }),
       prisma.ledger.findMany({ select: { id: true } }),
       prisma.cashSale.findMany({ select: { id: true } }),
@@ -527,6 +555,7 @@ export async function POST(request) {
       prisma.dailySalesSummary.findMany({ select: { id: true, date: true } }),
       prisma.dailySalesSummarySource.findMany({ select: { id: true, summaryId: true, sourceType: true, sourceId: true, contributionType: true } }),
       prisma.dailySalesOpening.findMany({ select: { id: true, month: true } }),
+      prisma.productionReport.findMany({ select: { id: true } }),
     ]);
 
     const existingCustomerIds = new Set(existingCustomers.map((item) => item.id));
@@ -564,6 +593,7 @@ export async function POST(request) {
     const existingDailySalesSummarySourceKeys = new Set(existingDailySalesSummarySources.map((item) => `${item.summaryId}|${item.sourceType}|${item.sourceId}|${item.contributionType}`));
     const existingDailySalesOpeningIds = new Set(existingDailySalesOpenings.map((item) => item.id));
     const existingDailySalesOpeningMonths = new Set(existingDailySalesOpenings.map((item) => item.month));
+    const existingProductionReportIds = new Set(existingProductionReports.map((item) => item.id));
 
     const toCreateOrders = data.orders
       .filter((item) => item.id && !existingOrderIds.has(item.id) && !(item.sourceUpdateId && existingOrderSourceUpdateIds.has(item.sourceUpdateId)) && !(keyForOrderMessage(item) && existingOrderMessageKeys.has(keyForOrderMessage(item))))
@@ -583,6 +613,7 @@ export async function POST(request) {
       .filter((item) => item.id && item.summaryId && importableSummaryIds.has(summaryIdMap.get(item.summaryId) || item.summaryId) && item.sourceId && item.sourceType && item.contributionType && !existingDailySalesSummarySourceIds.has(item.id) && !existingDailySalesSummarySourceKeys.has(`${summaryIdMap.get(item.summaryId) || item.summaryId}|${item.sourceType}|${item.sourceId}|${item.contributionType}`))
       .map((item) => ({ ...item, summaryId: summaryIdMap.get(item.summaryId) || item.summaryId }));
     const toCreateDailySalesOpenings = data.dailySalesOpenings.filter((item) => item.id && item.month && !existingDailySalesOpeningIds.has(item.id) && !existingDailySalesOpeningMonths.has(item.month));
+    const toCreateProductionReports = data.productionReports.filter((item) => item.id && !existingProductionReportIds.has(item.id));
 
     const toCreateTransactions = data.transactions
       .filter((item) => item.id && !existingTransactionIds.has(item.id))
@@ -622,6 +653,7 @@ export async function POST(request) {
         dailySalesSummaries: data.dailySalesSummaries.length,
         dailySalesSummarySources: data.dailySalesSummarySources.length,
         dailySalesOpenings: data.dailySalesOpenings.length,
+        productionReports: data.productionReports.length,
       },
       willAdd: {
         customers: toCreateCustomers.length,
@@ -641,6 +673,7 @@ export async function POST(request) {
         dailySalesSummaries: toCreateDailySalesSummaries.length,
         dailySalesSummarySources: toCreateDailySalesSummarySources.length,
         dailySalesOpenings: toCreateDailySalesOpenings.length,
+        productionReports: toCreateProductionReports.length,
       },
       willSkip: {
         customers: data.customers.length - toCreateCustomers.length,
@@ -660,6 +693,7 @@ export async function POST(request) {
         dailySalesSummaries: data.dailySalesSummaries.length - toCreateDailySalesSummaries.length,
         dailySalesSummarySources: data.dailySalesSummarySources.length - toCreateDailySalesSummarySources.length,
         dailySalesOpenings: data.dailySalesOpenings.length - toCreateDailySalesOpenings.length,
+        productionReports: data.productionReports.length - toCreateProductionReports.length,
       },
       identityMappedCustomers: data.customers.filter((customer) => {
         const mappedId = customerIdMap.get(customer.id);
@@ -695,6 +729,7 @@ export async function POST(request) {
       let addedDailySalesSummaries = 0;
       let addedDailySalesSummarySources = 0;
       let addedDailySalesOpenings = 0;
+      let addedProductionReports = 0;
       let correctedBalances = 0;
       const balanceCorrections = [];
 
@@ -786,6 +821,10 @@ export async function POST(request) {
         await tx.dailySalesOpening.create({ data: opening });
         addedDailySalesOpenings += 1;
       }
+      for (const productionReport of toCreateProductionReports) {
+        await tx.productionReport.create({ data: productionReport });
+        addedProductionReports += 1;
+      }
 
       for (const customerId of customerIdsToRecalculate) {
         const [customer, ledgerRows] = await Promise.all([
@@ -809,13 +848,13 @@ export async function POST(request) {
         summary: `Backup restore: customer ${addedCustomers}, transaction ${addedTransactions}, cash sale ${addedCashSales}, KPay ${addedAliases + addedPendingKpay}, order ${addedOrders}`,
         metadata: {
           sourceCounts: summary.sourceCounts,
-          added: { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAiExplanationCaches, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings },
+          added: { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAiExplanationCaches, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings, addedProductionReports },
           correctedBalances,
           balanceCorrections,
           aliasConflicts: summary.aliasConflicts,
         },
       });
-      return { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAiExplanationCaches, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings, correctedBalances, balanceCorrections };
+      return { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAiExplanationCaches, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings, addedProductionReports, correctedBalances, balanceCorrections };
     });
 
     return NextResponse.json({ data: { ...summary, result } }, { status: 201 });

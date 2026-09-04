@@ -30,12 +30,13 @@ const expectedSheets = [
   "Daily Summaries",
   "Summary Sources",
   "Daily Openings",
+  "Production Reports",
   "Integrity",
 ];
 
 describe("full database backup and restore coverage", () => {
   it("keeps every Prisma model in both export reads and restore writes", () => {
-    expect(prismaModels).toHaveLength(17);
+    expect(prismaModels).toHaveLength(18);
     for (const model of prismaModels) {
       const client = modelToClient(model);
       expect(backupRoute).toContain(`prisma.${client}`);
@@ -58,6 +59,7 @@ describe("full database backup and restore coverage", () => {
       "dailySalesSummaries",
       "dailySalesSummarySources",
       "dailySalesOpenings",
+      "productionReports",
     ]) {
       expect(backupRoute).toContain(`${count}:`);
       expect(restoreRoute).toContain(`${count}:`);
