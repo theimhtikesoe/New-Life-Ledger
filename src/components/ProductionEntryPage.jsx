@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
 
-const CO_WORKERS = ["HO", "RZ", "WB"];
+const SAVED_WORKERS_KEY = "newLifeLedgerSavedProductionWorkers";
 
 function todayMyanmar() {
   const now = new Date(Date.now() + (6 * 60 + 30) * 60 * 1000);
@@ -28,7 +28,8 @@ export default function ProductionEntryPage() {
   const [wasteQuantity, setWasteQuantity] = useState("0");
   const [wasteNote, setWasteNote] = useState("");
   const [involvedWorkers, setInvolvedWorkers] = useState([]);
-  const [customWorkers, setCustomWorkers] = useState("");
+  const [savedWorkers, setSavedWorkers] = useState([]);
+  const [workerNameDraft, setWorkerNameDraft] = useState("");
   const [notes, setNotes] = useState("");
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -40,11 +41,18 @@ export default function ProductionEntryPage() {
   const tubeItems = useMemo(() => getTubeItemsForMachine(machineCode), [machineCode]);
 
   useEffect(() => {
-    if (selectedMachine?.category === "tube") setCategory("tube");
-    if (selectedMachine?.category === "bottle") setCategory("bottle");
     setActiveBottleGroup("03-white");
     setLines({});
   }, [machineCode, selectedMachine]);
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(SAVED_WORKERS_KEY) || "[]");
+      if (Array.isArray(stored)) setSavedWorkers(stored.filter(Boolean).slice(0, 30));
+    } catch {
+      setSavedWorkers([]);
+    }
+  }, []);
 
   const loadHistory = useCallback(async (date = reportDate) => {
     setLoadingHistory(true);
@@ -90,14 +98,30 @@ export default function ProductionEntryPage() {
   const totalPieces = filledEntries.reduce((sum, entry) => sum + entry.quantity * entry.capacity, 0);
   const visibleEntries = category === "tube" ? entries : entries.filter((entry) => getBottleGroup(entry.bottleType) === activeBottleGroup);
   const groupCounts = useMemo(() => Object.fromEntries(BOTTLE_GROUPS.map((group) => [group.key, entries.filter((entry) => getBottleGroup(entry.bottleType) === group.key).length])), [entries]);
-  const workerCodes = [...involvedWorkers, ...customWorkers.split(",").map((value) => value.trim()).filter(Boolean)];
+  const workerCodes = involvedWorkers;
+
+  function handleCategoryChange(nextCategory) {
+    setCategory(nextCategory);
+    if (selectedMachine?.category && selectedMachine.category !== nextCategory) setMachineCode("");
+  }
 
   function updateLine(key, value) {
     setLines((current) => ({ ...current, [key]: value }));
   }
 
-  function toggleWorker(code) {
-    setInvolvedWorkers((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]);
+  function toggleWorker(name) {
+    setInvolvedWorkers((current) => current.includes(name) ? current.filter((item) => item !== name) : [...current, name]);
+  }
+
+  function addSavedWorker(event) {
+    event.preventDefault();
+    const name = workerNameDraft.trim();
+    if (!name) return;
+    const next = [...savedWorkers.filter((item) => item !== name), name].slice(-30);
+    setSavedWorkers(next);
+    setInvolvedWorkers((current) => current.includes(name) ? current : [...current, name]);
+    setWorkerNameDraft("");
+    localStorage.setItem(SAVED_WORKERS_KEY, JSON.stringify(next));
   }
 
   function resetForm() {
@@ -105,7 +129,6 @@ export default function ProductionEntryPage() {
     setWasteQuantity("0");
     setWasteNote("");
     setInvolvedWorkers([]);
-    setCustomWorkers("");
     setNotes("");
   }
 
@@ -169,7 +192,7 @@ export default function ProductionEntryPage() {
           <h2 className="mb-4 text-lg font-black text-slate-800">အခြေခံ အချက်အလက်</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             <label className="text-sm font-bold text-slate-700">အမျိုးအစား
-              <select value={category} onChange={(event) => setCategory(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 font-semibold">
+              <select value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 font-semibold">
                 <option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option>
               </select>
             </label>
@@ -200,7 +223,7 @@ export default function ProductionEntryPage() {
 
         <section className="grid gap-5 lg:grid-cols-2">
           <div className="rounded-2xl border border-red-200 bg-white p-4 shadow-sm"><h2 className="mb-3 text-lg font-black text-red-800">ပျက်စီးမှု</h2><label className="text-sm font-bold text-slate-700">ပျက်စီးသွားသော ခုရေအတိအကျ<input type="number" min="0" step="1" value={wasteQuantity} onChange={(event) => setWasteQuantity(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label><label className="mt-3 block text-sm font-bold text-slate-700">အကြောင်းအရင်း<input value={wasteNote} onChange={(event) => setWasteNote(event.target.value)} placeholder="အကြောင်းအရင်း" className="mt-1 w-full rounded-xl border border-slate-300 p-3" /></label></div>
-          <div className="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm"><h2 className="mb-3 text-lg font-black text-blue-800">ပူးတွဲဆင်းသူများ ({workerCodes.length})</h2><div className="flex flex-wrap gap-2">{CO_WORKERS.map((code) => <button type="button" key={code} onClick={() => toggleWorker(code)} className={`rounded-full border px-4 py-2 text-sm font-black ${involvedWorkers.includes(code) ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white text-slate-700"}`}>{code}</button>)}</div><label className="mt-3 block text-sm font-bold text-slate-700">အခြား Worker code များ (comma ဖြင့်ခွဲပါ)<input value={customWorkers} onChange={(event) => setCustomWorkers(event.target.value)} placeholder="ဥပမာ HO, RZ" className="mt-1 w-full rounded-xl border border-slate-300 p-3" /></label></div>
+          <div className="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm"><h2 className="mb-3 text-lg font-black text-blue-800">ပူးတွဲဆင်းသူများ ({workerCodes.length})</h2><div className="flex min-h-10 flex-wrap gap-2">{savedWorkers.length ? savedWorkers.map((name) => <button type="button" key={name} onClick={() => toggleWorker(name)} className={`rounded-full border px-4 py-2 text-sm font-black ${involvedWorkers.includes(name) ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white text-slate-700"}`}>{name}</button>) : <span className="text-sm text-slate-500">နာမည်သိမ်းထားခြင်း မရှိသေးပါ</span>}</div><div className="mt-3 flex gap-2"><input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="Worker နာမည်ထည့်ပါ" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" /><button type="button" onClick={addSavedWorker} className="shrink-0 rounded-xl bg-blue-600 px-4 py-3 font-black text-white hover:bg-blue-700">ထည့် +</button></div><p className="mt-2 text-xs text-slate-500">ပထမအကြိမ် နာမည်ထည့်ပြီး သိမ်းထားပါ။ နောက်တစ်ခါတွင် နာမည်ကို နှိပ်ရုံဖြင့် ရွေးနိုင်ပါသည်။</p></div>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><label className="text-sm font-bold text-slate-700">အခြားမှတ်ချက်<textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="ထပ်ဖြည့်ချင်တာရှိရင် ရေးပါ" rows={3} className="mt-1 w-full rounded-xl border border-slate-300 p-3" /></label></section>

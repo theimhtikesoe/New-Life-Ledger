@@ -88,11 +88,8 @@ export const MACHINES = [
   { code: "BT4", name: "ဗူးခွံ ၄", category: "bottle" },
   { code: "BT5", name: "ဗူးခွံ ၅", category: "bottle" },
   { code: "BT6", name: "ဗူးခွံ ၆", category: "bottle" },
-  { code: "CT", name: "Cooling Tower", category: "bottle" },
   { code: "TB1", name: "Tube စက် ၁", category: "tube" },
   { code: "TB2", name: "Tube စက် ၂", category: "tube" },
-  { code: "WC1", name: "Water Cooler 1", category: "bottle" },
-  { code: "WC2", name: "Water Cooler 2", category: "bottle" },
 ];
 
 export function getTubeItemsForMachine(code) {
