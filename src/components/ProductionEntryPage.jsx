@@ -20,7 +20,8 @@ function formatNumber(value) {
 }
 
 function entryIsBlue(entry) {
-  return String(entry.bottleType || "").includes("ပြာ") || String(entry.tubeColor || "").toUpperCase().includes("B");
+  const itemName = `${entry.bottleType || ""} ${entry.tubeColor || ""}`.toUpperCase();
+  return itemName.includes("ပြာ") || itemName.includes("B") || itemName.includes("S+1") || itemName.includes("S+S");
 }
 
 export default function ProductionEntryPage() {
