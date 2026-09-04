@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BOTTLE_ITEMS, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
+import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
 
 const CO_WORKERS = ["HO", "RZ", "WB"];
 
@@ -23,6 +23,7 @@ export default function ProductionEntryPage() {
   const [reportDate, setReportDate] = useState(todayMyanmar);
   const [machineCode, setMachineCode] = useState("");
   const [category, setCategory] = useState("bottle");
+  const [activeBottleGroup, setActiveBottleGroup] = useState("03-white");
   const [lines, setLines] = useState(initialLines);
   const [wasteQuantity, setWasteQuantity] = useState("0");
   const [wasteNote, setWasteNote] = useState("");
@@ -41,6 +42,7 @@ export default function ProductionEntryPage() {
   useEffect(() => {
     if (selectedMachine?.category === "tube") setCategory("tube");
     if (selectedMachine?.category === "bottle") setCategory("bottle");
+    setActiveBottleGroup("03-white");
     setLines({});
   }, [machineCode, selectedMachine]);
 
@@ -86,6 +88,8 @@ export default function ProductionEntryPage() {
     .map((entry) => ({ ...entry, quantity: Math.max(0, Number(lines[entry.key] || 0)) }))
     .filter((entry) => entry.quantity > 0), [entries, lines]);
   const totalPieces = filledEntries.reduce((sum, entry) => sum + entry.quantity * entry.capacity, 0);
+  const visibleEntries = category === "tube" ? entries : entries.filter((entry) => getBottleGroup(entry.bottleType) === activeBottleGroup);
+  const groupCounts = useMemo(() => Object.fromEntries(BOTTLE_GROUPS.map((group) => [group.key, entries.filter((entry) => getBottleGroup(entry.bottleType) === group.key).length])), [entries]);
   const workerCodes = [...involvedWorkers, ...customWorkers.split(",").map((value) => value.trim()).filter(Boolean)];
 
   function updateLine(key, value) {
@@ -175,16 +179,18 @@ export default function ProductionEntryPage() {
                 {MACHINES.filter((machine) => !machine.category || machine.category === category).map((machine) => <option key={machine.code} value={machine.code}>{machine.code} — {machine.name}</option>)}
               </select>
             </label>
-            <label className="text-sm font-bold text-slate-700">နေ့စွဲ
-              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 bg-white p-3 font-semibold" />
+            <label className="min-w-0 text-sm font-bold text-slate-700">နေ့စွဲ
+              <input type="date" value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="mt-1 block min-w-0 w-full max-w-full appearance-none rounded-xl border border-slate-300 bg-white p-3 font-semibold" />
             </label>
           </div>
         </section>
 
         <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-violet-800">ထွက်ရှိမှု စာရင်း</h2>
+          {category === "bottle" ? <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">{BOTTLE_GROUPS.map((group) => <button type="button" key={group.key} onClick={() => setActiveBottleGroup(group.key)} className={`min-w-0 rounded-xl border p-3 text-left transition ${activeBottleGroup === group.key ? "border-violet-600 bg-violet-600 text-white shadow-md" : "border-violet-100 bg-violet-50 text-violet-800 hover:border-violet-300"}`}><span className="block truncate text-sm font-black">{group.label}</span><span className={`mt-1 block text-[11px] leading-4 ${activeBottleGroup === group.key ? "text-violet-100" : "text-violet-600"}`}>{groupCounts[group.key] || 0} မျိုး</span></button>)}</div> : <div className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-sm font-bold text-cyan-800">Tube စက်အလိုက် ထုတ်လုပ်နိုင်သောအမျိုးအစားများ</div>}
+          {category === "bottle" ? <p className="mb-3 text-xs font-semibold text-slate-500">{BOTTLE_GROUPS.find((group) => group.key === activeBottleGroup)?.description} — သက်ဆိုင်ရာ size များကိုသာ ပြထားပါသည်။</p> : null}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {entries.map((entry) => <label key={entry.key} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-800">
+            {visibleEntries.map((entry) => <label key={entry.key} className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-800">
               <span className="block">{entry.label}</span><span className="text-xs font-medium text-slate-500">{entry.sub}</span>
               <input type="number" min="0" step="1" value={lines[entry.key] || ""} onChange={(event) => updateLine(entry.key, event.target.value)} placeholder="0" className="mt-2 w-full rounded-lg border border-slate-300 bg-white p-2 text-right font-black" />
             </label>)}

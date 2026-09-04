@@ -33,6 +33,40 @@ export const BOTTLE_ITEMS = [
   { type: "1 လီတာ ပြာ", capacities: [100, 160] },
 ];
 
+export const BOTTLE_GROUPS = [
+  { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူ နှင့် 8 ဒေါင့် ဖြူ" },
+  { key: "03-blue", label: ".3 ပြာ", description: "0.3 ပြာ နှင့် 8 ဒေါင့် S+1 / S+S" },
+  { key: "special", label: "ရှယ်ရှယ်", description: "ဒိန်သေး၊ ဒိန်ကြီး၊ ရွှေဝိုင်း" },
+  { key: "025", label: ".25", description: "0.25 အမျိုးအစား" },
+  { key: "candy", label: "ချိုချဉ် / လုံးချော", description: "အခြားအရွယ်အစား" },
+  { key: "05", label: ".5", description: "0.5 ဖြူ" },
+  { key: "06", label: ".6", description: "0.6 ဖြူ / ပြာ" },
+  { key: "25", label: "25 ကျပ်သား", description: "25 ကျပ်သား" },
+  { key: "30", label: "30 ကျပ်သား", description: "30 ကျပ်သား" },
+  { key: "cow", label: "နွား", description: "နွားသေး / နွားကြီး" },
+  { key: "085", label: ".85", description: "0.85" },
+  { key: "09", label: ".9", description: "0.9 ဖြူ / ပြာ" },
+  { key: "liter", label: "1 လီတာ", description: "1 လီတာ ဖြူ / ပြာ" },
+];
+
+export function getBottleGroup(type) {
+  const value = String(type || "");
+  if (value === "0.3 ဖြူ" || value === "8 ဒေါင့် ဖြူ") return "03-white";
+  if (value.includes("0.3 ပြာ") || value === "8 ဒေါင့် (S+1)" || value === "8 ဒေါင့် (S+S)") return "03-blue";
+  if (["ဒိန်သေး", "ဒိန်သေး (S+1)", "ဒိန်ကြီး", "ဒိန်ကြီး (S+1)", "ရွှေဝိုင်း"].includes(value)) return "special";
+  if (value.startsWith("0.25")) return "025";
+  if (["ချိုချဉ်", "လုံးချော (16g)"].includes(value)) return "candy";
+  if (value.startsWith("0.5")) return "05";
+  if (value.startsWith("0.6")) return "06";
+  if (value.startsWith("25 ")) return "25";
+  if (value.startsWith("30 ")) return "30";
+  if (value.startsWith("နွား")) return "cow";
+  if (value === "0.85") return "085";
+  if (value.startsWith("0.9")) return "09";
+  if (value.startsWith("1 လီတာ")) return "liter";
+  return "candy";
+}
+
 export const TUBE_BY_MACHINE = {
   TB1: [
     { g: "24g", color: "W", pcsPerBag: 1500, label: "24g W (အဖြူ)" },

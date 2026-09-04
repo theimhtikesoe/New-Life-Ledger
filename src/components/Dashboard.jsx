@@ -1656,7 +1656,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
                 aria-expanded={expandedDashboardMenu === "data"}
                 aria-controls="dashboard-data-menu"
-                className="col-span-2 flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-2 text-center text-xs font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 sm:text-sm"
+                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-2 text-center text-xs font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 sm:text-sm"
               >
                 <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">🗂️</span>
                 <span>ဒေတာ / အမှိုက်ပုံး</span>
