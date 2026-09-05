@@ -1826,8 +1826,8 @@ export default function Dashboard({ view = "overview" }) {
 
 
             <Link
-              href="/daily-summary"
-              aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
+              href={`/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`}
+              aria-label={`${selectedKpiDate} လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်`}
               className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
             >
               <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} လက်ငင်းရောင်းရငွေ</p>
