@@ -82,12 +82,12 @@ export const TUBE_BY_MACHINE = {
 };
 
 export const MACHINES = [
-  { code: "BT1", name: "ဗူးခွံ ၁", category: "bottle" },
-  { code: "BT2", name: "ဗူးခွံ ၂", category: "bottle" },
-  { code: "BT3", name: "ဗူးခွံ ၃", category: "bottle" },
-  { code: "BT4", name: "ဗူးခွံ ၄", category: "bottle" },
-  { code: "BT5", name: "ဗူးခွံ ၅", category: "bottle" },
-  { code: "BT6", name: "ဗူးခွံ ၆", category: "bottle" },
+  { code: "BT1", name: "ဗူးစက်-၁", category: "bottle" },
+  { code: "BT2", name: "ဗူးစက်-၂", category: "bottle" },
+  { code: "BT3", name: "ဗူးစက်-၃", category: "bottle" },
+  { code: "BT4", name: "ဗူးစက်-၄", category: "bottle" },
+  { code: "BT5", name: "ဗူးစက်-၅", category: "bottle" },
+  { code: "BT6", name: "ဗူးစက်-၆", category: "bottle" },
   { code: "TB1", name: "Tube စက် ၁", category: "tube" },
   { code: "TB2", name: "Tube စက် ၂", category: "tube" },
 ];
