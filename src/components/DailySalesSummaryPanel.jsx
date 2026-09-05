@@ -246,13 +246,13 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="neon-card neon-sweep neon-card-indigo flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-indigo-200 bg-indigo-50/85 p-4 text-left shadow-sm transition-all hover:border-indigo-300 hover:shadow-md sm:min-h-[158px]"
+        className="neon-card neon-sweep neon-card-indigo flex h-full min-h-[150px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-indigo-200 bg-indigo-50/85 p-4 text-left shadow-sm transition-all hover:border-indigo-300 hover:shadow-md sm:min-h-[210px]"
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
-        <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
-        <p className="mt-2 text-2xl font-bold text-indigo-900">{loading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
-        <p className="mt-1 text-xs font-semibold text-indigo-700">{loading ? "Data ရယူနေသည်..." : `လက်ငင်း ${totalCount} ခု · လက်လီ ${retailCount} / လက်ကား ${wholesaleCount}`}</p>
-        <p className="mt-1 text-xs text-indigo-700">အသေးစိတ်ကြည့်ရန် →</p>
+        <p className="text-base font-black uppercase tracking-wide text-indigo-700 sm:text-lg">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
+        <p className="mt-2 text-3xl font-black text-indigo-900">{loading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
+        {loading ? <p className="mt-2 text-base font-bold text-indigo-700">Data ရယူနေသည်...</p> : <div className="mt-3 space-y-1 text-base font-bold text-indigo-700 sm:text-lg"><p>လက်ငင်း {totalCount} ခု</p><p>လက်လီ {retailCount} ခု</p><p>လက်ကား {wholesaleCount} ခု</p></div>}
+        <p className="mt-auto pt-3 text-sm font-bold text-indigo-700 sm:text-base">အသေးစိတ်ကြည့်ရန် →</p>
       </button>
 
       {isOpen ? (

@@ -1837,13 +1837,17 @@ export default function Dashboard({ view = "overview" }) {
             <button
               type="button"
               onClick={() => { setProductionDate(selectedKpiDate); setShowProductionModal(true); }}
-              className="neon-card neon-sweep flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md sm:min-h-[158px]"
+              className="neon-card neon-sweep flex h-full min-h-[150px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md sm:min-h-[210px]"
             >
               <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-orange-700">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးထွက်ရှိမှု</p>
-                <p className="mt-2 text-2xl font-bold text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
+                <p className="text-base font-black uppercase tracking-wide text-orange-700 sm:text-lg">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးထွက်ရှိမှု</p>
+                <p className="mt-2 text-3xl font-black text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
               </div>
-              <p className="mt-2 text-xs text-orange-700">ကောင်းမွန် {productionSummary.goodPieces.toLocaleString()} · ပျက်စီး {productionSummary.wasteQuantity.toLocaleString()} · အသေးစိတ်ကြည့်ရန် →</p>
+              <div className="mt-3 space-y-1 text-base font-bold text-orange-700 sm:text-lg">
+                <p>ကောင်းမွန် {productionSummary.goodPieces.toLocaleString()} ဗူး</p>
+                <p>ပျက်စီး {productionSummary.wasteQuantity.toLocaleString()} ဗူး</p>
+              </div>
+              <p className="mt-auto pt-3 text-sm font-bold text-orange-700 sm:text-base">အသေးစိတ်ကြည့်ရန် →</p>
             </button>
           </div>
             <div className="mt-4">
