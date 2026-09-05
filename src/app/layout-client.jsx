@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import PINLogin from '@/components/PINLogin';
 import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
 import { formatMyanmarClock, formatMyanmarDateLabel } from '@/lib/myanmar-time-client';
@@ -149,18 +150,24 @@ function SharedPageHeader({ pathname, actorName }) {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-  if (!title) return null;
+  if (!title || pathname === '/' || pathname === '/ledger') return null;
 
   return (
-    <header className="mx-3 mb-3 mt-12 flex flex-col gap-3 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-      <div className="min-w-0">
-        <p className="truncate text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">New Life Ledger</p>
-        <h1 className="mt-1 truncate text-lg font-black text-slate-900 sm:text-xl">{title}</h1>
-      </div>
-      <div className="text-left sm:text-right">
-        <p className="text-xs font-semibold text-slate-700">{formatMyanmarDateLabel(currentTime)}</p>
-        <p className="mt-0.5 font-mono text-lg font-black tracking-wider text-cyan-700 tabular-nums">{formatMyanmarClock(currentTime)}</p>
-        <p className="text-[10px] text-slate-500">Myanmar Time (UTC+06:30) · {actorName}</p>
+    <header className="neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-4 shadow-sm backdrop-blur sm:mx-6 sm:mb-6 sm:mt-6 sm:px-7 sm:py-5">
+      <div className="relative min-h-[154px]">
+        {actorName !== 'ဇွဲဇွဲ' ? (
+          <Link href="/" className="absolute left-0 top-0 text-base font-semibold text-cyan-700 transition hover:text-cyan-900 sm:text-lg">← Dashboard</Link>
+        ) : null}
+        <div className="mx-auto max-w-xl text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700 sm:text-sm">ယနေ့ရက်စွဲ</p>
+          <p className="mt-1 text-base font-semibold text-slate-900 sm:text-xl">{formatMyanmarDateLabel(currentTime)}</p>
+          <p className="mt-1 font-mono text-3xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-5xl">{formatMyanmarClock(currentTime)}</p>
+          <p className="mt-1 text-xs text-slate-500 sm:text-base">Myanmar Time (UTC+06:30)</p>
+        </div>
+        <div className="mt-6 max-w-3xl text-left">
+          <p className="text-base text-cyan-600 sm:text-xl">New Life Ledger</p>
+          <h1 className="mt-1 break-words text-xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
+        </div>
       </div>
     </header>
   );

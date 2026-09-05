@@ -27,7 +27,7 @@ describe("PWA quick actions", () => {
     expect(layoutSource).toContain("<BackgroundMusicPlayer settingsOpen={settingsOpen} />");
     expect(layoutSource).toContain("<RefreshOverlay />");
     expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
-    expect(layoutSource).not.toContain('href="/"');
+    expect(layoutSource).toContain('href="/"');
   });
 
   it("uses safe-area-aware spacing and a wider tablet offset", () => {
