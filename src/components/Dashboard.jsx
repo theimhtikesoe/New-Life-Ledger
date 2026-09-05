@@ -1830,9 +1830,9 @@ export default function Dashboard({ view = "overview" }) {
               aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
               className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
             >
-              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ဒီနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} လက်ငင်းရောင်းရငွေ</p>
               <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
-              <p className="mt-1 text-xs text-fuchsia-700">ငွေချေ/အကြွေးတိုး အသေးစိတ် →</p>
+              <p className="mt-1 text-xs text-fuchsia-700">လက်လီ + လက်ကား လက်ငင်းရောင်းအား အသေးစိတ် →</p>
             </Link>
             <button
               type="button"
