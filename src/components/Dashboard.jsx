@@ -1750,7 +1750,13 @@ export default function Dashboard({ view = "overview" }) {
               ) : null}
 
               {expandedDashboardMenu === "data" ? (
-                <div id="dashboard-data-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-cyan-200 bg-white p-2 sm:grid-cols-2">
+                <div id="dashboard-data-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-cyan-200 bg-white p-2 sm:grid-cols-3">
+                  <Link
+                    href="/customer-management"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+                  >
+                    👥 Customer Management
+                  </Link>
                   <Link
                     href="/data-management"
                     className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100"
