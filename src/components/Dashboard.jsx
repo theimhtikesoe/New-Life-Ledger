@@ -703,7 +703,9 @@ export default function Dashboard({ view = "overview" }) {
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
     setDataLoadError("");
-    setLoadingStage("KPI အချက်အလက်များ ရယူနေပါသည်");
+    // Keep one stable loading message in the dashboard chrome. Individual KPI
+    // cards keep their dimensions and do not duplicate the global indicator.
+    setLoadingStage("Data ရယူနေပါသည်");
     try {
       // Stage 1: fetch only small aggregate values so KPI cards can paint first.
       const kpi = await api("/api/dashboard-kpi", { signal });
@@ -712,13 +714,13 @@ export default function Dashboard({ view = "overview" }) {
 
       // Stage 2 starts immediately after KPI. It is independent of the main
       // customer list, so the ledger can render without waiting for slow alerts.
-      setLoadingStage("အကြွေးသတိပေးချက်များ ရယူနေပါသည်");
+      setLoadingStage("Data ရယူနေပါသည်");
       void loadOverdueDebts();
 
       // Stage 3: load the lightweight customer/ledger index. Keep the previous
       // snapshot visible while this request is running so navigation/refresh
       // never turns a populated screen into a false empty state.
-      setLoadingStage("ငွေရှင်းတမ်းနှင့် Customer data ရယူနေပါသည်");
+      setLoadingStage("Data ရယူနေပါသည်");
       const customerRequest = api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal });
       const allCustomersRequest = search ? api("/api/customers?includeLedgers=false", { signal }) : customerRequest;
       const [customerRows, allCustomersRows] = await Promise.all([
@@ -733,7 +735,7 @@ export default function Dashboard({ view = "overview" }) {
       clearAutoRetryTimers();
 
       // Stage 4: detailed daily values are intentionally background work.
-      setLoadingStage("ယနေ့ ငွေချေ/လက်ငင်း data ရယူနေပါသည်");
+      setLoadingStage("Data ရယူနေပါသည်");
       void api("/api/daily-summary", { signal })
         .then((summary) => {
           const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
@@ -756,7 +758,7 @@ export default function Dashboard({ view = "overview" }) {
         });
 
       // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
-      setLoadingStage("ကျန်ရှိသော data များ ရယူနေပါသည်");
+      setLoadingStage("Data ရယူနေပါသည်");
       void api("/api/unverified-kpay?status=PENDING", { signal })
         .then((kpayRows) => setPendingKpay(kpayRows))
         .catch((error) => {
@@ -1805,7 +1807,7 @@ export default function Dashboard({ view = "overview" }) {
           <>
             {/* Compact Summary Box */}
             <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {/* Customer and balance overview */}
             <Link
               href="/balance-detail"
@@ -1830,16 +1832,6 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-xs text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
             </button>
 
-
-            <Link
-              href={`/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`}
-              aria-label={`${selectedKpiDate} လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်`}
-              className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} လက်ငင်းရောင်းရငွေ</p>
-              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
-              <p className="mt-1 text-xs text-fuchsia-700">လက်ငင်း + ငွေချေ + အကြွေးတိုး အသေးစိတ် →</p>
-            </Link>
             <button
               type="button"
               onClick={() => { setProductionDate(selectedKpiDate); setShowProductionModal(true); }}
@@ -1855,10 +1847,8 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="mt-auto pt-2 text-xs font-bold text-orange-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
             </button>
+            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
           </div>
-            <div className="mt-4">
-              <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
-            </div>
             </section>
           </>
         ) : null}

@@ -250,9 +250,11 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
         <p className="text-sm font-black uppercase tracking-wide text-indigo-700 sm:text-base">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
-        <p className="mt-2 flex min-h-8 items-center text-2xl font-black text-indigo-900">{loading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
+        <p className="mt-2 flex min-h-8 items-center text-2xl font-black text-indigo-900">{loading ? "—" : formatMoney(dailyTotal)}</p>
         <div className="mt-2 min-h-[4.5rem] space-y-0.5 text-sm font-bold text-indigo-700 sm:text-base">
-          {!loading ? <><p>လက်ငင်း {totalCount} ခု</p><p>လက်လီ {retailCount} ခု</p><p>လက်ကား {wholesaleCount} ခု</p></> : null}
+          <p>လက်ငင်း {loading ? "—" : totalCount} ခု</p>
+          <p>လက်လီ {loading ? "—" : retailCount} ခု</p>
+          <p>လက်ကား {loading ? "—" : wholesaleCount} ခု</p>
         </div>
         <p className="mt-auto pt-2 text-xs font-bold text-indigo-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
       </button>
