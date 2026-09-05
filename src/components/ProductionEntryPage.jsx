@@ -99,7 +99,10 @@ export default function ProductionEntryPage() {
   }, [category, tubeItems]);
 
   const filledEntries = useMemo(() => entries
-    .map((entry) => ({ ...entry, quantity: Math.max(0, Number(lines[entry.key] || 0)) }))
+    .map((entry) => {
+      const quantity = Math.max(0, Number(lines[entry.key] || 0));
+      return { ...entry, quantity, outputQuantity: quantity, outputCapacity: entry.capacity };
+    })
     .filter((entry) => entry.quantity > 0), [entries, lines]);
   const totalPieces = filledEntries.reduce((sum, entry) => sum + entry.quantity * entry.capacity, 0);
   const visibleEntries = category === "tube" ? entries : entries.filter((entry) => getBottleGroup(entry.bottleType) === activeBottleGroup);
@@ -258,7 +261,8 @@ export default function ProductionEntryPage() {
         </section>
 
         <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-4 text-lg font-black text-slate-700">ထွက်ရှိမှု စာရင်း</h2>
+          <h2 className="mb-2 text-lg font-black text-slate-700">ထွက်ရှိမှု စာရင်း</h2>
+          <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900"><span className="font-black">သိမ်းရန်လိုအပ်သည် —</span> စက်ရွေးပြီး အောက်က size card တစ်ခုမှာ အရေအတွက်ထည့်ပါ။ `ဆံ့` ပမာဏက card ထဲမှာ သတ်မှတ်ပြီးသားဖြစ်ပါတယ်။ ပျက်စီးမှု၊ အကြောင်းရင်း၊ ပူးတွဲဆင်းသူ၊ မှတ်ချက်တွေက မဖြည့်လည်းရပါတယ်။</p>
           {category === "bottle" ? <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">{BOTTLE_GROUPS.map((group) => <button type="button" key={group.key} onClick={() => setActiveBottleGroup(group.key)} className={`min-w-0 rounded-xl border p-3 text-left transition ${activeBottleGroup === group.key ? "border-teal-700 bg-teal-700 text-white shadow-md" : "border-teal-100 bg-teal-50 text-teal-900 hover:border-teal-300"}`}><span className="block truncate text-sm font-black">{group.label}</span><span className={`mt-1 block text-[11px] leading-4 ${activeBottleGroup === group.key ? "text-teal-100" : "text-teal-700"}`}>{groupCounts[group.key] || 0} မျိုး</span></button>)}</div> : <div className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-sm font-bold text-cyan-800">Tube စက်အလိုက် ထုတ်လုပ်နိုင်သောအမျိုးအစားများ</div>}
           {category === "bottle" ? <p className="mb-3 text-xs font-semibold text-slate-500">{BOTTLE_GROUPS.find((group) => group.key === activeBottleGroup)?.description} — သက်ဆိုင်ရာ size များကိုသာ ပြထားပါသည်။</p> : null}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
