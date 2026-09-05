@@ -54,6 +54,17 @@ function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
 }
 
+function summarizeProduction(rows = []) {
+  const totalPieces = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0), 0);
+  const wasteQuantity = rows.reduce((sum, row) => sum + Number(row.wasteQuantity || row.damagedPieces || 0), 0);
+  const machines = new Set(rows.map((row) => row.machineCode).filter(Boolean));
+  return { totalPieces, wasteQuantity, goodPieces: Math.max(0, totalPieces - wasteQuantity), machineCount: machines.size };
+}
+
+function productionRowLabel(row) {
+  return row.category === "tube" ? `${row.tubeG || "Tube"} ${row.tubeColor || ""}`.trim() : (row.bottleType || "ဗူး");
+}
+
 function getBalanceLabel(value) {
   const amount = Number(value || 0);
   if (amount > 0) return "လက်ကျန်အကြွေး";
@@ -80,6 +91,12 @@ function getPreviousMyanmarDateInputValue(value = new Date()) {
   const local = new Date(date.getTime() + (6 * 60 + 30) * 60 * 1000);
   const previous = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() - 1));
   return formatMyanmarDateInputValue(new Date(previous.getTime() - (6 * 60 + 30) * 60 * 1000));
+}
+
+function shiftMyanmarDate(dateValue, delta) {
+  const date = new Date(`${dateValue}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + delta);
+  return date.toISOString().slice(0, 10);
 }
 
 function friendlyError(error) {
@@ -294,6 +311,11 @@ export default function Dashboard({ view = "overview" }) {
   const [todayCashSales, setTodayCashSales] = useState(() => readDashboardSnapshot()?.todayCashSales || []);
   const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
+  const [productionRows, setProductionRows] = useState([]);
+  const [productionDate, setProductionDate] = useState(() => formatMyanmarDateInputValue());
+  const [productionLoading, setProductionLoading] = useState(false);
+  const [productionError, setProductionError] = useState("");
+  const [showProductionModal, setShowProductionModal] = useState(false);
   const [ledgerPulse, setLedgerPulse] = useState(() => readDashboardSnapshot()?.ledgerPulse || null);
   const [ledgerPulseLoading, setLedgerPulseLoading] = useState(false);
   const [ledgerPulseError, setLedgerPulseError] = useState("");
@@ -377,6 +399,23 @@ export default function Dashboard({ view = "overview" }) {
 
     return () => controller.abort();
   }, [selectedKpiDate]);
+
+  useEffect(() => {
+    if (!productionDate) return undefined;
+    const controller = new AbortController();
+    setProductionLoading(true);
+    setProductionError("");
+    api(`/api/production-reports?date=${encodeURIComponent(productionDate)}`, { signal: controller.signal, cache: "no-store" })
+      .then((rows) => setProductionRows(Array.isArray(rows) ? rows : []))
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setProductionRows([]);
+          setProductionError(error.message || "ထုတ်လုပ်မှု data ရယူ၍မရပါ။");
+        }
+      })
+      .finally(() => setProductionLoading(false));
+    return () => controller.abort();
+  }, [productionDate]);
 
   // Keep unfinished local work available when the actor-only idle lock appears.
   // Each actor has a separate session draft so shared-phone users do not see one another's form data.
@@ -928,6 +967,7 @@ export default function Dashboard({ view = "overview" }) {
   const todayCashCount = dashboardKpi?.count ?? todayCashSales.length;
   const todayCashRetail = dashboardKpi?.retailCount ?? todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length;
   const todayCashWholesale = dashboardKpi?.wholesaleCount ?? (todayCashSales.length - todayCashRetail);
+  const productionSummary = useMemo(() => summarizeProduction(productionRows), [productionRows]);
 
   // Pagination logic
   const paginatedCustomers = useMemo(() => {
@@ -1593,7 +1633,7 @@ export default function Dashboard({ view = "overview" }) {
                     id="dashboard-kpi-date"
                     type="date"
                     value={selectedKpiDate}
-                    onChange={(event) => setSelectedKpiDate(event.target.value)}
+                    onChange={(event) => { setSelectedKpiDate(event.target.value); setProductionDate(event.target.value); }}
                     className="rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
                     aria-label="KPI ရက်စွဲရွေးရန်"
                   />
@@ -1785,6 +1825,26 @@ export default function Dashboard({ view = "overview" }) {
             </button>
 
 
+            <Link
+              href="/daily-summary"
+              aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
+              className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
+            >
+              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ဒီနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
+              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
+              <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
+            </Link>
+            <button
+              type="button"
+              onClick={() => { setProductionDate(selectedKpiDate); setShowProductionModal(true); }}
+              className="neon-card neon-sweep flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md sm:min-h-[158px]"
+            >
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-orange-700">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးထွက်ရှိမှု</p>
+                <p className="mt-2 text-2xl font-bold text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
+              </div>
+              <p className="mt-2 text-xs text-orange-700">ကောင်းမွန် {productionSummary.goodPieces.toLocaleString()} · ပျက်စီး {productionSummary.wasteQuantity.toLocaleString()} · အသေးစိတ်ကြည့်ရန် →</p>
+            </button>
           </div>
             <div className="mt-4">
               <DailySalesSummaryPanel />
@@ -2758,6 +2818,31 @@ export default function Dashboard({ view = "overview" }) {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showProductionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-orange-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-4">
+              <div><h3 className="text-xl font-black text-orange-900">ဗူးထွက်ရှိမှု အသေးစိတ်</h3><p className="mt-1 text-sm text-orange-700">ထုတ်လုပ်မှုမှတ်တမ်း</p></div>
+              <button type="button" onClick={() => setShowProductionModal(false)} className="text-2xl leading-none text-orange-600 hover:text-orange-900" aria-label="ပိတ်ရန်">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-3">
+                <label htmlFor="production-kpi-date" className="block text-sm font-black text-orange-900">Date 📅</label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {[[-1, "မနေ့"], [0, "ဒီနေ့"], [1, "မနက်ဖြန်"]].map(([delta, label]) => { const value = shiftMyanmarDate(formatMyanmarDateInputValue(currentTime), delta); return <button key={label} type="button" onClick={() => { setProductionDate(value); setSelectedKpiDate(value); }} className={`rounded-lg border px-3 py-2 text-sm font-bold ${productionDate === value ? "border-orange-500 bg-orange-500 text-white" : "border-orange-200 bg-white text-orange-800 hover:bg-orange-100"}`}>{label}</button>; })}
+                  <input id="production-kpi-date" type="date" value={productionDate} onChange={(event) => { setProductionDate(event.target.value); setSelectedKpiDate(event.target.value); }} className="min-h-10 rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm font-bold text-orange-900 outline-none focus:border-orange-500" />
+                </div>
+                <p className="mt-2 text-xs font-semibold text-orange-700">ရွေးထားသောရက်စွဲ — {productionDate}</p>
+              </div>
+              {productionError ? <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{productionError}</p> : null}
+              {productionLoading ? <p className="py-10 text-center text-sm font-semibold text-slate-500">ထုတ်လုပ်မှု data ရယူနေသည်...</p> : productionRows.length === 0 ? <p className="py-10 text-center text-sm font-semibold text-slate-500">ဤရက်စွဲအတွက် ထုတ်လုပ်မှုမှတ်တမ်း မရှိသေးပါ။</p> : <div className="mt-4 space-y-2">{productionRows.map((row) => <div key={row.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><div className="flex items-center justify-between gap-3"><span className="text-base font-black text-slate-900">{productionRowLabel(row)}</span><span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-bold text-orange-800">{row.machineName || row.machineCode}</span></div><p className="mt-2 text-sm font-semibold text-slate-700">{Number(row.outputCapacity || 0).toLocaleString()} ဆံ့ × {Number(row.outputQuantity || 0).toLocaleString()} {row.outputUnit || "ကဒ်"} = <span className="font-black text-orange-800">{(Number(row.outputCapacity || 0) * Number(row.outputQuantity || 0)).toLocaleString()} ဗူး</span></p></div>)}</div>}
+              <div className="mt-5 grid grid-cols-3 gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center"><div><p className="text-xs font-semibold text-emerald-700">ကောင်းမွန်</p><p className="mt-1 text-lg font-black text-emerald-800">{productionSummary.goodPieces.toLocaleString()} ဗူး</p></div><div><p className="text-xs font-semibold text-rose-700">ပျက်စီး</p><p className="mt-1 text-lg font-black text-rose-800">{productionSummary.wasteQuantity.toLocaleString()} ဗူး</p></div><div><p className="text-xs font-semibold text-sky-700">အသုံးပြုစက်</p><p className="mt-1 text-lg font-black text-sky-800">{productionSummary.machineCount} စက်</p></div></div>
+            </div>
+            <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-right"><button type="button" onClick={() => setShowProductionModal(false)} className="rounded-lg bg-orange-600 px-5 py-2 text-sm font-bold text-white hover:bg-orange-700">ပိတ်ရန်</button></div>
           </div>
         </div>
       )}
