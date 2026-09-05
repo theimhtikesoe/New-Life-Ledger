@@ -1666,7 +1666,7 @@ export default function Dashboard({ view = "overview" }) {
 
               <Link
                 href="/production"
-                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-3 text-center text-base font-black leading-5 text-orange-700 shadow-sm transition-colors hover:bg-orange-100"
+                className="neon-menu-button neon-card-orange flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-3 text-center text-base font-black leading-5 text-orange-700 shadow-sm transition-colors hover:bg-orange-100"
                 title="ထုတ်လုပ်မှု မှတ်တမ်း"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🏭</span>
@@ -1674,7 +1674,7 @@ export default function Dashboard({ view = "overview" }) {
               </Link>
               <Link
                 href="/ledger"
-                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                className="neon-menu-button neon-card-cyan flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
                 title="ငွေရှင်းတမ်း"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💳</span>
@@ -1682,7 +1682,7 @@ export default function Dashboard({ view = "overview" }) {
               </Link>
               <Link
                 href="/daily-summary"
-                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-3 text-center text-base font-black leading-5 text-fuchsia-700 shadow-sm transition-colors hover:bg-fuchsia-100"
+                className="neon-menu-button neon-card-fuchsia flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-3 text-center text-base font-black leading-5 text-fuchsia-700 shadow-sm transition-colors hover:bg-fuchsia-100"
                 title="နေ့စဉ်စာရင်းချုပ်"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📋</span>
@@ -1690,7 +1690,7 @@ export default function Dashboard({ view = "overview" }) {
               </Link>
               <Link
                 href="/activity"
-                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-center text-base font-black leading-5 text-amber-700 shadow-sm transition-colors hover:bg-amber-100"
+                className="neon-menu-button neon-card-amber flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-center text-base font-black leading-5 text-amber-700 shadow-sm transition-colors hover:bg-amber-100"
                 title="လုပ်ဆောင်ချက်မှတ်တမ်း"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🧾</span>
@@ -1701,7 +1701,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
                 aria-expanded={expandedDashboardMenu === "reports"}
                 aria-controls="dashboard-report-menu"
-                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+                className="neon-menu-button neon-card-violet flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📊</span>
                 <span>အစီရင်ခံ / မှတ်တမ်း</span>
@@ -1712,7 +1712,7 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
                 aria-expanded={expandedDashboardMenu === "data"}
                 aria-controls="dashboard-data-menu"
-                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                className="neon-menu-button neon-card-cyan flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🗂️</span>
                 <span>ဒေတာ / အမှိုက်ပုံး</span>
@@ -1837,7 +1837,7 @@ export default function Dashboard({ view = "overview" }) {
             <button
               type="button"
               onClick={() => { setProductionDate(selectedKpiDate); setShowProductionModal(true); }}
-              className="neon-card neon-sweep flex h-full min-h-[150px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md sm:min-h-[210px]"
+              className="neon-card neon-sweep neon-card-orange flex h-full min-h-[150px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md sm:min-h-[210px]"
             >
               <div>
                 <p className="text-base font-black uppercase tracking-wide text-orange-700 sm:text-lg">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးထွက်ရှိမှု</p>

@@ -149,6 +149,46 @@ canvas {
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.72) inset;
 }
 
+.neon-card,
+.neon-menu-button {
+  --neon-border-color: rgba(34, 211, 238, 0.78);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.neon-card::before,
+.neon-menu-button::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -1px;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: conic-gradient(from var(--neon-angle, 0deg), transparent 0deg 245deg, var(--neon-border-color) 290deg 320deg, transparent 355deg 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: neonBorderRun 4.8s linear infinite;
+}
+
+.neon-card > *,
+.neon-menu-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+@property --neon-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes neonBorderRun {
+  to { --neon-angle: 360deg; }
+}
+
 .neon-surface::after,
 .neon-card::after,
 .neon-control-deck::after {
@@ -173,14 +213,15 @@ canvas {
   transform: translateY(-2px);
 }
 
-.neon-card-rose { box-shadow: 0 10px 26px rgba(244, 63, 94, 0.10), 0 0 18px rgba(251, 113, 133, 0.12); }
-.neon-card-blue { box-shadow: 0 10px 26px rgba(59, 130, 246, 0.10), 0 0 18px rgba(96, 165, 250, 0.12); }
-.neon-card-emerald { box-shadow: 0 10px 26px rgba(16, 185, 129, 0.10), 0 0 18px rgba(52, 211, 153, 0.12); }
-.neon-card-violet { box-shadow: 0 10px 26px rgba(139, 92, 246, 0.11), 0 0 18px rgba(167, 139, 250, 0.14); }
-.neon-card-fuchsia { box-shadow: 0 10px 26px rgba(217, 70, 239, 0.10), 0 0 18px rgba(232, 121, 249, 0.13); }
-.neon-card-amber { box-shadow: 0 10px 26px rgba(245, 158, 11, 0.11), 0 0 18px rgba(251, 191, 36, 0.13); }
-.neon-card-cyan { box-shadow: 0 10px 26px rgba(6, 182, 212, 0.11), 0 0 18px rgba(34, 211, 238, 0.14); }
-.neon-card-indigo { box-shadow: 0 10px 26px rgba(99, 102, 241, 0.11), 0 0 18px rgba(129, 140, 248, 0.15); }
+.neon-card-rose { --neon-border-color: rgba(244, 63, 94, 0.82); box-shadow: 0 10px 26px rgba(244, 63, 94, 0.10), 0 0 18px rgba(251, 113, 133, 0.12); }
+.neon-card-blue { --neon-border-color: rgba(59, 130, 246, 0.82); box-shadow: 0 10px 26px rgba(59, 130, 246, 0.10), 0 0 18px rgba(96, 165, 250, 0.12); }
+.neon-card-emerald { --neon-border-color: rgba(16, 185, 129, 0.82); box-shadow: 0 10px 26px rgba(16, 185, 129, 0.10), 0 0 18px rgba(52, 211, 153, 0.12); }
+.neon-card-violet { --neon-border-color: rgba(139, 92, 246, 0.82); box-shadow: 0 10px 26px rgba(139, 92, 246, 0.11), 0 0 18px rgba(167, 139, 250, 0.14); }
+.neon-card-fuchsia { --neon-border-color: rgba(217, 70, 239, 0.82); box-shadow: 0 10px 26px rgba(217, 70, 239, 0.10), 0 0 18px rgba(232, 121, 249, 0.13); }
+.neon-card-amber { --neon-border-color: rgba(245, 158, 11, 0.82); box-shadow: 0 10px 26px rgba(245, 158, 11, 0.11), 0 0 18px rgba(251, 191, 36, 0.13); }
+.neon-card-cyan { --neon-border-color: rgba(6, 182, 212, 0.82); box-shadow: 0 10px 26px rgba(6, 182, 212, 0.11), 0 0 18px rgba(34, 211, 238, 0.14); }
+.neon-card-indigo { --neon-border-color: rgba(99, 102, 241, 0.82); box-shadow: 0 10px 26px rgba(99, 102, 241, 0.11), 0 0 18px rgba(129, 140, 248, 0.15); }
+.neon-card-orange { --neon-border-color: rgba(234, 88, 12, 0.82); box-shadow: 0 10px 26px rgba(234, 88, 12, 0.11), 0 0 18px rgba(251, 146, 60, 0.14); }
 
 @keyframes neonSweep {
   0%, 62%, 100% { opacity: 0; transform: translateX(-120%); }
@@ -205,7 +246,9 @@ canvas {
 
 @media (prefers-reduced-motion: reduce) {
   .neon-app-shell::before,
-  .neon-sweep::after {
+  .neon-sweep::after,
+  .neon-card::before,
+  .neon-menu-button::before {
     animation: none;
   }
 }
