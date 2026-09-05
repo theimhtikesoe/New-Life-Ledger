@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ACTORS } from "@/lib/audit";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { accountingAuditLogWhere, isCustomerEditActivity, isOrderWorkflowActivity } from "@/lib/accounting-activity";
+import { accountingAuditLogWhere, isCustomerEditActivity, isOrderWorkflowActivity, isProductionReportDeleteActivity } from "@/lib/accounting-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +76,7 @@ export async function GET(request) {
         : [],
     ]);
 
-    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && (includeOrders || !isOrderWorkflowActivity(log)) && (!excludeCustomerEdits || !isCustomerEditActivity(log)));
+    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isProductionReportDeleteActivity(log) && (includeOrders || !isOrderWorkflowActivity(log)) && (!excludeCustomerEdits || !isCustomerEditActivity(log)));
     const cashSaleIds = allAuditLogs
       .filter((log) => log.entityType === "CashSale" && log.entityId)
       .map((log) => String(log.entityId));
