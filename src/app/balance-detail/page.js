@@ -148,6 +148,7 @@ export default function BalanceDetailPage() {
   const [sortBy, setSortBy] = useState("amount-desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showBalanceExplanation, setShowBalanceExplanation] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -258,11 +259,22 @@ export default function BalanceDetailPage() {
         </section>
 
         <section className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 sm:p-5">
-          <h2 className="text-base font-bold text-cyan-950">ဒီလက်ကျန်ကို ဘယ်လိုတွက်ထားသလဲ</h2>
-          <p className="mt-2 text-sm leading-6 text-cyan-950"><strong>အသားတင်ရရန် = လက်ကျန်အကြွေးစုစုပေါင်း − လက်ကျန်ကြိုတင်ငွေချေ</strong></p>
-          <p className="mt-2 text-sm leading-6 text-cyan-900">ဥပမာ အကြွေး 300,000 Ks ရှိပြီး customer တချို့က 100,000 Ks ကြိုတင်ငွေချေထားရင် အသားတင်ရရန် 200,000 Ks ဖြစ်ပါတယ်။ အနီရောင်က customer ဆီက ရရန်ရှိတာ၊ အစိမ်းရောင်က customer က ပိုငွေချေထားတာကို ဆိုလိုပါတယ်။</p>
-          <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီနေ့ လက်ငင်းရောင်းမှာ လက်လီ {(cashSummary.cashSaleTypes?.RETAIL?.count || 0)} ခု၊ လက်ကား {(cashSummary.cashSaleTypes?.WHOLESALE?.count || 0)} ခု ပါဝင်ပါတယ်။ လက်ငင်းပမာဏကို အသားတင်ရရန်လက်ကျန်ထဲ မထည့်ပါ။</p>
-          <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီစာမျက်နှာက လက်ရှိ active customer balance တွေကိုပဲ စုပါတယ်။ Recycle Bin ထဲက customer များ မပါဝင်ပါ။ ယခင်က အားလုံးပေးချေခဲ့သည့် သမိုင်းပမာဏကို ကြည့်လိုပါက Customer Ledger၊ Daily Summary နှင့် Activity History ကို သုံးပါ။</p>
+          <button
+            type="button"
+            onClick={() => setShowBalanceExplanation((current) => !current)}
+            aria-expanded={showBalanceExplanation}
+            className="w-full text-left text-base font-bold text-cyan-950 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2"
+          >
+            အသားတင်ရရန် လက်ကျန် ဘယ်လိုတွက်ထားလဲ
+          </button>
+          {showBalanceExplanation ? (
+            <div className="mt-2">
+              <p className="text-sm leading-6 text-cyan-950"><strong>အသားတင်ရရန် = လက်ကျန်အကြွေးစုစုပေါင်း − လက်ကျန်ကြိုတင်ငွေချေ</strong></p>
+              <p className="mt-2 text-sm leading-6 text-cyan-900">ဥပမာ အကြွေး 300,000 Ks ရှိပြီး customer တချို့က 100,000 Ks ကြိုတင်ငွေချေထားရင် အသားတင်ရရန် 200,000 Ks ဖြစ်ပါတယ်။ အနီရောင်က customer ဆီက ရရန်ရှိတာ၊ အစိမ်းရောင်က customer က ပိုငွေချေထားတာကို ဆိုလိုပါတယ်။</p>
+              <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီနေ့ လက်ငင်းရောင်းမှာ လက်လီ {(cashSummary.cashSaleTypes?.RETAIL?.count || 0)} ခု၊ လက်ကား {(cashSummary.cashSaleTypes?.WHOLESALE?.count || 0)} ခု ပါဝင်ပါတယ်။ လက်ငင်းပမာဏကို အသားတင်ရရန်လက်ကျန်ထဲ မထည့်ပါ။</p>
+              <p className="mt-2 text-xs leading-5 text-cyan-800">ဒီစာမျက်နှာက လက်ရှိ active customer balance တွေကိုပဲ စုပါတယ်။ Recycle Bin ထဲက customer များ မပါဝင်ပါ။ ယခင်က အားလုံးပေးချေခဲ့သည့် သမိုင်းပမာဏကို ကြည့်လိုပါက Customer Ledger၊ Daily Summary နှင့် Activity History ကို သုံးပါ။</p>
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
