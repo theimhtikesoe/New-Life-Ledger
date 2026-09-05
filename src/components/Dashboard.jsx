@@ -1832,7 +1832,7 @@ export default function Dashboard({ view = "overview" }) {
             >
               <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} လက်ငင်းရောင်းရငွေ</p>
               <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
-              <p className="mt-1 text-xs text-fuchsia-700">လက်လီ + လက်ကား လက်ငင်းရောင်းအား အသေးစိတ် →</p>
+              <p className="mt-1 text-xs text-fuchsia-700">လက်ငင်း + ငွေချေ + အကြွေးတိုး အသေးစိတ် →</p>
             </Link>
             <button
               type="button"
