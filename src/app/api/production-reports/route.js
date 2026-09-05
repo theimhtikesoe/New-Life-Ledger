@@ -40,7 +40,7 @@ function normalizeRows(body) {
       tubeColor: category === "tube" ? String(row.tubeColor) : null,
     };
   });
-  if (rows.length === 0) throw new Error("ထွက်ရှိမှု အနည်းဆုံးတစ်ခု ထည့်ပေးပါ။");
+  if (rows.length === 0) throw new Error("ထွက်ရှိမှု အနည်းဆုံးတစ်မျိုး ထည့်ပေးပါ။");
   return rows;
 }
 
