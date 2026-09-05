@@ -8,7 +8,7 @@ import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 import { isCustomerEditActivity, isDailySalesActivity, isOrderWorkflowActivity } from "@/lib/accounting-activity";
 
-const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
+const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Staff"];
 const ACTIONS = ["PAYMENT", "DEBT_INCREASE", "CASH_SALE", "CREATE", "UPDATE", "RESTORE", "DELETE", "PERMANENT_DELETE"];
 
 function formatMyanmarDateInputValue(value = new Date()) {

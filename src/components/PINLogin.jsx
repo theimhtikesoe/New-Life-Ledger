@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"];
+const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Staff"];
 const ACTOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
 const AUTH_REQUEST_TIMEOUT_MS = 12000;

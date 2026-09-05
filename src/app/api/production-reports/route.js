@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 function parseDate(value) {
   const date = String(value || getMyanmarDateInputValue()).trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("ရက်စွဲပုံစံ မမှန်ပါ။");
+  if (date > getMyanmarDateInputValue()) throw new Error("အနာဂတ်ရက်စွဲဖြင့် ထုတ်လုပ်မှုမှတ်တမ်း သိမ်း၍မရပါ။");
   return date;
 }
 

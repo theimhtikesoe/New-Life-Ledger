@@ -12,6 +12,7 @@ const REQUIRED_TABLES = [
   "AuditLog",
   "AutoReportRun",
   "ProductionReport",
+  "ProductionWorker",
   "CashSale",
   "DailySalesSummary",
   "DailySalesSummarySource",
@@ -208,6 +209,16 @@ export async function ensureDatabase() {
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
+        await setupQuery(`
+          CREATE TABLE IF NOT EXISTS "ProductionWorker" (
+            "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            "name" TEXT NOT NULL UNIQUE,
+            "active" BOOLEAN NOT NULL DEFAULT TRUE,
+            "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionWorker_active_idx" ON "ProductionWorker"("active")`);
         await setupQuery(`
           CREATE TABLE IF NOT EXISTS "CashSale" (
             "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -547,6 +558,16 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "ProductionWorker" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "name" TEXT NOT NULL UNIQUE,
+          "active" BOOLEAN NOT NULL DEFAULT TRUE,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionWorker_active_idx" ON "ProductionWorker"("active")`);
       const orderTableCheck = await prisma.$queryRaw`
         SELECT count(*)
         FROM information_schema.tables

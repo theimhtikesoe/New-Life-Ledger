@@ -25,50 +25,50 @@ model Customer {
 }
 
 model Order {
-  id                 String          @id @default(uuid()) @db.Uuid
-  status             String          @default("DRAFT")
-  requestedDate      String          @default("")
-  sourceChatId       String?
-  sourceMessageId    String?
-  sourceUpdateId     String?
+  id                     String          @id @default(uuid()) @db.Uuid
+  status                 String          @default("DRAFT")
+  requestedDate          String          @default("")
+  sourceChatId           String?
+  sourceMessageId        String?
+  sourceUpdateId         String?
   telegramDraftChatId    String?
   telegramDraftMessageId String?
-  sourceText         String          @db.Text
-  customerId         String?         @db.Uuid
-  customer           Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  draftCustomerName  String?
-  draftCustomerPhone String?
-  customerPhone      String?
-  missingFields      Json?
-  aiConfidence       String?
-  aiNotes            String?
-  destination        String?
-  paymentType        String?
-  paymentNote        String?
-  receiptNote        String?
-  notificationMode   String          @default("IMMEDIATE")
-  factoryOrderDate   String?
-  factoryOrderNumber Int?
-  confirmedBy        String?
-  confirmedAt        DateTime?
-  cancelledAt        DateTime?
-  cancelledBy        String?
-  archivedAt         DateTime?
-  archivedBy         String?
-  historyTrashedAt   DateTime?
-  historyTrashedBy   String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  lines              OrderLine[]
-  caps               OrderCap[]
-  deliveries         OrderDelivery[]
+  sourceText             String          @db.Text
+  customerId             String?         @db.Uuid
+  customer               Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  draftCustomerName      String?
+  draftCustomerPhone     String?
+  customerPhone          String?
+  missingFields          Json?
+  aiConfidence           String?
+  aiNotes                String?
+  destination            String?
+  paymentType            String?
+  paymentNote            String?
+  receiptNote            String?
+  notificationMode       String          @default("IMMEDIATE")
+  factoryOrderDate       String?
+  factoryOrderNumber     Int?
+  confirmedBy            String?
+  confirmedAt            DateTime?
+  cancelledAt            DateTime?
+  cancelledBy            String?
+  archivedAt             DateTime?
+  archivedBy             String?
+  historyTrashedAt       DateTime?
+  historyTrashedBy       String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  lines                  OrderLine[]
+  caps                   OrderCap[]
+  deliveries             OrderDelivery[]
 
   @@unique([sourceChatId, sourceMessageId])
   @@unique([sourceUpdateId])
+  @@unique([factoryOrderDate, factoryOrderNumber])
   @@index([status])
   @@index([requestedDate])
   @@index([factoryOrderDate])
-  @@unique([factoryOrderDate, factoryOrderNumber])
   @@index([archivedAt])
   @@index([historyTrashedAt])
   @@index([cancelledAt])
@@ -178,27 +178,27 @@ model Ledger {
 }
 
 model CashSale {
-  id          String   @id @default(uuid()) @db.Uuid
-  customerId  String   @db.Uuid
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  saleType    String   @default("RETAIL")
-  itemSize    String?
-  cartons     Int?
-  rate        Int?
-  deductions  Int      @default(0)
-  amount      Int
-  note        String?
-  paymentType       String?
-  paymentBreakdown  Json?
-  date              DateTime @default(now())
-  createdAt         DateTime @default(now())
+  id               String   @id @default(uuid()) @db.Uuid
+  customerId       String   @db.Uuid
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  saleType         String   @default("RETAIL")
+  itemSize         String?
+  cartons          Int?
+  rate             Int?
+  deductions       Int      @default(0)
+  amount           Int
+  note             String?
+  paymentType      String?
+  paymentBreakdown Json?
+  date             DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   @@index([customerId])
   @@index([date])
 }
 
 model AuditLog {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
   actorName   String
   action      String
   entityType  String
@@ -208,7 +208,7 @@ model AuditLog {
   metadata    Json?
   hiddenAt    DateTime?
   hiddenBy    String?
-  createdAt   DateTime         @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([createdAt])
   @@index([actorName])
@@ -235,18 +235,18 @@ model AiExplanationCache {
 }
 
 model AutoReportRun {
-  id             String   @id @default(uuid()) @db.Uuid
-  status         String
-  trigger        String   @default("schedule")
-  reportDate     String?
-  periodLabel    String?
-  recipientCount Int      @default(0)
-  counts         Json?
-  elapsedMs      Int?
-  errorMessage           String?
-  manualNoticeClaimedAt  DateTime?
-  manualNoticeSentAt     DateTime?
-  createdAt              DateTime @default(now())
+  id                    String    @id @default(uuid()) @db.Uuid
+  status                String
+  trigger               String    @default("schedule")
+  reportDate            String?
+  periodLabel           String?
+  recipientCount        Int       @default(0)
+  counts                Json?
+  elapsedMs             Int?
+  errorMessage          String?
+  manualNoticeClaimedAt DateTime?
+  manualNoticeSentAt    DateTime?
+  createdAt             DateTime  @default(now())
 
   @@index([createdAt])
   @@index([reportDate])
@@ -268,25 +268,25 @@ model UnverifiedKpay {
 }
 
 model DailySalesSummary {
-  id             String   @id @default(uuid()) @db.Uuid
-  date           String   @unique
-  retailTotal    Int      @default(0)
-  wholesaleTotal Int      @default(0)
-  retailCash     Int      @default(0)
-  wholesaleCash  Int      @default(0)
-  source         String   @default("DAILY_INPUT")
-  note                  String?
-  enteredAt             DateTime?
-  enteredBy             String?
-  calculationMode       String?
-  sourceSnapshotAt      DateTime?
+  id                     String    @id @default(uuid()) @db.Uuid
+  date                   String    @unique
+  retailTotal            Int       @default(0)
+  wholesaleTotal         Int       @default(0)
+  retailCash             Int       @default(0)
+  wholesaleCash          Int       @default(0)
+  source                 String    @default("DAILY_INPUT")
+  note                   String?
+  enteredAt              DateTime?
+  enteredBy              String?
+  calculationMode        String?
+  sourceSnapshotAt       DateTime?
   sourceTransactionCount Int?
   sourceTransactionTotal Int?
-  adjustmentReason      String?
-  lastCalculatedAt      DateTime?
-  lastCalculatedBy      String?
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
+  adjustmentReason       String?
+  lastCalculatedAt       DateTime?
+  lastCalculatedBy       String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
   @@index([date])
 }
@@ -342,4 +342,14 @@ model ProductionReport {
   @@index([reportDate])
   @@index([submissionId])
   @@index([machineCode])
+}
+
+model ProductionWorker {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
 }
