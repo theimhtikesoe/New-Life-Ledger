@@ -290,7 +290,7 @@ export default function ProductionEntryPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl space-y-5 bg-slate-50 px-3 py-5 sm:px-6">
+    <main className="production-page mx-auto min-h-screen w-full max-w-none space-y-3 bg-white px-2 py-3 sm:space-y-5 sm:px-6 sm:py-5 lg:max-w-6xl">
       <header className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
         <Link href="/" className="text-sm font-semibold text-cyan-700">← Dashboard</Link>
         <h1 className="mt-2 text-2xl font-black text-slate-900">ထွက်ရှိမှု မှတ်တမ်းတင်ရန်</h1>

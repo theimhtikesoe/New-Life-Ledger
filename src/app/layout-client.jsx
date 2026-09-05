@@ -129,7 +129,7 @@ function AppZoomControls({ appZoom, onChange, settingsOpen }) {
           aria-label={`စာလုံးနှင့် website အရွယ်အစား ကြီးရန် — လက်ရှိ ${zoomPercent}%`}
           title={`အရွယ်အစား ကြီးရန် (${zoomPercent}%)`}
           tabIndex={settingsOpen ? 0 : -1}
-          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-sm font-extrabold text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex h-12 w-14 items-center justify-center rounded-xl border-2 border-white bg-cyan-700 text-lg font-black text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
         >
           <span aria-hidden="true">A+</span>
         </button>
@@ -140,7 +140,7 @@ function AppZoomControls({ appZoom, onChange, settingsOpen }) {
           aria-label={`စာလုံးနှင့် website အရွယ်အစား သေးရန် — လက်ရှိ ${zoomPercent}%`}
           title={`အရွယ်အစား သေးရန် (${zoomPercent}%)`}
           tabIndex={settingsOpen ? 0 : -1}
-          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-cyan-700 text-sm font-extrabold text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex h-12 w-14 items-center justify-center rounded-xl border-2 border-white bg-cyan-700 text-lg font-black text-white shadow-lg shadow-cyan-950/30 ring-2 ring-cyan-700/20 transition hover:bg-cyan-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
         >
           <span aria-hidden="true">A−</span>
         </button>
