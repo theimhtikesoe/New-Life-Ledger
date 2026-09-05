@@ -110,7 +110,7 @@ function SettingsToggle({ open, onToggle }) {
 
 const PAGE_HEADERS = {
   '/activity': 'Activity History',
-  '/auto-report-status': 'Auto Report Status',
+  '/auto-report-status': 'Auto Report အခြေအနေ',
   '/balance-detail': 'Balance Detail',
   '/customer-management': 'Customer Management',
   '/daily-summary': 'Daily Summary',
@@ -153,7 +153,7 @@ function SharedPageHeader({ pathname, actorName }) {
   if (!title || pathname === '/' || pathname === '/ledger') return null;
 
   return (
-    <header className="neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:px-7 sm:py-4">
+    <header className="shared-page-header neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:px-7 sm:py-4">
       <div className="relative min-h-[116px]">
         {actorName !== 'ဇွဲဇွဲ' ? (
           <Link href="/" className="absolute left-0 top-0 text-base font-semibold text-cyan-700 transition hover:text-cyan-900 sm:text-lg">← Dashboard</Link>

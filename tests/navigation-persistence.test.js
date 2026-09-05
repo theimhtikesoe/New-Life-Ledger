@@ -26,9 +26,12 @@ describe("Persistent audio navigation", () => {
   });
 
   it("uses Next Link for internal routes instead of full document anchors", () => {
+    expect(layoutSource).toMatch(/import Link from ["']next\/link["'];/);
+    expect(layoutSource).toContain('<Link href="/"');
     navigationFiles.forEach((relativePath) => {
       const source = readSource(relativePath);
-      expect(source, relativePath).toContain('import Link from "next/link";');
+      const ownsInternalLinks = /import Link from ["']next\/link["'];/.test(source);
+      if (!ownsInternalLinks) expect(layoutSource, relativePath).toContain('shared-page-header');
       expect(source, relativePath).not.toContain('<a href="/');
       expect(source, relativePath).not.toContain('<a href={`/' );
       expect(source, relativePath).not.toContain('<a\n');

@@ -7,6 +7,16 @@ const pinLoginSource = fs.readFileSync(path.join(root, "src/components/PINLogin.
 const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"), "utf8");
 const productionSource = fs.readFileSync(path.join(root, "src/components/ProductionEntryPage.jsx"), "utf8");
 const middlewareSource = fs.readFileSync(path.join(root, "src/middleware.js"), "utf8");
+const sharedHeaderRouteSources = [
+  "src/app/activity/page.js",
+  "src/app/auto-report-status/page.js",
+  "src/app/balance-detail/page.js",
+  "src/app/daily-summary/page.js",
+  "src/app/data-management/page.js",
+  "src/app/orders/page.js",
+  "src/app/vercel-build-logs/page.js",
+  "src/components/CustomerManagementPage.jsx",
+].map((file) => ({ file, source: fs.readFileSync(path.join(root, file), "utf8") }));
 
 
 describe("Actor access workflow", () => {
@@ -28,6 +38,16 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain("အခြား User ပြန်ရွေးရန်");
     expect(layoutSource).toContain("ActorSwitcher actorName={actorName}");
     expect(layoutSource).toContain("လက်ရှိ User");
+  });
+
+  it("keeps every route page on the shared header without duplicate Dashboard/title markup", () => {
+    expect(layoutSource).toContain("shared-page-header");
+    sharedHeaderRouteSources.forEach(({ file, source }) => {
+      expect(source, file).not.toContain('Link href="/"');
+      expect(source, file).not.toContain("← Dashboard");
+      expect(source, file).not.toMatch(/<h1[\s>]/);
+      expect(source, file).toContain("app-page-main");
+    });
   });
 
   it("keeps Zway Zway on Production while keeping Dashboard navigation for other users", () => {

@@ -299,8 +299,9 @@ export default function ProductionEntryPage() {
   }
 
   return (
-    <main className="production-page mx-auto min-h-screen w-full max-w-none space-y-3 bg-white px-2 py-3 sm:space-y-5 sm:px-6 sm:py-5 lg:max-w-6xl">
-      <form onSubmit={submit} className="space-y-5">
+    <main className="app-page-main production-page">
+      <div className="app-page-container production-container">
+        <form onSubmit={submit} className="space-y-5">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-slate-800">အခြေခံ အချက်အလက်</h2>
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
@@ -341,6 +342,7 @@ export default function ProductionEntryPage() {
         <div className="mb-3 text-right text-xs text-slate-500">{loadingHistory ? "ရယူနေသည်..." : `${groupedHistory.length} ကြိမ်`}</div>
         {groupedHistory.length === 0 && !loadingHistory ? <p className="rounded-xl border border-dashed p-5 text-center text-sm text-slate-500">{historyDate} အတွက် ထွက်ရှိမှုမှတ်တမ်း မရှိသေးပါ</p> : <div className="space-y-3">{groupedHistory.map((group) => <div key={group.submissionId || group.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><div className="font-black text-slate-800">{displayMachineName(group.machineCode, group.machineName)}</div><div className="text-xs text-slate-500">{group.reportDate} · {group.actorName}</div></div><div className="flex gap-2"><button type="button" onClick={() => startEdit(group)} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-black text-amber-800">ပြင်</button><button type="button" onClick={() => deleteReport(group)} className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-black text-red-700">ဖျက်</button></div></div><div className="mt-2 grid gap-1 text-sm">{group.rows.map((row) => <div key={row.id} className="rounded-lg bg-white px-2 py-1 font-semibold">{row.category === "tube" ? `${row.tubeG} ${row.tubeColor}` : row.bottleType} · {row.outputQuantity} {row.outputUnit} × {row.outputCapacity} = {formatNumber(Number(row.outputQuantity) * Number(row.outputCapacity))} ဗူး</div>)}</div><div className="mt-2 text-sm font-black text-emerald-700">စုစုပေါင်း {formatNumber(group.totalPieces)} ဗူး · ပျက်စီး {formatNumber(group.wasteQuantity)} ဗူး · ကောင်းမွန် {formatNumber(Math.max(0, group.totalPieces - Number(group.wasteQuantity || 0)))} ဗူး</div></div>)}</div>}
       </section>
+        </div>
     </main>
   );
 }

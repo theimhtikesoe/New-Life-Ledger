@@ -203,18 +203,21 @@ export default function ActivityPage() {
   }, [logs, reviewTarget]);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
-        <header className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
-            {returnToAi ? <Link href={`/daily-summary?date=${encodeURIComponent(date)}#ai-explanation`} className="text-sm font-semibold text-violet-700">← AI ရှင်းပြချက်သို့ ပြန်သွားရန်</Link> : null}
+    <main className="app-page-main">
+      <div className="app-page-container">
+        <section className="page-toolbar">
+          <div className="page-toolbar-row">
+            <div className="min-w-0">
+              {returnToAi ? <div className="page-toolbar-controls justify-start"><Link href={`/daily-summary?date=${encodeURIComponent(date)}#ai-explanation`} className="text-sm font-semibold text-violet-700">← AI ရှင်းပြချက်သို့ ပြန်သွားရန်</Link></div> : null}
+              <p className="page-toolbar-description">အရင်စာရင်းများနှင့် လက်ရှိလုပ်ဆောင်ချက်များကို အသေးစိတ်ကြည့်ရန်</p>
+            </div>
+            <div className="page-toolbar-controls w-full sm:w-auto">
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 sm:flex-none" />
+              <select value={actor} onChange={(e) => setActor(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:flex-none"><option value="">User အားလုံး</option>{ACTORS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+              <select value={action} onChange={(e) => setAction(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:flex-none"><option value="">Action အားလုံး</option>{ACTIONS.map((item) => <option key={item} value={item}>{actionLabel(item)}</option>)}</select>
+            </div>
           </div>
-          <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div><h1 className="text-2xl font-bold text-slate-900">Activity History</h1><p className="mt-1 text-sm text-slate-600">အရင်စာရင်းများနှင့် လက်ရှိလုပ်ဆောင်ချက်များကို အသေးစိတ်ကြည့်ရန်</p></div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-slate-800" /><select value={actor} onChange={(e) => setActor(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800"><option value="">User အားလုံး</option>{ACTORS.map((item) => <option key={item} value={item}>{item}</option>)}</select><select value={action} onChange={(e) => setAction(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800"><option value="">Action အားလုံး</option>{ACTIONS.map((item) => <option key={item} value={item}>{actionLabel(item)}</option>)}</select></div>
-          </div>
-        </header>
+        </section>
 
         {error && <p className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700">{error}</p>}
         {reviewTarget ? <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"><strong>AI ပြန်စစ်ရန် ရွေးထားသည့် record:</strong> {reviewTarget.customerName || "Customer မသတ်မှတ်ရသေး"}{reviewTarget.amount ? ` · ${Number(reviewTarget.amount).toLocaleString()} Ks` : ""} {highlightedId ? " — အောက်မှာ မီးမောင်းထိုးပြထားပါသည်။" : logs.length && !loading ? " — ကိုက်ညီသော record မတွေ့သေးပါ။" : " — ရှာနေပါသည်။"}</div> : null}

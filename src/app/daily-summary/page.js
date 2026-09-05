@@ -584,33 +584,30 @@ export default function DailySummaryPage() {
 
 
   return (
-    <main className="min-h-screen bg-slate-50 px-3 py-3 sm:px-6 sm:py-6">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-5">
-        <header className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+    <main className="app-page-main">
+      <div className="app-page-container">
+        <section className="page-toolbar">
+          <div className="page-toolbar-row items-start">
             <div className="min-w-0">
-              <Link href="/" className="text-xs font-semibold text-cyan-700 sm:text-sm">← Dashboard</Link>
-              <h1 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Daily Summary</h1>
-              <p className="mt-1 text-[13px] leading-5 text-slate-600 sm:text-sm">ရွေးထားသောနေ့၏ ငွေချေမှုနှင့် အကြွေးတိုးမှု အသေးစိတ်</p>
-              <p className="mt-2 text-[11px] font-semibold text-cyan-700 sm:text-xs">Report Date: {safeMyanmarDateLabel(date)}</p>
-              <p className="mt-1 text-[11px] text-slate-500 sm:text-xs">Time Range: 00:00–23:59 (Myanmar Time)</p>
+              <p className="page-toolbar-description">ရွေးထားသောနေ့၏ ငွေချေမှုနှင့် အကြွေးတိုးမှု အသေးစိတ်</p>
+              <p className="mt-2 text-xs font-semibold text-cyan-700">Report Date: {safeMyanmarDateLabel(date)}</p>
+              <p className="mt-1 text-xs text-slate-500">Time Range: 00:00–23:59 (Myanmar Time)</p>
             </div>
-            <div className="flex min-w-0 w-full max-w-full flex-col gap-2 sm:w-auto sm:min-w-56 sm:items-end">
-              <label htmlFor="report-date" className="relative flex min-h-11 min-w-0 w-full max-w-full items-center justify-between gap-3 overflow-hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 sm:w-56">
+            <div className="flex min-w-0 w-full flex-col gap-2 sm:w-auto sm:min-w-56 sm:items-end">
+              <label htmlFor="report-date" className="relative flex min-h-10 min-w-0 w-full items-center justify-between gap-3 overflow-hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 sm:w-56">
                 <span className="truncate">{formatDateControlLabel(date)}</span>
                 <span aria-hidden="true" className="shrink-0 text-slate-400">▣</span>
                 <input id="report-date" type="date" value={date} aria-label="Report Date" onChange={(e) => { const nextDate = e.target.value; if (isValidDateInput(nextDate)) { setDate(nextDate); setReconciliationOpen(false); setReconciliation(null); setReconciliationError(""); } }} className="daily-summary-date-input absolute inset-0 h-full w-full cursor-pointer opacity-0" />
               </label>
-              <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-                <button type="button" onClick={handleReconciliation} disabled={loading || reconciliationLoading} className={`min-h-11 w-full rounded-lg border px-4 py-2 text-[13px] font-semibold shadow-sm transition active:scale-[0.98] disabled:opacity-60 sm:w-auto sm:text-sm ${reconciliationOpen ? "border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100" : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"}`}>{reconciliationLoading ? "ပြန်စစ်နေသည်..." : reconciliationOpen ? "ပြန်စစ်ရန် ပိတ်မည်" : "ပြန်စစ်ရန်"}</button>
-                <button type="button" onClick={() => { if (aiExplanation) setAiExplanationOpen((open) => !open); else handleAiExplain(); }} disabled={loading || aiLoading} className="min-h-11 w-full rounded-lg bg-violet-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:w-auto sm:text-sm">
+              <div className="page-toolbar-controls w-full sm:w-auto">
+                <button type="button" onClick={handleReconciliation} disabled={loading || reconciliationLoading} className={`min-h-10 flex-1 rounded-lg border px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98] disabled:opacity-60 sm:flex-none ${reconciliationOpen ? "border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100" : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"}`}>{reconciliationLoading ? "ပြန်စစ်နေသည်..." : reconciliationOpen ? "ပြန်စစ်ရန် ပိတ်မည်" : "ပြန်စစ်ရန်"}</button>
+                <button type="button" onClick={() => { if (aiExplanation) setAiExplanationOpen((open) => !open); else handleAiExplain(); }} disabled={loading || aiLoading} className="min-h-10 flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:flex-none">
                   {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanationOpen ? "AI ရှင်းပြချက် ဖျောက်မည်" : "AI ရှင်းပြချက် ပြမည်"}
                 </button>
               </div>
-
             </div>
           </div>
-        </header>
+        </section>
 
         {aiExplanation && aiExplanationOpen && <AiExplanationPanel explanation={aiExplanation} date={date} />}
         {reconciliationOpen && <ReconciliationPanel reconciliation={reconciliation} loading={reconciliationLoading} error={reconciliationError} />}

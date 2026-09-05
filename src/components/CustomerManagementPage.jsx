@@ -217,17 +217,11 @@ export default function BalanceDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
-        <header className="rounded-xl border border-slate-200 bg-white p-5">
-          <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
-          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Customer Management</h1>
-              <p className="mt-1 text-sm text-slate-600">Customer အချက်အလက်နဲ့ Update / Delete လုပ်ဆောင်ချက်များ</p>
-            </div>
-          </div>
-        </header>
+    <main className="app-page-main">
+      <div className="app-page-container">
+        <section className="page-toolbar">
+          <p className="page-toolbar-description">Customer အချက်အလက်နဲ့ Update / Delete လုပ်ဆောင်ချက်များ</p>
+        </section>
 
         {error ? <section role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">{error}</section> : null}
 

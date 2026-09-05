@@ -1,6 +1,5 @@
 'use client';
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
 
@@ -129,30 +128,19 @@ export default function AutoReportStatusPage() {
   const counts = latest?.counts || {};
 
   return (
-    <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-6 sm:py-6">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-        <header className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">Auto Report အခြေအနေ</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                နောက်ဆုံး Auto Report run၊ report ရက်စွဲ၊ ပို့မှုအခြေအနေနှင့် လက်ခံရရှိသည့်နေရာအရေအတွက်ကိုသာ ကြည့်နိုင်ပါသည်။
-              </p>
+    <main className="app-page-main">
+      <div className="app-page-container">
+        <section className="page-toolbar">
+          <div className="page-toolbar-row items-start">
+            <div className="min-w-0">
+              <p className="page-toolbar-description">နောက်ဆုံး Auto Report run၊ report ရက်စွဲ၊ ပို့မှုအခြေအနေနှင့် လက်ခံရရှိသည့်နေရာအရေအတွက်ကိုသာ ကြည့်နိုင်ပါသည်။</p>
+              <p className="mt-2 text-xs text-slate-500">{checkedAt ? `နောက်ဆုံးစစ်ဆေးချိန် — ${formatRunTime(checkedAt)}` : "အခြေအနေ ရယူနေသည်..."}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => loadStatus(true)}
-              disabled={loading || refreshing}
-              className="min-h-11 shrink-0 rounded-xl border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition-colors hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
+            <button type="button" onClick={() => loadStatus(true)} disabled={loading || refreshing} className="min-h-10 shrink-0 rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition-colors hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
               {refreshing ? "ပြန်လည်ရယူနေသည်..." : "ပြန်လည်ရယူမည်"}
             </button>
           </div>
-          <p className="mt-4 text-xs text-slate-500">
-            {checkedAt ? `နောက်ဆုံးစစ်ဆေးချိန် — ${formatRunTime(checkedAt)}` : "အခြေအနေ ရယူနေသည်..."}
-          </p>
-        </header>
+        </section>
 
         {error ? (
           <section className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-rose-800">
