@@ -1626,28 +1626,36 @@ export default function Dashboard({ view = "overview" }) {
 
               <Link
                 href="/orders"
-                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-2 text-center text-sm font-semibold leading-4 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100 sm:text-base"
+                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 text-center text-base font-black leading-5 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
                 title="Telegram Orders"
               >
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">📦</span>
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📦</span>
                 <span>အော်ဒါများ</span>
               </Link>
               <Link
                 href="/production"
-                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-2 py-2 text-center text-sm font-semibold leading-4 text-orange-700 shadow-sm transition-colors hover:bg-orange-100 sm:text-base"
+                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-3 text-center text-base font-black leading-5 text-orange-700 shadow-sm transition-colors hover:bg-orange-100"
                 title="ထုတ်လုပ်မှု မှတ်တမ်း"
               >
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">🏭</span>
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🏭</span>
                 <span>ထုတ်လုပ်မှု</span>
+              </Link>
+              <Link
+                href="/ledger"
+                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                title="ငွေရှင်းတမ်း"
+              >
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💳</span>
+                <span>ငွေရှင်းတမ်း</span>
               </Link>
               <button
                 type="button"
                 onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
                 aria-expanded={expandedDashboardMenu === "reports"}
                 aria-controls="dashboard-report-menu"
-                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-violet-300 bg-violet-50 px-2 py-2 text-center text-xs font-semibold leading-4 text-violet-700 shadow-sm transition-colors hover:bg-violet-100 sm:text-sm"
+                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">📊</span>
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📊</span>
                 <span>အစီရင်ခံ / မှတ်တမ်း</span>
                 <span className="shrink-0" aria-hidden="true">{expandedDashboardMenu === "reports" ? "⌃" : "⌄"}</span>
               </button>
@@ -1656,9 +1664,9 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
                 aria-expanded={expandedDashboardMenu === "data"}
                 aria-controls="dashboard-data-menu"
-                className="flex min-h-10 min-w-0 w-full items-center justify-center gap-1.5 rounded-lg border border-cyan-300 bg-cyan-50 px-2 py-2 text-center text-xs font-semibold leading-4 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 sm:text-sm"
+                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
               >
-                <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center text-sm leading-none" aria-hidden="true">🗂️</span>
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🗂️</span>
                 <span>ဒေတာ / အမှိုက်ပုံး</span>
                 <span className="shrink-0" aria-hidden="true">{expandedDashboardMenu === "data" ? "⌃" : "⌄"}</span>
               </button>
@@ -1683,6 +1691,18 @@ export default function Dashboard({ view = "overview" }) {
                     className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Build မှတ်တမ်း
+                  </Link>
+                  <Link
+                    href="/daily-summary"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-sm font-medium text-fuchsia-700 hover:bg-fuchsia-100"
+                  >
+                    နေ့စဉ်စာရင်းချုပ်
+                  </Link>
+                  <Link
+                    href="/activity"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
+                  >
+                    လုပ်ဆောင်ချက်မှတ်တမ်း
                   </Link>
                 </div>
               ) : null}
@@ -1737,23 +1757,18 @@ export default function Dashboard({ view = "overview" }) {
           <>
             {/* Compact Summary Box */}
             <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {/* Total Balance */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Customer and balance overview */}
             <Link
               href="/balance-detail"
-              aria-label="အသားတင်ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
-              className="neon-card neon-sweep neon-card-rose flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-rose-200 bg-rose-50/85 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
+              aria-label="Customer နှင့် ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
+              className="neon-card neon-sweep neon-card-rose flex h-full min-h-[110px] min-w-0 w-full flex-col justify-between rounded-xl border border-rose-200 bg-rose-50/85 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
             >
-              <p className="text-xs font-medium uppercase tracking-wide text-rose-600">အသားတင်ရရန်လက်ကျန်</p>
-              <p className="mt-2 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p>
-              <p className="mt-1 text-xs text-rose-500">Net Receivable Balance · အသေးစိတ်ကြည့်ရန် →</p>
-            </Link>
-
-            {/* Customer Count */}
-            <Link href="/customer-management" aria-label="Customer Management ဖွင့်ရန်" className="neon-card neon-sweep neon-card-blue flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-blue-200 bg-blue-50/85 p-4 text-left hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-300 sm:min-h-[158px]">
-              <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Customer အရေအတွက်</p>
-              <p className="mt-2 text-2xl font-bold text-blue-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p>
-              <p className="mt-1 text-xs text-blue-500">Customer Management · အသေးစိတ်ကြည့်ရန် →</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-rose-600">Customer နှင့် အကြွေးအခြေအနေ</p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div><p className="text-xs text-rose-500">Customer</p><p className="mt-1 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p><p className="text-xs text-rose-500">ယောက်</p></div>
+                <div><p className="text-xs text-rose-500">ရရန်လက်ကျန်</p><p className="mt-1 break-words text-xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p><p className="text-xs text-rose-500">အသေးစိတ် →</p></div>
+              </div>
             </Link>
 
             {/* Today&apos;s Transactions */}
@@ -1767,46 +1782,11 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-xs text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
             </button>
 
-            <Link
-              href="/daily-summary"
-              aria-label="ဒီနေ့ လက်ငင်းရောင်း အသေးစိတ်ကြည့်ရန်"
-              className="neon-card neon-sweep neon-card-fuchsia flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-fuchsia-200 bg-fuchsia-50/85 p-4 text-left shadow-sm transition-all hover:border-fuchsia-300 hover:shadow-md sm:min-h-[158px]"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">{selectedKpiIsToday ? "ဒီနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
-              <p className="mt-2 text-2xl font-bold text-fuchsia-800">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(todayCashAmount)}</p>
-              <p className="mt-1 text-xs text-fuchsia-700">{todayCashCount} ခု · လက်လီ {todayCashRetail} / လက်ကား {todayCashWholesale}</p>
-            </Link>
-
-            <Link
-              href="/daily-summary"
-              className="neon-card neon-sweep neon-card-violet flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-violet-200 bg-violet-50/85 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[158px]"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-violet-600">နေ့စဉ်စာရင်းချုပ်</p>
-              <p className="mt-2 text-lg font-bold text-violet-800">Daily Summary &amp; AI</p>
-              <p className="mt-1 text-xs text-violet-600">အသေးစိတ်ကြည့်ရန် →</p>
-            </Link>
-
-            <Link
-              href="/activity"
-              className="neon-card neon-sweep neon-card-amber flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-amber-200 bg-amber-50/85 p-4 text-left shadow-sm transition-all hover:border-amber-300 hover:shadow-md"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-amber-700">လုပ်ဆောင်ချက်မှတ်တမ်း</p>
-              <p className="mt-2 text-lg font-bold text-amber-800">Activity History</p>
-              <p className="mt-1 text-xs text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
-            </Link>
-
-            <DailySalesSummaryPanel />
-
-            <Link
-              href="/ledger"
-              className="neon-card neon-sweep neon-card-cyan flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/85 p-4 text-left shadow-sm transition-all hover:border-cyan-300 hover:shadow-md"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">Customer စာရင်း</p>
-              <p className="mt-2 text-lg font-bold text-cyan-800">ငွေရှင်းတမ်း</p>
-              <p className="mt-1 text-xs text-cyan-700">Customer စာရင်းသွင်းရန် →</p>
-            </Link>
 
           </div>
+            <div className="mt-4">
+              <DailySalesSummaryPanel />
+            </div>
             </section>
           </>
         ) : null}
