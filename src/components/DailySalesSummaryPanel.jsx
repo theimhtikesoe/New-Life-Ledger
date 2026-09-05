@@ -23,6 +23,8 @@ const INPUT_FIELDS = [
   { key: "wholesaleCash", label: "လက်ကား (ငွေသား)", tone: "amber" },
 ];
 
+const HISTORY_PAGE_SIZE = 7;
+
 const AUGUST_NOTEBOOK_OPENING = {
   month: "2026-08",
   amount: "246593950",
@@ -82,6 +84,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   const [saveNotice, setSaveNotice] = useState("");
   const [showOpeningForm, setShowOpeningForm] = useState(false);
   const [openingDraft, setOpeningForm] = useState({ amount: "", asOfDate: "", note: "" });
+  const [historyPage, setHistoryPage] = useState(1);
 
   const load = useCallback(async (targetDate) => {
     let active = true;
@@ -129,6 +132,10 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
     load(date);
   }, [isOpen, load, date]);
 
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [date]);
+
   const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
   const values = draft || toDraft(automatic);
   const dailyTotal = Number(values.retailTotal || 0) + Number(values.wholesaleTotal || 0);
@@ -165,6 +172,13 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       return { ...displayRow, monthlyCumulative: included ? running : null };
     });
   }, [summary, date, values, dailyTotal, cashDailyTotal]);
+
+  const historyPageCount = Math.max(1, Math.ceil(tableRows.length / HISTORY_PAGE_SIZE));
+  const visibleHistoryPage = Math.min(historyPage, historyPageCount);
+  const historyPageRows = tableRows.slice(
+    (visibleHistoryPage - 1) * HISTORY_PAGE_SIZE,
+    visibleHistoryPage * HISTORY_PAGE_SIZE,
+  );
 
   const currentTableOpening = tableRows.find((row) => row.date === date)?.monthlyCumulative;
   const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;
@@ -359,7 +373,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {tableRows.map((row) => (
+                      {historyPageRows.map((row) => (
                         <tr key={row.date} className={row.date === date ? "bg-indigo-50/50" : ""}>
                           <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-900">{row.date.slice(8, 10)}/{row.date.slice(5, 7)}</td>
                           <td className="px-3 py-2 text-slate-700">{formatMoney(row.retailTotal)}</td>
@@ -373,6 +387,38 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                     </tbody>
                   </table>
                 </div>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setHistoryPage((current) => Math.max(1, current - 1))}
+                    disabled={visibleHistoryPage === 1}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    ← ယခင်
+                  </button>
+                  <div className="flex flex-wrap items-center justify-center gap-1.5" aria-label="နေ့စဉ်ရောင်းရငွေဇယား စာမျက်နှာများ">
+                    {Array.from({ length: historyPageCount }, (_, index) => index + 1).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setHistoryPage(page)}
+                        aria-current={visibleHistoryPage === page ? "page" : undefined}
+                        className={`min-w-9 rounded-lg px-2.5 py-2 text-xs font-bold ${visibleHistoryPage === page ? "bg-indigo-600 text-white" : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100"}`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryPage((current) => Math.min(historyPageCount, current + 1))}
+                    disabled={visibleHistoryPage === historyPageCount}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    နောက် →
+                  </button>
+                </div>
+                <p className="mt-2 text-center text-[11px] font-semibold text-slate-500">စာမျက်နှာ {visibleHistoryPage} / {historyPageCount} · တစ်မျက်နှာလျှင် {HISTORY_PAGE_SIZE} ရက်</p>
               </div>
             )}
           </section>

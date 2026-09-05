@@ -309,6 +309,16 @@ textarea {
   }
 }
 
+/* iPad standalone PWA has more usable space than a phone. Keep the status-bar
+   clearance, but avoid the oversized blank rail above the dashboard content. */
+@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  @media screen and (min-width: 768px) {
+    :root {
+      --pwa-top-clearance: max(env(safe-area-inset-top, 0px), 3.25rem);
+    }
+  }
+}
+
 @media screen and (orientation: landscape) and (min-width: 768px) {
   .neon-app-shell {
     min-height: 100svh;
