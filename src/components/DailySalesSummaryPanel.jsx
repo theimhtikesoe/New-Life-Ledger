@@ -244,9 +244,9 @@ export default function DailySalesSummaryPanel({ totalCount = 0, retailCount = 0
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
         <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
-        <p className="mt-2 text-lg font-bold text-indigo-900">တစ်နေ့တာ လက်လီ + လက်ကား - {formatMoney(dailyTotal)}</p>
+        <p className="mt-2 text-2xl font-bold text-indigo-900">{formatMoney(dailyTotal)}</p>
         <p className="mt-1 text-xs font-semibold text-indigo-700">လက်ငင်း {totalCount} ခု · လက်လီ {retailCount} / လက်ကား {wholesaleCount}</p>
-        <p className="mt-1 text-xs text-indigo-700">နေ့စဉ်သိမ်းပြီး ဇယားကြည့်ရန် →</p>
+        <p className="mt-1 text-xs text-indigo-700">အသေးစိတ်ကြည့်ရန် →</p>
       </button>
 
       {isOpen ? (
