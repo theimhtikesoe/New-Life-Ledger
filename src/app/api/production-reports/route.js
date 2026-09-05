@@ -115,7 +115,7 @@ export async function POST(request) {
       entityType: "ProductionReport",
       entityId: submissionId,
       entityLabel: `${machine.code} ${reportDate}`,
-      summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း တင်သွင်း (${totalPieces.toLocaleString()} ခု)`,
+      summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း တင်သွင်း (${totalPieces.toLocaleString()} ဗူး)`,
       metadata: { submissionId, reportDate, machineCode: machine.code, category: requestedCategory, lineCount: rows.length, totalPieces, wasteQuantity, involvedWorkers },
     });
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: created.count, totalPieces, wasteQuantity } }, { status: 201 });
@@ -156,7 +156,7 @@ export async function PATCH(request) {
       return tx.productionReport.createMany({ data });
     });
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
-    await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ခု)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, involvedWorkers } });
+    await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ဗူး)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, involvedWorkers } });
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: result.count, totalPieces, wasteQuantity } });
   } catch (error) {
     console.error("Production report update failed", error);
