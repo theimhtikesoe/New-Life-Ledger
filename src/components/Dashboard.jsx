@@ -1847,7 +1847,7 @@ export default function Dashboard({ view = "overview" }) {
             </button>
           </div>
             <div className="mt-4">
-              <DailySalesSummaryPanel totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
+              <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
             </div>
             </section>
           </>

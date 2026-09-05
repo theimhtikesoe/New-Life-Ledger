@@ -70,9 +70,9 @@ function toneClasses(tone) {
     : "border-amber-200 bg-amber-50 text-amber-900";
 }
 
-export default function DailySalesSummaryPanel({ totalCount = 0, retailCount = 0, wholesaleCount = 0 }) {
+export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [date, setDate] = useState(() => formatMyanmarDateInputValue());
+  const [date, setDate] = useState(() => selectedDate || formatMyanmarDateInputValue());
   const [summary, setSummary] = useState(null);
   const [draft, setDraft] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -83,7 +83,7 @@ export default function DailySalesSummaryPanel({ totalCount = 0, retailCount = 0
   const [showOpeningForm, setShowOpeningForm] = useState(false);
   const [openingDraft, setOpeningForm] = useState({ amount: "", asOfDate: "", note: "" });
 
-  const load = useCallback(async (targetDate = date) => {
+  const load = useCallback(async (targetDate) => {
     let active = true;
     const actorName = window.localStorage.getItem("actorName") || "";
     setLoading(true);
@@ -115,13 +115,19 @@ export default function DailySalesSummaryPanel({ totalCount = 0, retailCount = 0
       if (active) setLoading(false);
     }
     return () => { active = false; };
-  }, [date]);
+  }, []);
+
+  useEffect(() => {
+    const targetDate = selectedDate || formatMyanmarDateInputValue();
+    setDate(targetDate);
+    load(targetDate);
+  }, [selectedDate, load]);
 
   useEffect(() => {
     if (!isOpen) return;
     setIsEditing(false);
-    load();
-  }, [isOpen, load]);
+    load(date);
+  }, [isOpen, load, date]);
 
   const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
   const values = draft || toDraft(automatic);
@@ -209,7 +215,7 @@ export default function DailySalesSummaryPanel({ totalCount = 0, retailCount = 0
     } finally {
       setSaving(false);
     }
-  }, [date, saving, values]);
+  }, [date, saving, values, hasManualDifference]);
 
   const saveOpening = async () => {
     if (saving) return;
@@ -244,8 +250,8 @@ export default function DailySalesSummaryPanel({ totalCount = 0, retailCount = 0
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
         <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
-        <p className="mt-2 text-2xl font-bold text-indigo-900">{formatMoney(dailyTotal)}</p>
-        <p className="mt-1 text-xs font-semibold text-indigo-700">လက်ငင်း {totalCount} ခု · လက်လီ {retailCount} / လက်ကား {wholesaleCount}</p>
+        <p className="mt-2 text-2xl font-bold text-indigo-900">{loading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
+        <p className="mt-1 text-xs font-semibold text-indigo-700">{loading ? "Data ရယူနေသည်..." : `လက်ငင်း ${totalCount} ခု · လက်လီ ${retailCount} / လက်ကား ${wholesaleCount}`}</p>
         <p className="mt-1 text-xs text-indigo-700">အသေးစိတ်ကြည့်ရန် →</p>
       </button>
 
