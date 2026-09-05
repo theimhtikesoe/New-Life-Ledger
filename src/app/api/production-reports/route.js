@@ -8,10 +8,10 @@ import { getMachine, MACHINES } from "@/lib/production-catalog";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function parseDate(value) {
+function parseDate(value, { allowFuture = false } = {}) {
   const date = String(value || getMyanmarDateInputValue()).trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("ရက်စွဲပုံစံ မမှန်ပါ။");
-  if (date > getMyanmarDateInputValue()) throw new Error("အနာဂတ်ရက်စွဲဖြင့် ထုတ်လုပ်မှုမှတ်တမ်း သိမ်း၍မရပါ။");
+  if (!allowFuture && date > getMyanmarDateInputValue()) throw new Error("အနာဂတ်ရက်စွဲဖြင့် ထုတ်လုပ်မှုမှတ်တမ်း သိမ်း၍မရပါ။");
   return date;
 }
 
@@ -58,7 +58,7 @@ function serialize(row) {
 export async function GET(request) {
   try {
     await ensureDatabase();
-    const date = parseDate(new URL(request.url).searchParams.get("date"));
+    const date = parseDate(new URL(request.url).searchParams.get("date"), { allowFuture: true });
     const rows = await prisma.productionReport.findMany({
       where: { reportDate: date },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
