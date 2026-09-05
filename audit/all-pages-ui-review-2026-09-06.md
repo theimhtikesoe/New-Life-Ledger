@@ -27,3 +27,17 @@ Balance Detail shows the shared `← Dashboard` and shared title, then a second 
 ## Local refactor smoke findings
 
 The production build completed successfully. The local browser reached the new Daily Summary login screen. The local smoke server without `APP_PIN` correctly reported the missing environment configuration; a second server with `APP_PIN=126365` reached the auth route but returned HTTP 500 because the local database/server environment is not configured. Therefore authenticated visual verification was completed against the live deployment before the refactor, while source regression tests and the production build validate the refactor locally. No source change was made to bypass authentication or alter production secrets.
+
+## Live deployment verification after commit acfdf8f
+
+After the Vercel deployment completed successfully, the first cached URL still showed the old duplicate layout. A cache-busting query confirmed the new deployment: Daily Summary now shows one shared `← Dashboard` link and one shared `Daily Summary` title. The page-local toolbar contains only the description, report date/time range, date selector, reconciliation button, and AI explanation button. The page-local duplicate Dashboard link and duplicate title are gone, and the body starts at the same aligned content width as the shared header.
+
+## Live Activity History and Balance Detail verification
+
+Activity History now has one shared `← Dashboard` link and one `Activity History` title. Its local area is a compact filter toolbar with only the date, User, and Action controls; the results card is aligned to the same outer width.
+
+Balance Detail now has one shared `← Dashboard` link and one `Balance Detail` title. The page-local area contains only the description and the three related-page shortcuts, followed by consistently spaced summary cards and content. No duplicate local title/link remains.
+
+## Live Auto Report and Production verification
+
+Auto Report Status now shows a single shared Dashboard link/title header and a separate compact toolbar containing only its description and refresh action. Production now shows the same shared Dashboard/date/time/title header as the other routes, with the production form and history inside the standardized outer width. Its date/time header is no longer part of a page-local duplicate block.
