@@ -1625,14 +1625,6 @@ export default function Dashboard({ view = "overview" }) {
               </div>
 
               <Link
-                href="/orders"
-                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 text-center text-base font-black leading-5 text-emerald-700 shadow-sm transition-colors hover:bg-emerald-100"
-                title="Telegram Orders"
-              >
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📦</span>
-                <span>အော်ဒါများ</span>
-              </Link>
-              <Link
                 href="/production"
                 className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-3 text-center text-base font-black leading-5 text-orange-700 shadow-sm transition-colors hover:bg-orange-100"
                 title="ထုတ်လုပ်မှု မှတ်တမ်း"
@@ -1647,6 +1639,22 @@ export default function Dashboard({ view = "overview" }) {
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💳</span>
                 <span>ငွေရှင်းတမ်း</span>
+              </Link>
+              <Link
+                href="/daily-summary"
+                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-3 text-center text-base font-black leading-5 text-fuchsia-700 shadow-sm transition-colors hover:bg-fuchsia-100"
+                title="နေ့စဉ်စာရင်းချုပ်"
+              >
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📋</span>
+                <span>နေ့စဉ်စာရင်းချုပ်</span>
+              </Link>
+              <Link
+                href="/activity"
+                className="flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-center text-base font-black leading-5 text-amber-700 shadow-sm transition-colors hover:bg-amber-100"
+                title="လုပ်ဆောင်ချက်မှတ်တမ်း"
+              >
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🧾</span>
+                <span>လုပ်ဆောင်ချက်မှတ်တမ်း</span>
               </Link>
               <button
                 type="button"
@@ -1673,6 +1681,12 @@ export default function Dashboard({ view = "overview" }) {
 
               {expandedDashboardMenu === "reports" ? (
                 <div id="dashboard-report-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-violet-200 bg-white p-2 sm:grid-cols-3">
+                  <Link
+                    href="/orders"
+                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+                  >
+                    အော်ဒါများ
+                  </Link>
                   <button
                     type="button"
                     onClick={handleOpenTelegramReportPreview}
@@ -1691,18 +1705,6 @@ export default function Dashboard({ view = "overview" }) {
                     className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                   >
                     Build မှတ်တမ်း
-                  </Link>
-                  <Link
-                    href="/daily-summary"
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-fuchsia-200 bg-fuchsia-50 px-3 py-2 text-sm font-medium text-fuchsia-700 hover:bg-fuchsia-100"
-                  >
-                    နေ့စဉ်စာရင်းချုပ်
-                  </Link>
-                  <Link
-                    href="/activity"
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
-                  >
-                    လုပ်ဆောင်ချက်မှတ်တမ်း
                   </Link>
                 </div>
               ) : null}
