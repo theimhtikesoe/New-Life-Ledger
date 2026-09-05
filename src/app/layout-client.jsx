@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import PINLogin from '@/components/PINLogin';
 import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
+import { formatMyanmarClock, formatMyanmarDateLabel } from '@/lib/myanmar-time-client';
 
 const APP_ZOOM_KEY = 'new-life-ledger:app-zoom-v1';
 const MIN_APP_ZOOM = 0.85;
@@ -105,6 +107,65 @@ function SettingsToggle({ open, onToggle }) {
   );
 }
 
+const PAGE_HEADERS = {
+  '/activity': 'Activity History',
+  '/auto-report-status': 'Auto Report Status',
+  '/balance-detail': 'Balance Detail',
+  '/customer-management': 'Customer Management',
+  '/daily-summary': 'Daily Summary',
+  '/data-management': 'Data Management',
+  '/orders': 'Telegram Orders',
+  '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
+  '/vercel-build-logs': 'Vercel Build Logs',
+};
+
+function ActorSwitcher({ actorName }) {
+  if (!actorName) return null;
+  const requestActorChange = () => {
+    window.dispatchEvent(new CustomEvent('new-life-ledger:open-actor-selector'));
+  };
+
+  return (
+    <div className="pointer-events-none fixed left-2 top-2 z-[115] sm:left-4 sm:top-4">
+      <button
+        type="button"
+        onClick={requestActorChange}
+        className="pointer-events-auto flex min-h-10 items-center gap-2 rounded-full border border-cyan-200 bg-white/95 px-3 py-2 text-xs font-bold text-cyan-900 shadow-lg shadow-cyan-900/10 backdrop-blur transition hover:border-cyan-400 hover:bg-cyan-50"
+        aria-label={`လက်ရှိ User ${actorName} — User ပြောင်းရန် နှိပ်ပါ`}
+        title="User ပြောင်းရန် နှိပ်ပါ"
+      >
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-100 text-[11px] font-black text-cyan-800" aria-hidden="true">U</span>
+        <span className="max-w-24 truncate sm:max-w-36">{actorName}</span>
+        <span aria-hidden="true">⌄</span>
+      </button>
+    </div>
+  );
+}
+
+function SharedPageHeader({ pathname, actorName }) {
+  const title = PAGE_HEADERS[pathname];
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  if (!title) return null;
+
+  return (
+    <header className="mx-3 mb-3 mt-12 flex flex-col gap-3 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">New Life Ledger</p>
+        <h1 className="mt-1 truncate text-lg font-black text-slate-900 sm:text-xl">{title}</h1>
+      </div>
+      <div className="text-left sm:text-right">
+        <p className="text-xs font-semibold text-slate-700">{formatMyanmarDateLabel(currentTime)}</p>
+        <p className="mt-0.5 font-mono text-lg font-black tracking-wider text-cyan-700 tabular-nums">{formatMyanmarClock(currentTime)}</p>
+        <p className="text-[10px] text-slate-500">Myanmar Time (UTC+06:30) · {actorName}</p>
+      </div>
+    </header>
+  );
+}
+
 function AppZoomControls({ appZoom, onChange, settingsOpen }) {
   const zoomPercent = Math.round(appZoom * 100);
   const updateZoom = (delta) => {
@@ -151,17 +212,42 @@ function AppZoomControls({ appZoom, onChange, settingsOpen }) {
 
 export default function RootLayoutClient({ children }) {
   const [authenticated, setAuthenticated] = useState(false);
+  const [actorName, setActorName] = useState('');
   const [appZoom, setAppZoom] = useState(1);
+  const pathname = usePathname();
+  const router = useRouter();
+  const isProductionOnlyActor = actorName === 'ဇွဲဇွဲ';
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     setAppZoom(readAppZoom());
   }, []);
 
+  useEffect(() => {
+    if (isProductionOnlyActor && pathname !== '/production') {
+      router.replace('/production');
+    }
+  }, [isProductionOnlyActor, pathname, router]);
+
+  const handleLoginSuccess = (nextActorName) => {
+    setActorName(nextActorName || '');
+    setAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setActorName('');
+    setAuthenticated(false);
+  };
+
+  const canRenderCurrentPage = authenticated && (!isProductionOnlyActor || pathname === '/production');
+
   return (
     <>
-      <PINLogin onSuccess={() => setAuthenticated(true)} />
-      {authenticated && (
+      <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} />
+      {canRenderCurrentPage && (
+        <ActorSwitcher actorName={actorName} />
+      )}
+      {canRenderCurrentPage && (
         <>
           {/* Mount the global player before page children so it cannot miss the
               first overdue-status/audio event during the PWA startup handshake. */}
@@ -175,6 +261,7 @@ export default function RootLayoutClient({ children }) {
               data-app-zoom={appZoom}
               style={{ zoom: appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
             >
+              <SharedPageHeader pathname={pathname} actorName={actorName} />
               {children}
             </div>
           </div>

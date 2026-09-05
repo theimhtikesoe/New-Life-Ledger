@@ -49,11 +49,13 @@ export function getSessionMaxAgeSeconds() {
   return SESSION_MAX_AGE_SECONDS;
 }
 
-export async function createSessionToken() {
+export async function createSessionToken({ actorName = null, access = "full" } = {}) {
   const secret = getSessionSecret();
   if (!secret) throw new Error("APP_SESSION_SECRET is not configured");
   const payload = base64UrlEncode(encoder.encode(JSON.stringify({
     version: 1,
+    actorName: actorName ? String(actorName) : null,
+    access: access === "production-only" ? "production-only" : "full",
     issuedAt: Date.now(),
     expiresAt: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
   })));
@@ -61,25 +63,38 @@ export async function createSessionToken() {
   return `${payload}.${signature}`;
 }
 
-export async function verifySessionToken(token) {
+export async function getSessionInfoFromToken(token) {
   const secret = getSessionSecret();
-  if (!secret || typeof token !== "string") return false;
+  if (!secret || typeof token !== "string") return null;
   const [payload, encodedSignature, extra] = token.split(".");
-  if (!payload || !encodedSignature || extra) return false;
+  if (!payload || !encodedSignature || extra) return null;
 
   try {
     const validSignature = await verifySignature(payload, base64UrlDecode(encodedSignature), secret);
-    if (!validSignature) return false;
+    if (!validSignature) return null;
     const parsed = JSON.parse(new TextDecoder().decode(base64UrlDecode(payload)));
-    return parsed?.version === 1 && Number(parsed.expiresAt) > Date.now();
+    if (parsed?.version !== 1 || Number(parsed.expiresAt) <= Date.now()) return null;
+    return {
+      actorName: parsed.actorName ? String(parsed.actorName) : null,
+      access: parsed.access === "production-only" ? "production-only" : "full",
+      expiresAt: Number(parsed.expiresAt),
+    };
   } catch {
-    return false;
+    return null;
   }
 }
 
-export async function requestHasValidSession(request) {
+export async function verifySessionToken(token) {
+  return Boolean(await getSessionInfoFromToken(token));
+}
+
+export async function getSessionInfo(request) {
   const token = request?.cookies?.get?.(SESSION_COOKIE)?.value;
-  return verifySessionToken(token);
+  return getSessionInfoFromToken(token);
+}
+
+export async function requestHasValidSession(request) {
+  return Boolean(await getSessionInfo(request));
 }
 
 export function sessionCookieOptions(value) {

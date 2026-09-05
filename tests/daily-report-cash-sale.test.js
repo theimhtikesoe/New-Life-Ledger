@@ -206,6 +206,7 @@ describe("Telegram daily report CashSale data", () => {
       { id: "batch", action: "ORDER_BATCH_NOTIFIED", entityType: "OrderBatch", entityId: "batch-1", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "prefixed", action: "ORDER_CUSTOM", entityType: "Operational", entityId: "op-1", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "customer-edit", action: "UPDATE", entityType: "Customer", entityId: "customer-1", entityLabel: "ပြင်ဆင်ထားသော Customer", hiddenAt: null, createdAt: ledger.createdAt },
+      { id: "production-submit", action: "PRODUCTION_REPORT_SUBMIT", entityType: "ProductionReport", entityId: "production-1", summary: "Production report submitted", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "payment", actorName: "Staff", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
     ]);
     const report = await getDailyReportData(period);
@@ -213,6 +214,7 @@ describe("Telegram daily report CashSale data", () => {
     expect(report.activityLogs.some((log) => log.entityType === "OrderBatch")).toBe(false);
     expect(report.activityLogs.some((log) => log.action === "UPDATE")).toBe(false);
     expect(report.activityLogs.some((log) => String(log.summary || "").includes("ပြင်ဆင်ထားသော Customer"))).toBe(false);
+    expect(report.activityLogs.some((log) => log.action === "PRODUCTION_REPORT_SUBMIT")).toBe(false);
     const where = mocks.auditFindMany.mock.calls[0][0].where;
     expect(where.AND).toEqual(expect.arrayContaining([
       { NOT: { action: "DAILY_REPORT_SENT" } },
@@ -221,6 +223,8 @@ describe("Telegram daily report CashSale data", () => {
         { entityType: "OrderBatch" },
         { action: { startsWith: "ORDER_" } },
         { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
+        { action: "PRODUCTION_REPORT_DELETE" },
+        { action: "PRODUCTION_REPORT_SUBMIT" },
       ] },
     ]));
   });

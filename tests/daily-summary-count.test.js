@@ -65,6 +65,8 @@ describe("Daily Summary activity count", () => {
         { entityType: "OrderBatch" },
         { action: { startsWith: "ORDER_" } },
         { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
+        { action: "PRODUCTION_REPORT_DELETE" },
+        { action: "PRODUCTION_REPORT_SUBMIT" },
       ] },
     ]));
   });

@@ -4,6 +4,27 @@ const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်း�
 const ACTOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
+const AUTHORIZED_ACTORS_KEY = "new-life-ledger:authorized-actors-v1";
+
+function readAuthorizedActors() {
+  try {
+    const raw = sessionStorage.getItem(AUTHORIZED_ACTORS_KEY);
+    const actors = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(actors) ? actors.filter((actor) => typeof actor === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function rememberAuthorizedActor(actorName) {
+  try {
+    const actors = readAuthorizedActors();
+    actors.add(actorName);
+    sessionStorage.setItem(AUTHORIZED_ACTORS_KEY, JSON.stringify([...actors]));
+  } catch {
+    // If sessionStorage is unavailable, the current login still works.
+  }
+}
 
 async function fetchAuthJson(path, options = {}) {
   const controller = new AbortController();
@@ -32,12 +53,14 @@ async function fetchAuthJson(path, options = {}) {
   }
 }
 
-export default function PINLogin({ onSuccess }) {
+export default function PINLogin({ onSuccess, onLogout }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectingActor, setSelectingActor] = useState(false);
+  const [pendingActor, setPendingActor] = useState("");
+  const [authorizedActors, setAuthorizedActors] = useState(() => readAuthorizedActors());
   const [actorLocked, setActorLocked] = useState(false);
   const lastActivityAtRef = useRef(Date.now());
 
@@ -57,15 +80,17 @@ export default function PINLogin({ onSuccess }) {
     fetchAuthJson("/api/auth/session", { cache: "no-store" })
       .then((body) => {
         if (!active) return;
-        const actorName = localStorage.getItem("actorName");
+        const actorName = body.actorName || localStorage.getItem("actorName");
         if (body.authenticated && ACTORS.includes(actorName)) {
           setIsAuthenticated(true);
           setActorLocked(false);
+          setAuthorizedActors(readAuthorizedActors());
           lastActivityAtRef.current = Date.now();
           onSuccess?.(actorName);
         } else {
           setIsAuthenticated(false);
           setActorLocked(false);
+          setSelectingActor(true);
           localStorage.removeItem("actorName");
         }
       })
@@ -73,12 +98,26 @@ export default function PINLogin({ onSuccess }) {
         if (active) {
           setIsAuthenticated(false);
           setActorLocked(false);
+          setSelectingActor(true);
           localStorage.removeItem("actorName");
         }
       })
       .finally(() => active && setIsLoading(false));
     return () => { active = false; };
   }, [onSuccess]);
+
+  useEffect(() => {
+    const openActorSelector = () => {
+      if (!isAuthenticated) return;
+      setActorLocked(true);
+      setSelectingActor(true);
+      setPendingActor("");
+      setPin("");
+      setError("");
+    };
+    window.addEventListener("new-life-ledger:open-actor-selector", openActorSelector);
+    return () => window.removeEventListener("new-life-ledger:open-actor-selector", openActorSelector);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated || actorLocked) return undefined;
@@ -130,7 +169,19 @@ export default function PINLogin({ onSuccess }) {
       });
       if (!body.ok) throw new Error(body.error || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
       setPin("");
-      setSelectingActor(true);
+      if (pendingActor) {
+        rememberAuthorizedActor(pendingActor);
+        setAuthorizedActors(readAuthorizedActors());
+        localStorage.setItem("actorName", pendingActor);
+        lastActivityAtRef.current = Date.now();
+        setSelectingActor(false);
+        setActorLocked(false);
+        setIsAuthenticated(true);
+        window.dispatchEvent(new CustomEvent("new-life-ledger:actor-selected", { detail: { actorName: pendingActor } }));
+        onSuccess?.(pendingActor);
+      } else {
+        setSelectingActor(true);
+      }
     } catch (loginError) {
       setError(loginError.name === "TimeoutError"
         ? "Server connection အချိန်ကျော်သွားပါပြီ။ ခဏနားပြီး ထပ်စမ်းပါ။"
@@ -139,7 +190,7 @@ export default function PINLogin({ onSuccess }) {
     }
   };
 
-  const handleActorSelect = (actorName) => {
+  const completeActorSelection = (actorName) => {
     localStorage.setItem("actorName", actorName);
     lastActivityAtRef.current = Date.now();
     setSelectingActor(false);
@@ -149,14 +200,45 @@ export default function PINLogin({ onSuccess }) {
     onSuccess?.(actorName);
   };
 
+  const handleActorSelect = async (actorName) => {
+    setError("");
+    setPendingActor(actorName);
+    if (actorName === "ဇွဲဇွဲ") {
+      try {
+        await fetchAuthJson("/api/auth/actor-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ actorName }),
+        });
+      } catch (selectionError) {
+        setError(selectionError.message || "ဇွဲဇွဲ အသုံးပြုသူအဖြစ် ဝင်ရောက်၍ မရပါ။");
+        return;
+      }
+    }
+    if (actorName !== "ဇွဲဇွဲ" && !authorizedActors.has(actorName)) {
+      setSelectingActor(false);
+      setActorLocked(false);
+      setIsAuthenticated(false);
+      setPin("");
+      return;
+    }
+    if (actorName !== "ဇွဲဇွဲ") {
+      completeActorSelection(actorName);
+      return;
+    }
+    completeActorSelection(actorName);
+  };
+
   const handleLogout = () => {
     fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("actorName");
     setIsAuthenticated(false);
-    setSelectingActor(false);
+    setSelectingActor(true);
+    setPendingActor("");
     setActorLocked(false);
     setPin("");
     setError("");
+    onLogout?.();
   };
 
   if (isLoading || (isAuthenticated && !actorLocked)) return null;

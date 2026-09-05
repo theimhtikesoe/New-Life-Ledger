@@ -22,6 +22,10 @@ export function isEditActivity(log) {
   return action === "UPDATE" || action.endsWith("_UPDATE");
 }
 
+export function isProductionReportSubmitActivity(log) {
+  return String(log?.action || "").trim().toUpperCase() === "PRODUCTION_REPORT_SUBMIT";
+}
+
 export function isProductionReportDeleteActivity(log) {
   return String(log?.action || "").trim().toUpperCase() === "PRODUCTION_REPORT_DELETE";
 }
@@ -34,6 +38,7 @@ export function accountingAuditLogWhere() {
       { action: { startsWith: "ORDER_" } },
       { action: { in: [...DAILY_SALES_ACTIVITY_ACTIONS] } },
       { action: "PRODUCTION_REPORT_DELETE" },
+      { action: "PRODUCTION_REPORT_SUBMIT" },
     ],
   };
 }
