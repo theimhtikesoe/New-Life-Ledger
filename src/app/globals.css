@@ -538,3 +538,51 @@ textarea {
     width: calc(100% - 3rem);
   }
 }
+
+/* Keep the actor switcher in its own safe rail on phones. The old top-left
+   offset placed it over the shared date/title header and dashboard controls. */
+.actor-switcher {
+  top: calc(var(--pwa-top-clearance) + 0.5rem);
+  left: max(calc(env(safe-area-inset-left, 0px) + 0.75rem), 0.75rem);
+}
+
+/* Dashboard and Ledger do not render the shared route header, so reserve the
+   same mobile rail height below the actor switcher instead of letting content
+   start underneath it. */
+.dashboard-root-page {
+  padding-top: 4rem;
+}
+
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .actor-switcher {
+    top: calc(env(safe-area-inset-top, 0px) + 0.75rem);
+    left: max(calc((100vw - 80rem) / 2 + 0.75rem), 1rem);
+  }
+
+  .dashboard-root-page {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .actor-switcher {
+    top: calc(var(--pwa-top-clearance) + 0.75rem);
+    left: max(calc(env(safe-area-inset-left, 0px) + 1rem), 1rem);
+  }
+
+  .dashboard-root-page {
+    padding-top: 4.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .shared-page-header {
+    margin-top: 5rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .shared-page-header {
+    margin-top: 5.5rem;
+  }
+}

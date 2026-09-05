@@ -7,6 +7,7 @@ const pinLoginSource = fs.readFileSync(path.join(root, "src/components/PINLogin.
 const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"), "utf8");
 const productionSource = fs.readFileSync(path.join(root, "src/components/ProductionEntryPage.jsx"), "utf8");
 const middlewareSource = fs.readFileSync(path.join(root, "src/middleware.js"), "utf8");
+const globalStylesSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 const sharedHeaderRouteSources = [
   "src/app/activity/page.js",
   "src/app/auto-report-status/page.js",
@@ -38,6 +39,10 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain("အခြား User ပြန်ရွေးရန်");
     expect(layoutSource).toContain("ActorSwitcher actorName={actorName}");
     expect(layoutSource).toContain("လက်ရှိ User");
+    expect(layoutSource).toContain("actor-switcher pointer-events-none fixed z-[115]");
+    expect(globalStylesSource).toContain(".actor-switcher");
+    expect(globalStylesSource).toContain(".dashboard-root-page");
+    expect(globalStylesSource).toContain(".shared-page-header {\n    margin-top: 5rem;");
   });
 
   it("keeps every route page on the shared header without duplicate Dashboard/title markup", () => {

@@ -41,3 +41,9 @@ Balance Detail now has one shared `← Dashboard` link and one `Balance Detail` 
 ## Live Auto Report and Production verification
 
 Auto Report Status now shows a single shared Dashboard link/title header and a separate compact toolbar containing only its description and refresh action. Production now shows the same shared Dashboard/date/time/title header as the other routes, with the production form and history inside the standardized outer width. Its date/time header is no longer part of a page-local duplicate block.
+
+## Mobile actor switcher overlap fix
+
+The supplied phone screenshot confirmed that the fixed actor switcher at `top-2` was sitting over the shared date/time/title header and, on dashboard-style pages without a shared route header, over the first content row. The fix moves the switcher into a safe-area-aware fixed rail, reserves mobile top space for the Dashboard/Ledger root wrapper, and increases the mobile shared-header top margin so every page begins below the switcher. Desktop positioning remains near the app shell edge without adding the mobile clearance.
+
+The actor workflow regression suite now checks the new `actor-switcher`, `dashboard-root-page`, and mobile shared-header rules. Targeted UI tests passed and the production build completed successfully.

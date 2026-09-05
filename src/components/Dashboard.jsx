@@ -1585,7 +1585,7 @@ export default function Dashboard({ view = "overview" }) {
   );
 
   return (
-    <main className="min-h-screen min-w-0 overflow-x-clip bg-transparent" aria-busy={loading || isSubmitting}>
+    <main className="dashboard-root-page min-h-screen min-w-0 overflow-x-clip bg-transparent" aria-busy={loading || isSubmitting}>
       <OverdueAlertAudio overdueDebts={overdueDebts} ready={overdueDebts !== null} />
       {alert && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />

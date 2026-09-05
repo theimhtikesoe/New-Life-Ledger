@@ -127,7 +127,7 @@ function ActorSwitcher({ actorName }) {
   };
 
   return (
-    <div className="pointer-events-none fixed left-2 top-2 z-[115] sm:left-4 sm:top-4">
+    <div className="actor-switcher pointer-events-none fixed z-[115]">
       <button
         type="button"
         onClick={requestActorChange}
