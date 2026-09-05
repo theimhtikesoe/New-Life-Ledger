@@ -62,6 +62,7 @@ export default function PINLogin({ onSuccess, onLogout }) {
   const [pendingActor, setPendingActor] = useState("");
   const [authorizedActors, setAuthorizedActors] = useState(() => readAuthorizedActors());
   const [actorLocked, setActorLocked] = useState(false);
+  const [actorSelectionLoading, setActorSelectionLoading] = useState(false);
   const lastActivityAtRef = useRef(Date.now());
 
   const lockActorSelection = useCallback(() => {
@@ -201,32 +202,42 @@ export default function PINLogin({ onSuccess, onLogout }) {
   };
 
   const handleActorSelect = async (actorName) => {
+    if (actorSelectionLoading) return;
     setError("");
     setPendingActor(actorName);
-    if (actorName === "ဇွဲဇွဲ") {
-      try {
+    setActorSelectionLoading(true);
+    try {
+      if (actorName === "ဇွဲဇွဲ") {
         await fetchAuthJson("/api/auth/actor-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ actorName }),
         });
-      } catch (selectionError) {
-        setError(selectionError.message || "ဇွဲဇွဲ အသုံးပြုသူအဖြစ် ဝင်ရောက်၍ မရပါ။");
+      }
+      if (actorName !== "ဇွဲဇွဲ" && !authorizedActors.has(actorName)) {
+        // User switching is available immediately; the five-minute rule only
+        // controls automatic idle locking, not manual switching.
+        setSelectingActor(false);
+        setActorLocked(false);
+        setIsAuthenticated(false);
+        setPin("");
         return;
       }
-    }
-    if (actorName !== "ဇွဲဇွဲ" && !authorizedActors.has(actorName)) {
-      setSelectingActor(false);
-      setActorLocked(false);
-      setIsAuthenticated(false);
-      setPin("");
-      return;
-    }
-    if (actorName !== "ဇွဲဇွဲ") {
       completeActorSelection(actorName);
-      return;
+    } catch (selectionError) {
+      setError(selectionError.message || `${actorName} အသုံးပြုသူအဖြစ် ဝင်ရောက်၍ မရပါ။`);
+    } finally {
+      setActorSelectionLoading(false);
     }
-    completeActorSelection(actorName);
+  };
+
+  const chooseAnotherActor = () => {
+    setError("");
+    setPin("");
+    setPendingActor("");
+    setActorLocked(true);
+    setSelectingActor(true);
+    setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
@@ -244,7 +255,7 @@ export default function PINLogin({ onSuccess, onLogout }) {
   if (isLoading || (isAuthenticated && !actorLocked)) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-gray-800">New Life Ledger</h1>
@@ -264,14 +275,17 @@ export default function PINLogin({ onSuccess, onLogout }) {
                 key={actor}
                 type="button"
                 onClick={() => handleActorSelect(actor)}
-                className="min-h-14 rounded-lg border-2 border-cyan-200 bg-cyan-50 px-4 py-3 font-semibold text-cyan-800 transition hover:border-cyan-500 hover:bg-cyan-100"
+                disabled={actorSelectionLoading}
+                className="relative z-10 min-h-14 rounded-lg border-2 border-cyan-200 bg-cyan-50 px-4 py-3 font-semibold text-cyan-800 transition hover:border-cyan-500 hover:bg-cyan-100 disabled:cursor-wait disabled:opacity-60"
               >
-                {actor}
+                {actorSelectionLoading && pendingActor === actor ? "ရွေးချယ်နေသည်..." : actor}
               </button>
             ))}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
+            <p className="rounded-lg bg-cyan-50 px-3 py-2 text-center text-sm font-semibold text-cyan-800">ရွေးထားသော User: {pendingActor || "မသတ်မှတ်ရသေးပါ"}</p>
+
             <div>
               <label htmlFor="pin" className="mb-2 block text-sm font-medium text-gray-700">
                 6-Digit PIN Code
@@ -296,6 +310,7 @@ export default function PINLogin({ onSuccess, onLogout }) {
             >
               ဝင်ရောက်ပါ
             </button>
+            <button type="button" onClick={chooseAnotherActor} className="w-full rounded-lg border border-cyan-200 bg-white py-3 font-semibold text-cyan-800 transition hover:bg-cyan-50">အခြား User ပြန်ရွေးရန်</button>
           </form>
         )}
       </div>

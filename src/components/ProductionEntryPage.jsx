@@ -1,6 +1,5 @@
 'use client';
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
 
@@ -41,7 +40,6 @@ export default function ProductionEntryPage() {
   const today = todayMyanmar();
   const [reportDate, setReportDate] = useState(today);
   const [historyDate, setHistoryDate] = useState(today);
-  const [actorName, setActorName] = useState("");
   const [machineCode, setMachineCode] = useState("");
   const [category, setCategory] = useState("bottle");
   const [activeBottleGroup, setActiveBottleGroup] = useState("03-white");
@@ -64,10 +62,6 @@ export default function ProductionEntryPage() {
 
   const selectedMachine = useMemo(() => MACHINES.find((machine) => machine.code === machineCode), [machineCode]);
   const tubeItems = useMemo(() => getTubeItemsForMachine(machineCode), [machineCode]);
-
-  useEffect(() => {
-    setActorName(localStorage.getItem("actorName") || "");
-  }, []);
 
   useEffect(() => {
     setActiveBottleGroup("03-white");
@@ -306,12 +300,6 @@ export default function ProductionEntryPage() {
 
   return (
     <main className="production-page mx-auto min-h-screen w-full max-w-none space-y-3 bg-white px-2 py-3 sm:space-y-5 sm:px-6 sm:py-5 lg:max-w-6xl">
-      <header className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
-        {actorName !== "ဇွဲဇွဲ" ? <Link href="/" className="text-sm font-semibold text-cyan-700">← Dashboard</Link> : null}
-        <h1 className="mt-2 text-2xl font-black text-slate-900">ထွက်ရှိမှု မှတ်တမ်းတင်ရန်</h1>
-        <p className="mt-1 text-sm text-slate-600">မဖြည့်မနေရ field များကို <span className="font-black text-red-600">*</span> ဖြင့်ပြထားပြီး `(မဖြည့်လည်းရ)` သည် optional field ဖြစ်ပါသည်။</p>
-      </header>
-
       <form onSubmit={submit} className="space-y-5">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-slate-800">အခြေခံ အချက်အလက်</h2>

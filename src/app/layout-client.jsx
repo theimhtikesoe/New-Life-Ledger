@@ -153,20 +153,20 @@ function SharedPageHeader({ pathname, actorName }) {
   if (!title || pathname === '/' || pathname === '/ledger') return null;
 
   return (
-    <header className="neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-4 shadow-sm backdrop-blur sm:mx-6 sm:mb-6 sm:mt-6 sm:px-7 sm:py-5">
-      <div className="relative min-h-[154px]">
+    <header className="neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:px-7 sm:py-4">
+      <div className="relative min-h-[116px]">
         {actorName !== 'ဇွဲဇွဲ' ? (
           <Link href="/" className="absolute left-0 top-0 text-base font-semibold text-cyan-700 transition hover:text-cyan-900 sm:text-lg">← Dashboard</Link>
         ) : null}
         <div className="mx-auto max-w-xl text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-700 sm:text-sm">ယနေ့ရက်စွဲ</p>
-          <p className="mt-1 text-base font-semibold text-slate-900 sm:text-xl">{formatMyanmarDateLabel(currentTime)}</p>
-          <p className="mt-1 font-mono text-3xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-5xl">{formatMyanmarClock(currentTime)}</p>
-          <p className="mt-1 text-xs text-slate-500 sm:text-base">Myanmar Time (UTC+06:30)</p>
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-cyan-700 sm:text-xs">ယနေ့ရက်စွဲ</p>
+          <p className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">{formatMyanmarDateLabel(currentTime)}</p>
+          <p className="mt-1 font-mono text-xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
+          <p className="mt-1 text-[11px] text-slate-500 sm:text-xs">Myanmar Time (UTC+06:30)</p>
         </div>
-        <div className="mt-6 max-w-3xl text-left">
-          <p className="text-base text-cyan-600 sm:text-xl">New Life Ledger</p>
-          <h1 className="mt-1 break-words text-xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-3xl">{title}</h1>
+        <div className="mt-3 max-w-3xl text-left">
+          <p className="text-sm text-cyan-600 sm:text-base">New Life Ledger</p>
+          <h1 className="mt-1 break-words text-lg font-semibold leading-tight tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
         </div>
       </div>
     </header>

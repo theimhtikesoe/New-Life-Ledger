@@ -22,18 +22,26 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain("AUTHORIZED_ACTORS_KEY");
     expect(pinLoginSource).toContain("rememberAuthorizedActor(pendingActor)");
     expect(pinLoginSource).toContain("new-life-ledger:open-actor-selector");
+    expect(pinLoginSource).toContain("actorSelectionLoading");
+    expect(pinLoginSource).toContain("five-minute rule only");
+    expect(pinLoginSource).toContain("controls automatic idle locking");
+    expect(pinLoginSource).toContain("အခြား User ပြန်ရွေးရန်");
     expect(layoutSource).toContain("ActorSwitcher actorName={actorName}");
     expect(layoutSource).toContain("လက်ရှိ User");
   });
 
-  it("keeps Zway Zway on Production and removes the dashboard escape link", () => {
+  it("keeps Zway Zway on Production while keeping Dashboard navigation for other users", () => {
     expect(layoutSource).toContain("isProductionOnlyActor");
     expect(layoutSource).toContain("router.replace('/production')");
     expect(layoutSource).toContain("pathname === '/production'");
-    expect(productionSource).toContain('{actorName !== "ဇွဲဇွဲ" ? <Link href="/"');
+    expect(layoutSource).toContain("actorName !== 'ဇွဲဇွဲ'");
+    expect(layoutSource).toContain('<Link href="/"');
+    expect(productionSource).not.toContain('ထွက်ရှိမှု မှတ်တမ်းတင်ရန်</h1>');
     expect(middlewareSource).toContain('PRODUCTION_API_PATHS');
     expect(middlewareSource).toContain('path !== "/production"');
     expect(layoutSource).toContain("SharedPageHeader pathname={pathname} actorName={actorName}");
     expect(layoutSource).toContain("formatMyanmarClock(currentTime)");
+    expect(layoutSource).toContain("text-xl font-bold tracking-wider");
+    expect(layoutSource).not.toContain("sm:text-5xl");
   });
 });
