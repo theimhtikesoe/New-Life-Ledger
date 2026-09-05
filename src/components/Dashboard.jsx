@@ -1644,6 +1644,7 @@ export default function Dashboard({ view = "overview" }) {
                 </div>
               ) : null}
             </div>
+            {!isLedgerView ? (
             <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
               <div className="col-span-2 flex min-w-0 [&>button]:w-full">
                 <OverdueNotificationBell
@@ -1775,6 +1776,7 @@ export default function Dashboard({ view = "overview" }) {
                 </div>
               ) : null}
             </div>
+            ) : null}
           </div>
           {message ? (
             <div className="mt-4 flex flex-col gap-3 rounded-md border border-rose-900 bg-rose-950/60 px-3 py-3 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between">
