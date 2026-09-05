@@ -70,7 +70,7 @@ function toneClasses(tone) {
     : "border-amber-200 bg-amber-50 text-amber-900";
 }
 
-export default function DailySalesSummaryPanel() {
+export default function DailySalesSummaryPanel({ totalCount = 0, retailCount = 0, wholesaleCount = 0 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [date, setDate] = useState(() => formatMyanmarDateInputValue());
   const [summary, setSummary] = useState(null);
@@ -244,7 +244,8 @@ export default function DailySalesSummaryPanel() {
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
         <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">နေ့စဉ်ရောင်းရငွေ</p>
-        <p className="mt-2 text-lg font-bold text-indigo-900">လက်လီ / လက်ကား</p>
+        <p className="mt-2 text-lg font-bold text-indigo-900">နေ့စဉ်ရောင်းရငွေ - {formatMoney(dailyTotal)}</p>
+        <p className="mt-1 text-xs font-semibold text-indigo-700">{totalCount} ခု · လက်လီ {retailCount} / လက်ကား {wholesaleCount}</p>
         <p className="mt-1 text-xs text-indigo-700">နေ့စဉ်သိမ်းပြီး ဇယားကြည့်ရန် →</p>
       </button>
 
