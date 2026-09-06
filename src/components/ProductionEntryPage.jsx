@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
 
 function todayMyanmar() {
@@ -47,20 +47,14 @@ export default function ProductionEntryPage() {
   const [wasteQuantity, setWasteQuantity] = useState("0");
   const [tubeDamageQuantity, setTubeDamageQuantity] = useState("0");
   const [tubeQuantity, setTubeQuantity] = useState("0");
-  const [wasteNote, setWasteNote] = useState("");
   const [involvedWorkers, setInvolvedWorkers] = useState([]);
-  const [savedWorkers, setSavedWorkers] = useState([]);
   const [workerNameDraft, setWorkerNameDraft] = useState("");
-  const [notes, setNotes] = useState("");
   const [history, setHistory] = useState([]);
   const [editingSubmissionId, setEditingSubmissionId] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [loadingWorkers, setLoadingWorkers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const workerPressTimerRef = useRef(null);
-  const suppressWorkerClickRef = useRef(false);
 
   const selectedMachine = useMemo(() => MACHINES.find((machine) => machine.code === machineCode), [machineCode]);
   const tubeItems = useMemo(() => getTubeItemsForMachine(machineCode), [machineCode]);
@@ -69,20 +63,6 @@ export default function ProductionEntryPage() {
     setActiveBottleGroup("03-white");
     setLines({});
   }, [machineCode, selectedMachine]);
-
-  const loadWorkers = useCallback(async () => {
-    setLoadingWorkers(true);
-    try {
-      const response = await fetch("/api/production-workers", { cache: "no-store" });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Worker စာရင်း ရယူ၍မရပါ။");
-      setSavedWorkers(Array.isArray(body.data) ? body.data : []);
-    } catch (loadError) {
-      setError(loadError.message);
-    } finally {
-      setLoadingWorkers(false);
-    }
-  }, []);
 
   const loadHistory = useCallback(async (date = historyDate) => {
     setLoadingHistory(true);
@@ -98,7 +78,6 @@ export default function ProductionEntryPage() {
     }
   }, [historyDate]);
 
-  useEffect(() => { loadWorkers(); }, [loadWorkers]);
   useEffect(() => { loadHistory(); }, [loadHistory]);
 
   const entries = useMemo(() => {
@@ -172,59 +151,13 @@ export default function ProductionEntryPage() {
     setLines((current) => current[key] === "0" ? { ...current, [key]: "" } : current);
   }
 
-  function toggleWorker(name) {
-    setInvolvedWorkers((current) => current.includes(name) ? current.filter((item) => item !== name) : [...current, name]);
-  }
-
-  async function addSavedWorker(event) {
-    event.preventDefault();
-    const name = workerNameDraft.trim();
-    if (!name) return setError("Worker နာမည်ထည့်ပေးပါ။");
-    setError("");
-    try {
-      const actorName = localStorage.getItem("actorName") || "Rhyzoe";
-      const response = await fetch("/api/production-workers", { method: "POST", headers: { "Content-Type": "application/json", "x-actor-name": encodeURIComponent(actorName) }, body: JSON.stringify({ name }) });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "Worker ထည့်၍မရပါ။");
-      setWorkerNameDraft("");
-      setInvolvedWorkers((current) => current.includes(name) ? current : [...current, name]);
-      await loadWorkers();
-    } catch (addError) {
-      setError(addError.message);
-    }
-  }
-
-  function startWorkerLongPress(name, id) {
-    suppressWorkerClickRef.current = false;
-    workerPressTimerRef.current = window.setTimeout(async () => {
-      suppressWorkerClickRef.current = true;
-      if (!window.confirm(`${name}\n\nShared Worker စာရင်းမှ ဖယ်ရှားမလား?`)) return;
-      try {
-        const actorName = localStorage.getItem("actorName") || "Rhyzoe";
-        const response = await fetch(`/api/production-workers?id=${encodeURIComponent(id)}`, { method: "DELETE", headers: { "x-actor-name": encodeURIComponent(actorName) } });
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "Worker ဖယ်၍မရပါ။");
-        setInvolvedWorkers((current) => current.filter((item) => item !== name));
-        await loadWorkers();
-      } catch (deleteError) {
-        setError(deleteError.message);
-      }
-    }, 750);
-  }
-
-  function endWorkerLongPress() {
-    if (workerPressTimerRef.current) window.clearTimeout(workerPressTimerRef.current);
-    workerPressTimerRef.current = null;
-  }
-
   function resetForm() {
     setLines({});
     setWasteQuantity("0");
     setTubeDamageQuantity("0");
     setTubeQuantity("0");
-    setWasteNote("");
     setInvolvedWorkers([]);
-    setNotes("");
+    setWorkerNameDraft("");
   }
 
   function entryKeyForRow(row) {
@@ -241,9 +174,9 @@ export default function ProductionEntryPage() {
     setWasteQuantity(String(group.wasteQuantity || 0));
     setTubeDamageQuantity(String(group.tubeDamageQuantity || 0));
     setTubeQuantity(String(group.tubeQuantity || 0));
-    setWasteNote(group.wasteNote || "");
-    setInvolvedWorkers(Array.isArray(first.involvedWorkers) ? first.involvedWorkers : []);
-    setNotes(first.notes || "");
+    const workerNames = Array.isArray(first.involvedWorkers) ? first.involvedWorkers : [];
+    setInvolvedWorkers(workerNames);
+    setWorkerNameDraft(workerNames.join(", "));
     setMessage("ဒီ report ကို အပေါ်မှာ ပြန်ပြင်နိုင်ပါပြီ။");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -278,9 +211,9 @@ export default function ProductionEntryPage() {
     if (!machineCode) return setError("စက် * ကို ရွေးပေးပါ။");
     if (reportDate > today) return setError("အနာဂတ်ရက်စွဲဖြင့် သိမ်း၍မရပါ။");
     if (filledEntries.length === 0) return setError("ထွက်ရှိမှုအရေအတွက် * အနည်းဆုံးတစ်မျိုး ဖြည့်ပေးပါ။");
-    if (damagedPieces > 0 && !wasteNote.trim()) return setError("ပျက်စီးမှုရှိသောကြောင့် အကြောင်းရင်းကို မဖြည့်မနေရ ထည့်ပေးပါ။");
+    const workerNames = workerNameDraft.split(/[\n,၊]/).map((name) => name.trim()).filter(Boolean).slice(0, 20);
     const typeLines = summaryByType.map((item) => `${item.label}: ${formatNumber(item.cards)} ကဒ် / ${formatNumber(item.pieces)} ဗူး`).join("\n");
-    const summary = `နေ့စွဲ: ${reportDate}\nအမျိုးအစား: ${category === "tube" ? "Tube" : "ဗူးခွံ"}\nစက်: ${machineCode}\n\n${typeLines}\n\nစုစုပေါင်း: ${formatNumber(totalPieces)} ဗူး\nဗူးပျက်: ${formatNumber(damagedPieces)} ဗူး\nTube ပျက်: ${formatNumber(Number(tubeDamageQuantity || 0))}\nTube အရေအတွက်: ${formatNumber(Number(tubeQuantity || 0))}\nကောင်းမွန်: ${formatNumber(goodPieces)} ဗူး`;
+    const summary = `နေ့စွဲ: ${reportDate}\nဗူးအမျိုးအစား: ${category === "tube" ? "Tube" : "ဗူးခွံ"}\nပူးတွဲဆင်းသူ: ${workerNames.join(", ") || "မဖြည့်ရသေး"}\n\n${typeLines}\n\nဗူးပျက်: ${formatNumber(damagedPieces)}\nTube ပျက်: ${formatNumber(Number(tubeDamageQuantity || 0))}\nTube အရေအတွက်: ${formatNumber(Number(tubeQuantity || 0))}`;
     if (!window.confirm(`သိမ်းမည့် Production Report အကျဉ်းချုပ်\n\n${summary}\n\nဆက်လက်တင်သွင်းမလား?`)) return;
     setSubmitting(true);
     try {
@@ -288,7 +221,7 @@ export default function ProductionEntryPage() {
       const response = await fetch("/api/production-reports", {
         method: editingSubmissionId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json", "x-actor-name": encodeURIComponent(actorName) },
-        body: JSON.stringify({ reportDate, ...(editingSubmissionId ? { submissionId: editingSubmissionId } : {}), machineCode, category, rows: filledEntries, wasteQuantity, tubeDamageQuantity, tubeQuantity, wasteNote, involvedWorkers, notes }),
+        body: JSON.stringify({ reportDate, ...(editingSubmissionId ? { submissionId: editingSubmissionId } : {}), machineCode, category, rows: filledEntries, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers: workerNames }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "တင်သွင်း၍မရပါ။");
@@ -327,20 +260,20 @@ export default function ProductionEntryPage() {
           {summaryByType.length ? <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><h3 className="mb-2 font-black text-slate-800">အမျိုးအစားအလိုက် စုစုပေါင်း</h3><div className="grid gap-2 sm:grid-cols-2">{summaryByType.map((item) => <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm"><span className="font-bold text-slate-700">{item.label}</span><span className="text-right font-black text-slate-900">{formatNumber(item.cards)} ကဒ် · {formatNumber(item.pieces)} ဗူး</span></div>)}</div></div> : null}
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-2xl border border-red-200 bg-white p-4 shadow-sm">
-            <h2 className="mb-3 text-lg font-black text-red-800">စာရင်းထဲက ပျက်စီးမှု <span className="font-normal text-slate-400">(မဖြည့်လည်းရ)</span></h2>
+        <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2">
+          <div>
+            <h2 className="mb-3 text-lg font-black text-slate-800">စာအုပ်ထဲက ပျက်စီးမှုနှင့် Tube စာရင်း</h2>
             <div className="grid gap-3 sm:grid-cols-3">
-              <label className="text-sm font-bold text-slate-700"><OptionalLabel>ဗူးပျက်</OptionalLabel><input type="number" min="0" step="1" value={wasteQuantity} onFocus={() => { if (wasteQuantity === "0") setWasteQuantity(""); }} onChange={(event) => setWasteQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
-              <label className="text-sm font-bold text-slate-700"><OptionalLabel>Tube ပျက်</OptionalLabel><input type="number" min="0" step="1" value={tubeDamageQuantity} onFocus={() => { if (tubeDamageQuantity === "0") setTubeDamageQuantity(""); }} onChange={(event) => setTubeDamageQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
-              <label className="text-sm font-bold text-slate-700"><OptionalLabel>Tube အရေအတွက်</OptionalLabel><input type="number" min="0" step="1" value={tubeQuantity} onFocus={() => { if (tubeQuantity === "0") setTubeQuantity(""); }} onChange={(event) => setTubeQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
+              <label className="text-sm font-bold text-slate-700"><span>ဗူးပျက်</span><input type="number" min="0" step="1" value={wasteQuantity} onFocus={() => { if (wasteQuantity === "0") setWasteQuantity(""); }} onChange={(event) => setWasteQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
+              <label className="text-sm font-bold text-slate-700"><span>Tube ပျက်</span><input type="number" min="0" step="1" value={tubeDamageQuantity} onFocus={() => { if (tubeDamageQuantity === "0") setTubeDamageQuantity(""); }} onChange={(event) => setTubeDamageQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
+              <label className="text-sm font-bold text-slate-700"><span>Tube အရေအတွက်</span><input type="number" min="0" step="1" value={tubeQuantity} onFocus={() => { if (tubeQuantity === "0") setTubeQuantity(""); }} onChange={(event) => setTubeQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
             </div>
-            <label className="mt-3 block text-sm font-bold text-slate-700"><span>ပျက်စီးရခြင်းအကြောင်းရင်း {damagedPieces > 0 ? <span className="text-red-600">*</span> : <span className="font-normal text-slate-400">(ဗူးပျက်ရှိမှ ဖြည့်ရန်)</span>}</span><input value={wasteNote} onChange={(event) => setWasteNote(event.target.value)} placeholder={damagedPieces > 0 ? "ဗူးပျက်ရခြင်းအကြောင်းရင်း ထည့်ပါ" : "ဗူးပျက်မရှိလျှင် မဖြည့်လည်းရ"} className="mt-1 w-full rounded-xl border border-slate-300 p-3" /></label>
           </div>
-          <div className="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm"><h2 className="mb-3 text-lg font-black text-blue-800">ပူးတွဲဆင်းသူများ <span className="font-normal text-slate-400">(မဖြည့်လည်းရ)</span> ({involvedWorkers.length})</h2><div className="flex min-h-10 flex-wrap gap-2">{loadingWorkers ? <span className="text-sm text-slate-500">Worker စာရင်း ရယူနေသည်...</span> : savedWorkers.length ? savedWorkers.map((worker) => <button type="button" key={worker.id} onClick={() => { if (suppressWorkerClickRef.current) { suppressWorkerClickRef.current = false; return; } toggleWorker(worker.name); }} onPointerDown={() => startWorkerLongPress(worker.name, worker.id)} onPointerUp={endWorkerLongPress} onPointerLeave={endWorkerLongPress} onContextMenu={(event) => event.preventDefault()} className={`rounded-full border px-4 py-2 text-sm font-black ${involvedWorkers.includes(worker.name) ? "border-blue-600 bg-blue-600 text-white" : "border-slate-300 bg-white text-slate-700"}`}>{worker.name}</button>) : <span className="text-sm text-slate-500">နာမည်သိမ်းထားခြင်း မရှိသေးပါ</span>}</div><div className="mt-3 flex gap-2"><input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="Worker နာမည်အသစ်ထည့်ပါ" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" /><button type="button" onClick={addSavedWorker} className="shrink-0 rounded-xl bg-blue-600 px-4 py-3 font-black text-white">ထည့် +</button></div><p className="mt-2 text-xs text-slate-500">တစ်ချက်နှိပ်လျှင် ရွေး/ဖြုတ်၊ ကြာကြာဖိထားလျှင် shared list မှ ဖယ်ရှားနိုင်ပါသည်။</p></div>
+          <div>
+            <h2 className="mb-3 text-lg font-black text-slate-800">ပူးတွဲဆင်းသူနာမည်</h2>
+            <label className="block text-sm font-bold text-slate-700"><span className="font-normal text-slate-500">နာမည်များကို comma (၊) သို့မဟုတ် စာကြောင်းခွဲပြီး ထည့်ပါ</span><textarea value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="ဥပမာ — ကိုအောင်၊ မမြင့်" rows={3} className="mt-1 w-full rounded-xl border border-slate-300 p-3" /></label>
+          </div>
         </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><label className="text-sm font-bold text-slate-700"><OptionalLabel>အခြားမှတ်ချက်</OptionalLabel><textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="ထပ်ဖြည့်ချင်တာရှိရင် ရေးပါ" rows={3} className="mt-1 w-full rounded-xl border border-slate-300 p-3" /></label></section>
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 font-bold text-red-700">{error}</div>}{message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 font-bold text-emerald-700">{message}</div>}
         <div className="flex flex-col gap-2 sm:flex-row"><button disabled={submitting} className="w-full rounded-xl bg-orange-500 px-4 py-4 text-lg font-black text-white shadow-sm hover:bg-orange-600 disabled:opacity-60">{submitting ? "တင်နေပါသည်..." : editingSubmissionId ? `Update လုပ်ရန် (${filledEntries.length} မျိုး)` : `တင်သွင်းရန် (${filledEntries.length} မျိုး)`}</button>{editingSubmissionId ? <button type="button" onClick={cancelEdit} className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-lg font-black text-slate-700">မပြင်တော့ပါ</button> : null}</div>
       </form>

@@ -27,6 +27,7 @@ const REQUIRED_TABLES = [
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
+const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity"];
 const REQUIRED_DAILY_SALES_COLUMNS = [
   "enteredAt",
   "enteredBy",
@@ -66,6 +67,13 @@ async function hasExpectedSchema() {
         SELECT COUNT(*)::int
         FROM information_schema.columns
         WHERE table_schema = 'public'
+          AND table_name = 'ProductionReport'
+          AND column_name IN (${Prisma.join(REQUIRED_PRODUCTION_COLUMNS)})
+      ) AS production_column_count,
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
           AND table_name = 'DailySalesSummary'
           AND column_name IN (${Prisma.join(REQUIRED_DAILY_SALES_COLUMNS)})
       ) AS daily_sales_column_count
@@ -73,6 +81,7 @@ async function hasExpectedSchema() {
   return Number(result[0]?.table_count || 0) === REQUIRED_TABLES.length
     && Number(result[0]?.auto_report_column_count || 0) === REQUIRED_AUTO_REPORT_COLUMNS.length
     && Number(result[0]?.customer_column_count || 0) === REQUIRED_CUSTOMER_COLUMNS.length
+    && Number(result[0]?.production_column_count || 0) === REQUIRED_PRODUCTION_COLUMNS.length
     && Number(result[0]?.daily_sales_column_count || 0) === REQUIRED_DAILY_SALES_COLUMNS.length;
 }
 
@@ -201,11 +210,15 @@ export async function ensureDatabase() {
             "wasteQuantity" INTEGER NOT NULL DEFAULT 0,
             "wasteNote" TEXT,
             "damagedPieces" INTEGER NOT NULL DEFAULT 0,
+            "tubeDamageQuantity" INTEGER NOT NULL DEFAULT 0,
+            "tubeQuantity" INTEGER NOT NULL DEFAULT 0,
             "involvedWorkers" JSONB,
             "notes" TEXT,
             "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
           )
         `);
+        await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeDamageQuantity" INTEGER NOT NULL DEFAULT 0`);
+        await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeQuantity" INTEGER NOT NULL DEFAULT 0`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
@@ -550,11 +563,15 @@ export async function ensureDatabase() {
           "wasteQuantity" INTEGER NOT NULL DEFAULT 0,
           "wasteNote" TEXT,
           "damagedPieces" INTEGER NOT NULL DEFAULT 0,
+          "tubeDamageQuantity" INTEGER NOT NULL DEFAULT 0,
+          "tubeQuantity" INTEGER NOT NULL DEFAULT 0,
           "involvedWorkers" JSONB,
           "notes" TEXT,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeDamageQuantity" INTEGER NOT NULL DEFAULT 0`);
+      await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeQuantity" INTEGER NOT NULL DEFAULT 0`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
