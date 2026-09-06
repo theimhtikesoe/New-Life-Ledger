@@ -736,3 +736,21 @@ textarea {
     margin-top: 6rem !important;
   }
 }
+
+/* Dashboard and Ledger use their in-page header, but must start on the same
+   vertical rail as the shared route header rather than sitting lower. */
+.dashboard-root-page {
+  padding-top: 4rem;
+}
+
+@media (max-width: 639px) {
+  .dashboard-root-page {
+    padding-top: 9rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .dashboard-root-page {
+    padding-top: 6rem;
+  }
+}
