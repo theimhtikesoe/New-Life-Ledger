@@ -51,6 +51,8 @@ function serialize(row) {
     outputCapacity: row.outputCapacity == null ? null : String(row.outputCapacity),
     wasteQuantity: Number(row.wasteQuantity || 0),
     damagedPieces: Number(row.damagedPieces || 0),
+    tubeDamageQuantity: Number(row.tubeDamageQuantity || 0),
+    tubeQuantity: Number(row.tubeQuantity || 0),
     involvedWorkers: Array.isArray(row.involvedWorkers) ? row.involvedWorkers : [],
   };
 }
@@ -81,7 +83,9 @@ export async function POST(request) {
     const requestedCategory = body.category === "tube" ? "tube" : "bottle";
     if (machine.category === "tube" && requestedCategory !== "tube") throw new Error("ဤစက်အတွက် Tube အမျိုးအစားကိုရွေးပေးပါ။");
     const rows = normalizeRows({ ...body, rows: body.rows?.map((row) => ({ ...row, category: requestedCategory })) });
-    const wasteQuantity = positiveInt(body.wasteQuantity, "ပျက်စီးအရေအတွက်");
+    const wasteQuantity = positiveInt(body.wasteQuantity, "ဗူးပျက်အရေအတွက်");
+    const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "Tube ပျက်အရေအတွက်");
+    const tubeQuantity = positiveInt(body.tubeQuantity, "Tube အရေအတွက်");
     const actorName = getActorName(request);
     const submissionId = crypto.randomUUID();
     const involvedWorkers = Array.isArray(body.involvedWorkers)
@@ -104,6 +108,8 @@ export async function POST(request) {
       wasteQuantity: index === 0 ? wasteQuantity : 0,
       wasteNote: index === 0 ? (String(body.wasteNote || "").trim() || null) : null,
       damagedPieces: index === 0 ? wasteQuantity : 0,
+      tubeDamageQuantity: index === 0 ? tubeDamageQuantity : 0,
+      tubeQuantity: index === 0 ? tubeQuantity : 0,
       involvedWorkers,
       notes,
     }));
@@ -116,7 +122,7 @@ export async function POST(request) {
       entityId: submissionId,
       entityLabel: `${machine.code} ${reportDate}`,
       summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း တင်သွင်း (${totalPieces.toLocaleString()} ဗူး)`,
-      metadata: { submissionId, reportDate, machineCode: machine.code, category: requestedCategory, lineCount: rows.length, totalPieces, wasteQuantity, involvedWorkers },
+      metadata: { submissionId, reportDate, machineCode: machine.code, category: requestedCategory, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers },
     });
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: created.count, totalPieces, wasteQuantity } }, { status: 201 });
   } catch (error) {
@@ -138,7 +144,9 @@ export async function PATCH(request) {
     const requestedCategory = body.category === "tube" ? "tube" : "bottle";
     if (machine.category === "tube" && requestedCategory !== "tube") throw new Error("ဤစက်အတွက် Tube အမျိုးအစားကိုရွေးပေးပါ။");
     const rows = normalizeRows({ ...body, rows: body.rows?.map((row) => ({ ...row, category: requestedCategory })) });
-    const wasteQuantity = positiveInt(body.wasteQuantity, "ပျက်စီးအရေအတွက်");
+    const wasteQuantity = positiveInt(body.wasteQuantity, "ဗူးပျက်အရေအတွက်");
+    const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "Tube ပျက်အရေအတွက်");
+    const tubeQuantity = positiveInt(body.tubeQuantity, "Tube အရေအတွက်");
     const actorName = getActorName(request);
     const involvedWorkers = Array.isArray(body.involvedWorkers) ? body.involvedWorkers.map((value) => String(value).trim()).filter(Boolean).slice(0, 20) : [];
     const notes = String(body.notes || "").trim() || null;
@@ -147,7 +155,10 @@ export async function PATCH(request) {
       category: row.category, outputQuantity: row.outputQuantity, outputUnit: row.outputUnit,
       outputCapacity: row.outputCapacity, bottleType: row.bottleType, tubeG: row.tubeG, tubeColor: row.tubeColor,
       wasteQuantity: index === 0 ? wasteQuantity : 0, wasteNote: index === 0 ? (String(body.wasteNote || "").trim() || null) : null,
-      damagedPieces: index === 0 ? wasteQuantity : 0, involvedWorkers, notes,
+      damagedPieces: index === 0 ? wasteQuantity : 0,
+      tubeDamageQuantity: index === 0 ? tubeDamageQuantity : 0,
+      tubeQuantity: index === 0 ? tubeQuantity : 0,
+      involvedWorkers, notes,
     }));
     const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.productionReport.findFirst({ where: { submissionId }, select: { id: true } });
@@ -156,7 +167,7 @@ export async function PATCH(request) {
       return tx.productionReport.createMany({ data });
     });
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
-    await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ဗူး)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, involvedWorkers } });
+    await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ဗူး)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers } });
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: result.count, totalPieces, wasteQuantity } });
   } catch (error) {
     console.error("Production report update failed", error);

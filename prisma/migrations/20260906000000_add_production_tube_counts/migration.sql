@@ -1,0 +1,3 @@
+ALTER TABLE "ProductionReport"
+  ADD COLUMN "tubeDamageQuantity" INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN "tubeQuantity" INTEGER NOT NULL DEFAULT 0;

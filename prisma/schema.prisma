@@ -332,10 +332,12 @@ model ProductionReport {
   bottleType      String?
   tubeG           String?
   tubeColor       String?
-  wasteQuantity   Int      @default(0)
-  wasteNote       String?
-  damagedPieces   Int      @default(0)
-  involvedWorkers Json?
+  wasteQuantity      Int      @default(0)
+  wasteNote          String?
+  damagedPieces      Int      @default(0)
+  tubeDamageQuantity Int      @default(0)
+  tubeQuantity       Int      @default(0)
+  involvedWorkers    Json?
   notes           String?
   createdAt       DateTime @default(now())
 
