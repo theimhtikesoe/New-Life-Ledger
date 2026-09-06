@@ -188,9 +188,10 @@ export default function ProductionEntryPage() {
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Worker ထည့်၍မရပါ။");
+      const savedWorker = body.data;
       setWorkerNameDraft("");
-      setInvolvedWorkers((current) => current.includes(name) ? current : [...current, name]);
-      await loadWorkers();
+      setInvolvedWorkers((current) => current.includes(savedWorker.name) ? current : [...current, savedWorker.name]);
+      setSavedWorkers((current) => [...current.filter((worker) => worker.id !== savedWorker.id && worker.name !== savedWorker.name), savedWorker].sort((left, right) => left.name.localeCompare(right.name)));
     } catch (addError) {
       setError(addError.message);
     }
@@ -210,7 +211,7 @@ export default function ProductionEntryPage() {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Worker ဖယ်၍မရပါ။");
         setInvolvedWorkers((current) => current.filter((item) => item !== name));
-        await loadWorkers();
+        setSavedWorkers((current) => current.filter((item) => item.id !== id && item.name !== name));
       } catch (deleteError) {
         setError(deleteError.message);
       }
@@ -314,15 +315,32 @@ export default function ProductionEntryPage() {
         <form onSubmit={submit} className="space-y-5">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-slate-800">အခြေခံ အချက်အလက်</h2>
-          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
-            <label className="flex min-w-0 flex-col gap-2 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 text-base font-black text-violet-950 shadow-sm"><span className="text-lg">ဗူးအမျိုးအစား <span className="font-normal text-slate-400">(ဗူးခွံ / Tube)</span></span><select value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="h-14 w-full rounded-xl border-2 border-violet-300 bg-white px-3 text-lg font-black"><option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option></select></label>
+          <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
             <label className="flex min-w-0 flex-col gap-2 rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 text-base font-black text-orange-950 shadow-sm"><RequiredLabel>စက်</RequiredLabel><select value={machineCode} onChange={(event) => setMachineCode(event.target.value)} className="h-14 w-full rounded-xl border-2 border-orange-300 bg-white px-3 text-lg font-black"><option value="">စက်ရွေးချယ်ရန်</option>{MACHINES.filter((machine) => !machine.category || machine.category === category).map((machine) => <option key={machine.code} value={machine.code}>{machine.name}</option>)}</select></label>
-            <label className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-2xl border-2 border-cyan-200 bg-cyan-50 p-4 text-base font-black text-cyan-950 shadow-sm"><RequiredLabel>နေ့စွဲ</RequiredLabel><span className="flex min-w-0 gap-1"><button type="button" onClick={() => setReportDate((value) => shiftDateValue(value, -1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 text-2xl font-black">‹</button><input type="date" max={today} value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="box-border h-14 min-w-0 flex-1 rounded-xl border-2 border-cyan-300 bg-white px-2 text-center text-lg font-black" /><button type="button" disabled={reportDate >= today} onClick={() => setReportDate((value) => shiftDateValue(value, 1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 text-2xl font-black disabled:opacity-40">›</button></span></label>
+            <label className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-2xl border-2 border-cyan-200 bg-cyan-50 p-4 text-base font-black text-cyan-950 shadow-sm"><RequiredLabel>Date</RequiredLabel><span className="flex min-w-0 gap-1"><button type="button" onClick={() => setReportDate((value) => shiftDateValue(value, -1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 text-2xl font-black">‹</button><input type="date" max={today} value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="box-border h-14 min-w-0 flex-1 rounded-xl border-2 border-cyan-300 bg-white px-2 text-center text-lg font-black" /><button type="button" disabled={reportDate >= today} onClick={() => setReportDate((value) => shiftDateValue(value, 1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 text-2xl font-black disabled:opacity-40">›</button></span></label>
           </div>
         </section>
 
+        <section className="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-2"><h2 className="mb-1 text-lg font-black text-slate-800">ပူးတွဲဆင်းသူများ</h2><span className="text-sm font-black text-blue-700">{involvedWorkers.length} ယောက်ရွေးထား</span></div>
+          <p className="mb-3 text-xs font-normal text-slate-500">ဆင်းတဲ့သူတွေကို နှိပ်ရွေးပါ။ Worker ခလုတ်ကို ကြာကြာဖိထားရင် shared list မှ ဖျက်နိုင်ပါတယ်။</p>
+          <div className="flex flex-wrap gap-2">
+            {loadingWorkers ? <span className="text-sm text-slate-500">Worker စာရင်း ရယူနေသည်...</span> : null}
+            {!loadingWorkers && savedWorkers.length === 0 ? <span className="text-sm text-slate-500">Worker မရှိသေးပါ။ အောက်ကနေ အရင်ထည့်ပါ။</span> : null}
+            {savedWorkers.map((worker) => {
+              const selected = involvedWorkers.includes(worker.name);
+              return <button key={worker.id || worker.name} type="button" onClick={() => { if (suppressWorkerClickRef.current) { suppressWorkerClickRef.current = false; return; } toggleWorker(worker.name); }} onPointerDown={() => startWorkerLongPress(worker.name, worker.id)} onPointerUp={endWorkerLongPress} onPointerLeave={endWorkerLongPress} onPointerCancel={endWorkerLongPress} className={`rounded-xl border-2 px-3 py-2 text-sm font-black transition ${selected ? "border-blue-700 bg-blue-600 text-white shadow-md" : "border-blue-200 bg-blue-50 text-blue-900 hover:border-blue-400"}`}>{selected ? "✓ " : ""}{worker.name}</button>;
+            })}
+          </div>
+          <form onSubmit={addSavedWorker} className="mt-3 flex gap-2">
+            <input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="Worker အသစ်ထည့်ရန်" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" />
+            <button type="submit" disabled={!workerNameDraft.trim() || loadingWorkers} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white disabled:opacity-50">ထည့် +</button>
+          </form>
+        </section>
+
         <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-2 text-2xl font-black text-slate-800">ဗူးအမျိုးအစား နှင့် ဗူးကဒ် <span className="text-red-600">*</span></h2>
+          <label className="mb-4 flex flex-col gap-2 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 text-base font-black text-violet-950"><span className="text-lg">ဗူးအမျိုးအစား</span><select value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="h-14 w-full rounded-xl border-2 border-violet-300 bg-white px-3 text-lg font-black"><option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option></select></label>
+          <h2 className="mb-2 text-2xl font-black text-slate-800">ဗူးအမျိုးအစားနှင့် ဗူးကဒ် <span className="text-red-600">*</span></h2>
           <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900"><span className="font-black">မဖြည့်မနေရ —</span> စက်ရွေးပြီး size card အနည်းဆုံးတစ်မျိုးမှာ အရေအတွက်ထည့်ပါ။ `ဆံ့` ပမာဏက card ထဲမှာ သတ်မှတ်ပြီးသားဖြစ်ပါတယ်။</p>
           {category === "bottle" ? <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">{BOTTLE_GROUPS.map((group) => <button type="button" key={group.key} onClick={() => setActiveBottleGroup(group.key)} className={`min-w-0 rounded-xl border p-3 text-left transition ${activeBottleGroup === group.key ? "border-teal-700 bg-teal-700 text-white shadow-md" : "border-teal-100 bg-teal-50 text-teal-900 hover:border-teal-300"}`}><span className="block truncate text-sm font-black">{group.label}</span><span className={`mt-1 block text-[11px] ${activeBottleGroup === group.key ? "text-teal-100" : "text-teal-700"}`}>{groupCounts[group.key] || 0} မျိုး</span></button>)}</div> : <div className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-sm font-bold text-cyan-800">Tube စက်အလိုက် ထုတ်လုပ်နိုင်သောအမျိုးအစားများ</div>}
           {category === "bottle" ? <p className="mb-3 text-xs font-semibold text-slate-500">{BOTTLE_GROUPS.find((group) => group.key === activeBottleGroup)?.description} — သက်ဆိုင်ရာ size များကိုသာ ပြထားပါသည်။</p> : null}
@@ -331,30 +349,12 @@ export default function ProductionEntryPage() {
           {summaryByType.length ? <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><h3 className="mb-2 font-black text-slate-800">အမျိုးအစားအလိုက် စုစုပေါင်း</h3><div className="grid gap-2 sm:grid-cols-2">{summaryByType.map((item) => <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm"><span className="font-bold text-slate-700">{item.label}</span><span className="text-right font-black text-slate-900">{formatNumber(item.cards)} ကဒ် · {formatNumber(item.pieces)} ဗူး</span></div>)}</div></div> : null}
         </section>
 
-        <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-2">
-          <div>
-            <h2 className="mb-3 text-lg font-black text-slate-800">စာအုပ်ထဲက ပျက်စီးမှုနှင့် Tube စာရင်း</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className="text-sm font-bold text-slate-700"><span>ဗူးပျက်</span><input type="number" min="0" step="1" value={wasteQuantity} onFocus={() => { if (wasteQuantity === "0") setWasteQuantity(""); }} onChange={(event) => setWasteQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
-              <label className="text-sm font-bold text-slate-700"><span>Tube ပျက် <span className="font-normal text-slate-500">(ဗူးမဖြစ်ဘဲ ပျက်)</span></span><p className="mt-1 text-xs font-normal text-slate-500">ဗူးမဖြစ်ဘဲ ပျက်သွားသော Tube</p><input type="number" min="0" step="1" value={tubeDamageQuantity} onFocus={() => { if (tubeDamageQuantity === "0") setTubeDamageQuantity(""); }} onChange={(event) => setTubeDamageQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
-              <label className="text-sm font-bold text-slate-700"><span>Tube အရေအတွက် <span className="font-normal text-slate-500">(ဗူးထွက်ရန်သုံး)</span></span><p className="mt-1 text-xs font-normal text-slate-500">ဗူးထွက်လာဖို့ အသုံးပြုသော Tube</p><input type="number" min="0" step="1" value={tubeQuantity} onFocus={() => { if (tubeQuantity === "0") setTubeQuantity(""); }} onChange={(event) => setTubeQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center justify-between gap-2"><h2 className="mb-1 text-lg font-black text-slate-800">ပူးတွဲဆင်းသူနာမည်</h2><span className="text-sm font-black text-blue-700">{involvedWorkers.length} ယောက်ရွေးထား</span></div>
-            <p className="mb-3 text-xs font-normal text-slate-500">ဆင်းတဲ့သူတွေကို နှိပ်ရွေးပါ။ Worker ခလုတ်ကို ကြာကြာဖိထားရင် shared list မှ ဖျက်နိုင်ပါတယ်။</p>
-            <div className="flex flex-wrap gap-2">
-              {loadingWorkers ? <span className="text-sm text-slate-500">Worker စာရင်း ရယူနေသည်...</span> : null}
-              {!loadingWorkers && savedWorkers.length === 0 ? <span className="text-sm text-slate-500">Worker မရှိသေးပါ။ အောက်ကနေ အရင်ထည့်ပါ။</span> : null}
-              {savedWorkers.map((worker) => {
-                const selected = involvedWorkers.includes(worker.name);
-                return <button key={worker.id || worker.name} type="button" onClick={() => { if (suppressWorkerClickRef.current) { suppressWorkerClickRef.current = false; return; } toggleWorker(worker.name); }} onPointerDown={() => startWorkerLongPress(worker.name, worker.id)} onPointerUp={endWorkerLongPress} onPointerLeave={endWorkerLongPress} onPointerCancel={endWorkerLongPress} className={`rounded-xl border-2 px-3 py-2 text-sm font-black transition ${selected ? "border-blue-700 bg-blue-600 text-white shadow-md" : "border-blue-200 bg-blue-50 text-blue-900 hover:border-blue-400"}`}>{selected ? "✓ " : ""}{worker.name}</button>;
-              })}
-            </div>
-            <form onSubmit={addSavedWorker} className="mt-3 flex gap-2">
-              <input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="Worker အသစ်ထည့်ရန်" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" />
-              <button type="submit" disabled={!workerNameDraft.trim() || loadingWorkers} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white disabled:opacity-50">ထည့် +</button>
-            </form>
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-lg font-black text-slate-800">ဗူးပျက်၊ Tube ပျက်နှင့် Tube အရေအတွက်</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="text-sm font-bold text-slate-700"><span>ဗူးပျက်</span><input type="number" min="0" step="1" value={wasteQuantity} onFocus={() => { if (wasteQuantity === "0") setWasteQuantity(""); }} onChange={(event) => setWasteQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
+            <label className="text-sm font-bold text-slate-700"><span>Tube ပျက် <span className="font-normal text-slate-500">(ဗူးမဖြစ်ဘဲ ပျက်)</span></span><p className="mt-1 text-xs font-normal text-slate-500">ဗူးမဖြစ်ဘဲ ပျက်သွားသော Tube</p><input type="number" min="0" step="1" value={tubeDamageQuantity} onFocus={() => { if (tubeDamageQuantity === "0") setTubeDamageQuantity(""); }} onChange={(event) => setTubeDamageQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
+            <label className="text-sm font-bold text-slate-700"><span>Tube အရေအတွက် <span className="font-normal text-slate-500">(ဗူးထွက်ရန်သုံး)</span></span><p className="mt-1 text-xs font-normal text-slate-500">ဗူးထွက်လာဖို့ အသုံးပြုသော Tube</p><input type="number" min="0" step="1" value={tubeQuantity} onFocus={() => { if (tubeQuantity === "0") setTubeQuantity(""); }} onChange={(event) => setTubeQuantity(event.target.value === "" ? "" : String(Number(event.target.value)))} className="mt-1 w-full rounded-xl border border-slate-300 p-3 font-bold" /></label>
           </div>
         </section>
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 font-bold text-red-700">{error}</div>}{message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 font-bold text-emerald-700">{message}</div>}
