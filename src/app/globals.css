@@ -662,6 +662,13 @@ textarea {
   padding-top: 5rem;
 }
 
+/* Keep the dashboard header, add-customer card, and customer list card in
+   distinct visual bands like the mobile reference instead of letting adjacent
+   sections visually collapse into one surface. */
+.dashboard-content-stack {
+  row-gap: 1.5rem;
+}
+
 @media (max-width: 639px) {
   .shared-page-header {
     margin-top: 6rem;

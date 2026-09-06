@@ -194,6 +194,12 @@ Do not run experimental scripts against production data. Use a local fixture, a 
 | Medium | Project report must stay current | Add an entry here for every subsequent code change, test result, and deployment |
 | Medium | Report output should mirror the two website pages | Keep Daily Summary and Activity History fields synchronized with their APIs and UI |
 
+## 9.1 Dashboard mobile layout refinement — 2026-09-06
+
+The Dashboard layout was refined to match the supplied mobile reference more closely. The actor switcher remains in its own top safe rail, while the dashboard header, Customer add card, and customer list card now use an explicitly named vertical stack with a stable 1.5rem gap between adjacent visual bands. This keeps the header and the two main content cards visibly separated instead of allowing their borders and backgrounds to read as one continuous block. The change is limited to presentation structure and CSS; no customer, ledger, balance, or audit data is deleted or overwritten.
+
+Files changed: `src/components/Dashboard.jsx`, `src/app/globals.css`.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

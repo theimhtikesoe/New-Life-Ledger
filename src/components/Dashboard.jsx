@@ -1611,7 +1611,7 @@ export default function Dashboard({ view = "overview" }) {
         </div>
       )}
 
-      <div className="mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-4 overflow-x-clip px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
+      <div className="dashboard-content-stack mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-6 overflow-x-clip px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="neon-surface neon-sweep min-w-0 rounded-2xl border border-cyan-200/80 bg-white/90 px-3 py-3 sm:px-5 sm:py-5">
           {isLedgerView ? (
             <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
