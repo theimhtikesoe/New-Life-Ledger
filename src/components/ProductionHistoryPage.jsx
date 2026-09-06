@@ -93,7 +93,6 @@ export default function ProductionHistoryPage() {
       <section className="rounded-2xl border border-orange-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-2xl font-black text-slate-900">ထွက်ရှိမှုမှတ်တမ်းများ</h2>
             <p className="mt-1 text-sm text-slate-500">ရက်စွဲအလိုက် ထုတ်လုပ်မှုမှတ်တမ်းများကို သီးသန့်ကြည့်ရှုနိုင်ပါသည်။</p>
           </div>
           <label className="text-sm font-black text-orange-900">မှတ်တမ်း Date
