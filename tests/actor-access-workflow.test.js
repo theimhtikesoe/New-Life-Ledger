@@ -34,9 +34,11 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain("rememberAuthorizedActor(pendingActor)");
     expect(pinLoginSource).toContain("new-life-ledger:open-actor-selector");
     expect(pinLoginSource).toContain("actorSelectionLoading");
-    expect(pinLoginSource).toContain("five-minute rule only");
-    expect(pinLoginSource).toContain("controls automatic idle locking");
+    expect(pinLoginSource).toContain("ACTOR_IDLE_TIMEOUT_MS");
+    expect(pinLoginSource).toContain("After five idle minutes");
     expect(pinLoginSource).toContain("အခြား User ပြန်ရွေးရန်");
+    expect(pinLoginSource).toContain("Every manual switch must re-confirm the selected user with the PIN");
+    expect(pinLoginSource).toContain("အသုံးပြုသူကို ပြန်ရွေးပြီး PIN code ထည့်ပါ");
     expect(layoutSource).toContain("ActorSwitcher actorName={actorName}");
     expect(layoutSource).toContain("လက်ရှိ User");
     expect(layoutSource).toContain("actor-switcher pointer-events-none fixed z-[115]");
@@ -52,6 +54,8 @@ describe("Actor access workflow", () => {
     expect(layoutSource).not.toContain("absolute left-0 top-0 text-base font-semibold text-cyan-700");
     expect(globalStylesSource).toContain("margin-top: 4.5rem");
     expect(globalStylesSource).toContain(".dashboard-root-page {\n  padding-top: 4rem;");
+    expect(globalStylesSource).toContain(".dashboard-root-page {\n  padding-top: 5rem;");
+    expect(globalStylesSource).toContain("margin-top: 6rem");
     expect(globalStylesSource).toContain("margin-bottom: 1.75rem");
     expect(globalStylesSource).toContain(".app-page-main {\n  padding-top: 1.25rem;");
     sharedHeaderRouteSources.forEach(({ file, source }) => {

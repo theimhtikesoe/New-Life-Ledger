@@ -214,9 +214,10 @@ export default function PINLogin({ onSuccess, onLogout }) {
           body: JSON.stringify({ actorName }),
         });
       }
-      if (actorName !== "ဇွဲဇွဲ" && !authorizedActors.has(actorName)) {
-        // User switching is available immediately; the five-minute rule only
-        // controls automatic idle locking, not manual switching.
+      if (actorName !== "ဇွဲဇွဲ") {
+        // Every manual switch must re-confirm the selected user with the PIN.
+        // Do not auto-complete from the browser's previously authorized list:
+        // that made switching back to an earlier user appear to do nothing.
         setSelectingActor(false);
         setActorLocked(false);
         setIsAuthenticated(false);
@@ -261,7 +262,7 @@ export default function PINLogin({ onSuccess, onLogout }) {
           <h1 className="mb-2 text-3xl font-bold text-gray-800">New Life Ledger</h1>
           <p className="text-gray-600">
             {actorLocked
-              ? "၅ မိနစ်အသုံးမပြုထားပါ။ အသုံးပြုသူကို ပြန်ရွေးပါ"
+              ? "အသုံးပြုသူကို ပြန်ရွေးပြီး PIN code ထည့်ပါ"
               : selectingActor
                 ? "ဘယ်သူအသုံးပြုနေပါသလဲ ရွေးပါ"
                 : "PIN code ထည့်သွင်းပါ"}

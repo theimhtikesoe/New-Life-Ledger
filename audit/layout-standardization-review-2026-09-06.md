@@ -33,3 +33,9 @@ The live Production screenshot confirmed the remaining issue: the shared header 
 ## Structural Production header fix
 
 The remaining overlap was fixed structurally. The Dashboard link is no longer absolutely positioned at the shared header's top-left. It now lives in a normal-flow `shared-page-header-nav` row, followed by the centered date/time block. The shared header and Dashboard/Ledger root content both reserve a 4rem+ top rail below the actor switcher on desktop/tablet/mobile, while route content keeps the standard header-to-container gap. Targeted layout regression tests passed (14 tests) and the production build completed successfully.
+
+## User re-authentication and final top-clearance correction
+
+Manual User Change now always clears the active actor state and opens the PIN form for the selected actor, even when that actor was previously authorized in the browser session. This fixes the case where switching back to an earlier user did not open the code form. The five-minute behavior remains only for automatic idle locking, and the modal text now explicitly asks the user to select an actor and enter the PIN.
+
+The final top clearance was increased for the shared header and Dashboard/Ledger root content so the actor switcher, Dashboard link, date/time header, and page content occupy separate vertical bands. Targeted regression tests passed (14 tests) and the production build completed successfully.

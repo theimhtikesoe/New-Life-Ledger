@@ -651,3 +651,33 @@ textarea {
     margin-top: 4rem;
   }
 }
+
+/* Final top-clearance correction: keep the complete header below the actor rail
+   on every route, including the Production page, not just its content cards. */
+.shared-page-header {
+  margin-top: 5rem;
+}
+
+.dashboard-root-page {
+  padding-top: 5rem;
+}
+
+@media (max-width: 639px) {
+  .shared-page-header {
+    margin-top: 6rem;
+  }
+
+  .dashboard-root-page {
+    padding-top: 5.5rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .shared-page-header {
+    margin-top: 6rem;
+  }
+
+  .dashboard-root-page {
+    padding-top: 5.5rem;
+  }
+}
