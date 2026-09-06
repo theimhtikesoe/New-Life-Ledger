@@ -39,6 +39,8 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain("အခြား User ပြန်ရွေးရန်");
     expect(pinLoginSource).toContain("Every manual switch must re-confirm the selected user with the PIN");
     expect(pinLoginSource).toContain("အသုံးပြုသူကို ပြန်ရွေးပြီး PIN code ထည့်ပါ");
+    expect(pinLoginSource).toContain('const currentActor = localStorage.getItem("actorName");');
+    expect(pinLoginSource).toContain("if (isAuthenticated && actorName === currentActor)");
     expect(layoutSource).toContain("ActorSwitcher actorName={actorName}");
     expect(layoutSource).toContain("လက်ရှိ User");
     expect(layoutSource).toContain("actor-switcher pointer-events-none fixed z-[115]");

@@ -207,6 +207,13 @@ export default function PINLogin({ onSuccess, onLogout }) {
     setPendingActor(actorName);
     setActorSelectionLoading(true);
     try {
+      const currentActor = localStorage.getItem("actorName");
+      if (isAuthenticated && actorName === currentActor) {
+        // Re-selecting the already active user is not a user switch. Close the
+        // selector without asking for the same user's PIN again.
+        completeActorSelection(actorName);
+        return;
+      }
       if (actorName === "ဇွဲဇွဲ") {
         await fetchAuthJson("/api/auth/actor-session", {
           method: "POST",
