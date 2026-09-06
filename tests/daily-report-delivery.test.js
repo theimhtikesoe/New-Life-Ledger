@@ -46,16 +46,16 @@ describe("Telegram daily report delivery attachments", () => {
     mocks.sendDailyReportToTelegram.mockResolvedValue({ results: [{ chatId: "1984408250" }] });
   });
 
-  it("sends only the PDF and sales summary PNG", async () => {
+  it("sends only the PDF", async () => {
     await runDailyReport({ date: "2026-09-02", recipientChatId: "1984408250" });
 
     expect(mocks.createDailyActivityImage).not.toHaveBeenCalled();
     expect(mocks.sendDailyReportToTelegram).toHaveBeenCalledWith(expect.objectContaining({
       pdfBuffer: expect.any(Buffer),
-      salesSummaryImageBuffer: expect.any(Buffer),
     }));
     expect(mocks.createDailySummaryImage).not.toHaveBeenCalled();
     expect(mocks.sendDailyReportToTelegram.mock.calls[0][0]).not.toHaveProperty("imageBuffer");
     expect(mocks.sendDailyReportToTelegram.mock.calls[0][0]).not.toHaveProperty("activityImageBuffer");
+    expect(mocks.sendDailyReportToTelegram.mock.calls[0][0]).not.toHaveProperty("salesSummaryImageBuffer");
   });
 });

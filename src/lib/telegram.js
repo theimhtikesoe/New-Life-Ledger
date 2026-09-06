@@ -254,7 +254,7 @@ export async function sendTelegramMessage(message) {
   return { results: [{ chatId: groupChatId, messageId: result.messageId }] };
 }
 
-export async function sendDailyReportToTelegram({ pdfBuffer, salesSummaryImageBuffer, recipientChatId = null, dateLabel }) {
+export async function sendDailyReportToTelegram({ pdfBuffer, recipientChatId = null, dateLabel }) {
   const { token, groupChatId } = getTelegramConfig();
   const chatId = String(recipientChatId || groupChatId || "").trim();
   if (!token || !chatId) {
@@ -269,16 +269,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, salesSummaryImageBu
     mimeType: "application/pdf",
     caption: `📄 နေ့စဉ်စာရင်းချုပ် PDF\n${dateLabel}\nစာမျက်နှာ ၁ — နေ့စဉ်စာရင်းချုပ်\nစာမျက်နှာ ၂ — လုပ်ဆောင်ချက်မှတ်တမ်း\nစာမျက်နှာ ၃ — နေ့စဉ် လက်လီ / လက်ကားစာရင်း`,
   });
-  const salesSummary = salesSummaryImageBuffer ? await sendTelegramFile({
-    token,
-    chatId,
-    method: "sendPhoto",
-    buffer: salesSummaryImageBuffer,
-    filename: `new-life-ledger-${dateLabel}-daily-sales-summary.png`,
-    mimeType: "image/png",
-    caption: `📈 နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ\n${dateLabel}`,
-  }) : null;
-  return { results: [{ chatId, pdfMessageId: pdf.result?.message_id, salesSummaryImageMessageId: salesSummary?.result?.message_id }] };
+  return { results: [{ chatId, pdfMessageId: pdf.result?.message_id }] };
 }
 
 export function telegramRecipientsConfigured() {

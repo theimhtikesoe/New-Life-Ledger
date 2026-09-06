@@ -1,20 +1,16 @@
-import { getDailyReportData, createDailyReportPdf, createDailySalesSummaryImage } from "@/lib/daily-report";
+import { getDailyReportData, createDailyReportPdf } from "@/lib/daily-report";
 import { sendDailyReportToTelegram } from "@/lib/telegram";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export async function runDailyReport({ date, lateByDays = 0, recipientChatId = null } = {}) {
   const startedAt = Date.now();
   const report = await getDailyReportData(date ? getMyanmarDayRange(date) : undefined);
-  const [pdfBuffer, salesSummaryImageBuffer] = await Promise.all([
-    createDailyReportPdf(report),
-    createDailySalesSummaryImage(report),
-  ]);
+  const pdfBuffer = await createDailyReportPdf(report);
   const activityCount = (report.activityLogs || []).length;
   const normalizedLateByDays = Math.max(0, Math.floor(Number(lateByDays) || 0));
 
   const delivery = await sendDailyReportToTelegram({
     pdfBuffer,
-    salesSummaryImageBuffer,
     recipientChatId,
     dateLabel: report.dateLabel,
   });
