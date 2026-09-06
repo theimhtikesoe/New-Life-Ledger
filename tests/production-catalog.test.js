@@ -13,4 +13,14 @@ describe("Production bottle catalog", () => {
     expect(item).toEqual({ type: "ဒိန်ကြီး (S+S)", capacities: [200] });
     expect(getBottleGroup("ဒိန်ကြီး (S+S)")).toBe("special");
   });
+
+  it("includes the requested 45 ကျပ်သား and new bottle cards in their groups", () => {
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "45 ကျပ်သား", capacities: [200] });
+    expect(getBottleGroup("45 ကျပ်သား")).toBe("45");
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "1 လီတာ အဝိုင်း", capacities: [100] });
+    expect(getBottleGroup("1 လီတာ အဝိုင်း")).toBe("liter");
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "8 ဒေါင့် ဖြူ", capacities: [100, 250] });
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "8 ဒေါင့် (S+S)", capacities: [100, 250, 500] });
+    expect(getBottleGroup("8 ဒေါင့် (S+S)")).toBe("03-blue");
+  });
 });

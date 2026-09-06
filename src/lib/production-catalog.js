@@ -9,7 +9,7 @@ export const BOTTLE_ITEMS = [
   { type: "0.3 ပြာ (S+S)", capacities: [100, 200, 400] },
   { type: "8 ဒေါင့် ဖြူ", capacities: [100, 250] },
   { type: "8 ဒေါင့် (S+1)", capacities: [100, 250] },
-  { type: "8 ဒေါင့် (S+S)", capacities: [100, 250] },
+  { type: "8 ဒေါင့် (S+S)", capacities: [100, 250, 500] },
   { type: "ဒိန်သေး", capacities: [100, 250] },
   { type: "ဒိန်သေး (S+1)", capacities: [100, 250] },
   { type: "ဒိန်သေး (S+S)", capacities: [250] },
@@ -33,6 +33,8 @@ export const BOTTLE_ITEMS = [
   { type: "0.9 ပြာ", capacities: [100, 170] },
   { type: "1 လီတာ ဖြူ", capacities: [100, 160] },
   { type: "1 လီတာ ပြာ", capacities: [100, 160] },
+  { type: "1 လီတာ အဝိုင်း", capacities: [100] },
+  { type: "45 ကျပ်သား", capacities: [200] },
 ];
 
 export const BOTTLE_GROUPS = [
@@ -45,6 +47,7 @@ export const BOTTLE_GROUPS = [
   { key: "06", label: ".6", description: "0.6 ဖြူ / ပြာ" },
   { key: "25", label: "25 ကျပ်သား", description: "25 ကျပ်သား" },
   { key: "30", label: "30 ကျပ်သား", description: "30 ကျပ်သား" },
+  { key: "45", label: "45 ကျပ်သား", description: "45 ကျပ်သား" },
   { key: "cow", label: "နွား", description: "နွားသေး / နွားကြီး" },
   { key: "085", label: ".85", description: "0.85" },
   { key: "09", label: ".9", description: "0.9 ဖြူ / ပြာ" },
@@ -62,6 +65,7 @@ export function getBottleGroup(type) {
   if (value.startsWith("0.6")) return "06";
   if (value.startsWith("25 ")) return "25";
   if (value.startsWith("30 ")) return "30";
+  if (value.startsWith("45 ")) return "45";
   if (value.startsWith("နွား")) return "cow";
   if (value === "0.85") return "085";
   if (value.startsWith("0.9")) return "09";
