@@ -117,6 +117,7 @@ const PAGE_HEADERS = {
   '/data-management': 'Data Management',
   '/orders': 'Telegram Orders',
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
+  '/production-history': 'ထွက်ရှိမှုမှတ်တမ်းများ',
   '/vercel-build-logs': 'Vercel Build Logs',
 };
 

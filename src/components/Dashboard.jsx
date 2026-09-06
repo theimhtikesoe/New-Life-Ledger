@@ -1837,7 +1837,7 @@ export default function Dashboard({ view = "overview" }) {
             </button>
 
             <Link
-              href={`/production?date=${encodeURIComponent(selectedKpiDate)}`}
+              href={`/production-history?date=${encodeURIComponent(selectedKpiDate)}`}
               aria-label={`${selectedKpiDate} ဗူးထွက်ရှိမှု အသေးစိတ်ကြည့်ရန်`}
               className="neon-card neon-sweep neon-card-orange flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-300 sm:min-h-[170px]"
             >
