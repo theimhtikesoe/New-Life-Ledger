@@ -25,3 +25,11 @@ The uploaded Production reference shows the actor button in the top-left safe ra
 The shared route header now uses the same `New Life Ledger Dashboard` label as the Dashboard/Ledger reference pages. All route-page main containers retain the common 80rem/inset shell and now use an explicit shared rhythm: mobile header top clearance below the actor rail, a 1.75rem header-to-content gap, and 1.25rem mobile / 1.5rem larger-screen main top padding. Tablet spacing is slightly increased to prevent the header and content from appearing pressed against the top controls.
 
 Targeted all-page regression tests passed (14 tests), and the production build completed successfully.
+
+## Production live screenshot re-check
+
+The live Production screenshot confirmed the remaining issue: the shared header starts too high, while the Dashboard link is absolutely positioned at the header's top-left. The fixed actor switcher occupies the same top-left band, so the link and actor button visibly overlap. The fix must therefore be structural rather than only adding margin: the Dashboard link will become part of a normal header navigation row, and the shared header itself will start below the actor rail on all viewport sizes.
+
+## Structural Production header fix
+
+The remaining overlap was fixed structurally. The Dashboard link is no longer absolutely positioned at the shared header's top-left. It now lives in a normal-flow `shared-page-header-nav` row, followed by the centered date/time block. The shared header and Dashboard/Ledger root content both reserve a 4rem+ top rail below the actor switcher on desktop/tablet/mobile, while route content keeps the standard header-to-container gap. Targeted layout regression tests passed (14 tests) and the production build completed successfully.

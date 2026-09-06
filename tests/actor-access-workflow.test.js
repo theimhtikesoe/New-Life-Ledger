@@ -48,6 +48,10 @@ describe("Actor access workflow", () => {
   it("keeps every route page on the shared header without duplicate Dashboard/title markup", () => {
     expect(layoutSource).toContain("shared-page-header");
     expect(layoutSource).toContain("New Life Ledger Dashboard");
+    expect(layoutSource).toContain("shared-page-header-nav");
+    expect(layoutSource).not.toContain("absolute left-0 top-0 text-base font-semibold text-cyan-700");
+    expect(globalStylesSource).toContain("margin-top: 4.5rem");
+    expect(globalStylesSource).toContain(".dashboard-root-page {\n  padding-top: 4rem;");
     expect(globalStylesSource).toContain("margin-bottom: 1.75rem");
     expect(globalStylesSource).toContain(".app-page-main {\n  padding-top: 1.25rem;");
     sharedHeaderRouteSources.forEach(({ file, source }) => {

@@ -156,9 +156,11 @@ function SharedPageHeader({ pathname, actorName }) {
     <header className="shared-page-header neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:px-7 sm:py-4">
       <div className="relative min-h-[116px]">
         {actorName !== 'ဇွဲဇွဲ' ? (
-          <Link href="/" className="absolute left-0 top-0 text-base font-semibold text-cyan-700 transition hover:text-cyan-900 sm:text-lg">← Dashboard</Link>
+          <div className="shared-page-header-nav flex min-h-10 items-center">
+            <Link href="/" className="text-base font-semibold text-cyan-700 transition hover:text-cyan-900 sm:text-lg">← Dashboard</Link>
+          </div>
         ) : null}
-        <div className="mx-auto max-w-xl text-center">
+        <div className={`mx-auto max-w-xl text-center ${actorName !== 'ဇွဲဇွဲ' ? 'mt-2' : ''}`}>
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-cyan-700 sm:text-xs">ယနေ့ရက်စွဲ</p>
           <p className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">{formatMyanmarDateLabel(currentTime)}</p>
           <p className="mt-1 font-mono text-xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>

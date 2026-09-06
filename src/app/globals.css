@@ -616,3 +616,38 @@ textarea {
     margin-bottom: 2rem;
   }
 }
+
+/* Keep the shared navigation row in normal flow so Dashboard never shares the
+   actor switcher's fixed top-left coordinates. The entire header starts below
+   that rail, matching the Ledger/Dashboard phone references. */
+.shared-page-header {
+  margin-top: 4.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.shared-page-header-nav {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.dashboard-root-page {
+  padding-top: 4rem;
+}
+
+@media (min-width: 640px) {
+  .shared-page-header {
+    margin-top: 4.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .dashboard-root-page {
+    padding-top: 4rem;
+  }
+}
+
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .shared-page-header {
+    margin-top: 4rem;
+  }
+}
