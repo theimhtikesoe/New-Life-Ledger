@@ -57,7 +57,7 @@ describe("Actor access workflow", () => {
     expect(layoutSource).not.toContain("absolute left-0 top-0 text-base font-semibold text-cyan-700");
     expect(globalStylesSource).toContain("margin-top: 4.5rem");
     expect(globalStylesSource).toContain(".dashboard-root-page {\n  padding-top: 4rem;");
-    expect(globalStylesSource).toContain("padding-top: var(--top-control-rail-height);");
+    expect(globalStylesSource).toContain("padding-top: var(--top-control-rail-layout-height);");
     expect(globalStylesSource).toContain("--top-control-rail-height: 11rem;");
     expect(globalStylesSource).toContain("--top-control-rail-height: 8rem;");
     expect(globalStylesSource).toContain("margin-bottom: 1.75rem");
@@ -89,5 +89,8 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("min-h-[170px] flex-col justify-between");
     expect(layoutSource).toContain("min-h-[136px] flex-1 flex-col justify-between");
     expect(layoutSource).toContain('<div className="min-h-10" aria-hidden="true" />');
+    expect(layoutSource).toContain("'--app-zoom': appZoom");
+    expect(globalStylesSource).toContain("--top-control-rail-layout-height: calc(var(--top-control-rail-height) / var(--app-zoom, 1));");
+    expect(globalStylesSource).toContain("margin-top: var(--top-control-rail-layout-height);");
   });
 });

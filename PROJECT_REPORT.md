@@ -250,6 +250,12 @@ The shared route header was refactored so every page uses the same minimum card 
 
 Focused header/layout/navigation tests passed (9 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
 
+## 9.10 Minimum website zoom alignment — 2026-09-06
+
+The app shell now exposes the active website zoom to CSS and scales the shared top-control rail layout height by that zoom value. At the minimum supported 85% zoom, the User/Refresh rail, shared route header, Dashboard spacing, and page containers therefore keep the same visible alignment instead of allowing the header/content relationship to drift. The change preserves the existing zoom control behavior and applies consistently across all routes.
+
+Focused zoom/header/navigation tests passed (9 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

@@ -120,6 +120,7 @@ canvas {
   width: 100%;
   min-width: 0;
   min-height: 100dvh;
+  --top-control-rail-layout-height: calc(var(--top-control-rail-height) / var(--app-zoom, 1));
   isolation: isolate;
   overflow-x: clip;
   overflow-y: visible;
@@ -681,11 +682,11 @@ textarea {
 /* Final top-clearance correction: keep the complete header below the actor rail
    on every route, including the Production page, not just its content cards. */
 .shared-page-header {
-  margin-top: var(--top-control-rail-height);
+  margin-top: var(--top-control-rail-layout-height);
 }
 
 .dashboard-root-page {
-  padding-top: var(--top-control-rail-height);
+  padding-top: var(--top-control-rail-layout-height);
 }
 
 /* Keep the dashboard header, add-customer card, and customer list card in
@@ -701,11 +702,11 @@ textarea {
   }
 
   .shared-page-header {
-    margin-top: var(--top-control-rail-height);
+    margin-top: var(--top-control-rail-layout-height);
   }
 
   .dashboard-root-page {
-    padding-top: var(--top-control-rail-height);
+    padding-top: var(--top-control-rail-layout-height);
   }
 }
 
@@ -715,10 +716,10 @@ textarea {
   }
 
   .shared-page-header {
-    margin-top: var(--top-control-rail-height);
+    margin-top: var(--top-control-rail-layout-height);
   }
 
   .dashboard-root-page {
-    padding-top: var(--top-control-rail-height);
+    padding-top: var(--top-control-rail-layout-height);
   }
 }

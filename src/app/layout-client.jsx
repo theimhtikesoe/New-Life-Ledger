@@ -268,7 +268,7 @@ export default function RootLayoutClient({ children }) {
             <div
               className="neon-app-shell"
               data-app-zoom={appZoom}
-              style={{ zoom: appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
+              style={{ '--app-zoom': appZoom, zoom: appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
             >
               <SharedPageHeader pathname={pathname} actorName={actorName} />
               {children}
