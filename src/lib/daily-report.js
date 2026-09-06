@@ -523,9 +523,9 @@ export async function createDailySalesSummaryImage(report) {
 }
 
 export async function createDailyReportPdf(report) {
-  const { summaryBuffer, activityBuffer } = await renderReportImages(report);
+  const { summaryBuffer, activityBuffer, salesSummaryBuffer } = await renderReportImages(report);
   const pdfDoc = await PDFDocument.create();
-  for (const imageBuffer of [summaryBuffer, activityBuffer]) {
+  for (const imageBuffer of [summaryBuffer, activityBuffer, salesSummaryBuffer]) {
     const image = await pdfDoc.embedPng(imageBuffer);
     const page = pdfDoc.addPage([900, 900 * image.height / image.width]);
     page.drawImage(image, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });

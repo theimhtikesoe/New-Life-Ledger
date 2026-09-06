@@ -267,7 +267,7 @@ export async function sendDailyReportToTelegram({ pdfBuffer, salesSummaryImageBu
     buffer: pdfBuffer,
     filename: `New-Life-Ledger-Daily-${dateLabel}.pdf`,
     mimeType: "application/pdf",
-    caption: `📄 နေ့စဉ်စာရင်းချုပ် PDF\n${dateLabel}\nစာမျက်နှာ ၁ — နေ့စဉ်စာရင်းချုပ်\nစာမျက်နှာ ၂ — လုပ်ဆောင်ချက်မှတ်တမ်း`,
+    caption: `📄 နေ့စဉ်စာရင်းချုပ် PDF\n${dateLabel}\nစာမျက်နှာ ၁ — နေ့စဉ်စာရင်းချုပ်\nစာမျက်နှာ ၂ — လုပ်ဆောင်ချက်မှတ်တမ်း\nစာမျက်နှာ ၃ — နေ့စဉ် လက်လီ / လက်ကားစာရင်း`,
   });
   const salesSummary = salesSummaryImageBuffer ? await sendTelegramFile({
     token,
