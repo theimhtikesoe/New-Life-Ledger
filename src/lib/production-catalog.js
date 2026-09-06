@@ -77,7 +77,7 @@ export function getBottleGroup(type) {
 
 export function getBottleUnit(type) {
   const value = String(type || "");
-  return value.startsWith("8 ဒေါင့်") || value.startsWith("ဒိန်") ? "အိတ်" : "ကဒ်";
+  return value.startsWith("8 ဒေါင့်") || value.startsWith("ဒိန်") ? "ထုပ်" : "ကဒ်";
 }
 
 export const TUBE_BY_MACHINE = {

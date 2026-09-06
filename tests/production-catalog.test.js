@@ -23,8 +23,8 @@ describe("Production bottle catalog", () => {
     expect(BOTTLE_ITEMS).toContainEqual({ type: "8 ဒေါင့် (S+S)", capacities: [100, 250, 500] });
     expect(getBottleGroup("8 ဒေါင့် ဖြူ")).toBe("08-corner");
     expect(getBottleGroup("8 ဒေါင့် (S+S)")).toBe("08-corner");
-    expect(getBottleUnit("8 ဒေါင့် ဖြူ")).toBe("အိတ်");
-    expect(getBottleUnit("ဒိန်သေး (S+S)")).toBe("အိတ်");
+    expect(getBottleUnit("8 ဒေါင့် ဖြူ")).toBe("ထုပ်");
+    expect(getBottleUnit("ဒိန်သေး (S+S)")).toBe("ထုပ်");
     expect(getBottleUnit("0.3 ဖြူ")).toBe("ကဒ်");
   });
 });
