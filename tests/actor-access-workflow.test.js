@@ -60,8 +60,11 @@ describe("Actor access workflow", () => {
     expect(globalStylesSource).toContain("padding-top: var(--top-control-rail-layout-height);");
     expect(globalStylesSource).toContain("--top-control-rail-height: 11rem;");
     expect(globalStylesSource).toContain("--top-control-rail-height: 8rem;");
-    expect(globalStylesSource).toContain("margin-bottom: 1.75rem");
-    expect(globalStylesSource).toContain(".app-page-main {\n  padding-top: 1.25rem;");
+    expect(globalStylesSource).toContain(".shared-page-header-route + .app-page-main");
+    expect(globalStylesSource).toContain("padding-top: 1.25rem;");
+    expect(globalStylesSource).toContain("padding-top: 1.5rem;");
+    expect(globalStylesSource).toContain(".shared-page-header-route");
+    expect(globalStylesSource).toContain("margin-top: 9rem !important;");
     sharedHeaderRouteSources.forEach(({ file, source }) => {
       expect(source, file).not.toContain('Link href="/"');
       expect(source, file).not.toContain("← Dashboard");
@@ -91,6 +94,6 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain('<div className="min-h-10" aria-hidden="true" />');
     expect(layoutSource).toContain("'--app-zoom': appZoom");
     expect(globalStylesSource).toContain("--top-control-rail-layout-height: calc(var(--top-control-rail-height) / var(--app-zoom, 1));");
-    expect(globalStylesSource).toContain("margin-top: var(--top-control-rail-layout-height);");
+    expect(globalStylesSource).toContain("margin-top: calc(var(--top-control-rail-layout-height) + 0.75rem);");
   });
 });

@@ -612,44 +612,12 @@ textarea {
   }
 }
 
-/* All route pages follow the Dashboard/Ledger reference rhythm: a safe top
-   rail, an inset shared header, and a visible gap before the page container. */
-.shared-page-header {
-  margin-bottom: 1.75rem;
-}
-
-.app-page-main {
-  padding-top: 1.25rem;
-}
-
-@media (min-width: 640px) {
-  .app-page-main {
-    padding-top: 1.5rem;
-  }
-}
-
-@media (max-width: 639px) {
-  .shared-page-header {
-    /* Leave a complete visual band for the actor switcher before the header.
-       This prevents the in-flow Dashboard link from sitting underneath it. */
-    margin-top: 11rem;
-    margin-bottom: 1.75rem;
-  }
-}
-
-@media (min-width: 640px) and (max-width: 1023px) {
-  .shared-page-header {
-    margin-top: 8rem;
-    margin-bottom: 2rem;
-  }
-}
-
 /* Keep the shared navigation row in normal flow so Dashboard never shares the
    actor switcher's fixed top-left coordinates. The entire header starts below
    that rail, matching the Ledger/Dashboard phone references. */
 .shared-page-header {
   margin-top: 4.5rem;
-  margin-bottom: 1.75rem;
+  margin-bottom: 0;
 }
 
 .shared-page-header-nav {
@@ -665,7 +633,7 @@ textarea {
 @media (min-width: 640px) {
   .shared-page-header {
     margin-top: 4.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 0;
   }
 
   .dashboard-root-page {
@@ -679,10 +647,24 @@ textarea {
   }
 }
 
+/* One explicit gap owns the space between the shared header and every route's
+   content surface. Keeping it on the main element avoids the old combination
+   of header margins, main padding, and container margins that rendered pages
+   at different vertical positions in the recording. */
+.shared-page-header-route + .app-page-main {
+  padding-top: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .shared-page-header-route + .app-page-main {
+    padding-top: 1.5rem;
+  }
+}
+
 /* Final top-clearance correction: keep the complete header below the actor rail
    on every route, including the Production page, not just its content cards. */
 .shared-page-header {
-  margin-top: var(--top-control-rail-layout-height);
+  margin-top: calc(var(--top-control-rail-layout-height) + 0.75rem);
 }
 
 .dashboard-root-page {
@@ -701,8 +683,11 @@ textarea {
     --top-control-rail-height: 11rem;
   }
 
-  .shared-page-header {
-    margin-top: var(--top-control-rail-layout-height);
+  .shared-page-header-route {
+    /* Keep the in-flow Dashboard link below the fixed actor switcher. The
+       explicit mobile value prevents the route header from collapsing into
+       the same top-left band on Safari/iOS. */
+    margin-top: 9rem !important;
   }
 
   .dashboard-root-page {
@@ -716,7 +701,7 @@ textarea {
   }
 
   .shared-page-header {
-    margin-top: var(--top-control-rail-layout-height);
+    margin-top: calc(var(--top-control-rail-layout-height) + 0.75rem);
   }
 
   .dashboard-root-page {
