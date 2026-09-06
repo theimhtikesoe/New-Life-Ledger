@@ -6,8 +6,8 @@ const source = readFileSync(resolve(process.cwd(), "src/app/activity/page.js"), 
 
 describe("Activity History client filter", () => {
   it("filters Daily Sales bookkeeping actions and Customer edits from fetched and cached logs", () => {
-    expect(source).toContain("isCustomerEditActivity, isDailySalesActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity");
-    expect(source).toContain("!isOrderWorkflowActivity(log) && !isDailySalesActivity(log) && !isCustomerEditActivity(log) && !isProductionReportSubmitActivity(log)");
+    expect(source).toContain("isCustomerEditActivity, isDailySalesActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity, isProductionWorkerCreateActivity");
+    expect(source).toContain("!isOrderWorkflowActivity(log) && !isDailySalesActivity(log) && !isCustomerEditActivity(log) && !isProductionReportSubmitActivity(log) && !isProductionWorkerCreateActivity(log)");
     expect(source).toContain('excludeCustomerEdits: "true"');
   });
 

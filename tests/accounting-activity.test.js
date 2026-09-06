@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountingAuditLogWhere, isDailySalesActivity, isEditActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity } from "@/lib/accounting-activity";
+import { accountingAuditLogWhere, isDailySalesActivity, isEditActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity, isProductionWorkerCreateActivity } from "@/lib/accounting-activity";
 
 describe("Accounting activity scope", () => {
   it("recognizes Order entity types and ORDER-prefixed actions", () => {
@@ -25,6 +25,11 @@ describe("Accounting activity scope", () => {
     expect(isProductionReportSubmitActivity({ action: "PRODUCTION_REPORT_UPDATE" })).toBe(false);
   });
 
+  it("recognizes worker creation as hidden activity", () => {
+    expect(isProductionWorkerCreateActivity({ action: "PRODUCTION_WORKER_CREATE" })).toBe(true);
+    expect(isProductionWorkerCreateActivity({ action: "PRODUCTION_WORKER_DELETE" })).toBe(false);
+  });
+
   it("recognizes edit/update actions as excluded report activity", () => {
     expect(isEditActivity({ action: "UPDATE" })).toBe(true);
     expect(isEditActivity({ action: "ORDER_DETAILS_UPDATE" })).toBe(true);
@@ -40,6 +45,7 @@ describe("Accounting activity scope", () => {
       { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
       { action: "PRODUCTION_REPORT_DELETE" },
       { action: "PRODUCTION_REPORT_SUBMIT" },
+      { action: "PRODUCTION_WORKER_CREATE" },
     ],
     });
   });
