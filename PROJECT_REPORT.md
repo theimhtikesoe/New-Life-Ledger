@@ -244,6 +244,12 @@ Production and Activity History were rechecked against the other route pages. Bo
 
 Focused layout/navigation tests passed (9 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
 
+## 9.9 Consistent shared header height — 2026-09-06
+
+The shared route header was refactored so every page uses the same minimum card height and vertical rhythm. The outer header now uses `min-h-[170px] flex-col justify-between`; its inner layout reserves a stable clock/title area with `min-h-[136px] flex-1 flex-col justify-between`; and production-only actor views render an invisible navigation placeholder when the Dashboard link is absent. This prevents optional navigation elements from changing the header height or shifting the date, clock, title, and page content between routes.
+
+Focused header/layout/navigation tests passed (9 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

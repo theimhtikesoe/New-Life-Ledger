@@ -86,5 +86,8 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("formatMyanmarClock(currentTime)");
     expect(layoutSource).toContain("text-xl font-bold tracking-wider");
     expect(layoutSource).not.toContain("sm:text-5xl");
+    expect(layoutSource).toContain("min-h-[170px] flex-col justify-between");
+    expect(layoutSource).toContain("min-h-[136px] flex-1 flex-col justify-between");
+    expect(layoutSource).toContain('<div className="min-h-10" aria-hidden="true" />');
   });
 });
