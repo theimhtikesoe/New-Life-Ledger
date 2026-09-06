@@ -300,7 +300,7 @@ export default function ProductionEntryPage() {
 
   return (
     <main className="app-page-main production-page">
-      <div className="app-page-container production-container">
+      <div className="app-page-container app-page-surface production-container">
         <form onSubmit={submit} className="space-y-5">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-slate-800">အခြေခံ အချက်အလက်</h2>

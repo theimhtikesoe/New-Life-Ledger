@@ -204,7 +204,7 @@ export default function ActivityPage() {
 
   return (
     <main className="app-page-main">
-      <div className="app-page-container">
+      <div className="app-page-container app-page-surface">
         <section className="page-toolbar">
           <div className="page-toolbar-row">
             <div className="min-w-0">

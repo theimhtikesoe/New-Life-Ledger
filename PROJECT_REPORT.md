@@ -200,6 +200,18 @@ The Dashboard layout was refined to match the supplied mobile reference more clo
 
 Files changed: `src/components/Dashboard.jsx`, `src/app/globals.css`.
 
+## 9.2 Detail-page white container and top-rail refinement — 2026-09-06
+
+The Production, Activity History, and Balance Detail pages now place their page content inside the shared inset white surface used by Dashboard and Ledger. Their shared route header also reserves a larger mobile/tablet top rail so the fixed actor switcher and the in-flow `← Dashboard` navigation link occupy separate bands rather than overlapping near the top of the viewport. Existing page-specific controls and data behavior are unchanged.
+
+Files changed: `src/components/ProductionEntryPage.jsx`, `src/app/activity/page.js`, `src/app/balance-detail/page.js`, and `src/app/globals.css`. No customer, ledger, balance, or audit data was deleted or overwritten.
+
+## 9.2 Detail-page white container refinement — 2026-09-06
+
+The Production, Activity History, and Balance Detail pages now place their complete page content inside a shared inset white surface, matching the visual framing already used by Dashboard and Ledger. The existing internal section spacing and page-specific controls are preserved; this change adds only the outer border, radius, padding, and soft shadow needed to make each page read as one contained white panel on mobile and larger screens.
+
+Files changed: `src/components/ProductionEntryPage.jsx`, `src/app/activity/page.js`, `src/app/balance-detail/page.js`, and `src/app/globals.css`. Focused layout tests passed (7 tests), the production build completed successfully, and no customer, ledger, balance, or audit data was deleted or overwritten.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

@@ -232,7 +232,7 @@ export default function BalanceDetailPage() {
 
   return (
     <main className="app-page-main">
-      <div className="app-page-container">
+      <div className="app-page-container app-page-surface">
         <section className="page-toolbar">
           <div className="page-toolbar-row items-start">
             <p className="page-toolbar-description">အသားတင်ရရန်လက်ကျန် ဘယ်ကဖြစ်လာသလဲ အသေးစိတ်ကြည့်ရန်</p>

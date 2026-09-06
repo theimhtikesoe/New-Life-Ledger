@@ -484,6 +484,16 @@ textarea {
   gap: 1.25rem;
 }
 
+/* Selected detail pages keep their full content inside one inset white
+   container, matching the Dashboard/Ledger visual frame on mobile. */
+.app-page-surface {
+  padding: 0.75rem;
+  border: 1px solid rgba(103, 232, 249, 0.42);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.72) inset;
+}
+
 .page-toolbar {
   border: 1px solid #cbd5e1;
   border-radius: 1rem;
@@ -520,6 +530,10 @@ textarea {
 @media (min-width: 640px) {
   .app-page-main {
     padding: 1.5rem 1.5rem 2.5rem;
+  }
+
+  .app-page-surface {
+    padding: 1rem;
   }
 
   .page-toolbar {
@@ -605,14 +619,16 @@ textarea {
 
 @media (max-width: 639px) {
   .shared-page-header {
-    margin-top: 5rem;
+    /* Leave a complete visual band for the actor switcher before the header.
+       This prevents the in-flow Dashboard link from sitting underneath it. */
+    margin-top: 11rem;
     margin-bottom: 1.75rem;
   }
 }
 
 @media (min-width: 640px) and (max-width: 1023px) {
   .shared-page-header {
-    margin-top: 5.5rem;
+    margin-top: 8rem;
     margin-bottom: 2rem;
   }
 }
