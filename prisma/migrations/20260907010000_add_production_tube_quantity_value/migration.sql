@@ -1,0 +1,2 @@
+ALTER TABLE "ProductionReport"
+  ADD COLUMN IF NOT EXISTS "tubeQuantityValue" TEXT NOT NULL DEFAULT '0';

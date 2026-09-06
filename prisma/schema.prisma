@@ -337,6 +337,7 @@ model ProductionReport {
   damagedPieces      Int      @default(0)
   tubeDamageQuantity Int      @default(0)
   tubeQuantity       Int      @default(0)
+  tubeQuantityValue  String   @default("0")
   tubeQuantityUnit   String   @default("အိတ်")
   involvedWorkers    Json?
   notes           String?

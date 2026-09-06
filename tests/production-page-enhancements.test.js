@@ -19,8 +19,18 @@ describe("Production page enhancements", () => {
     expect(routeSource).toContain("tubeQuantityUnit: index === 0 ? tubeQuantityUnitValue : \"အိတ်\"");
     expect(schemaSource).toContain('tubeQuantityUnit   String   @default("အိတ်")');
     expect(migrationSource).toContain('ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
-    expect(databaseSource).toContain('const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityUnit"];');
+    expect(databaseSource).toContain('const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit"];');
     expect(databaseSource).toContain('ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
+  });
+
+  it("accepts decimal tube quantities and preserves the exact entered value", () => {
+    expect(productionSource).toContain('type="text" inputMode="decimal" value={tubeQuantity}');
+    expect(productionSource).toContain("onChange={(event) => setTubeQuantity(event.target.value)}");
+    expect(productionSource).toContain("tubeQuantityValue: tubeQuantity");
+    expect(routeSource).toContain("function decimalTubeQuantity(value)");
+    expect(routeSource).toContain("tubeQuantityValue: String(row.tubeQuantityValue ?? row.tubeQuantity ?? 0)");
+    expect(schemaSource).toContain('tubeQuantityValue  String   @default("0")');
+    expect(databaseSource).toContain('"tubeQuantityValue" TEXT NOT NULL DEFAULT \'0\'');
   });
 
   it("highlights the currently edited field", () => {
