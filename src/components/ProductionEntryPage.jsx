@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
 
 function todayMyanmar() {
@@ -49,12 +49,16 @@ export default function ProductionEntryPage() {
   const [tubeQuantity, setTubeQuantity] = useState("0");
   const [involvedWorkers, setInvolvedWorkers] = useState([]);
   const [workerNameDraft, setWorkerNameDraft] = useState("");
+  const [savedWorkers, setSavedWorkers] = useState([]);
+  const [loadingWorkers, setLoadingWorkers] = useState(false);
   const [history, setHistory] = useState([]);
   const [editingSubmissionId, setEditingSubmissionId] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const workerPressTimerRef = useRef(null);
+  const suppressWorkerClickRef = useRef(false);
 
   const selectedMachine = useMemo(() => MACHINES.find((machine) => machine.code === machineCode), [machineCode]);
   const tubeItems = useMemo(() => getTubeItemsForMachine(machineCode), [machineCode]);
@@ -63,6 +67,20 @@ export default function ProductionEntryPage() {
     setActiveBottleGroup("03-white");
     setLines({});
   }, [machineCode, selectedMachine]);
+
+  const loadWorkers = useCallback(async () => {
+    setLoadingWorkers(true);
+    try {
+      const response = await fetch("/api/production-workers", { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Worker စာရင်း ရယူ၍မရပါ။");
+      setSavedWorkers(Array.isArray(body.data) ? body.data : []);
+    } catch (loadError) {
+      setError(loadError.message);
+    } finally {
+      setLoadingWorkers(false);
+    }
+  }, []);
 
   const loadHistory = useCallback(async (date = historyDate) => {
     setLoadingHistory(true);
@@ -78,6 +96,7 @@ export default function ProductionEntryPage() {
     }
   }, [historyDate]);
 
+  useEffect(() => { loadWorkers(); }, [loadWorkers]);
   useEffect(() => { loadHistory(); }, [loadHistory]);
 
   const entries = useMemo(() => {
@@ -151,6 +170,58 @@ export default function ProductionEntryPage() {
     setLines((current) => current[key] === "0" ? { ...current, [key]: "" } : current);
   }
 
+  function toggleWorker(name) {
+    setInvolvedWorkers((current) => current.includes(name) ? current.filter((item) => item !== name) : [...current, name]);
+  }
+
+  async function addSavedWorker(event) {
+    event.preventDefault();
+    const name = workerNameDraft.trim();
+    if (!name) return setError("Worker နာမည်ထည့်ပေးပါ။");
+    setError("");
+    try {
+      const actorName = localStorage.getItem("actorName") || "Rhyzoe";
+      const response = await fetch("/api/production-workers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-actor-name": encodeURIComponent(actorName) },
+        body: JSON.stringify({ name }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Worker ထည့်၍မရပါ။");
+      setWorkerNameDraft("");
+      setInvolvedWorkers((current) => current.includes(name) ? current : [...current, name]);
+      await loadWorkers();
+    } catch (addError) {
+      setError(addError.message);
+    }
+  }
+
+  function startWorkerLongPress(name, id) {
+    suppressWorkerClickRef.current = false;
+    workerPressTimerRef.current = window.setTimeout(async () => {
+      suppressWorkerClickRef.current = true;
+      if (!window.confirm(`${name}\\n\\nShared Worker စာရင်းမှ ဖယ်ရှားမလား?`)) return;
+      try {
+        const actorName = localStorage.getItem("actorName") || "Rhyzoe";
+        const response = await fetch(`/api/production-workers?id=${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          headers: { "x-actor-name": encodeURIComponent(actorName) },
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Worker ဖယ်၍မရပါ။");
+        setInvolvedWorkers((current) => current.filter((item) => item !== name));
+        await loadWorkers();
+      } catch (deleteError) {
+        setError(deleteError.message);
+      }
+    }, 750);
+  }
+
+  function endWorkerLongPress() {
+    if (workerPressTimerRef.current) window.clearTimeout(workerPressTimerRef.current);
+    workerPressTimerRef.current = null;
+  }
+
   function resetForm() {
     setLines({});
     setWasteQuantity("0");
@@ -176,7 +247,7 @@ export default function ProductionEntryPage() {
     setTubeQuantity(String(group.tubeQuantity || 0));
     const workerNames = Array.isArray(first.involvedWorkers) ? first.involvedWorkers : [];
     setInvolvedWorkers(workerNames);
-    setWorkerNameDraft(workerNames.join(", "));
+    setWorkerNameDraft("");
     setMessage("ဒီ report ကို အပေါ်မှာ ပြန်ပြင်နိုင်ပါပြီ။");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -211,7 +282,7 @@ export default function ProductionEntryPage() {
     if (!machineCode) return setError("စက် * ကို ရွေးပေးပါ။");
     if (reportDate > today) return setError("အနာဂတ်ရက်စွဲဖြင့် သိမ်း၍မရပါ။");
     if (filledEntries.length === 0) return setError("ထွက်ရှိမှုအရေအတွက် * အနည်းဆုံးတစ်မျိုး ဖြည့်ပေးပါ။");
-    const workerNames = workerNameDraft.split(/[\n,၊]/).map((name) => name.trim()).filter(Boolean).slice(0, 20);
+    const workerNames = involvedWorkers;
     const typeLines = summaryByType.map((item) => `${item.label}: ${formatNumber(item.cards)} ကဒ် / ${formatNumber(item.pieces)} ဗူး`).join("\n");
     const summary = `နေ့စွဲ: ${reportDate}\nဗူးအမျိုးအစား: ${category === "tube" ? "Tube" : "ဗူးခွံ"}\nပူးတွဲဆင်းသူ: ${workerNames.join(", ") || "မဖြည့်ရသေး"}\n\n${typeLines}\n\nဗူးပျက်: ${formatNumber(damagedPieces)}\nTube ပျက်: ${formatNumber(Number(tubeDamageQuantity || 0))}\nTube အရေအတွက်: ${formatNumber(Number(tubeQuantity || 0))}`;
     if (!window.confirm(`သိမ်းမည့် Production Report အကျဉ်းချုပ်\n\n${summary}\n\nဆက်လက်တင်သွင်းမလား?`)) return;
@@ -270,8 +341,20 @@ export default function ProductionEntryPage() {
             </div>
           </div>
           <div>
-            <h2 className="mb-3 text-lg font-black text-slate-800">ပူးတွဲဆင်းသူနာမည်</h2>
-            <label className="block text-sm font-bold text-slate-700"><span className="font-normal text-slate-500">နာမည်များကို comma (၊) သို့မဟုတ် စာကြောင်းခွဲပြီး ထည့်ပါ</span><textarea value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="ဥပမာ — ကိုအောင်၊ မမြင့်" rows={3} className="mt-1 w-full rounded-xl border border-slate-300 p-3" /></label>
+            <div className="flex items-center justify-between gap-2"><h2 className="mb-1 text-lg font-black text-slate-800">ပူးတွဲဆင်းသူနာမည်</h2><span className="text-sm font-black text-blue-700">{involvedWorkers.length} ယောက်ရွေးထား</span></div>
+            <p className="mb-3 text-xs font-normal text-slate-500">ဆင်းတဲ့သူတွေကို နှိပ်ရွေးပါ။ Worker ခလုတ်ကို ကြာကြာဖိထားရင် shared list မှ ဖျက်နိုင်ပါတယ်။</p>
+            <div className="flex flex-wrap gap-2">
+              {loadingWorkers ? <span className="text-sm text-slate-500">Worker စာရင်း ရယူနေသည်...</span> : null}
+              {!loadingWorkers && savedWorkers.length === 0 ? <span className="text-sm text-slate-500">Worker မရှိသေးပါ။ အောက်ကနေ အရင်ထည့်ပါ။</span> : null}
+              {savedWorkers.map((worker) => {
+                const selected = involvedWorkers.includes(worker.name);
+                return <button key={worker.id || worker.name} type="button" onClick={() => { if (suppressWorkerClickRef.current) { suppressWorkerClickRef.current = false; return; } toggleWorker(worker.name); }} onPointerDown={() => startWorkerLongPress(worker.name, worker.id)} onPointerUp={endWorkerLongPress} onPointerLeave={endWorkerLongPress} onPointerCancel={endWorkerLongPress} className={`rounded-xl border-2 px-3 py-2 text-sm font-black transition ${selected ? "border-blue-700 bg-blue-600 text-white shadow-md" : "border-blue-200 bg-blue-50 text-blue-900 hover:border-blue-400"}`}>{selected ? "✓ " : ""}{worker.name}</button>;
+              })}
+            </div>
+            <form onSubmit={addSavedWorker} className="mt-3 flex gap-2">
+              <input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="Worker အသစ်ထည့်ရန်" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" />
+              <button type="submit" disabled={!workerNameDraft.trim() || loadingWorkers} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white disabled:opacity-50">ထည့် +</button>
+            </form>
           </div>
         </section>
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 font-bold text-red-700">{error}</div>}{message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 font-bold text-emerald-700">{message}</div>}
