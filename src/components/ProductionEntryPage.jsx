@@ -197,6 +197,12 @@ export default function ProductionEntryPage() {
     }
   }
 
+  function handleWorkerDraftKeyDown(event) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addSavedWorker(event);
+  }
+
   function startWorkerLongPress(name, id) {
     suppressWorkerClickRef.current = false;
     workerPressTimerRef.current = window.setTimeout(async () => {
@@ -332,14 +338,14 @@ export default function ProductionEntryPage() {
               return <button key={worker.id || worker.name} type="button" onClick={() => { if (suppressWorkerClickRef.current) { suppressWorkerClickRef.current = false; return; } toggleWorker(worker.name); }} onPointerDown={() => startWorkerLongPress(worker.name, worker.id)} onPointerUp={endWorkerLongPress} onPointerLeave={endWorkerLongPress} onPointerCancel={endWorkerLongPress} className={`rounded-xl border-2 px-3 py-2 text-sm font-black transition ${selected ? "border-blue-700 bg-blue-600 text-white shadow-md" : "border-blue-200 bg-blue-50 text-blue-900 hover:border-blue-400"}`}>{selected ? "✓ " : ""}{worker.name}</button>;
             })}
           </div>
-          <form onSubmit={addSavedWorker} className="mt-3 flex gap-2">
-            <input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} placeholder="Worker အသစ်ထည့်ရန်" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" />
-            <button type="submit" disabled={!workerNameDraft.trim() || loadingWorkers} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white disabled:opacity-50">ထည့် +</button>
-          </form>
+          <div className="mt-3 flex gap-2" role="group" aria-label="Worker အသစ်ထည့်ရန်">
+            <input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} onKeyDown={handleWorkerDraftKeyDown} placeholder="Worker အသစ်ထည့်ရန်" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" />
+            <button type="button" onClick={addSavedWorker} disabled={!workerNameDraft.trim() || loadingWorkers} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white disabled:opacity-50">ထည့် +</button>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
-          <label className="mb-4 flex flex-col gap-2 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 text-base font-black text-violet-950"><span className="text-lg">ဗူးအမျိုးအစား</span><select value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="h-14 w-full rounded-xl border-2 border-violet-300 bg-white px-3 text-lg font-black"><option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option></select></label>
+          <label className="mb-4 flex flex-col gap-2 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 text-base font-black text-violet-950"><span className="text-lg">အမျိုးအစား</span><select value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="h-14 w-full rounded-xl border-2 border-violet-300 bg-white px-3 text-lg font-black"><option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option></select></label>
           <h2 className="mb-2 text-2xl font-black text-slate-800">ဗူးအမျိုးအစားနှင့် ဗူးကဒ် <span className="text-red-600">*</span></h2>
           <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900"><span className="font-black">မဖြည့်မနေရ —</span> စက်ရွေးပြီး size card အနည်းဆုံးတစ်မျိုးမှာ အရေအတွက်ထည့်ပါ။ `ဆံ့` ပမာဏက card ထဲမှာ သတ်မှတ်ပြီးသားဖြစ်ပါတယ်။</p>
           {category === "bottle" ? <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">{BOTTLE_GROUPS.map((group) => <button type="button" key={group.key} onClick={() => setActiveBottleGroup(group.key)} className={`min-w-0 rounded-xl border p-3 text-left transition ${activeBottleGroup === group.key ? "border-teal-700 bg-teal-700 text-white shadow-md" : "border-teal-100 bg-teal-50 text-teal-900 hover:border-teal-300"}`}><span className="block truncate text-sm font-black">{group.label}</span><span className={`mt-1 block text-[11px] ${activeBottleGroup === group.key ? "text-teal-100" : "text-teal-700"}`}>{groupCounts[group.key] || 0} မျိုး</span></button>)}</div> : <div className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-sm font-bold text-cyan-800">Tube စက်အလိုက် ထုတ်လုပ်နိုင်သောအမျိုးအစားများ</div>}
