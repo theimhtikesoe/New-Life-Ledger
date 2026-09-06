@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"), "utf8");
 const cssSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+const dashboardSource = fs.readFileSync(path.join(root, "src/components/Dashboard.jsx"), "utf8");
 
 describe("PWA quick actions", () => {
   it("keeps the fixed Refresh control and adds accessible app zoom controls", () => {
@@ -28,6 +29,8 @@ describe("PWA quick actions", () => {
     expect(layoutSource).toContain("<RefreshOverlay />");
     expect(layoutSource).not.toContain("Home — Dashboard သို့ ပြန်သွားမည်");
     expect(layoutSource).toContain('href="/"');
+    expect(dashboardSource).toContain("dashboard-loading-status pointer-events-none fixed left-1/2 top-1/2");
+    expect(dashboardSource).toContain("-translate-x-1/2 -translate-y-1/2");
   });
 
   it("uses safe-area-aware spacing and a wider tablet offset", () => {

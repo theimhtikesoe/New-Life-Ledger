@@ -1592,20 +1592,20 @@ export default function Dashboard({ view = "overview" }) {
       )}
       {(loading || isSubmitting) && (
         <div
-          className="pwa-top-loading pointer-events-none fixed left-2 z-[100] w-[min(calc(100vw-6.5rem),280px)] rounded-xl border border-cyan-200/80 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 px-2.5 py-2 text-slate-800 shadow-lg shadow-cyan-900/10 backdrop-blur sm:left-5 sm:w-[min(92vw,280px)]"
+          className="dashboard-loading-status pointer-events-none fixed left-1/2 top-1/2 z-[120] w-[min(calc(100vw-2rem),320px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-cyan-200/90 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 p-4 text-slate-800 shadow-2xl shadow-cyan-900/20 backdrop-blur sm:w-[min(92vw,360px)]"
           role="status"
           aria-live="polite"
           aria-label={isSubmitting ? "လုပ်ဆောင်နေသည်" : "အချက်အလက်များကို ရယူနေသည်"}
         >
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cyan-600/10" aria-hidden="true">
-              <span className="h-3 w-3 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-700" />
+          <div className="flex flex-col items-center gap-2 text-center">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-600/10" aria-hidden="true">
+              <span className="h-5 w-5 animate-spin rounded-full border-[3px] border-cyan-200 border-t-cyan-700" />
             </span>
-            <p className="min-w-0 truncate text-[11px] font-bold leading-4 text-cyan-900">
+            <p className="min-w-0 text-sm font-bold leading-5 text-cyan-900">
               {isSubmitting ? "လုပ်ဆောင်နေပါသည်" : loadingStage || (isLedgerView ? "Customer data ရယူနေပါသည်" : "Data ရယူနေပါသည်")}
             </p>
           </div>
-          <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-cyan-100">
+          <div className="mt-3 h-1 overflow-hidden rounded-full bg-cyan-100">
             <div className="h-full w-1/3 animate-[pulse_1.4s_ease-in-out_infinite] rounded-full bg-cyan-600" />
           </div>
         </div>

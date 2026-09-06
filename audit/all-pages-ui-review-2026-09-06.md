@@ -47,3 +47,7 @@ Auto Report Status now shows a single shared Dashboard link/title header and a s
 The supplied phone screenshot confirmed that the fixed actor switcher at `top-2` was sitting over the shared date/time/title header and, on dashboard-style pages without a shared route header, over the first content row. The fix moves the switcher into a safe-area-aware fixed rail, reserves mobile top space for the Dashboard/Ledger root wrapper, and increases the mobile shared-header top margin so every page begins below the switcher. Desktop positioning remains near the app shell edge without adding the mobile clearance.
 
 The actor workflow regression suite now checks the new `actor-switcher`, `dashboard-root-page`, and mobile shared-header rules. Targeted UI tests passed and the production build completed successfully.
+
+## Centered KPI loading alert fix
+
+The phone screenshot showed the Dashboard KPI/data loading status card anchored in the top-left rail, where it overlapped the actor switcher and the shared date/title header. The loading status is now a centered, non-blocking status card (`left-1/2 top-1/2` with both translate offsets), with a larger spinner, centered Burmese status text, and progress bar. It is above the page shell while loading but no longer shares the actor switcher's top-left space. Targeted UI regression tests passed (14 tests) and the production build completed successfully.
