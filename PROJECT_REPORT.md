@@ -218,6 +218,12 @@ The common `.app-page-container` now provides the same inset white frame, border
 
 Focused layout tests passed (7 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
 
+## 9.4 Shared top-control rail — 2026-09-06
+
+The actor/user switcher on the left and refresh/settings controls on the right now have a named shared top-control rail. Dashboard, Ledger, and all route pages reserve this empty band before their header/content surfaces begin, preventing controls from sitting on top of the `← Dashboard` link or the date/time header on phone portrait layouts. The route header markup now explicitly identifies this shared rail behavior, and regression assertions cover the new spacing variables.
+
+Focused layout tests passed (7 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

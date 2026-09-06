@@ -153,7 +153,7 @@ function SharedPageHeader({ pathname, actorName }) {
   if (!title || pathname === '/' || pathname === '/ledger') return null;
 
   return (
-    <header className="shared-page-header neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:px-7 sm:py-4">
+    <header className="shared-page-header shared-page-header-route neon-surface neon-sweep mx-3 mb-4 mt-12 rounded-2xl border border-cyan-200/80 bg-white/90 px-4 py-3 shadow-sm backdrop-blur sm:mx-6 sm:mb-5 sm:mt-6 sm:px-7 sm:py-4">
       <div className="relative min-h-[116px]">
         {actorName !== 'ဇွဲဇွဲ' ? (
           <div className="shared-page-header-nav flex min-h-10 items-center">

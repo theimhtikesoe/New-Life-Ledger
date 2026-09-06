@@ -63,6 +63,7 @@
   /* Safari website pages already begin below the browser chrome. Reserve the
      larger Dynamic Island clearance only for the installed standalone PWA. */
   --pwa-top-clearance: env(safe-area-inset-top, 0px);
+  --top-control-rail-height: 5.5rem;
 }
 
 html {
@@ -550,6 +551,12 @@ textarea {
   margin-inline: auto;
 }
 
+/* Keep the actor switcher on the left and refresh/settings controls on the
+   right in a clear empty rail above every route header. */
+.shared-page-header-route {
+  margin-top: var(--top-control-rail-height);
+}
+
 @media (min-width: 640px) {
   .shared-page-header {
     width: calc(100% - 3rem);
@@ -674,11 +681,11 @@ textarea {
 /* Final top-clearance correction: keep the complete header below the actor rail
    on every route, including the Production page, not just its content cards. */
 .shared-page-header {
-  margin-top: 5rem;
+  margin-top: var(--top-control-rail-height);
 }
 
 .dashboard-root-page {
-  padding-top: 5rem;
+  padding-top: var(--top-control-rail-height);
 }
 
 /* Keep the dashboard header, add-customer card, and customer list card in
@@ -689,21 +696,29 @@ textarea {
 }
 
 @media (max-width: 639px) {
+  :root {
+    --top-control-rail-height: 11rem;
+  }
+
   .shared-page-header {
-    margin-top: 6rem;
+    margin-top: var(--top-control-rail-height);
   }
 
   .dashboard-root-page {
-    padding-top: 5.5rem;
+    padding-top: var(--top-control-rail-height);
   }
 }
 
 @media (min-width: 640px) and (max-width: 1023px) {
+  :root {
+    --top-control-rail-height: 8rem;
+  }
+
   .shared-page-header {
-    margin-top: 6rem;
+    margin-top: var(--top-control-rail-height);
   }
 
   .dashboard-root-page {
-    padding-top: 5.5rem;
+    padding-top: var(--top-control-rail-height);
   }
 }

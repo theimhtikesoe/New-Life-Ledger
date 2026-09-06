@@ -44,7 +44,8 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("actor-switcher pointer-events-none fixed z-[115]");
     expect(globalStylesSource).toContain(".actor-switcher");
     expect(globalStylesSource).toContain(".dashboard-root-page");
-    expect(globalStylesSource).toContain(".shared-page-header {\n    margin-top: 5rem;");
+    expect(globalStylesSource).toContain("--top-control-rail-height: 5.5rem;");
+    expect(globalStylesSource).toContain(".shared-page-header-route");
   });
 
   it("keeps every route page on the shared header without duplicate Dashboard/title markup", () => {
@@ -54,8 +55,9 @@ describe("Actor access workflow", () => {
     expect(layoutSource).not.toContain("absolute left-0 top-0 text-base font-semibold text-cyan-700");
     expect(globalStylesSource).toContain("margin-top: 4.5rem");
     expect(globalStylesSource).toContain(".dashboard-root-page {\n  padding-top: 4rem;");
-    expect(globalStylesSource).toContain(".dashboard-root-page {\n  padding-top: 5rem;");
-    expect(globalStylesSource).toContain("margin-top: 6rem");
+    expect(globalStylesSource).toContain("padding-top: var(--top-control-rail-height);");
+    expect(globalStylesSource).toContain("--top-control-rail-height: 11rem;");
+    expect(globalStylesSource).toContain("--top-control-rail-height: 8rem;");
     expect(globalStylesSource).toContain("margin-bottom: 1.75rem");
     expect(globalStylesSource).toContain(".app-page-main {\n  padding-top: 1.25rem;");
     sharedHeaderRouteSources.forEach(({ file, source }) => {
