@@ -18,7 +18,8 @@ describe("Production page enhancements", () => {
     expect(routeSource).toContain('if (!["အိတ်", "ခြင်း"].includes(unit))');
     expect(routeSource).toContain("tubeQuantityUnit: index === 0 ? tubeQuantityUnitValue : \"အိတ်\"");
     expect(schemaSource).toContain('tubeQuantityUnit   String   @default("အိတ်")');
-    expect(migrationSource).toContain('ADD COLUMN "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
+    expect(migrationSource).toContain('ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
+    expect(databaseSource).toContain('const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityUnit"];');
     expect(databaseSource).toContain('ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
   });
 

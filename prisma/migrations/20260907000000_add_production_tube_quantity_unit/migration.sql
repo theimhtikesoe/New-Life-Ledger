@@ -1,2 +1,2 @@
 ALTER TABLE "ProductionReport"
-  ADD COLUMN "tubeQuantityUnit" TEXT NOT NULL DEFAULT 'အိတ်';
+  ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT 'အိတ်';

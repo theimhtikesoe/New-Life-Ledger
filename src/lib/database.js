@@ -27,7 +27,7 @@ const REQUIRED_TABLES = [
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
-const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity"];
+const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityUnit"];
 const REQUIRED_DAILY_SALES_COLUMNS = [
   "enteredAt",
   "enteredBy",
