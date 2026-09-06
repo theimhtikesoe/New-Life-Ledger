@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 
@@ -69,9 +68,6 @@ export default function VercelBuildLogsPage() {
         <section className="page-toolbar">
           <div className="page-toolbar-row items-start">
             <div className="min-w-0">
-              <div className="page-toolbar-controls justify-start text-sm font-medium">
-                <Link href="/auto-report-status" className="text-amber-700">Auto Report အခြေအနေ</Link>
-              </div>
               <p className="page-toolbar-description">Production deployment များ၏ build အခြေအနေ၊ warning နှင့် error စာသားများကို read-only ဖြင့် ကြည့်ရန် ဖြစ်ပါသည်။</p>
             </div>
             <button type="button" onClick={() => loadLogs(selectedId, true)} disabled={loading || refreshing} className="min-h-10 shrink-0 rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-800 transition-colors hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60">
