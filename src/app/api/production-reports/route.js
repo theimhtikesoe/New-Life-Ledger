@@ -21,6 +21,12 @@ function positiveInt(value, label) {
   return number;
 }
 
+function tubeQuantityUnit(value) {
+  const unit = String(value || "အိတ်").trim();
+  if (!["အိတ်", "ခြင်း"].includes(unit)) throw new Error("Tube အရေအတွက် Unit ကို အိတ် သို့မဟုတ် ခြင်း ရွေးပေးပါ။");
+  return unit;
+}
+
 function normalizeRows(body) {
   if (!Array.isArray(body.rows)) throw new Error("ထွက်ရှိမှုစာရင်း မမှန်ပါ။");
   const rows = body.rows.map((row) => {
@@ -53,6 +59,7 @@ function serialize(row) {
     damagedPieces: Number(row.damagedPieces || 0),
     tubeDamageQuantity: Number(row.tubeDamageQuantity || 0),
     tubeQuantity: Number(row.tubeQuantity || 0),
+    tubeQuantityUnit: row.tubeQuantityUnit === "ခြင်း" ? "ခြင်း" : "အိတ်",
     involvedWorkers: Array.isArray(row.involvedWorkers) ? row.involvedWorkers : [],
   };
 }
@@ -86,6 +93,7 @@ export async function POST(request) {
     const wasteQuantity = positiveInt(body.wasteQuantity, "ဗူးပျက်အရေအတွက်");
     const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "ဗူးမဖြစ်ဘဲ ပျက်သွားသော Tube အရေအတွက်");
     const tubeQuantity = positiveInt(body.tubeQuantity, "ဗူးထွက်ရန်သုံးသော Tube အရေအတွက်");
+    const tubeQuantityUnitValue = tubeQuantityUnit(body.tubeQuantityUnit);
     const actorName = getActorName(request);
     const submissionId = crypto.randomUUID();
     const involvedWorkers = Array.isArray(body.involvedWorkers)
@@ -110,6 +118,7 @@ export async function POST(request) {
       damagedPieces: index === 0 ? wasteQuantity : 0,
       tubeDamageQuantity: index === 0 ? tubeDamageQuantity : 0,
       tubeQuantity: index === 0 ? tubeQuantity : 0,
+      tubeQuantityUnit: index === 0 ? tubeQuantityUnitValue : "အိတ်",
       involvedWorkers,
       notes,
     }));
@@ -147,6 +156,7 @@ export async function PATCH(request) {
     const wasteQuantity = positiveInt(body.wasteQuantity, "ဗူးပျက်အရေအတွက်");
     const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "ဗူးမဖြစ်ဘဲ ပျက်သွားသော Tube အရေအတွက်");
     const tubeQuantity = positiveInt(body.tubeQuantity, "ဗူးထွက်ရန်သုံးသော Tube အရေအတွက်");
+    const tubeQuantityUnitValue = tubeQuantityUnit(body.tubeQuantityUnit);
     const actorName = getActorName(request);
     const involvedWorkers = Array.isArray(body.involvedWorkers) ? body.involvedWorkers.map((value) => String(value).trim()).filter(Boolean).slice(0, 20) : [];
     const notes = String(body.notes || "").trim() || null;
@@ -158,6 +168,7 @@ export async function PATCH(request) {
       damagedPieces: index === 0 ? wasteQuantity : 0,
       tubeDamageQuantity: index === 0 ? tubeDamageQuantity : 0,
       tubeQuantity: index === 0 ? tubeQuantity : 0,
+      tubeQuantityUnit: index === 0 ? tubeQuantityUnitValue : "အိတ်",
       involvedWorkers, notes,
     }));
     const result = await prisma.$transaction(async (tx) => {

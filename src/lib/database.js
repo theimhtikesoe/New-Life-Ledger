@@ -219,6 +219,7 @@ export async function ensureDatabase() {
         `);
         await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeDamageQuantity" INTEGER NOT NULL DEFAULT 0`);
         await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeQuantity" INTEGER NOT NULL DEFAULT 0`);
+        await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT 'အိတ်'`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
