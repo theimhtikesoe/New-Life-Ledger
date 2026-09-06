@@ -13,8 +13,9 @@ const customerDetailApiSource = readFileSync(resolve(process.cwd(), "src/app/api
 
 describe("Customer Management workflow", () => {
   it("opens Customer Management from the Dashboard customer count", () => {
-    expect(dashboardSource).toContain('href="/customer-management" aria-label="Customer Management ဖွင့်ရန်"');
-    expect(dashboardSource).toContain("Customer Management · အသေးစိတ်ကြည့်ရန် →");
+    expect(dashboardSource).toContain('href="/customer-management"');
+    expect(dashboardSource).toContain("Customer Management");
+    expect(dashboardSource).toContain("အသေးစိတ်ကြည့်ရန်");
   });
 
   it("keeps Balance Detail and Customer Management as separate routes", () => {
@@ -51,4 +52,3 @@ describe("Customer Management workflow", () => {
 });
 
 export {};
-

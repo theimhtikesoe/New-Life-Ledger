@@ -39,7 +39,8 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("{!isLedgerView ? (");
     expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`');
     expect(dashboardSource).toContain("const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;");
-    expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
+    expect(dashboardSource).toContain('href={`/ledger?date=${encodeURIComponent(selectedKpiDate)}`}');
+    expect(dashboardSource).toContain('href={`/production?date=${encodeURIComponent(selectedKpiDate)}`}');
   });
 
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {

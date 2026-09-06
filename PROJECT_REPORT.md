@@ -224,6 +224,12 @@ The actor/user switcher on the left and refresh/settings controls on the right n
 
 Focused layout tests passed (7 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
 
+## 9.5 All-page UI and navigation audit — 2026-09-06
+
+The Dashboard KPI cards now use direct, date-aware Next.js links to the Ledger and Production detail pages, so selecting a KPI takes the user to a dedicated page instead of opening a modal-only view. Existing Customer/Balance, report, data-management, Activity History, and other Dashboard navigation targets were checked for route ownership and accessible labels. The Daily Sales panel and Activity History controls remain present in the shared responsive layout, while internal action buttons retain their intended local behavior for editing, pagination, modal confirmation, and retry states.
+
+The complete Vitest suite passed: 63 test files and 254 tests. The production build also completed successfully. The audit corrected stale source-contract assertions for the current route markup and documents the intentional exclusion of the `ProductionWorker` picker cache from the Excel backup model-count contract because selected worker names are preserved in production report `involvedWorkers` data. No customer, ledger, balance, or audit data was deleted or overwritten.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

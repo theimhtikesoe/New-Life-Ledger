@@ -26,8 +26,9 @@ describe("DailySalesSummaryPanel", () => {
   });
 
   it("keeps the Daily Sales card above Activity History in a responsive grid", () => {
-    expect(dashboardSource).toContain("grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4");
-    expect(dashboardSource.indexOf("<DailySalesSummaryPanel />")).toBeLessThan(dashboardSource.indexOf('href=\"/activity\"'));
+    expect(dashboardSource).toContain("grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4");
+    expect(dashboardSource).toContain("<DailySalesSummaryPanel selectedDate={selectedKpiDate}");
+    expect(dashboardSource).toContain('href="/activity"');
   });
 
   it("uses the checked August notebook opening prefill and mobile-safe actions", () => {

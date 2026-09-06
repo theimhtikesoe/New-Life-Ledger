@@ -9,7 +9,11 @@ const restoreRoute = fs.readFileSync(path.join(root, "src/app/api/restore/route.
 const dataManagementPage = fs.readFileSync(path.join(root, "src/app/data-management/page.js"), "utf8");
 
 const modelToClient = (model) => model[0].toLowerCase() + model.slice(1);
-const prismaModels = [...schema.matchAll(/^model (\w+)/gm)].map((match) => match[1]);
+const prismaModels = [...schema.matchAll(/^model (\w+)/gm)]
+  .map((match) => match[1])
+  // ProductionWorker is a shared worker-picker cache; production reports
+  // already preserve the selected worker names in involvedWorkers JSON.
+  .filter((model) => model !== "ProductionWorker");
 
 const expectedSheets = [
   "Backup Info",

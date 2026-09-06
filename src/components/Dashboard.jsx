@@ -1824,20 +1824,20 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
 
             {/* Today&apos;s Transactions */}
-            <button
-              onClick={() => setShowTodayPaymentsModal(true)}
-              disabled={!selectedKpiIsToday}
-              className={`neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
+            <Link
+              href={`/ledger?date=${encodeURIComponent(selectedKpiDate)}`}
+              aria-label={`${selectedKpiDate} ငွေချေမှုများ အသေးစိတ်ကြည့်ရန်`}
+              className="neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all hover:border-emerald-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-300 sm:min-h-[158px]"
             >
               <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေမှုများ</p>
               <p className="mt-2 text-2xl font-bold text-emerald-700">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
               <p className="mt-1 text-xs text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
-            </button>
+            </Link>
 
-            <button
-              type="button"
-              onClick={() => { setProductionDate(selectedKpiDate); setShowProductionModal(true); }}
-              className="neon-card neon-sweep neon-card-orange flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md sm:min-h-[170px]"
+            <Link
+              href={`/production?date=${encodeURIComponent(selectedKpiDate)}`}
+              aria-label={`${selectedKpiDate} ဗူးထွက်ရှိမှု အသေးစိတ်ကြည့်ရန်`}
+              className="neon-card neon-sweep neon-card-orange flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-300 sm:min-h-[170px]"
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-orange-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးထွက်ရှိမှု</p>
@@ -1848,7 +1848,7 @@ export default function Dashboard({ view = "overview" }) {
                 <p>ပျက်စီး {productionSummary.wasteQuantity.toLocaleString()} ဗူး</p>
               </div>
               <p className="mt-auto pt-2 text-xs font-bold text-orange-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
-            </button>
+            </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
           </div>
             </section>
