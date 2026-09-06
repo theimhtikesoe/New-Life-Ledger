@@ -212,6 +212,12 @@ The Production, Activity History, and Balance Detail pages now place their compl
 
 Files changed: `src/components/ProductionEntryPage.jsx`, `src/app/activity/page.js`, `src/app/balance-detail/page.js`, and `src/app/globals.css`. Focused layout tests passed (7 tests), the production build completed successfully, and no customer, ledger, balance, or audit data was deleted or overwritten.
 
+## 9.3 All-route shared shell — 2026-09-06
+
+The common `.app-page-container` now provides the same inset white frame, border, radius, padding, and soft shadow for every route page that uses the shared page layout, including Vercel Build Logs, Auto Report Status, Data Management, Orders, Daily Summary, Customer Management, Production, Activity History, and Balance Detail. The existing shared header keeps the Dashboard link, Myanmar date/time, and route title in one header frame, while the mobile/tablet top rail keeps that frame below the actor switcher. This aligns the vertical phone presentation across user roles and page transitions without changing business data or permissions.
+
+Focused layout tests passed (7 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

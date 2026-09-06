@@ -482,16 +482,18 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-}
-
-/* Selected detail pages keep their full content inside one inset white
-   container, matching the Dashboard/Ledger visual frame on mobile. */
-.app-page-surface {
   padding: 0.75rem;
   border: 1px solid rgba(103, 232, 249, 0.42);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.72) inset;
+}
+
+/* Every route uses one shared white content frame. The explicit
+   .app-page-surface class remains supported for pages that document the
+   intent in their markup. */
+.app-page-surface {
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .page-toolbar {
@@ -532,6 +534,7 @@ textarea {
     padding: 1.5rem 1.5rem 2.5rem;
   }
 
+  .app-page-container,
   .app-page-surface {
     padding: 1rem;
   }
