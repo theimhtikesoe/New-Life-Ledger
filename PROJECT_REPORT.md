@@ -234,6 +234,10 @@ The complete Vitest suite passed: 63 test files and 254 tests. The production bu
 
 When the User button opens the actor selector while an actor is already active, selecting that exact same actor now closes the selector and keeps the session active without asking for the same PIN again. Selecting a different actor still requires PIN confirmation, and the idle-lock flow still clears the stored actor name so PIN confirmation remains required after the timeout. Focused actor/navigation tests passed (7 tests) and the production build completed successfully.
 
+## 9.7 Today's Payments KPI behavior — 2026-09-06
+
+The `ယနေ့ ငွေချေမှုများ` KPI has been restored to its original Dashboard behavior: clicking it opens the in-dashboard payment detail modal rather than navigating to Ledger. The Production KPI remains a direct link to the Production detail page. Focused KPI/navigation tests passed (11 tests) and the production build completed successfully.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.

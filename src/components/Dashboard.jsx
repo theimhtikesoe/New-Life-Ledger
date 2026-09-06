@@ -1824,15 +1824,17 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
 
             {/* Today&apos;s Transactions */}
-            <Link
-              href={`/ledger?date=${encodeURIComponent(selectedKpiDate)}`}
+            <button
+              type="button"
+              onClick={() => setShowTodayPaymentsModal(true)}
+              disabled={!selectedKpiIsToday}
               aria-label={`${selectedKpiDate} ငွေချေမှုများ အသေးစိတ်ကြည့်ရန်`}
-              className="neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all hover:border-emerald-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-300 sm:min-h-[158px]"
+              className={`neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
             >
               <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေမှုများ</p>
               <p className="mt-2 text-2xl font-bold text-emerald-700">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
               <p className="mt-1 text-xs text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
-            </Link>
+            </button>
 
             <Link
               href={`/production?date=${encodeURIComponent(selectedKpiDate)}`}
