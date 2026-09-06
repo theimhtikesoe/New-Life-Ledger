@@ -7,6 +7,9 @@ export const BOTTLE_ITEMS = [
   { type: "0.3 ဖြူ", capacities: [100, 200, 400] },
   { type: "0.3 ပြာ (S+1)", capacities: [100, 200, 400] },
   { type: "0.3 ပြာ (S+S)", capacities: [100, 200, 400] },
+  { type: "လေးထောင့်", capacities: [200] },
+  { type: "လေးထောင့် 16g", capacities: [200] },
+  { type: "လေးထောင့် 13g", capacities: [200] },
   { type: "8 ဒေါင့် ဖြူ", capacities: [100, 250] },
   { type: "8 ဒေါင့် (S+1)", capacities: [100, 250] },
   { type: "8 ဒေါင့် (S+S)", capacities: [100, 250, 500] },
@@ -41,6 +44,7 @@ export const BOTTLE_GROUPS = [
   { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူ" },
   { key: "03-blue", label: ".3 ပြာ", description: "0.3 ပြာ" },
   { key: "08-corner", label: "8 ဒေါင့်", description: "8 ဒေါင့် ဖြူ၊ S+1 နှင့် S+S" },
+  { key: "square", label: "လေးထောင့်", description: "လေးထောင့်၊ 16g နှင့် 13g" },
   { key: "special", label: "ဒိန်ချဉ်/ရွှေဝိုင်း", description: "ဒိန်သေး၊ ဒိန်ကြီး၊ ရွှေဝိုင်း" },
   { key: "025", label: ".25", description: "0.25 အမျိုးအစား" },
   { key: "candy", label: "ချိုချဉ် / လုံးချော", description: "အခြားအရွယ်အစား" },
@@ -58,6 +62,7 @@ export const BOTTLE_GROUPS = [
 export function getBottleGroup(type) {
   const value = String(type || "");
   if (value.startsWith("8 ဒေါင့်")) return "08-corner";
+  if (value.startsWith("လေးထောင့်")) return "square";
   if (value === "0.3 ဖြူ") return "03-white";
   if (value.includes("0.3 ပြာ")) return "03-blue";
   if (["ဒိန်သေး", "ဒိန်သေး (S+1)", "ဒိန်သေး (S+S)", "ဒိန်ကြီး", "ဒိန်ကြီး (S+1)", "ဒိန်ကြီး (S+S)", "ရွှေဝိုင်း"].includes(value)) return "special";

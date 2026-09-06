@@ -27,4 +27,13 @@ describe("Production bottle catalog", () => {
     expect(getBottleUnit("ဒိန်သေး (S+S)")).toBe("ထုပ်");
     expect(getBottleUnit("0.3 ဖြူ")).toBe("ကဒ်");
   });
+
+  it("includes the three 200 ဆံ့ လေးထောင့် cards in their own category", () => {
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့်", capacities: [200] });
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 16g", capacities: [200] });
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 13g", capacities: [200] });
+    expect(getBottleGroup("လေးထောင့်")).toBe("square");
+    expect(getBottleGroup("လေးထောင့် 16g")).toBe("square");
+    expect(getBottleGroup("လေးထောင့် 13g")).toBe("square");
+  });
 });
