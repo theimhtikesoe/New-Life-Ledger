@@ -708,3 +708,31 @@ textarea {
     padding-top: var(--top-control-rail-layout-height);
   }
 }
+
+/* Canonical shared-header contract. Keep this final block intentionally small:
+   every route gets the same top rail, header height, and header-to-content gap
+   instead of inheriting a stack of page-specific margin overrides. */
+.shared-page-header-route {
+  margin-top: 4rem !important;
+  margin-bottom: 0 !important;
+}
+
+.shared-page-header-route + .app-page-main {
+  padding-top: 1.5rem;
+}
+
+@media (max-width: 639px) {
+  .shared-page-header-route {
+    margin-top: 9rem !important;
+  }
+
+  .shared-page-header-route + .app-page-main {
+    padding-top: 1.25rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  .shared-page-header-route {
+    margin-top: 6rem !important;
+  }
+}

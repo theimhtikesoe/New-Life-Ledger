@@ -87,7 +87,7 @@ describe("Actor access workflow", () => {
     expect(middlewareSource).toContain('path !== "/production"');
     expect(layoutSource).toContain("SharedPageHeader pathname={pathname} actorName={actorName}");
     expect(layoutSource).toContain("formatMyanmarClock(currentTime)");
-    expect(layoutSource).toContain("text-xl font-bold tracking-wider");
+    expect(layoutSource).toContain("text-2xl font-bold tracking-wider");
     expect(layoutSource).not.toContain("sm:text-5xl");
     expect(layoutSource).toContain("min-h-[170px] flex-col justify-between");
     expect(layoutSource).toContain("min-h-[136px] flex-1 flex-col justify-between");
@@ -95,5 +95,7 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("'--app-zoom': appZoom");
     expect(globalStylesSource).toContain("--top-control-rail-layout-height: calc(var(--top-control-rail-height) / var(--app-zoom, 1));");
     expect(globalStylesSource).toContain("margin-top: calc(var(--top-control-rail-layout-height) + 0.75rem);");
+    expect(globalStylesSource).toContain(".shared-page-header-route {");
+    expect(globalStylesSource).toContain("margin-top: 9rem !important;");
   });
 });
