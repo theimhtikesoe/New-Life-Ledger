@@ -96,7 +96,7 @@ function retentionLabel(value, label = "Cancel") {
 
 function actorHeaders() {
   if (typeof window === "undefined") return {};
-  return { "x-actor-name": encodeActorHeader(localStorage.getItem("actorName") || "Staff") };
+  return { "x-actor-name": encodeActorHeader(localStorage.getItem("actorName") || "Rhyzoe") };
 }
 
 function isTransientRequestError(error) {
@@ -191,7 +191,7 @@ function OrderHistoryTimeline({ logs }) {
             </div>
             <div className="text-right text-slate-500">
               <p>{formatMyanmarDateTime(log.createdAt)}</p>
-              <p className="mt-1">{log.actorName || "Staff"}</p>
+              <p className="mt-1">{log.actorName || "Rhyzoe"}</p>
             </div>
           </div>
         ))}
@@ -627,8 +627,8 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
-                {archived ? <p className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-800">History သို့ရွှေ့ချိန်: {formatMyanmarDateTime(order.archivedAt)} · လုပ်သူ: {order.archivedBy || "Staff"}</p> : null}
-                {viewMode === "TRASH" ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">{order.historyTrashedAt ? `History Trash ရွှေ့ချိန်: ${formatMyanmarDateTime(order.historyTrashedAt)} · လုပ်သူ: ${order.historyTrashedBy || "Staff"} · ${retentionLabel(order.historyTrashedAt, "History Trash")}` : `Cancel လုပ်ချိန်: ${order.cancelledAt ? formatMyanmarDateTime(order.cancelledAt) : "မသိရသေးပါ"} · လုပ်သူ: ${order.cancelledBy || "Staff"} · ${retentionLabel(order.cancelledAt)}`}</p> : null}
+                {archived ? <p className="mt-3 rounded-lg bg-indigo-50 px-3 py-2 text-xs text-indigo-800">History သို့ရွှေ့ချိန်: {formatMyanmarDateTime(order.archivedAt)} · လုပ်သူ: {order.archivedBy || "Rhyzoe"}</p> : null}
+                {viewMode === "TRASH" ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">{order.historyTrashedAt ? `History Trash ရွှေ့ချိန်: ${formatMyanmarDateTime(order.historyTrashedAt)} · လုပ်သူ: ${order.historyTrashedBy || "Rhyzoe"} · ${retentionLabel(order.historyTrashedAt, "History Trash")}` : `Cancel လုပ်ချိန်: ${order.cancelledAt ? formatMyanmarDateTime(order.cancelledAt) : "မသိရသေးပါ"} · လုပ်သူ: ${order.cancelledBy || "Rhyzoe"} · ${retentionLabel(order.cancelledAt)}`}</p> : null}
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ထုတ်ရမည့်ရက်</p>{canEditDetails && !order.requestedDate ? <button type="button" onClick={() => setEditingDetailsId(order.id)} className="font-semibold text-cyan-700 underline decoration-dotted underline-offset-2">မသတ်မှတ်ရသေး · ဖြည့်ရန်</button> : <p className="font-semibold text-slate-800">{formatDate(order.requestedDate)}</p>}</div>
                   <div className="rounded-lg bg-slate-50 px-3 py-2"><p className="text-xs text-slate-500">ကားဂိတ်/နေရာ</p>{canEditDetails && !order.destination ? <button type="button" onClick={() => setEditingDetailsId(order.id)} className="font-semibold text-cyan-700 underline decoration-dotted underline-offset-2">မသတ်မှတ်ရသေး · ဖြည့်ရန်</button> : <p className="font-semibold text-slate-800">{order.destination || "မသတ်မှတ်ရသေး"}</p>}</div>

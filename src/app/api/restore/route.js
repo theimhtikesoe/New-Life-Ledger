@@ -286,7 +286,7 @@ function normalize(workbook) {
     id: asUuid(row.id || row.ID),
     submissionId: asText(row.submissionId ?? row.SubmissionId),
     reportDate: asText(row.reportDate ?? row.ReportDate),
-    actorName: asText(row.actorName ?? row.ActorName, "Staff") || "Staff",
+    actorName: asText(row.actorName ?? row.ActorName, "Rhyzoe") || "Rhyzoe",
     machineCode: asText(row.machineCode ?? row.MachineCode),
     machineName: row.machineName ?? row.MachineName ?? null,
     category: asText(row.category ?? row.Category, "bottle") || "bottle",

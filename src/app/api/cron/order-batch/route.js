@@ -19,7 +19,7 @@ export async function POST(request) {
   if (!isAuthorized(request)) return NextResponse.json({ ok: false, error: "Unauthorized cron request" }, { status: 401 });
   try {
     const date = getMyanmarDateInputValue();
-    const result = await runMorningOrderBatch({ batchDate: date, actorName: "Staff" });
+    const result = await runMorningOrderBatch({ batchDate: date, actorName: "Rhyzoe" });
     return NextResponse.json({ ok: true, date, ...result });
   } catch (error) {
     console.error("Order morning batch failed", error);

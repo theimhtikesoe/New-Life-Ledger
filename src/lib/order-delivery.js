@@ -83,7 +83,7 @@ async function claimDelivery(deliveryId, { factoryOrderDate = null } = {}) {
   });
 }
 
-export async function sendFactoryNotificationForOrder(orderId, { actorName = "Staff", source = "WEBSITE" } = {}) {
+export async function sendFactoryNotificationForOrder(orderId, { actorName = "Rhyzoe", source = "WEBSITE" } = {}) {
   await ensureDatabase();
   const { token, factoryChatId } = getTelegramOrderConfig();
   if (!token || !factoryChatId) throw new Error("TELEGRAM_BOT_TOKEN နှင့် TELEGRAM_FACTORY_GROUP_CHAT_ID မပြည့်စုံသေးပါ။");
@@ -119,7 +119,7 @@ export async function sendFactoryNotificationForOrder(orderId, { actorName = "St
   }
 }
 
-export async function runMorningOrderBatch({ batchDate = null, actorName = "Staff" } = {}) {
+export async function runMorningOrderBatch({ batchDate = null, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const setting = await getOrderAutomationSetting();
   if (!setting.morningBatchEnabled) return { skipped: true, reason: "disabled", batchDate: batchDate || getMyanmarDateInputValue() };

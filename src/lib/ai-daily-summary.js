@@ -98,7 +98,7 @@ export async function findLatestAiExplanationCache(date) {
   }
 }
 
-export async function saveAiExplanationCache({ date, fingerprint, explanation, actorName = "Staff", provider = "MANUS_API", model = "manus-1.6-lite" } = {}) {
+export async function saveAiExplanationCache({ date, fingerprint, explanation, actorName = "Rhyzoe", provider = "MANUS_API", model = "manus-1.6-lite" } = {}) {
   const cacheModel = getAiExplanationCacheModel();
   if (!cacheModel || !date || !fingerprint || !explanation) return null;
   try {
@@ -115,13 +115,13 @@ export async function saveAiExplanationCache({ date, fingerprint, explanation, a
         dataFingerprint: String(fingerprint),
         promptVersion: AI_EXPLANATION_PROMPT_VERSION,
         explanation,
-        generatedBy: String(actorName || "Staff").slice(0, 80),
+        generatedBy: String(actorName || "Rhyzoe").slice(0, 80),
         provider: String(provider || "MANUS_API").slice(0, 80),
         model: String(model || "manus-1.6-lite").slice(0, 120),
       },
       update: {
         explanation,
-        generatedBy: String(actorName || "Staff").slice(0, 80),
+        generatedBy: String(actorName || "Rhyzoe").slice(0, 80),
         provider: String(provider || "MANUS_API").slice(0, 80),
         model: String(model || "manus-1.6-lite").slice(0, 120),
       },

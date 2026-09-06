@@ -28,16 +28,16 @@ function writeObject(storage, key, value) {
 }
 
 function cacheKey(date, actorName) {
-  return `${String(actorName || "Staff")}::${String(date || "")}`;
+  return `${String(actorName || "Rhyzoe")}::${String(date || "")}`;
 }
 
-export function readAiExplanationCache(date, actorName = "Staff", storage = getDefaultStorage()) {
+export function readAiExplanationCache(date, actorName = "Rhyzoe", storage = getDefaultStorage()) {
   if (!date || !storage) return null;
   const value = readObject(storage, CACHE_KEY)[cacheKey(date, actorName)];
   return value && typeof value === "object" && value.explanation ? value.explanation : null;
 }
 
-export function saveAiExplanationCache(date, explanation, actorName = "Staff", storage = getDefaultStorage()) {
+export function saveAiExplanationCache(date, explanation, actorName = "Rhyzoe", storage = getDefaultStorage()) {
   if (!date || !explanation || !storage) return false;
   const cache = readObject(storage, CACHE_KEY);
   cache[cacheKey(date, actorName)] = { explanation, savedAt: new Date().toISOString() };
@@ -48,7 +48,7 @@ export function saveAiExplanationCache(date, explanation, actorName = "Staff", s
 }
 
 function usageKey(actorName, currentDate) {
-  return `${String(currentDate || "")}::${String(actorName || "Staff")}`;
+  return `${String(currentDate || "")}::${String(actorName || "Rhyzoe")}`;
 }
 
 export function getDailyAiUsage(actorName, currentDate, storage = getDefaultStorage()) {

@@ -442,7 +442,7 @@ export default function DailySummaryPage() {
     aiAbortRef.current?.abort();
     aiAbortRef.current = null;
     aiRequestStartedAtRef.current = 0;
-    const actorName = localStorage.getItem("actorName") || "Staff";
+    const actorName = localStorage.getItem("actorName") || "Rhyzoe";
     const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
     setAiExplanation(localExplanation);
     setAiExplanationOpen(false);
@@ -464,7 +464,7 @@ export default function DailySummaryPage() {
       aiRequestStartedAtRef.current = 0;
       const fallback = buildCodeBasedExplanation(data, date);
       if (fallback) {
-        const actorName = localStorage.getItem("actorName") || "Staff";
+        const actorName = localStorage.getItem("actorName") || "Rhyzoe";
         saveAiExplanationCache(date, fallback, actorName);
         setAiExplanation((current) => current || fallback);
         setAiFallback(true);
@@ -494,7 +494,7 @@ export default function DailySummaryPage() {
 
   const handleAiExplain = async ({ bypassLimit = false } = {}) => {
     if (aiLoading) return;
-    const actorName = localStorage.getItem("actorName") || "Staff";
+    const actorName = localStorage.getItem("actorName") || "Rhyzoe";
     const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
     const codeExplanation = buildCodeBasedExplanation(data, date);
     const immediateExplanation = codeExplanation ? mergeExplanations(codeExplanation, localExplanation) : localExplanation;

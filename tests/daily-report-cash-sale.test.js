@@ -57,8 +57,8 @@ beforeEach(() => {
   mocks.cashSaleFindMany.mockReset().mockResolvedValue([cashSale]);
   mocks.dailySalesSummaryFindUnique.mockReset().mockResolvedValue(null);
   mocks.auditFindMany.mockReset().mockResolvedValue([
-    { id: "audit-ledger-1", actorName: "Staff", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
-    { id: "audit-cash-sale-1", actorName: "Staff", action: "CASH_SALE", entityType: "CashSale", entityId: "cash-sale-1", entityLabel: "လက်ငင်း Customer", summary: "လက်ငင်း Customer လက်ငင်းရောင်း 50,000 Ks", metadata: { amount: 50000, paymentType: "KPay" }, createdAt: cashSale.date, hiddenAt: null },
+    { id: "audit-ledger-1", actorName: "Rhyzoe", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
+    { id: "audit-cash-sale-1", actorName: "Rhyzoe", action: "CASH_SALE", entityType: "CashSale", entityId: "cash-sale-1", entityLabel: "လက်ငင်း Customer", summary: "လက်ငင်း Customer လက်ငင်းရောင်း 50,000 Ks", metadata: { amount: 50000, paymentType: "KPay" }, createdAt: cashSale.date, hiddenAt: null },
   ]);
 });
 
@@ -87,7 +87,7 @@ describe("Telegram daily report CashSale data", () => {
       source: "DAILY_INPUT",
       note: "28 ရက်စာကို 29 ရက်မှာ ထည့်",
       enteredAt: new Date("2026-08-29T02:45:00.000Z"),
-      enteredBy: "Staff",
+      enteredBy: "Rhyzoe",
       createdAt: new Date("2026-08-29T02:45:00.000Z"),
       updatedAt: new Date("2026-08-29T02:45:00.000Z"),
     });
@@ -96,7 +96,7 @@ describe("Telegram daily report CashSale data", () => {
       date: "2026-08-28",
       retailTotal: 145000,
       wholesaleTotal: 7389000,
-      enteredBy: "Staff",
+      enteredBy: "Rhyzoe",
     });
     const html = createReportHtml({ ...report, summary: {}, customers: [], activityLogs: [] }, "", "");
     expect(html).not.toContain("နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ");
@@ -115,7 +115,7 @@ describe("Telegram daily report CashSale data", () => {
       customers: [],
       activityLogs: [{
         createdAt: cashSale.date,
-        actorName: "Staff",
+        actorName: "Rhyzoe",
         action: "CASH_SALE",
         entityType: "CashSale",
         entityLabel: "လက်ငင်း Customer",
@@ -163,7 +163,7 @@ describe("Telegram daily report CashSale data", () => {
       customers: [],
       activityLogs: [{
         createdAt: cashSale.date,
-        actorName: "Staff",
+        actorName: "Rhyzoe",
         action: "CASH_SALE",
         entityType: "CashSale",
         entityLabel: "ခွဲပေး Customer",
@@ -207,7 +207,7 @@ describe("Telegram daily report CashSale data", () => {
       { id: "prefixed", action: "ORDER_CUSTOM", entityType: "Operational", entityId: "op-1", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "customer-edit", action: "UPDATE", entityType: "Customer", entityId: "customer-1", entityLabel: "ပြင်ဆင်ထားသော Customer", hiddenAt: null, createdAt: ledger.createdAt },
       { id: "production-submit", action: "PRODUCTION_REPORT_SUBMIT", entityType: "ProductionReport", entityId: "production-1", summary: "Production report submitted", hiddenAt: null, createdAt: ledger.createdAt },
-      { id: "payment", actorName: "Staff", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
+      { id: "payment", actorName: "Rhyzoe", action: "DEBT_INCREASE", entityType: "Ledger", entityId: "ledger-1", entityLabel: "အကြွေး Customer", summary: "အကြွေး Customer အကြွေးတိုး 100,000 Ks", metadata: {}, createdAt: ledger.createdAt, hiddenAt: null },
     ]);
     const report = await getDailyReportData(period);
     expect(report.activityLogs.some((log) => String(log.action).startsWith("ORDER_"))).toBe(false);

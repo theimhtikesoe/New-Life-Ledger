@@ -26,7 +26,7 @@ function request(body, authorization = "Bearer manual-pin") {
     headers: {
       authorization,
       "content-type": "application/json",
-      "x-actor-name": "Staff",
+      "x-actor-name": "Rhyzoe",
     },
     body: JSON.stringify(body),
   });
@@ -61,7 +61,7 @@ describe("Manual Telegram report route", () => {
       reportDate: "2026-08-26",
       recipients: 1,
     }));
-    expect(body).toEqual(expect.objectContaining({ ok: true, date: "2026-08-26", actorName: "Staff" }));
+    expect(body).toEqual(expect.objectContaining({ ok: true, date: "2026-08-26", actorName: "Rhyzoe" }));
   });
 
   it("skips a duplicate manual send when the date is already claimed", async () => {

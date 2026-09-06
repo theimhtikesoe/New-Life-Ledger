@@ -27,7 +27,7 @@ import { archiveExpiredOrders, archiveOrder, deleteCancelledOrderPermanently, de
 const activeOrder = { id: "order-1", status: "NEEDS_REVIEW", archivedAt: null, lines: [], caps: [], deliveries: [], customer: null };
 
 function archivedOrder(status = "CANCELLED") {
-  return { id: "order-1", status, archivedAt: new Date("2026-08-25T12:00:00.000Z"), archivedBy: "Staff", lines: [], caps: [], deliveries: [], customer: null };
+  return { id: "order-1", status, archivedAt: new Date("2026-08-25T12:00:00.000Z"), archivedBy: "Rhyzoe", lines: [], caps: [], deliveries: [], customer: null };
 }
 
 describe("Order archive service", () => {
@@ -76,17 +76,17 @@ describe("Order archive service", () => {
 
   it("moves a History Order to reversible History Trash without touching Customer or Ledger", async () => {
     const current = { ...archivedOrder("FACTORY_NOTIFIED"), historyTrashedAt: null, historyTrashedBy: null };
-    const trashed = { ...current, historyTrashedAt: new Date("2026-08-26T03:00:00.000Z"), historyTrashedBy: "Staff" };
+    const trashed = { ...current, historyTrashedAt: new Date("2026-08-26T03:00:00.000Z"), historyTrashedBy: "Rhyzoe" };
     mocks.orderFindUnique.mockResolvedValue(current);
     mocks.orderUpdate.mockResolvedValue(trashed);
-    const result = await moveHistoryOrderToTrash({ orderId: current.id, actorName: "Staff", now: new Date("2026-08-26T03:00:00.000Z") });
-    expect(result.historyTrashedBy).toBe("Staff");
-    expect(mocks.orderUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { historyTrashedAt: new Date("2026-08-26T03:00:00.000Z"), historyTrashedBy: "Staff" } }));
+    const result = await moveHistoryOrderToTrash({ orderId: current.id, actorName: "Rhyzoe", now: new Date("2026-08-26T03:00:00.000Z") });
+    expect(result.historyTrashedBy).toBe("Rhyzoe");
+    expect(mocks.orderUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { historyTrashedAt: new Date("2026-08-26T03:00:00.000Z"), historyTrashedBy: "Rhyzoe" } }));
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "ORDER_HISTORY_TRASH" }));
   });
 
   it("restores and permanently deletes only History Trash orders", async () => {
-    const current = { ...archivedOrder("FACTORY_NOTIFIED"), historyTrashedAt: new Date("2026-08-25T00:00:00.000Z"), historyTrashedBy: "Staff" };
+    const current = { ...archivedOrder("FACTORY_NOTIFIED"), historyTrashedAt: new Date("2026-08-25T00:00:00.000Z"), historyTrashedBy: "Rhyzoe" };
     const restored = { ...current, historyTrashedAt: null, historyTrashedBy: null };
     mocks.orderFindUnique.mockResolvedValueOnce(current).mockResolvedValueOnce(current);
     mocks.orderUpdate.mockResolvedValue(restored);
@@ -119,14 +119,14 @@ describe("Order archive service", () => {
     const restored = { ...current, archivedAt: null, archivedBy: null };
     mocks.orderFindUnique.mockResolvedValue(current);
     mocks.orderUpdate.mockResolvedValue(restored);
-    const result = await restoreOrder({ orderId: current.id, actorName: "Staff" });
+    const result = await restoreOrder({ orderId: current.id, actorName: "Rhyzoe" });
     expect(result.status).toBe("FACTORY_NOTIFIED");
     expect(mocks.orderUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: { archivedAt: null, archivedBy: null } }));
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "ORDER_RESTORE", metadata: { restoredStatus: "FACTORY_NOTIFIED" } }));
   });
 
   it("restores a recent Cancelled Order to Draft and clears cancellation metadata", async () => {
-    const current = { ...activeOrder, status: "CANCELLED", cancelledAt: new Date("2026-08-20T00:00:00.000Z"), cancelledBy: "Staff" };
+    const current = { ...activeOrder, status: "CANCELLED", cancelledAt: new Date("2026-08-20T00:00:00.000Z"), cancelledBy: "Rhyzoe" };
     const restored = { ...current, status: "DRAFT", cancelledAt: null, cancelledBy: null, lines: [], caps: [], deliveries: [], customer: null };
     mocks.orderFindUnique.mockResolvedValue(current);
     mocks.orderUpdate.mockResolvedValue(restored);
@@ -138,7 +138,7 @@ describe("Order archive service", () => {
   it("permanently deletes a Cancelled Order and leaves Customer/Ledger untouched", async () => {
     const current = { id: "cancelled-1", status: "CANCELLED", sourceMessageId: "77", customer: { id: "customer-1", name: "စမ်းသပ် Customer" } };
     mocks.orderFindUnique.mockResolvedValue(current);
-    const result = await deleteCancelledOrderPermanently({ orderId: current.id, actorName: "Staff" });
+    const result = await deleteCancelledOrderPermanently({ orderId: current.id, actorName: "Rhyzoe" });
     expect(result).toEqual({ id: current.id, deleted: true });
     expect(mocks.orderDelete).toHaveBeenCalledWith({ where: { id: current.id } });
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "ORDER_PERMANENT_DELETE", entityType: "Order", entityId: current.id }));

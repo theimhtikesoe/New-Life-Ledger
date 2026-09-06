@@ -191,7 +191,7 @@ async function handleCallback(update) {
       const candidateIndex = Number(candidateId);
       const candidate = Number.isInteger(candidateIndex) ? result.candidates[candidateIndex] : result.candidates.find((item) => String(item.id) === String(candidateId));
       if (!candidate) throw new Error("ရွေးထားသော Customer ကို မတွေ့ပါ။ ပြန်ရှာပြီး ရွေးပါ။");
-      const linked = await linkOrderCustomer({ orderId, customerId: candidate.id, actorName: "Staff" });
+      const linked = await linkOrderCustomer({ orderId, customerId: candidate.id, actorName: "Rhyzoe" });
       await rememberCallbackMessage();
       // The callback was already acknowledged immediately above.
       await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(linked)}\n\n👤 Customer ချိတ်ပြီးပါပြီ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(linked, process.env.NEXT_PUBLIC_APP_URL) });
@@ -223,7 +223,7 @@ async function handleCallback(update) {
       const today = getMyanmarDateInputValue();
       const todayRange = getMyanmarDayRange(today);
       const requestedDate = getMyanmarDateInputValue(new Date(todayRange.start.getTime() + offset * 24 * 60 * 60 * 1000));
-      const updated = await updateOrderDetails({ orderId, requestedDate, actorName: "Telegram Staff" });
+      const updated = await updateOrderDetails({ orderId, requestedDate, actorName: "Telegram Rhyzoe" });
       await rememberCallbackMessage();
       await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(updated)}\n\n✅ ရက်စွဲ သတ်မှတ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(updated, process.env.NEXT_PUBLIC_APP_URL) });
       return { ok: true, status: "date_set", orderId, requestedDate };
@@ -239,7 +239,7 @@ async function handleCallback(update) {
         return { ok: true, status: "custom_destination_prompted", orderId };
       }
       const destination = modeCode.toUpperCase() === "F" ? "စက်ရုံလာယူမည်" : "ဂိတ်ပို့ရန်";
-      const updated = await updateOrderDetails({ orderId, destination, actorName: "Telegram Staff" });
+      const updated = await updateOrderDetails({ orderId, destination, actorName: "Telegram Rhyzoe" });
       await rememberCallbackMessage();
       await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(updated)}\n\n✅ နေရာ သတ်မှတ်ပြီးပါပြီ။`, replyMarkup: buildOrderActionKeyboard(updated, process.env.NEXT_PUBLIC_APP_URL) });
       return { ok: true, status: "destination_set", orderId, destination };
@@ -262,7 +262,7 @@ async function handleCallback(update) {
     if (action.toLowerCase() === "customer_create") {
       const current = await getOrderById(orderId);
       if (!current) throw new Error("Order မတွေ့ပါ။");
-      const created = await createCustomerForOrder({ orderId, name: current.draftCustomerName, phone: current.draftCustomerPhone, actorName: "Staff" });
+      const created = await createCustomerForOrder({ orderId, name: current.draftCustomerName, phone: current.draftCustomerPhone, actorName: "Rhyzoe" });
       await rememberCallbackMessage();
       await editTelegramMessageText({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(created)}\n\n📝 Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းထားပါပြီ။ Main Customer/Ledger စာရင်းထဲ မထည့်ရသေးပါ။`, parseMode: "Markdown", replyMarkup: buildOrderActionKeyboard(created, process.env.NEXT_PUBLIC_APP_URL) });
       return { ok: true, status: "order_customer_draft_saved", orderId, customerId: null };
@@ -277,7 +277,7 @@ async function handleCallback(update) {
       try {
         const fallbackExtraction = buildFallbackOrderExtraction(current.sourceText);
         const extracted = isFallbackExtractionUsable(fallbackExtraction) ? fallbackExtraction : await extractOrderFromText(current.sourceText);
-        const refreshed = await refreshOrderFromAi({ orderId, extracted, actorName: "Staff" });
+        const refreshed = await refreshOrderFromAi({ orderId, extracted, actorName: "Rhyzoe" });
         await rememberCallbackMessage();
         await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: formatOrderDraftMessage(refreshed), replyMarkup: buildOrderActionKeyboard(refreshed, process.env.NEXT_PUBLIC_APP_URL) });
         return { ok: true, status: "ai_retried", orderId };
@@ -288,7 +288,7 @@ async function handleCallback(update) {
       }
     }
     if (action.toLowerCase() === "cancel") {
-      const order = await updateOrderStatus({ orderId, status: "CANCELLED", actorName: "Staff", auditMetadata });
+      const order = await updateOrderStatus({ orderId, status: "CANCELLED", actorName: "Rhyzoe", auditMetadata });
       await rememberCallbackMessage();
       // The callback was already acknowledged immediately above.
       await editTelegramOrderMessage({ chatId, messageId: callbackMessageId, text: `${formatOrderDraftMessage(order)}\n\n❌ Telegram admin မှ Cancel လုပ်ပြီးပါပြီ။`, replyMarkup: { inline_keyboard: [] } });
@@ -298,7 +298,7 @@ async function handleCallback(update) {
     const isBatch = modeCode.toUpperCase() === "B";
     const status = isBatch ? "BATCH_QUEUED" : "CONFIRMED";
     // Status transition continues after the immediate callback acknowledgement.
-    const statusOrder = await updateOrderStatus({ orderId, status, mode: isBatch ? "MORNING_BATCH" : "IMMEDIATE", actorName: "Staff", auditMetadata });
+    const statusOrder = await updateOrderStatus({ orderId, status, mode: isBatch ? "MORNING_BATCH" : "IMMEDIATE", actorName: "Rhyzoe", auditMetadata });
     await rememberCallbackMessage();
     if (isBatch) {
       // The callback was already acknowledged immediately above.
@@ -311,7 +311,7 @@ async function handleCallback(update) {
     // Reflect the durable Confirm state immediately; Factory delivery may be slower.
     await editTelegramOrderMessageOrReply({ chatId, messageId: callbackMessageId, replyToMessageId: callbackMessageId, text: `${formatOrderDraftMessage(statusOrder)}\n\n⏳ Confirm ဖြစ်ပြီး Factory group သို့ ပို့နေပါသည်။`, replyMarkup: { inline_keyboard: [] } });
     try {
-      const delivery = await sendFactoryNotificationForOrder(orderId, { actorName: "Staff", source: "TELEGRAM" });
+      const delivery = await sendFactoryNotificationForOrder(orderId, { actorName: "Rhyzoe", source: "TELEGRAM" });
       finalOrder = delivery.order || statusOrder;
       if (delivery.duplicate) deliveryWarning = "\n\nℹ️ Factory message ကို ထပ်မပို့ထားပါ။";
     } catch (deliveryError) {
@@ -349,7 +349,7 @@ export async function POST(request) {
       const promptOrderId = promptMatch[1];
       const promptField = promptFieldMatch[1];
       const updatePayload = promptField === "ထုတ်ရမည့်ရက်" ? { requestedDate: text } : promptField === "ကားဂိတ်/နေရာ" ? { destination: text } : { customerPhone: text };
-      const updated = await updateOrderDetails({ orderId: promptOrderId, ...updatePayload, actorName: "Telegram Staff" });
+      const updated = await updateOrderDetails({ orderId: promptOrderId, ...updatePayload, actorName: "Telegram Rhyzoe" });
       if (updated.telegramDraftChatId && updated.telegramDraftMessageId) {
         await editTelegramOrderMessageOrReply({ chatId: updated.telegramDraftChatId, messageId: Number(updated.telegramDraftMessageId), replyToMessageId: message.message_id, text: formatOrderDraftMessage(updated), replyMarkup: buildOrderActionKeyboard(updated, process.env.NEXT_PUBLIC_APP_URL) });
       }
@@ -412,7 +412,7 @@ export async function POST(request) {
 
     try {
       const extracted = await extractOrderFromText(orderText);
-      const order = await refreshOrderFromAi({ orderId: pending.order.id, extracted, actorName: "Staff" });
+      const order = await refreshOrderFromAi({ orderId: pending.order.id, extracted, actorName: "Rhyzoe" });
       if (sentDraft?.messageId) {
         await editTelegramOrderMessageOrReply({
           chatId: sentDraft.chatId || chatId,

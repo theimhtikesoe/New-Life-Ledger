@@ -180,7 +180,7 @@ export default function ProductionEntryPage() {
     if (!name) return setError("Worker နာမည်ထည့်ပေးပါ။");
     setError("");
     try {
-      const actorName = localStorage.getItem("actorName") || "Staff";
+      const actorName = localStorage.getItem("actorName") || "Rhyzoe";
       const response = await fetch("/api/production-workers", { method: "POST", headers: { "Content-Type": "application/json", "x-actor-name": encodeURIComponent(actorName) }, body: JSON.stringify({ name }) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Worker ထည့်၍မရပါ။");
@@ -198,7 +198,7 @@ export default function ProductionEntryPage() {
       suppressWorkerClickRef.current = true;
       if (!window.confirm(`${name}\n\nShared Worker စာရင်းမှ ဖယ်ရှားမလား?`)) return;
       try {
-        const actorName = localStorage.getItem("actorName") || "Staff";
+        const actorName = localStorage.getItem("actorName") || "Rhyzoe";
         const response = await fetch(`/api/production-workers?id=${encodeURIComponent(id)}`, { method: "DELETE", headers: { "x-actor-name": encodeURIComponent(actorName) } });
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Worker ဖယ်၍မရပါ။");
@@ -253,7 +253,7 @@ export default function ProductionEntryPage() {
     if (!window.confirm("ဒီထုတ်လုပ်မှုမှတ်တမ်းကို ဖျက်မှာ သေချာပါသလား။")) return;
     setError("");
     try {
-      const response = await fetch(`/api/production-reports?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: { "x-actor-name": encodeURIComponent(localStorage.getItem("actorName") || "Staff") } });
+      const response = await fetch(`/api/production-reports?submissionId=${encodeURIComponent(submissionId)}`, { method: "DELETE", headers: { "x-actor-name": encodeURIComponent(localStorage.getItem("actorName") || "Rhyzoe") } });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "ဖျက်၍မရပါ။");
       if (editingSubmissionId === submissionId) cancelEdit();
@@ -278,7 +278,7 @@ export default function ProductionEntryPage() {
     if (!window.confirm(`သိမ်းမည့် Production Report အကျဉ်းချုပ်\n\n${summary}\n\nဆက်လက်တင်သွင်းမလား?`)) return;
     setSubmitting(true);
     try {
-      const actorName = localStorage.getItem("actorName") || "Staff";
+      const actorName = localStorage.getItem("actorName") || "Rhyzoe";
       const response = await fetch("/api/production-reports", {
         method: editingSubmissionId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json", "x-actor-name": encodeURIComponent(actorName) },

@@ -57,7 +57,7 @@ const cashSale = {
 function request() {
   return new Request("http://localhost/api/customers/customer-1/cash-sales/cash-sale-1", {
     method: "DELETE",
-    headers: { "x-actor-name": "Staff" },
+    headers: { "x-actor-name": "Rhyzoe" },
   });
 }
 
@@ -67,7 +67,7 @@ describe("CashSale DELETE route", () => {
     mocks.cashSaleFindFirst.mockReset().mockResolvedValue(cashSale);
     mocks.cashSaleDelete.mockReset().mockResolvedValue(cashSale);
     mocks.auditLogUpdateMany.mockReset().mockResolvedValue({ count: 1 });
-    mocks.getActorName.mockReset().mockReturnValue("Staff");
+    mocks.getActorName.mockReset().mockReturnValue("Rhyzoe");
     mocks.writeAuditLog.mockReset().mockResolvedValue(undefined);
     mocks.customerUpdate.mockReset();
     mocks.ledgerDelete.mockReset();
@@ -85,7 +85,7 @@ describe("CashSale DELETE route", () => {
     });
     expect(mocks.auditLogUpdateMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { entityType: "CashSale", entityId: "cash-sale-1", hiddenAt: null },
-      data: expect.objectContaining({ hiddenBy: "Staff" }),
+      data: expect.objectContaining({ hiddenBy: "Rhyzoe" }),
     }));
     expect(mocks.writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({
       action: "DELETE",

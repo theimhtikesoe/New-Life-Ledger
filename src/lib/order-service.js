@@ -212,7 +212,7 @@ export async function createOrderDraft({
   const normalizedSource = String(source || "telegram").trim().toLowerCase();
   const sourceLabel = normalizedSource === "viber" ? "Viber" : normalizedSource === "telegram" ? "Telegram" : "Manual";
   await writeAuditLog({
-    actorName: "Staff",
+    actorName: "Rhyzoe",
     action: "ORDER_DRAFT",
     entityType: "Order",
     entityId: created.id,
@@ -232,7 +232,7 @@ export async function createOrderDraft({
   return { order: serializeOrder(created), duplicate: false };
 }
 
-export async function refreshOrderFromAi({ orderId, extracted, actorName = "Staff" } = {}) {
+export async function refreshOrderFromAi({ orderId, extracted, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
@@ -402,7 +402,7 @@ export async function saveTelegramDraftMessage({ orderId, chatId, messageId } = 
   return serializeOrder(updated);
 }
 
-export async function archiveOrder({ orderId, actorName = "Staff" } = {}) {
+export async function archiveOrder({ orderId, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
@@ -465,7 +465,7 @@ export async function archiveExpiredOrders({ actorName = "System", now = new Dat
   return { archivedCount, skippedCount: candidates.length - archivedCount, cutoffDate: today };
 }
 
-export async function moveHistoryOrderToTrash({ orderId, actorName = "Staff", now = new Date() } = {}) {
+export async function moveHistoryOrderToTrash({ orderId, actorName = "Rhyzoe", now = new Date() } = {}) {
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
@@ -488,7 +488,7 @@ export async function moveHistoryOrderToTrash({ orderId, actorName = "Staff", no
   return serializeOrder(trashed);
 }
 
-export async function restoreHistoryTrashOrder({ orderId, actorName = "Staff" } = {}) {
+export async function restoreHistoryTrashOrder({ orderId, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
@@ -510,7 +510,7 @@ export async function restoreHistoryTrashOrder({ orderId, actorName = "Staff" } 
   return serializeOrder(restored);
 }
 
-export async function deleteHistoryTrashOrderPermanently({ orderId, actorName = "Staff" } = {}) {
+export async function deleteHistoryTrashOrderPermanently({ orderId, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const normalizedOrderId = String(orderId || "").trim();
   if (!normalizedOrderId) throw new Error("Order ID လိုအပ်ပါသည်။");
@@ -562,7 +562,7 @@ export async function purgeExpiredHistoryTrash({ actorName = "System", now = new
   return { deletedCount: expired.length };
 }
 
-export async function restoreOrder({ orderId, actorName = "Staff" } = {}) {
+export async function restoreOrder({ orderId, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
@@ -590,7 +590,7 @@ function cancellationCutoff(now = new Date()) {
   return new Date(new Date(now).getTime() - CANCELLED_RETENTION_DAYS * 24 * 60 * 60 * 1000);
 }
 
-export async function restoreCancelledOrder({ orderId, actorName = "Staff", now = new Date() } = {}) {
+export async function restoreCancelledOrder({ orderId, actorName = "Rhyzoe", now = new Date() } = {}) {
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
@@ -614,7 +614,7 @@ export async function restoreCancelledOrder({ orderId, actorName = "Staff", now 
   return serializeOrder(restored);
 }
 
-export async function deleteCancelledOrderPermanently({ orderId, actorName = "Staff" } = {}) {
+export async function deleteCancelledOrderPermanently({ orderId, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const normalizedOrderId = String(orderId || "").trim();
   if (!normalizedOrderId) throw new Error("Order ID လိုအပ်ပါသည်။");
@@ -693,7 +693,7 @@ export async function getOrderCustomerCandidates({ orderId } = {}) {
   return { order: serializeOrder(order), candidates };
 }
 
-export async function linkOrderCustomer({ orderId, customerId, actorName = "Staff" } = {}) {
+export async function linkOrderCustomer({ orderId, customerId, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const customer = await getActiveCustomer(customerId);
   if (!customer) throw new Error("ရွေးထားသော active Customer မတွေ့ပါ။");
@@ -733,7 +733,7 @@ export async function linkOrderCustomer({ orderId, customerId, actorName = "Staf
   return serializeOrder(order);
 }
 
-export async function createCustomerForOrder({ orderId, name, phone = null, routeTag = null, actorName = "Staff" } = {}) {
+export async function createCustomerForOrder({ orderId, name, phone = null, routeTag = null, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const order = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!order) throw new Error("Order မတွေ့ပါ။");
@@ -775,7 +775,7 @@ export async function createCustomerForOrder({ orderId, name, phone = null, rout
   return serializeOrder(updated);
 }
 
-export async function updateOrderDetails({ orderId, requestedDate, destination, customerPhone, actorName = "Staff" } = {}) {
+export async function updateOrderDetails({ orderId, requestedDate, destination, customerPhone, actorName = "Rhyzoe" } = {}) {
   await ensureDatabase();
   const current = await prisma.order.findUnique({ where: { id: String(orderId) }, include: ORDER_INCLUDE });
   if (!current) throw new Error("Order မတွေ့ပါ။");
@@ -802,7 +802,7 @@ export async function updateOrderDetails({ orderId, requestedDate, destination, 
   return serializeOrder(updated);
 }
 
-export async function updateOrderStatus({ orderId, status, mode = null, actorName = "Staff", auditMetadata = null } = {}) {
+export async function updateOrderStatus({ orderId, status, mode = null, actorName = "Rhyzoe", auditMetadata = null } = {}) {
   await ensureDatabase();
   const allowed = new Set(["CANCELLED", "DRAFT", "NEEDS_REVIEW", "NEEDS_CUSTOMER", "CONFIRMED", "BATCH_QUEUED"]);
   if (!allowed.has(status)) throw new Error("Order status မမှန်ကန်ပါ။");

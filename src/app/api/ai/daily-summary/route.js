@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 45;
 
-const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Staff"];
+const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Rhyzoe"];
 
 function isWebsiteAuthorized(request) {
   const actor = decodeActorHeader(request.headers.get("x-actor-name") || "").trim();
@@ -74,7 +74,7 @@ export async function GET(request) {
         date: requestedDate,
         fingerprint,
         explanation,
-        actorName: decodeActorHeader(request.headers.get("x-actor-name") || "").trim() || "Staff",
+        actorName: decodeActorHeader(request.headers.get("x-actor-name") || "").trim() || "Rhyzoe",
         provider: process.env.MANUS_API_KEY?.trim() ? "MANUS_API" : "LLM_FALLBACK",
         model: process.env.MANUS_API_KEY?.trim() ? "manus-1.6-lite" : (process.env.MANUS_LLM_MODEL || "gpt-5-mini"),
       });

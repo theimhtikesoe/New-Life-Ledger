@@ -62,7 +62,7 @@ function request(update, secret = "test-webhook-secret") {
 }
 
 function messageUpdate(text, id = 10, chat = chatId) {
-  return { update_id: id, message: { message_id: id, text, chat: { id: chat, type: "supergroup" }, from: { id: 7, first_name: "Staff" } } };
+  return { update_id: id, message: { message_id: id, text, chat: { id: chat, type: "supergroup" }, from: { id: 7, first_name: "Rhyzoe" } } };
 }
 
 describe("Telegram order webhook safety gates", () => {
@@ -246,7 +246,7 @@ describe("Telegram order webhook safety gates", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("ai_retried");
     expect(mocks.extractOrderFromText).not.toHaveBeenCalled();
-    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith({ orderId: order.id, extracted: completeFallback, actorName: "Staff" });
+    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith({ orderId: order.id, extracted: completeFallback, actorName: "Rhyzoe" });
   });
 
   it("keeps the order actions without AI retry text when legacy AI retry fails", async () => {
@@ -299,7 +299,7 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("date_set");
-    expect(mocks.updateOrderDetails).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, requestedDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), actorName: "Telegram Staff" }));
+    expect(mocks.updateOrderDetails).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, requestedDate: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), actorName: "Telegram Rhyzoe" }));
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 200 }));
   });
 
@@ -312,7 +312,7 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("destination_set");
-    expect(mocks.updateOrderDetails).toHaveBeenCalledWith({ orderId: order.id, destination: "စက်ရုံလာယူမည်", actorName: "Telegram Staff" });
+    expect(mocks.updateOrderDetails).toHaveBeenCalledWith({ orderId: order.id, destination: "စက်ရုံလာယူမည်", actorName: "Telegram Rhyzoe" });
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 201 }));
   });
 
@@ -361,7 +361,7 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("customer_linked");
-    expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: linked.customer.id, actorName: "Staff" });
+    expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: linked.customer.id, actorName: "Rhyzoe" });
     expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(linked, process.env.NEXT_PUBLIC_APP_URL);
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
   });
@@ -382,7 +382,7 @@ describe("Telegram order webhook safety gates", () => {
     const replyResponse = await POST(request(replyUpdate));
     expect(replyResponse.status).toBe(200);
     expect((await replyResponse.json()).status).toBe("missing_field_updated");
-    expect(mocks.updateOrderDetails).toHaveBeenCalledWith({ orderId: order.id, requestedDate: "27.08.2026", actorName: "Telegram Staff" });
+    expect(mocks.updateOrderDetails).toHaveBeenCalledWith({ orderId: order.id, requestedDate: "27.08.2026", actorName: "Telegram Rhyzoe" });
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 99 }));
   });
 
@@ -396,7 +396,7 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("order_customer_draft_saved");
-    expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "Customer အသစ်", phone: "0912345678", actorName: "Staff" });
+    expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "Customer အသစ်", phone: "0912345678", actorName: "Rhyzoe" });
     expect(mocks.buildOrderActionKeyboard).toHaveBeenCalledWith(created, process.env.NEXT_PUBLIC_APP_URL);
   });
 
@@ -407,7 +407,7 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("cancelled");
-    expect(mocks.updateOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, status: "CANCELLED", actorName: "Staff" }));
+    expect(mocks.updateOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, status: "CANCELLED", actorName: "Rhyzoe" }));
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 93, replyMarkup: { inline_keyboard: [] } }));
     expect(mocks.sendFactoryNotificationForOrder).not.toHaveBeenCalled();
   });
@@ -452,8 +452,8 @@ describe("Telegram order webhook safety gates", () => {
     const response = await POST(request(update));
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("confirmed");
-    expect(mocks.updateOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, status: "CONFIRMED", mode: "IMMEDIATE", actorName: "Staff" }));
-    expect(mocks.sendFactoryNotificationForOrder).toHaveBeenCalledWith(order.id, { actorName: "Staff", source: "TELEGRAM" });
+    expect(mocks.updateOrderStatus).toHaveBeenCalledWith(expect.objectContaining({ orderId: order.id, status: "CONFIRMED", mode: "IMMEDIATE", actorName: "Rhyzoe" }));
+    expect(mocks.sendFactoryNotificationForOrder).toHaveBeenCalledWith(order.id, { actorName: "Rhyzoe", source: "TELEGRAM" });
     expect(mocks.editTelegramMessageText).toHaveBeenCalledWith(expect.objectContaining({ chatId, messageId: 91, replyMarkup: { inline_keyboard: [] } }));
   });
 });

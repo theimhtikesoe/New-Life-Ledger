@@ -41,7 +41,7 @@ const cashSale = {
 function request(body) {
   return new Request("http://localhost/api/customers/customer-1/cash-sales", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-actor-name": "Staff" },
+    headers: { "content-type": "application/json", "x-actor-name": "Rhyzoe" },
     body: JSON.stringify(body),
   });
 }
@@ -54,7 +54,7 @@ describe("CashSale route", () => {
     mocks.cashSaleFindMany.mockReset().mockResolvedValue([]);
     mocks.cashSaleCount.mockReset().mockResolvedValue(0);
     mocks.cashSaleCreate.mockReset().mockResolvedValue(cashSale);
-    mocks.getActorName.mockReset().mockReturnValue("Staff");
+    mocks.getActorName.mockReset().mockReturnValue("Rhyzoe");
     mocks.writeAuditLog.mockReset().mockResolvedValue(undefined);
   });
 

@@ -22,7 +22,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 vi.mock("@/lib/audit", () => ({
-  getActorName: () => "Staff",
+  getActorName: () => "Rhyzoe",
   writeAuditLog: mocks.writeAuditLog,
 }));
 vi.mock("@/lib/myanmar-time", () => ({

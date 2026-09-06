@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  decodeActorHeader: vi.fn(() => "Staff"),
+  decodeActorHeader: vi.fn(() => "Rhyzoe"),
   getAiDailySummaryPayload: vi.fn(),
   getAiDailySummaryFingerprint: vi.fn(),
   findAiExplanationCache: vi.fn(),
@@ -31,7 +31,7 @@ const freshExplanation = { overview: "AI အသစ်ရှင်းပြချ
 
 function request(query = "") {
   return new Request(`http://localhost/api/ai/daily-summary?date=${date}${query}`, {
-    headers: { "x-actor-name": "Staff" },
+    headers: { "x-actor-name": "Rhyzoe" },
   });
 }
 
@@ -41,7 +41,7 @@ function cacheRow(explanation = cachedExplanation) {
 
 describe("Daily Summary AI cache route", () => {
   beforeEach(() => {
-    mocks.decodeActorHeader.mockReturnValue("Staff");
+    mocks.decodeActorHeader.mockReturnValue("Rhyzoe");
     mocks.getAiDailySummaryPayload.mockReset().mockResolvedValue(payload);
     mocks.getAiDailySummaryFingerprint.mockReset().mockReturnValue("fingerprint-1");
     mocks.findAiExplanationCache.mockReset().mockResolvedValue(null);

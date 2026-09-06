@@ -22,27 +22,27 @@ describe("AI explanation browser storage", () => {
   it("saves and reads an explanation by report date", () => {
     const storage = createStorage();
     const explanation = { overview: "အနှစ်ချုပ်", findings: [], checks: [], caution: "သတိ" };
-    expect(saveAiExplanationCache("2026-08-24", explanation, "Staff", storage)).toBe(true);
-    expect(readAiExplanationCache("2026-08-24", "Staff", storage)).toEqual(explanation);
+    expect(saveAiExplanationCache("2026-08-24", explanation, "Rhyzoe", storage)).toBe(true);
+    expect(readAiExplanationCache("2026-08-24", "Rhyzoe", storage)).toEqual(explanation);
     expect(readAiExplanationCache("2026-08-24", "ဖေဖေ", storage)).toBeNull();
-    expect(readAiExplanationCache("2026-08-25", "Staff", storage)).toBeNull();
+    expect(readAiExplanationCache("2026-08-25", "Rhyzoe", storage)).toBeNull();
   });
 
   it("counts only successful answers and can reset a stuck old counter", () => {
     const storage = createStorage();
-    expect(getDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
-    expect(recordDailyAiSuccess("Staff", "2026-08-24", storage)).toBe(1);
-    expect(recordDailyAiSuccess("Staff", "2026-08-24", storage)).toBe(2);
-    expect(resetDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
-    expect(getDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
+    expect(getDailyAiUsage("Rhyzoe", "2026-08-24", storage)).toBe(0);
+    expect(recordDailyAiSuccess("Rhyzoe", "2026-08-24", storage)).toBe(1);
+    expect(recordDailyAiSuccess("Rhyzoe", "2026-08-24", storage)).toBe(2);
+    expect(resetDailyAiUsage("Rhyzoe", "2026-08-24", storage)).toBe(0);
+    expect(getDailyAiUsage("Rhyzoe", "2026-08-24", storage)).toBe(0);
   });
 
   it("keeps the legacy usage alias independent for each actor and report date", () => {
     const storage = createStorage();
-    expect(getDailyAiUsage("Staff", "2026-08-24", storage)).toBe(0);
-    expect(consumeDailyAiUsage("Staff", "2026-08-24", storage)).toBe(1);
-    expect(consumeDailyAiUsage("Staff", "2026-08-24", storage)).toBe(2);
-    expect(getDailyAiUsage("Staff", "2026-08-25", storage)).toBe(0);
+    expect(getDailyAiUsage("Rhyzoe", "2026-08-24", storage)).toBe(0);
+    expect(consumeDailyAiUsage("Rhyzoe", "2026-08-24", storage)).toBe(1);
+    expect(consumeDailyAiUsage("Rhyzoe", "2026-08-24", storage)).toBe(2);
+    expect(getDailyAiUsage("Rhyzoe", "2026-08-25", storage)).toBe(0);
     expect(getDailyAiUsage("ဖေဖေ", "2026-08-24", storage)).toBe(0);
     expect(MAX_DAILY_AI_REQUESTS).toBe(3);
   });

@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/database", () => ({ databaseErrorResponse: vi.fn((error) => ({ error: error?.message || "Database error" })) }));
-vi.mock("@/lib/audit", () => ({ getActorName: vi.fn(() => "Staff") }));
+vi.mock("@/lib/audit", () => ({ getActorName: vi.fn(() => "Rhyzoe") }));
 vi.mock("@/lib/order-delivery", () => ({ sendFactoryNotificationForOrder: mocks.sendFactoryNotificationForOrder }));
 vi.mock("@/lib/order-channel-sync", () => ({ syncTelegramOrderMessage: mocks.syncTelegramOrderMessage }));
 vi.mock("@/lib/order-ai", () => ({ extractOrderFromText: mocks.extractOrderFromText }));
@@ -74,7 +74,7 @@ describe("Website Orders API", () => {
     mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
     const response = await PATCH(request({ orderId: order.id, action: "link_customer", customerId: "customer-1" }));
     expect(response.status).toBe(200);
-    expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: "customer-1", actorName: "Staff" });
+    expect(mocks.linkOrderCustomer).toHaveBeenCalledWith({ orderId: order.id, customerId: "customer-1", actorName: "Rhyzoe" });
     expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(order, "🌐 Website မှ Customer ချိတ်ပြီးပါပြီ။", { includeActions: true });
     expect((await response.json()).data).toEqual(order);
   });
@@ -85,7 +85,7 @@ describe("Website Orders API", () => {
     mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
     const response = await PATCH(request({ orderId: order.id, action: "create_customer", name: "3ဘီး" }));
     expect(response.status).toBe(200);
-    expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "3ဘီး", phone: undefined, routeTag: undefined, actorName: "Staff" });
+    expect(mocks.createCustomerForOrder).toHaveBeenCalledWith({ orderId: order.id, name: "3ဘီး", phone: undefined, routeTag: undefined, actorName: "Rhyzoe" });
     expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(order, "🌐 Website မှ Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းထားပါပြီ။ Main Customer/Ledger စာရင်းထဲ မထည့်ရသေးပါ။", { includeActions: true });
     expect((await response.json()).data).toEqual(order);
   });
@@ -95,7 +95,7 @@ describe("Website Orders API", () => {
     mocks.archiveOrder.mockResolvedValue(order);
     const response = await PATCH(request({ orderId: order.id, action: "archive" }));
     expect(response.status).toBe(200);
-    expect(mocks.archiveOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Staff" });
+    expect(mocks.archiveOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Rhyzoe" });
     expect(mocks.restoreOrder).not.toHaveBeenCalled();
     expect((await response.json()).data).toEqual(order);
   });
@@ -105,7 +105,7 @@ describe("Website Orders API", () => {
     mocks.restoreOrder.mockResolvedValue(order);
     const response = await PATCH(request({ orderId: order.id, action: "restore" }));
     expect(response.status).toBe(200);
-    expect(mocks.restoreOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Staff" });
+    expect(mocks.restoreOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Rhyzoe" });
     expect((await response.json()).data.status).toBe("CANCELLED");
   });
 
@@ -114,7 +114,7 @@ describe("Website Orders API", () => {
     mocks.restoreCancelledOrder.mockResolvedValue(order);
     const response = await PATCH(request({ orderId: order.id, action: "trash_restore" }));
     expect(response.status).toBe(200);
-    expect(mocks.restoreCancelledOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Staff" });
+    expect(mocks.restoreCancelledOrder).toHaveBeenCalledWith({ orderId: order.id, actorName: "Rhyzoe" });
     expect((await response.json()).data.status).toBe("DRAFT");
   });
 
@@ -123,7 +123,7 @@ describe("Website Orders API", () => {
     mocks.deleteCancelledOrderPermanently.mockResolvedValue(result);
     const response = await PATCH(request({ orderId: result.id, action: "trash_delete_permanently" }));
     expect(response.status).toBe(200);
-    expect(mocks.deleteCancelledOrderPermanently).toHaveBeenCalledWith({ orderId: result.id, actorName: "Staff" });
+    expect(mocks.deleteCancelledOrderPermanently).toHaveBeenCalledWith({ orderId: result.id, actorName: "Rhyzoe" });
     expect((await response.json()).data).toEqual(result);
     expect(mocks.updateOrderStatus).not.toHaveBeenCalled();
     expect(mocks.restoreCancelledOrder).not.toHaveBeenCalled();
@@ -141,7 +141,7 @@ describe("Website Orders API", () => {
     const response = await PATCH(request({ orderId: current.id, action: "retry_ai" }));
     expect(response.status).toBe(200);
     expect(mocks.extractOrderFromText).not.toHaveBeenCalled();
-    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith({ orderId: current.id, extracted: fallback, actorName: "Staff" });
+    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith({ orderId: current.id, extracted: fallback, actorName: "Rhyzoe" });
   });
 
   it("retries AI extraction for a pending Order and syncs the result back to Telegram", async () => {
@@ -155,7 +155,7 @@ describe("Website Orders API", () => {
     expect(response.status).toBe(200);
     expect(mocks.getOrderById).toHaveBeenCalledWith(current.id);
     expect(mocks.extractOrderFromText).toHaveBeenCalledWith(current.sourceText);
-    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith(expect.objectContaining({ orderId: current.id, extracted: { customerName: "မမိုး" }, actorName: "Staff" }));
+    expect(mocks.refreshOrderFromAi).toHaveBeenCalledWith(expect.objectContaining({ orderId: current.id, extracted: { customerName: "မမိုး" }, actorName: "Rhyzoe" }));
     expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(refreshed, "🔄 Website မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။", { includeActions: true });
     expect((await response.json()).data).toEqual(refreshed);
   });
@@ -168,7 +168,7 @@ describe("Website Orders API", () => {
     mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
     const response = await PATCH(request({ orderId: statusOrder.id, action: "confirm", mode: "IMMEDIATE" }));
     expect(response.status).toBe(200);
-    expect(mocks.sendFactoryNotificationForOrder).toHaveBeenCalledWith(statusOrder.id, { actorName: "Staff", source: "WEBSITE" });
+    expect(mocks.sendFactoryNotificationForOrder).toHaveBeenCalledWith(statusOrder.id, { actorName: "Rhyzoe", source: "WEBSITE" });
     expect((await response.json()).data).toEqual(notifiedOrder);
   });
 
@@ -178,7 +178,7 @@ describe("Website Orders API", () => {
     mocks.syncTelegramOrderMessage.mockResolvedValue({ synced: true });
     const response = await PATCH(request({ orderId: order.id, action: "cancel" }));
     expect(response.status).toBe(200);
-    expect(mocks.updateOrderStatus).toHaveBeenCalledWith({ orderId: order.id, status: "CANCELLED", actorName: "Staff" });
+    expect(mocks.updateOrderStatus).toHaveBeenCalledWith({ orderId: order.id, status: "CANCELLED", actorName: "Rhyzoe" });
     expect(mocks.syncTelegramOrderMessage).toHaveBeenCalledWith(order, "❌ Website မှ Cancel လုပ်ပြီးပါပြီ။");
   });
 });

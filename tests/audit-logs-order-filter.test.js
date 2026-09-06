@@ -10,7 +10,7 @@ vi.mock("@/lib/database", () => ({
   databaseErrorResponse: vi.fn((error) => ({ error: error?.message || "Database error" })),
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: { auditLog: { findMany: mocks.auditFindMany }, ledger: { findMany: mocks.ledgerFindMany } } }));
-vi.mock("@/lib/audit", () => ({ ACTORS: ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Staff"] }));
+vi.mock("@/lib/audit", () => ({ ACTORS: ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "Rhyzoe"] }));
 vi.mock("@/lib/myanmar-time", () => ({ getMyanmarDayRange: vi.fn(() => ({ start: new Date("2026-08-25T00:00:00.000Z"), end: new Date("2026-08-26T00:00:00.000Z") })) }));
 
 import { GET } from "@/app/api/audit-logs/route";
