@@ -165,7 +165,7 @@ function SharedPageHeader({ pathname, actorName }) {
           <p className="mt-1 text-[11px] text-slate-500 sm:text-xs">Myanmar Time (UTC+06:30)</p>
         </div>
         <div className="mt-3 max-w-3xl text-left">
-          <p className="text-sm text-cyan-600 sm:text-base">New Life Ledger</p>
+          <p className="text-sm text-cyan-600 sm:text-base">New Life Ledger Dashboard</p>
           <h1 className="mt-1 break-words text-lg font-semibold leading-tight tracking-tight text-slate-900 sm:text-2xl">{title}</h1>
         </div>
       </div>
