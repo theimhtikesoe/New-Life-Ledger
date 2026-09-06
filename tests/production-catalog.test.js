@@ -7,4 +7,10 @@ describe("Production bottle catalog", () => {
     expect(item).toEqual({ type: "ဒိန်သေး (S+S)", capacities: [250] });
     expect(getBottleGroup("ဒိန်သေး (S+S)")).toBe("special");
   });
+
+  it("includes the ဒိန်ကြီး (S+S) 200 ဆံ့ card in the dairy group", () => {
+    const item = BOTTLE_ITEMS.find(({ type }) => type === "ဒိန်ကြီး (S+S)");
+    expect(item).toEqual({ type: "ဒိန်ကြီး (S+S)", capacities: [200] });
+    expect(getBottleGroup("ဒိန်ကြီး (S+S)")).toBe("special");
+  });
 });
