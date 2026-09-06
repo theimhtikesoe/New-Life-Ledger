@@ -34,6 +34,7 @@ describe("Activity History Order separation", () => {
         { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
         { action: "PRODUCTION_REPORT_DELETE" },
         { action: "PRODUCTION_REPORT_SUBMIT" },
+        { action: "PRODUCTION_WORKER_CREATE" },
       ] },
       { NOT: { action: "DAILY_REPORT_SENT" } },
     ]));

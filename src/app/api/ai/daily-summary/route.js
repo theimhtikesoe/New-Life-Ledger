@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 45;
 
-const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Rhyzoe"];
+const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Rhyzoe"];
 
 function isWebsiteAuthorized(request) {
   const actor = decodeActorHeader(request.headers.get("x-actor-name") || "").trim();

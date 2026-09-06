@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 import { decodeActorHeader } from "./actor-header";
 
-export const ACTORS = ["ဖေဖေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Rhyzoe"];
+export const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Rhyzoe"];
 
 export function getActorName(request, fallback = "Rhyzoe") {
   const rawActor = request?.headers?.get?.("x-actor-name") || "";
