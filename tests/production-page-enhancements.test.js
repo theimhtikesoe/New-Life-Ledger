@@ -45,4 +45,12 @@ describe("Production page enhancements", () => {
     expect(productionSource).toContain('`${row.bottleType} · ${row.outputCapacity} ဆံ့`');
     expect(productionSource).toContain('{group.tubeQuantityUnit || "အိတ်"}');
   });
+
+  it("keeps quantity inputs in an equal row above the KPI cards", () => {
+    expect(productionSource).toContain('className="grid items-stretch gap-3 sm:grid-cols-3"');
+    expect(productionSource).toContain('className="flex h-full flex-col text-sm font-bold text-slate-700"');
+    expect(productionSource.indexOf("ဗူးပျက်၊ Tube ပျက်နှင့် Tube အရေအတွက်")).toBeLessThan(
+      productionSource.indexOf('className="mt-4 grid gap-2 sm:grid-cols-3"'),
+    );
+  });
 });
