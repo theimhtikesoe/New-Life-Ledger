@@ -68,6 +68,9 @@ describe("Actor access workflow", () => {
       expect(source, file).not.toMatch(/<h1[\s>]/);
       expect(source, file).toContain("app-page-main");
     });
+    expect(fs.readFileSync(path.join(root, "src/components/ProductionEntryPage.jsx"), "utf8")).toContain("app-page-container app-page-surface production-container");
+    expect(fs.readFileSync(path.join(root, "src/app/activity/page.js"), "utf8")).toContain("app-page-container app-page-surface");
+    expect(globalStylesSource).toContain("margin: 0.25rem auto 0;");
   });
 
   it("keeps Zway Zway on Production while keeping Dashboard navigation for other users", () => {

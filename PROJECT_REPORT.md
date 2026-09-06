@@ -238,6 +238,12 @@ When the User button opens the actor selector while an actor is already active, 
 
 The `ယနေ့ ငွေချေမှုများ` KPI has been restored to its original Dashboard behavior: clicking it opens the in-dashboard payment detail modal rather than navigating to Ledger. The Production KPI remains a direct link to the Production detail page. Focused KPI/navigation tests passed (11 tests) and the production build completed successfully.
 
+## 9.8 Production and Activity shared white surface — 2026-09-06
+
+Production and Activity History were rechecked against the other route pages. Both explicitly use the shared `app-page-container app-page-surface` frame, and the common route container now has the same small separation below the shared header before its white content surface begins. This keeps the white container, top-control rail clearance, header/content gap, border, radius, and mobile portrait rhythm consistent across these pages and the rest of the application.
+
+Focused layout/navigation tests passed (9 tests) and the production build completed successfully. No customer, ledger, balance, or audit data was deleted or overwritten.
+
 ## 10. AI Agent Operating Instructions
 
 Before modifying the project, an AI agent should read this file, inspect the current `git status`, inspect the relevant source files, and confirm whether the latest deployment is successful. The agent must not assume that a local build means production is healthy.
