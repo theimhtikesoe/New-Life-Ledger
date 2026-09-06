@@ -53,4 +53,10 @@ describe("Production page enhancements", () => {
       productionSource.indexOf('className="mt-4 grid gap-2 sm:grid-cols-3"'),
     );
   });
+
+  it("uses catalog-defined units in bottle cards and saved report rows", () => {
+    expect(productionSource).toContain('sub: `${capacity} ဆံ့ (${getBottleUnit(item.type)})`');
+    expect(productionSource).toContain('`${entry.unit} အရေအတွက် — ${entry.capacity.toLocaleString()} ဆံ့`');
+    expect(routeSource).toContain('outputUnit: category === "tube" ? "အိတ်" : getBottleUnit(row.bottleType)');
+  });
 });

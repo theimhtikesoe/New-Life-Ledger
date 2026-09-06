@@ -38,8 +38,9 @@ export const BOTTLE_ITEMS = [
 ];
 
 export const BOTTLE_GROUPS = [
-  { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူ နှင့် 8 ဒေါင့် ဖြူ" },
-  { key: "03-blue", label: ".3 ပြာ", description: "0.3 ပြာ နှင့် 8 ဒေါင့် S+1 / S+S" },
+  { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူ" },
+  { key: "03-blue", label: ".3 ပြာ", description: "0.3 ပြာ" },
+  { key: "08-corner", label: "8 ဒေါင့်", description: "8 ဒေါင့် ဖြူ၊ S+1 နှင့် S+S" },
   { key: "special", label: "ဒိန်ချဉ်/ရွှေဝိုင်း", description: "ဒိန်သေး၊ ဒိန်ကြီး၊ ရွှေဝိုင်း" },
   { key: "025", label: ".25", description: "0.25 အမျိုးအစား" },
   { key: "candy", label: "ချိုချဉ် / လုံးချော", description: "အခြားအရွယ်အစား" },
@@ -56,8 +57,9 @@ export const BOTTLE_GROUPS = [
 
 export function getBottleGroup(type) {
   const value = String(type || "");
-  if (value === "0.3 ဖြူ" || value === "8 ဒေါင့် ဖြူ") return "03-white";
-  if (value.includes("0.3 ပြာ") || value === "8 ဒေါင့် (S+1)" || value === "8 ဒေါင့် (S+S)") return "03-blue";
+  if (value.startsWith("8 ဒေါင့်")) return "08-corner";
+  if (value === "0.3 ဖြူ") return "03-white";
+  if (value.includes("0.3 ပြာ")) return "03-blue";
   if (["ဒိန်သေး", "ဒိန်သေး (S+1)", "ဒိန်သေး (S+S)", "ဒိန်ကြီး", "ဒိန်ကြီး (S+1)", "ဒိန်ကြီး (S+S)", "ရွှေဝိုင်း"].includes(value)) return "special";
   if (value.startsWith("0.25")) return "025";
   if (["ချိုချဉ်", "လုံးချော (16g)"].includes(value)) return "candy";
@@ -71,6 +73,11 @@ export function getBottleGroup(type) {
   if (value.startsWith("0.9")) return "09";
   if (value.startsWith("1 လီတာ")) return "liter";
   return "candy";
+}
+
+export function getBottleUnit(type) {
+  const value = String(type || "");
+  return value.startsWith("8 ဒေါင့်") || value.startsWith("ဒိန်") ? "အိတ်" : "ကဒ်";
 }
 
 export const TUBE_BY_MACHINE = {

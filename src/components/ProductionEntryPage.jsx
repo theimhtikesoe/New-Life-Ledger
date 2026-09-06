@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
+import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup, getBottleUnit, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
 
 function todayMyanmar() {
   const now = new Date(Date.now() + (6 * 60 + 30) * 60 * 1000);
@@ -116,9 +116,9 @@ export default function ProductionEntryPage() {
     return BOTTLE_ITEMS.flatMap((item) => item.capacities.map((capacity) => ({
       key: `${item.type}|${capacity}`,
       label: item.type,
-      sub: `${capacity} ဆံ့ (ကဒ်)`,
+      sub: `${capacity} ဆံ့ (${getBottleUnit(item.type)})`,
       capacity,
-      unit: "ကဒ်",
+      unit: getBottleUnit(item.type),
       bottleType: item.type,
     })));
   }, [category, tubeItems]);
@@ -141,7 +141,7 @@ export default function ProductionEntryPage() {
       const key = category === "tube"
         ? `${entry.tubeG} ${entry.tubeColor} · ${entry.capacity.toLocaleString()} ဗူး/အိတ်`
         : `${entry.bottleType} · ${entry.capacity.toLocaleString()} ဆံ့`;
-      const current = result.get(key) || { label: key, cards: 0, pieces: 0 };
+      const current = result.get(key) || { label: key, cards: 0, pieces: 0, unit: entry.unit };
       current.cards += entry.quantity;
       current.pieces += entry.quantity * entry.capacity;
       result.set(key, current);
@@ -304,7 +304,7 @@ export default function ProductionEntryPage() {
     if (reportDate > today) return setError("အနာဂတ်ရက်စွဲဖြင့် သိမ်း၍မရပါ။");
     if (filledEntries.length === 0) return setError("ထွက်ရှိမှုအရေအတွက် * အနည်းဆုံးတစ်မျိုး ဖြည့်ပေးပါ။");
     const workerNames = involvedWorkers;
-    const typeLines = summaryByType.map((item) => `${item.label}: ${formatNumber(item.cards)} ကဒ် / ${formatNumber(item.pieces)} ဗူး`).join("\n");
+    const typeLines = summaryByType.map((item) => `${item.label}: ${formatNumber(item.cards)} ${item.unit} / ${formatNumber(item.pieces)} ဗူး`).join("\n");
     const summary = `နေ့စွဲ: ${reportDate}\nဗူးအမျိုးအစား: ${category === "tube" ? "Tube" : "ဗူးခွံ"}\nပူးတွဲဆင်းသူ: ${workerNames.join(", ") || "မဖြည့်ရသေး"}\n\n${typeLines}\n\nဗူးပျက်: ${formatNumber(damagedPieces)}\nTube ပျက်: ${formatNumber(Number(tubeDamageQuantity || 0))}\nTube အရေအတွက်: ${formatNumber(Number(tubeQuantity || 0))} ${tubeQuantityUnit}`;
     if (!window.confirm(`သိမ်းမည့် Production Report အကျဉ်းချုပ်\n\n${summary}\n\nဆက်လက်တင်သွင်းမလား?`)) return;
     setSubmitting(true);
@@ -364,7 +364,7 @@ export default function ProductionEntryPage() {
           <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-900"><span className="font-black">မဖြည့်မနေရ —</span> စက်ရွေးပြီး size card အနည်းဆုံးတစ်မျိုးမှာ အရေအတွက်ထည့်ပါ။ `ဆံ့` ပမာဏက card ထဲမှာ သတ်မှတ်ပြီးသားဖြစ်ပါတယ်။</p>
           {category === "bottle" ? <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">{BOTTLE_GROUPS.map((group) => <button type="button" key={group.key} onClick={() => setActiveBottleGroup(group.key)} className={`min-w-0 rounded-xl border p-3 text-left transition ${activeBottleGroup === group.key ? "border-teal-700 bg-teal-700 text-white shadow-md" : "border-teal-100 bg-teal-50 text-teal-900 hover:border-teal-300"}`}><span className="block truncate text-sm font-black">{group.label}</span><span className={`mt-1 block text-[11px] ${activeBottleGroup === group.key ? "text-teal-100" : "text-teal-700"}`}>{groupCounts[group.key] || 0} မျိုး</span></button>)}</div> : <div className="mb-4 rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-sm font-bold text-cyan-800">Tube စက်အလိုက် ထုတ်လုပ်နိုင်သောအမျိုးအစားများ</div>}
           {category === "bottle" ? <p className="mb-3 text-xs font-semibold text-slate-500">{BOTTLE_GROUPS.find((group) => group.key === activeBottleGroup)?.description} — သက်ဆိုင်ရာ size များကိုသာ ပြထားပါသည်။</p> : null}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{visibleEntries.map((entry) => { const isBlue = entryIsBlue(entry); return <label key={entry.key} className={`rounded-2xl border-2 p-4 text-base font-bold shadow-sm ${isBlue ? "border-sky-200 bg-sky-50 text-sky-950" : "border-slate-300 bg-white text-slate-900"}`}><span className="flex items-center justify-between gap-2"><span className="min-w-0 text-lg font-black leading-tight">{entry.label}</span><span className={`shrink-0 rounded-full px-3 py-1 text-base font-black ${isBlue ? "border border-sky-300 bg-sky-100 text-sky-800" : "border border-slate-400 bg-slate-50 text-slate-700"}`}>{entry.capacity.toLocaleString()} {category === "tube" ? "ဗူး/အိတ်" : "ဆံ့"}</span></span><span className="mt-2 flex items-center gap-2 text-sm font-bold"><span className={`rounded-full border px-2 py-0.5 ${isBlue ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-400 bg-slate-100 text-slate-700"}`}>{isBlue ? "ပြာ" : "ဖြူ"}</span><span>{category === "tube" ? entry.sub : `ကဒ်အရေအတွက် — ${entry.capacity.toLocaleString()} ဆံ့`}</span></span><input type="number" min="0" step="1" value={lines[entry.key] || ""} onFocus={() => { clearZeroOnFocus(entry.key); focusField(`line:${entry.key}`); }} onBlur={blurField} onChange={(event) => updateLine(entry.key, event.target.value)} placeholder="0" className={`mt-2 w-full rounded-xl border-2 bg-white p-4 text-right text-2xl font-black outline-none ${isBlue ? "border-sky-300 focus:border-sky-500" : "border-slate-300 focus:border-slate-600"} ${focusedField === `line:${entry.key}` ? "ring-4 ring-amber-300 shadow-lg" : ""}`} /></label>; })}</div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{visibleEntries.map((entry) => { const isBlue = entryIsBlue(entry); return <label key={entry.key} className={`rounded-2xl border-2 p-4 text-base font-bold shadow-sm ${isBlue ? "border-sky-200 bg-sky-50 text-sky-950" : "border-slate-300 bg-white text-slate-900"}`}><span className="flex items-center justify-between gap-2"><span className="min-w-0 text-lg font-black leading-tight">{entry.label}</span><span className={`shrink-0 rounded-full px-3 py-1 text-base font-black ${isBlue ? "border border-sky-300 bg-sky-100 text-sky-800" : "border border-slate-400 bg-slate-50 text-slate-700"}`}>{entry.capacity.toLocaleString()} {category === "tube" ? "ဗူး/အိတ်" : "ဆံ့"}</span></span><span className="mt-2 flex items-center gap-2 text-sm font-bold"><span className={`rounded-full border px-2 py-0.5 ${isBlue ? "border-sky-300 bg-sky-100 text-sky-800" : "border-slate-400 bg-slate-100 text-slate-700"}`}>{isBlue ? "ပြာ" : "ဖြူ"}</span><span>{category === "tube" ? entry.sub : `${entry.unit} အရေအတွက် — ${entry.capacity.toLocaleString()} ဆံ့`}</span></span><input type="number" min="0" step="1" value={lines[entry.key] || ""} onFocus={() => { clearZeroOnFocus(entry.key); focusField(`line:${entry.key}`); }} onBlur={blurField} onChange={(event) => updateLine(entry.key, event.target.value)} placeholder="0" className={`mt-2 w-full rounded-xl border-2 bg-white p-4 text-right text-2xl font-black outline-none ${isBlue ? "border-sky-300 focus:border-sky-500" : "border-slate-300 focus:border-slate-600"} ${focusedField === `line:${entry.key}` ? "ring-4 ring-amber-300 shadow-lg" : ""}`} /></label>; })}</div>
         <section className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
           <h2 className="mb-3 text-lg font-black text-slate-800">ဗူးပျက်၊ Tube ပျက်နှင့် Tube အရေအတွက်</h2>
           <div className="grid items-stretch gap-3 sm:grid-cols-3">
@@ -374,7 +374,7 @@ export default function ProductionEntryPage() {
           </div>
         </section>
           <div className="mt-4 grid gap-2 sm:grid-cols-3"><div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-3 text-center"><div className="text-xs font-bold text-emerald-700">စုစုပေါင်းထွက်ရှိ</div><div className="text-2xl font-black text-emerald-800">{formatNumber(totalPieces)} <span className="text-sm">ဗူး</span></div><div className="text-xs text-emerald-700">{formatNumber(totalCards)} ဗူးကဒ်</div></div><div className="rounded-xl border-2 border-red-200 bg-red-50 p-3 text-center"><div className="text-xs font-bold text-red-700">ဗူးပျက်</div><div className="text-2xl font-black text-red-800">{formatNumber(damagedPieces)} <span className="text-sm">ဗူး</span></div></div><div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-3 text-center"><div className="text-xs font-bold text-blue-700">ကောင်းမွန်ထွက်ရှိ</div><div className="text-2xl font-black text-blue-800">{formatNumber(goodPieces)} <span className="text-sm">ဗူး</span></div></div></div>
-          {summaryByType.length ? <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><h3 className="mb-2 font-black text-slate-800">အမျိုးအစားအလိုက် စုစုပေါင်း</h3><div className="grid gap-2 sm:grid-cols-2">{summaryByType.map((item) => <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm"><span className="font-bold text-slate-700">{item.label}</span><span className="text-right font-black text-slate-900">{formatNumber(item.cards)} ကဒ် · {formatNumber(item.pieces)} ဗူး</span></div>)}</div></div> : null}
+          {summaryByType.length ? <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3"><h3 className="mb-2 font-black text-slate-800">အမျိုးအစားအလိုက် စုစုပေါင်း</h3><div className="grid gap-2 sm:grid-cols-2">{summaryByType.map((item) => <div key={item.label} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm"><span className="font-bold text-slate-700">{item.label}</span><span className="text-right font-black text-slate-900">{formatNumber(item.cards)} {item.unit} · {formatNumber(item.pieces)} ဗူး</span></div>)}</div></div> : null}
         </section>
 
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 font-bold text-red-700">{error}</div>}{message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 font-bold text-emerald-700">{message}</div>}

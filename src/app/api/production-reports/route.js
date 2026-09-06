@@ -3,7 +3,7 @@ import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
-import { getMachine, MACHINES } from "@/lib/production-catalog";
+import { getBottleUnit, getMachine, MACHINES } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +47,7 @@ function normalizeRows(body) {
     return {
       category,
       outputQuantity,
-      outputUnit: category === "tube" ? "အိတ်" : "ကဒ်",
+      outputUnit: category === "tube" ? "အိတ်" : getBottleUnit(row.bottleType),
       outputCapacity: String(capacity),
       bottleType: category === "bottle" ? String(row.bottleType) : null,
       tubeG: category === "tube" ? String(row.tubeG) : null,

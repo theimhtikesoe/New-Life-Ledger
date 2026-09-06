@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOTTLE_ITEMS, getBottleGroup } from "@/lib/production-catalog";
+import { BOTTLE_ITEMS, getBottleGroup, getBottleUnit } from "@/lib/production-catalog";
 
 describe("Production bottle catalog", () => {
   it("includes the ဒိန်သေး (S+S) 250 ဆံ့ card in the dairy group", () => {
@@ -21,6 +21,10 @@ describe("Production bottle catalog", () => {
     expect(getBottleGroup("1 လီတာ အဝိုင်း")).toBe("liter");
     expect(BOTTLE_ITEMS).toContainEqual({ type: "8 ဒေါင့် ဖြူ", capacities: [100, 250] });
     expect(BOTTLE_ITEMS).toContainEqual({ type: "8 ဒေါင့် (S+S)", capacities: [100, 250, 500] });
-    expect(getBottleGroup("8 ဒေါင့် (S+S)")).toBe("03-blue");
+    expect(getBottleGroup("8 ဒေါင့် ဖြူ")).toBe("08-corner");
+    expect(getBottleGroup("8 ဒေါင့် (S+S)")).toBe("08-corner");
+    expect(getBottleUnit("8 ဒေါင့် ဖြူ")).toBe("အိတ်");
+    expect(getBottleUnit("ဒိန်သေး (S+S)")).toBe("အိတ်");
+    expect(getBottleUnit("0.3 ဖြူ")).toBe("ကဒ်");
   });
 });
