@@ -9,8 +9,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 function isAuthorized(request) {
-  const authorization = request.headers.get("authorization");
-  const configuredSecrets = [process.env.MANUAL_REPORT_PIN, process.env.CRON_SECRET, process.env.APP_PIN].filter(Boolean);
+  const authorization = String(request.headers.get("authorization") || "").trim();
+  const configuredSecrets = [process.env.MANUAL_REPORT_PIN, process.env.CRON_SECRET, process.env.APP_PIN]
+    .map((secret) => String(secret || "").trim())
+    .filter(Boolean);
   return configuredSecrets.some((secret) => authorization === `Bearer ${secret}`);
 }
 
