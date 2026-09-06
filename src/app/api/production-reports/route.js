@@ -84,8 +84,8 @@ export async function POST(request) {
     if (machine.category === "tube" && requestedCategory !== "tube") throw new Error("ဤစက်အတွက် Tube အမျိုးအစားကိုရွေးပေးပါ။");
     const rows = normalizeRows({ ...body, rows: body.rows?.map((row) => ({ ...row, category: requestedCategory })) });
     const wasteQuantity = positiveInt(body.wasteQuantity, "ဗူးပျက်အရေအတွက်");
-    const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "Tube ပျက်အရေအတွက်");
-    const tubeQuantity = positiveInt(body.tubeQuantity, "Tube အရေအတွက်");
+    const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "ဗူးမဖြစ်ဘဲ ပျက်သွားသော Tube အရေအတွက်");
+    const tubeQuantity = positiveInt(body.tubeQuantity, "ဗူးထွက်ရန်သုံးသော Tube အရေအတွက်");
     const actorName = getActorName(request);
     const submissionId = crypto.randomUUID();
     const involvedWorkers = Array.isArray(body.involvedWorkers)
@@ -145,8 +145,8 @@ export async function PATCH(request) {
     if (machine.category === "tube" && requestedCategory !== "tube") throw new Error("ဤစက်အတွက် Tube အမျိုးအစားကိုရွေးပေးပါ။");
     const rows = normalizeRows({ ...body, rows: body.rows?.map((row) => ({ ...row, category: requestedCategory })) });
     const wasteQuantity = positiveInt(body.wasteQuantity, "ဗူးပျက်အရေအတွက်");
-    const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "Tube ပျက်အရေအတွက်");
-    const tubeQuantity = positiveInt(body.tubeQuantity, "Tube အရေအတွက်");
+    const tubeDamageQuantity = positiveInt(body.tubeDamageQuantity, "ဗူးမဖြစ်ဘဲ ပျက်သွားသော Tube အရေအတွက်");
+    const tubeQuantity = positiveInt(body.tubeQuantity, "ဗူးထွက်ရန်သုံးသော Tube အရေအတွက်");
     const actorName = getActorName(request);
     const involvedWorkers = Array.isArray(body.involvedWorkers) ? body.involvedWorkers.map((value) => String(value).trim()).filter(Boolean).slice(0, 20) : [];
     const notes = String(body.notes || "").trim() || null;
