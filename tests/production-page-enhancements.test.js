@@ -42,7 +42,7 @@ describe("Production page enhancements", () => {
   it("includes bottle capacity in confirmation and saved history labels", () => {
     expect(productionSource).toContain('`${entry.bottleType} · ${entry.capacity.toLocaleString()} ဆံ့`');
     expect(productionSource).toContain('`${entry.tubeG} ${entry.tubeColor} · ${entry.capacity.toLocaleString()} ဗူး/အိတ်`');
-    expect(productionSource).toContain('`${row.bottleType} · ${row.outputCapacity} ဆံ့`');
+    expect(productionSource).toContain('`${getBottleDisplayName(row.bottleType)} · ${row.outputCapacity} ဆံ့`');
     expect(productionSource).toContain('{group.tubeQuantityUnit || "အိတ်"}');
   });
 

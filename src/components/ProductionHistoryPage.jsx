@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { getBottleDisplayName } from "@/lib/production-catalog";
 
 function todayMyanmar() {
   const now = new Date(Date.now() + (6 * 60 + 30) * 60 * 1000);
@@ -19,7 +20,7 @@ function formatNumber(value) {
 
 function rowLabel(row) {
   if (row.category === "tube") return `${row.tubeG || "Tube"} ${row.tubeColor || ""}`.trim();
-  return row.bottleType || "ဗူးအမျိုးအစား မသတ်မှတ်ရသေးပါ";
+  return getBottleDisplayName(row.bottleType) || "ဗူးအမျိုးအစား မသတ်မှတ်ရသေးပါ";
 }
 
 export default function ProductionHistoryPage() {

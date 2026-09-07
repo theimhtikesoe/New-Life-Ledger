@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOTTLE_ITEMS, getBottleGroup, getBottleUnit } from "@/lib/production-catalog";
+import { BOTTLE_ITEMS, getBottleDisplayName, getBottleGroup, getBottleUnit } from "@/lib/production-catalog";
 
 describe("Production bottle catalog", () => {
   it("includes the ဒိန်သေး (S+S) 250 ဆံ့ card in the dairy group", () => {
@@ -28,12 +28,21 @@ describe("Production bottle catalog", () => {
     expect(getBottleUnit("0.3 ဖြူ")).toBe("ကဒ်");
   });
 
-  it("includes the three 200 ဆံ့ လေးထောင့် cards in their own category", () => {
-    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့်", capacities: [200] });
-    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 16g", capacities: [200] });
-    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 13g", capacities: [200] });
-    expect(getBottleGroup("လေးထောင့်")).toBe("square");
-    expect(getBottleGroup("လေးထောင့် 16g")).toBe("square");
-    expect(getBottleGroup("လေးထောင့် 13g")).toBe("square");
+  it("includes the 100/200 ဆံ့ လေးထောင့် cards in the .3 category", () => {
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့်", capacities: [100, 200] });
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 16g", capacities: [100, 200] });
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 13g", capacities: [100, 200] });
+    expect(getBottleGroup("လေးထောင့်")).toBe("03-white");
+    expect(getBottleGroup("လေးထောင့် 16g")).toBe("03-white");
+    expect(getBottleGroup("လေးထောင့် 13g")).toBe("03-white");
+  });
+
+  it("includes the medium dairy, candy, and engine-oil cards", () => {
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "ဒိန်ဝိုင်းအလတ်", capacities: [100, 200] });
+    expect(getBottleGroup("ဒိန်ဝိုင်းအလတ်")).toBe("special");
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "ချိုချဉ်အသေး", capacities: [100] });
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "ချိုချဉ်အကြီး (အချိုရည်ဗူးကြီး)", capacities: [100] });
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "အင်ဂျင်ဝိုင်", capacities: [100] });
+    expect(getBottleDisplayName("သေးရှည်")).toBe("ဒိန်ဝိုင်းအလတ်");
   });
 });
