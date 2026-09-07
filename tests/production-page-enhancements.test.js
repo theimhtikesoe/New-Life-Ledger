@@ -63,4 +63,14 @@ describe("Production page enhancements", () => {
     expect(productionSource).toContain('`${entry.unit} အရေအတွက် — ${entry.capacity.toLocaleString()} ဆံ့`');
     expect(routeSource).toContain('outputUnit: category === "tube" ? "အိတ်" : getBottleUnit(row.bottleType)');
   });
+
+  it("places category and machine selectors at the top of the form", () => {
+    const categoryPosition = productionSource.indexOf("အမျိုးအစား</span><select");
+    const machinePosition = productionSource.indexOf("စက်</RequiredLabel><select");
+    const workersPosition = productionSource.indexOf("ပူးတွဲဆင်းသူများ");
+    expect(categoryPosition).toBeGreaterThan(-1);
+    expect(machinePosition).toBeGreaterThan(-1);
+    expect(categoryPosition).toBeLessThan(workersPosition);
+    expect(machinePosition).toBeLessThan(workersPosition);
+  });
 });
