@@ -22,8 +22,8 @@ function PlantColumn({ point, maxValues, index }) {
   ];
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center gap-1" aria-label={`${point.date} data summary`}>
-      <div className="flex h-40 w-full items-end justify-center gap-0.5 rounded-xl border border-slate-200 bg-white/80 px-1 pb-2 pt-3 shadow-inner sm:h-48 sm:gap-1">
+    <div className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl border border-amber-200/90 bg-gradient-to-b from-amber-50/80 via-white/70 to-white/90 p-1 shadow-[0_0_10px_rgba(245,158,11,0.22)]" aria-label={`${point.date} data summary`}>
+      <div className="flex h-40 w-full items-end justify-center gap-0.5 rounded-lg border border-amber-100 bg-white/80 px-1 pb-2 pt-3 shadow-inner sm:h-48 sm:gap-1">
         {series.map((item, seriesIndex) => {
           const amount = Number(point[item.key] || 0);
           const maxValue = Math.max(1, Number(maxValues[item.key] || 0));
