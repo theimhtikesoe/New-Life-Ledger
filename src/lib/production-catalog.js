@@ -29,7 +29,7 @@ export const BOTTLE_ITEMS = [
   { type: "0.5 ဖြူ", capacities: [100, 270] },
   { type: "0.6 ဖြူ", capacities: [100, 250] },
   { type: "0.6 ပြာ", capacities: [100, 250] },
-  { type: "25 ကျပ်သား", capacities: [100] },
+  { type: "25 ကျပ်သား", capacities: [100, 210] },
   { type: "30 ကျပ်သား", capacities: [100, 320] },
   { type: "နွားသေး", capacities: [100, 250] },
   { type: "နွားကြီး", capacities: [100, 250] },

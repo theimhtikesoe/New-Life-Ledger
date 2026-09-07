@@ -47,4 +47,9 @@ describe("Production bottle catalog", () => {
     expect(getBottleGroup("အင်ဂျင်ဝိုင်")).toBe("engine-oil");
     expect(getBottleDisplayName("သေးရှည်")).toBe("ဒိန်ဝိုင်းအလတ်");
   });
+
+  it("includes both 100 and 210 ဆံ့ cards for 25 ကျပ်သား", () => {
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "25 ကျပ်သား", capacities: [100, 210] });
+    expect(getBottleGroup("25 ကျပ်သား")).toBe("25");
+  });
 });
