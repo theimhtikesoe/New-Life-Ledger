@@ -44,6 +44,10 @@ describe("Production page enhancements", () => {
     expect(productionSource).toContain('`${entry.tubeG} ${entry.tubeColor} · ${entry.capacity.toLocaleString()} ဗူး/အိတ်`');
     expect(productionSource).toContain('`${getBottleDisplayName(row.bottleType)} · ${row.outputCapacity} ဆံ့`');
     expect(productionSource).toContain('{group.tubeQuantityUnit || "အိတ်"}');
+    expect(productionSource).toContain("စုစုပေါင်းထွက်ရှိမှု");
+    expect(productionSource).toContain("ကောင်းမွန်ထွက်ရှိမှု");
+    expect(productionSource).toContain("border-rose-200 bg-rose-50");
+    expect(productionSource).toContain("border-orange-200 bg-orange-50");
   });
 
   it("keeps quantity inputs in an equal row above the KPI cards", () => {
