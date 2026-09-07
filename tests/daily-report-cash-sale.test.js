@@ -18,7 +18,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { createReportHtml, formatCashSaleDetails, getDailyReportData } from "@/lib/daily-report";
+import { createProductionSummaryHtml, createReportHtml, formatCashSaleDetails, getDailyReportData } from "@/lib/daily-report";
 
 const period = {
   start: new Date("2026-08-25T00:00:00.000Z"),
@@ -63,6 +63,28 @@ beforeEach(() => {
 });
 
 describe("Telegram daily report CashSale data", () => {
+  it("renders the fourth production page with book summary tables and totals", () => {
+    const html = createProductionSummaryHtml({
+      dateLabel: "2026-08-25",
+      productionSummary: {
+        bottles: [{ label: "ဒိန်ကြီး", capacity: 200, quantity: 10, pieces: 2000, unit: "ကဒ်" }],
+        tubes: [{ label: "1 လီတာ ဖြူ", capacity: 2500, quantity: 2, pieces: 5000, unit: "ထုပ်" }],
+        totalOutput: 2000,
+        totalWaste: 12,
+        totalTubeDamage: 3,
+        tubeQuantityValue: "2.525",
+        tubeQuantityUnit: "ထုပ်",
+      },
+    }, "", "");
+    expect(html).toContain("ဗူးထွက်ရှိမှုစာရင်း");
+    expect(html).toContain("စာအုပ်မှတ်တမ်းအကျဉ်းချုပ် — ဗူး");
+    expect(html).toContain("ဒိန်ကြီး");
+    expect(html).toContain("စုစုပေါင်းထွက်ရှိမှု");
+    expect(html).toContain("2,000 ဗူး");
+    expect(html).toContain("ဗူးပျက်စုစုပေါင်း");
+    expect(html).toContain("2.525");
+  });
+
   it("renders retail and wholesale cash-sale details on separate full lines", () => {
     const customer = {
       cashRetailCount: 4,
@@ -225,6 +247,7 @@ describe("Telegram daily report CashSale data", () => {
         { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
         { action: "PRODUCTION_REPORT_DELETE" },
         { action: "PRODUCTION_REPORT_SUBMIT" },
+        { action: "PRODUCTION_WORKER_CREATE" },
       ] },
     ]));
   });

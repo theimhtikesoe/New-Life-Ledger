@@ -9,6 +9,7 @@ import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
 import { accountingAuditLogWhere, isEditActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity, isProductionWorkerCreateActivity } from "@/lib/accounting-activity";
 import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
+import { getBottleDisplayName } from "@/lib/production-catalog";
 
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
 const REMOTE_CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
@@ -166,6 +167,44 @@ function summarizeDailySalesRows(cashSales = [], ledgers = []) {
   };
 }
 
+function summarizeProductionReports(rows = []) {
+  const bottles = new Map();
+  const tubes = new Map();
+  let totalOutput = 0;
+  let totalWaste = 0;
+  let totalTubeDamage = 0;
+  let tubeQuantityValue = "0";
+  let tubeQuantityUnit = "အိတ်";
+  for (const row of rows) {
+    const quantity = Number(row.outputQuantity || 0);
+    const capacity = Number(row.outputCapacity || 0);
+    const pieces = quantity * capacity;
+    if (row.category === "tube") {
+      const label = `${row.tubeG || "Tube"} ${row.tubeColor || ""}`.trim();
+      const key = `${label}|${capacity}`;
+      const current = tubes.get(key) || { label, capacity, quantity: 0, pieces: 0, unit: row.outputUnit || "အိတ်" };
+      current.quantity += quantity;
+      current.pieces += pieces;
+      tubes.set(key, current);
+    } else {
+      const label = getBottleDisplayName(row.bottleType) || "ဗူးအမျိုးအစား မသတ်မှတ်ရသေးပါ";
+      const key = `${label}|${capacity}`;
+      const current = bottles.get(key) || { label, capacity, quantity: 0, pieces: 0, unit: row.outputUnit || "ကဒ်" };
+      current.quantity += quantity;
+      current.pieces += pieces;
+      bottles.set(key, current);
+      totalOutput += pieces;
+    }
+    totalWaste = Math.max(totalWaste, Number(row.wasteQuantity || 0));
+    totalTubeDamage = Math.max(totalTubeDamage, Number(row.tubeDamageQuantity || 0));
+    if (Number(row.tubeQuantity || 0) || String(row.tubeQuantityValue || "0") !== "0") {
+      tubeQuantityValue = String(row.tubeQuantityValue ?? row.tubeQuantity ?? 0);
+      tubeQuantityUnit = row.tubeQuantityUnit || "အိတ်";
+    }
+  }
+  return { bottles: [...bottles.values()], tubes: [...tubes.values()], totalOutput, totalWaste, totalTubeDamage, tubeQuantityValue, tubeQuantityUnit };
+}
+
 export async function getDailySalesSummaryCardData(dateLabel) {
   const { start, end } = getMyanmarDayRange(dateLabel);
   const month = dateLabel.slice(0, 7);
@@ -205,7 +244,7 @@ export async function getDailySalesSummaryCardData(dateLabel) {
 
 export async function getDailyReportData({ start, end, dateLabel } = getPreviousMyanmarDayRange()) {
   await ensureDatabase();
-  const [ledgers, cashSales, allAuditLogs, dailySalesSummary] = await Promise.all([
+  const [ledgers, cashSales, allAuditLogs, dailySalesSummary, productionReports] = await Promise.all([
     prisma.ledger.findMany({
       where: { date: { gte: start, lt: end } },
       select: {
@@ -267,6 +306,13 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
           },
         })
       : Promise.resolve(null),
+    prisma.productionReport?.findMany
+      ? prisma.productionReport.findMany({
+          where: { reportDate: dateLabel },
+          select: { category: true, outputQuantity: true, outputCapacity: true, outputUnit: true, bottleType: true, tubeG: true, tubeColor: true, wasteQuantity: true, tubeDamageQuantity: true, tubeQuantity: true, tubeQuantityValue: true, tubeQuantityUnit: true },
+          orderBy: [{ id: "asc" }],
+        })
+      : Promise.resolve([]),
   ]);
 
   const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isOrderWorkflowActivity(log) && !isEditActivity(log) && !isProductionReportSubmitActivity(log) && !isProductionWorkerCreateActivity(log));
@@ -366,6 +412,8 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
     auditLogs,
     activityLogs,
     dailySalesSummary,
+    productionReports,
+    productionSummary: summarizeProductionReports(productionReports),
   };
 }
 
@@ -448,6 +496,16 @@ export function createDailySalesSummaryCardHtml(data, fontDataUri, latinDataUri)
   </style></head><body><section id="sales-summary-card" class="sheet"><div class="brand">NEW LIFE LEDGER</div><div class="title">နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</div><div class="date">စာရင်းရက် — ${esc(formatReportDateLabel(data.dateLabel))}</div><div class="rule"></div><div class="grid">${card("လက်လီ (ငွေသား + KPay/Bank/Wave)", data.retailTotal, "retail")}${card("လက်လီ (ငွေသား)", data.retailCash, "retail")}${card("လက်ကား (ငွေသား + KPay/Bank/Wave)", data.wholesaleTotal, "wholesale")}${card("လက်ကား (ငွေသား)", data.wholesaleCash, "wholesale")}${card("တစ်နေ့တာ လက်လီ + လက်ကား", data.dailyTotal, "daily")}${card("တစ်နေ့တာ ငွေသား", data.cashDailyTotal, "daily")}</div><div class="opening-wrap"><div class="sales-card opening"><div class="sales-label">လစဉ်စုစုပေါင်း / နောက်နေ့ Opening</div><div class="sales-value">${esc(amount(data.monthlyTotal))}</div><div class="sales-label" style="font-size:18px;margin-top:8px">Opening — ${esc(amount(data.opening))}</div></div></div></section></body></html>`;
 }
 
+export function createProductionSummaryHtml(report, fontDataUri, latinDataUri) {
+  const esc = escapeXml;
+  const summary = report.productionSummary || summarizeProductionReports(report.productionReports || []);
+  const number = (value) => Number(value || 0).toLocaleString("en-US");
+  const bottleRows = summary.bottles.map((item) => `<tr><td>${esc(item.label)}</td><td>${number(item.capacity)} ဆံ့</td><td>${number(item.quantity)} ${esc(item.unit)}</td><td>${number(item.pieces)} ဗူး</td></tr>`).join("") || `<tr><td colspan="4">ဒီနေ့ ဗူးထွက်ရှိမှု မရှိသေးပါ။</td></tr>`;
+  const tubeRows = summary.tubes.map((item) => `<tr><td>${esc(item.label)}</td><td>${number(item.capacity)} ခု</td><td>${number(item.quantity)} ${esc(item.unit)}</td><td>${number(item.pieces)} ခု</td></tr>`).join("") || `<tr><td colspan="4">ဒီနေ့ Tube ထုတ်လုပ်မှု မရှိသေးပါ။</td></tr>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    @font-face{font-family:Padauk;src:url(data:font/ttf;base64,${fontDataUri}) format('truetype');font-weight:400}@font-face{font-family:DejaVu;src:url(data:font/ttf;base64,${latinDataUri}) format('truetype');font-weight:400}*{box-sizing:border-box}body{margin:0;background:#f8fafc;color:#0f172a;font-family:Padauk,DejaVu,sans-serif}.sheet{width:1100px;padding:34px;background:#fff;border:1px solid #cbd5e1;border-radius:28px}.brand{font-family:DejaVu,Padauk,sans-serif;font-size:18px;letter-spacing:2px;color:#4338ca;font-weight:700}.title{font-size:38px;font-weight:700;margin-top:6px}.date{font-family:DejaVu,Padauk,sans-serif;font-size:21px;color:#475569;margin-top:6px}.rule{height:2px;background:#e2e8f0;margin:24px 0}h2{font-size:26px;margin:22px 0 10px;color:#3730a3}.production-table{width:100%;border-collapse:collapse;font-size:21px}.production-table th,.production-table td{padding:11px 12px;border-bottom:1px solid #e2e8f0;text-align:left}.production-table th{background:#e0e7ff;color:#312e81}.production-table td:nth-child(n+2),.production-table th:nth-child(n+2){text-align:right}.tube-title{color:#c2410c}.tube-table th{background:#ffedd5;color:#9a3412}.totals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}.total{padding:16px;border-radius:14px;background:#ecfdf5;border:1px solid #bbf7d0}.total:nth-child(2){background:#fff1f2;border-color:#fecdd3}.total:nth-child(3),.total:nth-child(4){background:#fff7ed;border-color:#fed7aa}.total-label{font-size:17px;color:#475569}.total-value{font-family:DejaVu,Padauk,sans-serif;font-size:25px;font-weight:700;margin-top:6px}</style></head><body><section id="production-summary" class="sheet"><div class="brand">NEW LIFE LEDGER</div><div class="title">ဗူးထွက်ရှိမှုစာရင်း</div><div class="date">စာရင်းရက် — ${esc(formatReportDateLabel(report.dateLabel))}</div><div class="rule"></div><h2>စာအုပ်မှတ်တမ်းအကျဉ်းချုပ် — ဗူး</h2><table class="production-table"><thead><tr><th>ဗူးအမျိုးအစား</th><th>ဆံ့</th><th>အရေအတွက်</th><th>စုစုပေါင်းဗူး</th></tr></thead><tbody>${bottleRows}</tbody></table><h2 class="tube-title">Tube အကျဉ်းချုပ်</h2><table class="production-table tube-table"><thead><tr><th>Tube အမျိုးအစား</th><th>တစ်ကြိမ်ဆံ့</th><th>အရေအတွက်</th><th>စုစုပေါင်း Tube</th></tr></thead><tbody>${tubeRows}</tbody></table><div class="totals"><div class="total"><div class="total-label">စုစုပေါင်းထွက်ရှိမှု</div><div class="total-value">${number(summary.totalOutput)} ဗူး</div></div><div class="total"><div class="total-label">ဗူးပျက်စုစုပေါင်း</div><div class="total-value">${number(summary.totalWaste)} ဗူး</div></div><div class="total"><div class="total-label">Tube ပျက်</div><div class="total-value">${number(summary.totalTubeDamage)} ခု</div></div><div class="total"><div class="total-label">Tube အရေအတွက်</div><div class="total-value">${esc(summary.tubeQuantityValue)} ${esc(summary.tubeQuantityUnit)}</div></div></div></section></body></html>`;
+}
+
 let chromiumExecutablePromise;
 const reportImageCache = new WeakMap();
 
@@ -490,7 +548,15 @@ async function renderReportImagesUncached(report) {
     await page.setContent(salesHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const salesSummaryBuffer = Buffer.from(await page.locator("#sales-summary-card").screenshot({ type: "png" }));
-    return { summaryBuffer, activityBuffer, salesSummaryBuffer };
+    const productionHtml = createProductionSummaryHtml(
+      report,
+      fs.readFileSync(fontPath).toString("base64"),
+      fs.readFileSync(latinFontPath).toString("base64"),
+    );
+    await page.setContent(productionHtml, { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
+    const productionSummaryBuffer = Buffer.from(await page.locator("#production-summary").screenshot({ type: "png" }));
+    return { summaryBuffer, activityBuffer, salesSummaryBuffer, productionSummaryBuffer };
   } finally {
     await browser.close();
   }
@@ -523,9 +589,9 @@ export async function createDailySalesSummaryImage(report) {
 }
 
 export async function createDailyReportPdf(report) {
-  const { summaryBuffer, activityBuffer, salesSummaryBuffer } = await renderReportImages(report);
+  const { summaryBuffer, activityBuffer, salesSummaryBuffer, productionSummaryBuffer } = await renderReportImages(report);
   const pdfDoc = await PDFDocument.create();
-  for (const imageBuffer of [summaryBuffer, activityBuffer, salesSummaryBuffer]) {
+  for (const imageBuffer of [summaryBuffer, activityBuffer, salesSummaryBuffer, productionSummaryBuffer]) {
     const image = await pdfDoc.embedPng(imageBuffer);
     const page = pdfDoc.addPage([900, 900 * image.height / image.width]);
     page.drawImage(image, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
