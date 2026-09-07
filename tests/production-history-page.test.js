@@ -22,4 +22,11 @@ describe("Production history page", () => {
     expect(pageSource).toContain("မှတ်တမ်း Date");
     expect(pageSource).toContain("ပူးတွဲဆင်းသူ");
   });
+
+  it("provides book-style product/capacity and Tube summaries with print support", () => {
+    expect(pageSource).toContain("စာအုပ်မှတ်တမ်းအကျဉ်းချုပ်");
+    expect(pageSource).toContain("summaries.bottles");
+    expect(pageSource).toContain("summaries.tubes");
+    expect(pageSource).toContain("window.print()");
+  });
 });
