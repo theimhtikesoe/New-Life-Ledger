@@ -107,7 +107,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
           setOpeningForm({ amount: body.data.opening.amount, asOfDate: body.data.opening.asOfDate, note: body.data.opening.note });
         } else if (targetDate.startsWith(AUGUST_NOTEBOOK_OPENING.month) && targetDate >= AUGUST_NOTEBOOK_OPENING.asOfDate) {
           setOpeningForm({ ...AUGUST_NOTEBOOK_OPENING });
-          setShowOpeningForm(true);
+          setShowOpeningForm(false);
         } else {
           setOpeningForm({ amount: "", asOfDate: getPreviousMyanmarDateInputValue(targetDate), note: "စာအုပ်မှ စုစုပေါင်း" });
         }
@@ -290,9 +290,9 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                 <span>စာရင်းရက်</span>
                 <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="min-h-10 min-w-0 rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-medium text-slate-800" />
               </label>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-indigo-700">{currentLabel}{summary ? " · Auto Preview (မသိမ်းရသေး)" : ""}</span>
-                <button type="button" onClick={() => setShowOpeningForm(!showOpeningForm)} className="text-xs font-bold text-indigo-600 underline">Opening ညှိရန်</button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-indigo-700">{currentLabel}</span>
+                <button type="button" onClick={() => setShowOpeningForm(!showOpeningForm)} className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] font-black text-indigo-700 shadow-sm hover:bg-indigo-50" aria-expanded={showOpeningForm}>Opening</button>
               </div>
             </div>
 

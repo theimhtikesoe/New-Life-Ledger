@@ -17,7 +17,9 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain('setDraft(toDraft(body.data.autoPreview || body.data.selectedDay))');
     expect(source).not.toContain('setIsEditing(body.data.selectedDay?.source === "CASH_SALE")');
     expect(source).not.toContain("window.setTimeout(() => { saveDaily(); }, 900)");
-    expect(source).toContain('Auto Preview (မသိမ်းရသေး)');
+    expect(source).toContain('>Opening</button>');
+    expect(source).toContain('aria-expanded={showOpeningForm}');
+    expect(source).not.toContain('setShowOpeningForm(true);');
     expect(source).toContain('calculationMode: hasManualDifference ? "MANUAL" : "AUTO"');
     expect(source).toContain('adjustmentReason: hasManualDifference ?');
     expect(source).toContain('body: JSON.stringify({ action: "opening", month: date.slice(0, 7), selectedDate: date, ...openingDraft })');
