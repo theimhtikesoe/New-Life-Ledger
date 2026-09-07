@@ -1701,28 +1701,17 @@ export default function Dashboard({ view = "overview" }) {
               </Link>
               <button
                 type="button"
-                onClick={() => setExpandedDashboardMenu((current) => current === "reports" ? null : "reports")}
-                aria-expanded={expandedDashboardMenu === "reports"}
-                aria-controls="dashboard-report-menu"
+                onClick={() => setExpandedDashboardMenu((current) => current === "settings" ? null : "settings")}
+                aria-expanded={expandedDashboardMenu === "settings"}
+                aria-controls="dashboard-report-menu dashboard-data-menu"
                 className="neon-menu-button neon-card-violet flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📊</span>
-                <span>အစီရင်ခံ / မှတ်တမ်း</span>
-                <span className="shrink-0" aria-hidden="true">{expandedDashboardMenu === "reports" ? "⌃" : "⌄"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setExpandedDashboardMenu((current) => current === "data" ? null : "data")}
-                aria-expanded={expandedDashboardMenu === "data"}
-                aria-controls="dashboard-data-menu"
-                className="neon-menu-button neon-card-cyan flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
-              >
-                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🗂️</span>
-                <span>ဒေတာ / အမှိုက်ပုံး</span>
-                <span className="shrink-0" aria-hidden="true">{expandedDashboardMenu === "data" ? "⌃" : "⌄"}</span>
+                <span>Settings</span>
+                <span className="shrink-0" aria-hidden="true">{expandedDashboardMenu === "settings" ? "⌃" : "⌄"}</span>
               </button>
 
-              {expandedDashboardMenu === "reports" ? (
+              {expandedDashboardMenu === "settings" ? (
                 <div id="dashboard-report-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-violet-200 bg-white p-2 sm:grid-cols-3">
                   <Link
                     href="/orders"
@@ -1752,7 +1741,7 @@ export default function Dashboard({ view = "overview" }) {
                 </div>
               ) : null}
 
-              {expandedDashboardMenu === "data" ? (
+              {expandedDashboardMenu === "settings" ? (
                 <div id="dashboard-data-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-cyan-200 bg-white p-2 sm:grid-cols-3">
                   <Link
                     href="/customer-management"
