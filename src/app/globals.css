@@ -122,6 +122,30 @@ body {
   transform: translateY(-1px);
 }
 
+.production-book-summary table {
+  font-size: 1.05rem;
+}
+
+.production-book-summary th,
+.production-book-summary td {
+  padding: 0.85rem 1rem;
+  line-height: 1.5;
+}
+
+.production-book-summary th {
+  font-size: 1.1rem;
+}
+
+@media (min-width: 640px) {
+  .production-book-summary table {
+    font-size: 1.2rem;
+  }
+
+  .production-book-summary th {
+    font-size: 1.25rem;
+  }
+}
+
 main,
 header,
 section,

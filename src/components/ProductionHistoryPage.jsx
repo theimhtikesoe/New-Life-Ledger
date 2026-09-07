@@ -141,7 +141,7 @@ export default function ProductionHistoryPage() {
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><p className="text-sm font-bold text-orange-700">မှတ်တမ်းအကြိမ်</p><p className="mt-1 text-2xl font-black text-orange-800">{formatNumber(groups.length)} ကြိမ်</p></div>
       </section>
 
-      {(summaries.bottles.length || summaries.tubes.length) ? <section className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 shadow-sm sm:p-5">
+      {(summaries.bottles.length || summaries.tubes.length) ? <section className="production-book-summary rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div><h2 className="text-lg font-black text-indigo-950">စာအုပ်မှတ်တမ်းအကျဉ်းချုပ်</h2><p className="mt-1 text-sm text-indigo-800">ရွေးထားသောနေ့၏ Product/ဆံ့ နှင့် Tube အမျိုးအစားအလိုက် စုစည်းပြထားပါသည်။</p></div>
         </div>
