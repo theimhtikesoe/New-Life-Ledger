@@ -123,26 +123,54 @@ body {
 }
 
 .production-book-summary table {
-  font-size: 1.05rem;
+  width: 100%;
+  min-width: 100%;
+  table-layout: fixed;
+  font-size: 0.875rem;
 }
 
 .production-book-summary th,
 .production-book-summary td {
-  padding: 0.85rem 1rem;
-  line-height: 1.5;
+  padding: 0.55rem 0.6rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
 }
 
 .production-book-summary th {
-  font-size: 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.production-book-summary th:first-child,
+.production-book-summary td:first-child {
+  width: 34%;
+}
+
+.production-book-summary th:nth-child(2),
+.production-book-summary td:nth-child(2) {
+  width: 18%;
+}
+
+.production-book-summary th:nth-child(3),
+.production-book-summary td:nth-child(3),
+.production-book-summary th:nth-child(4),
+.production-book-summary td:nth-child(4) {
+  width: 24%;
 }
 
 @media (min-width: 640px) {
   .production-book-summary table {
-    font-size: 1.2rem;
+    font-size: 1rem;
+  }
+
+  .production-book-summary th,
+  .production-book-summary td {
+    padding: 0.7rem 0.8rem;
   }
 
   .production-book-summary th {
-    font-size: 1.25rem;
+    font-size: 1.05rem;
   }
 }
 
@@ -350,6 +378,12 @@ textarea {
 
   .neon-app-shell table {
     min-width: 600px;
+  }
+
+  .neon-app-shell .production-book-summary table {
+    width: 100%;
+    min-width: 100%;
+    table-layout: fixed;
   }
 
   .neon-app-shell .overflow-x-auto {
