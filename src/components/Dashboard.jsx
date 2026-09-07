@@ -1703,7 +1703,7 @@ export default function Dashboard({ view = "overview" }) {
                 type="button"
                 onClick={() => setExpandedDashboardMenu((current) => current === "settings" ? null : "settings")}
                 aria-expanded={expandedDashboardMenu === "settings"}
-                aria-controls="dashboard-report-menu dashboard-data-menu"
+                aria-controls="dashboard-settings-menu"
                 className="neon-menu-button neon-card-violet flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📊</span>
@@ -1712,56 +1712,34 @@ export default function Dashboard({ view = "overview" }) {
               </button>
 
               {expandedDashboardMenu === "settings" ? (
-                <div id="dashboard-report-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-violet-200 bg-white p-2 sm:grid-cols-3">
-                  <Link
-                    href="/orders"
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
-                  >
-                    အော်ဒါများ
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleOpenTelegramReportPreview}
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
-                  >
-                    📨 Manual အစီရင်ခံစာ
-                  </button>
-                  <Link
-                    href="/auto-report-status"
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
-                  >
-                    Auto Report အခြေအနေ
-                  </Link>
-                  <Link
-                    href="/vercel-build-logs"
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    Build မှတ်တမ်း
-                  </Link>
-                </div>
-              ) : null}
-
-              {expandedDashboardMenu === "settings" ? (
-                <div id="dashboard-data-menu" className="col-span-2 grid grid-cols-1 gap-2 rounded-xl border border-cyan-200 bg-white p-2 sm:grid-cols-3">
-                  <Link
-                    href="/customer-management"
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
-                  >
-                    👥 Customer Management
-                  </Link>
-                  <Link
-                    href="/data-management"
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-medium text-cyan-700 hover:bg-cyan-100"
-                  >
-                    🗂️ ဒေတာစီမံခန့်ခွဲမှု
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setShowRecycleBin(true)}
-                    className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    🗑️ Customer အမှိုက်ပုံး
-                  </button>
+                <div id="dashboard-settings-menu" className="col-span-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                  <div className="mb-2 flex items-center gap-2 px-1 text-xs font-black tracking-wide text-slate-500">
+                    <span className="ui-icon text-sm" aria-hidden="true">⚙️</span>
+                    <span>အစီရင်ခံစာနှင့် ဒေတာစီမံခန့်ခွဲမှု</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <Link href="/orders" className="settings-menu-item border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                      <span className="ui-icon">🧾</span><span>အော်ဒါများ</span>
+                    </Link>
+                    <button type="button" onClick={handleOpenTelegramReportPreview} className="settings-menu-item border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100">
+                      <span className="ui-icon">📨</span><span>Manual အစီရင်ခံစာ</span>
+                    </button>
+                    <Link href="/auto-report-status" className="settings-menu-item border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100">
+                      <span className="ui-icon">📡</span><span>Auto Report အခြေအနေ</span>
+                    </Link>
+                    <Link href="/vercel-build-logs" className="settings-menu-item border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">
+                      <span className="ui-icon">🛠️</span><span>Build မှတ်တမ်း</span>
+                    </Link>
+                    <Link href="/customer-management" className="settings-menu-item border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">
+                      <span className="ui-icon">👥</span><span>ဖောက်သည်စီမံခန့်ခွဲမှု</span>
+                    </Link>
+                    <Link href="/data-management" className="settings-menu-item border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100">
+                      <span className="ui-icon">🗂️</span><span>ဒေတာစီမံခန့်ခွဲမှု</span>
+                    </Link>
+                    <button type="button" onClick={() => setShowRecycleBin(true)} className="settings-menu-item border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">
+                      <span className="ui-icon">🗑️</span><span>ဖောက်သည်အမှိုက်ပုံး</span>
+                    </button>
+                  </div>
                 </div>
               ) : null}
             </div>

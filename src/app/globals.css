@@ -85,6 +85,41 @@ body {
   overflow-x: hidden;
   background: #ffffff;
   color: #0f172a;
+  font-family: "Noto Sans Myanmar", "Myanmar Text", Padauk, system-ui, sans-serif;
+}
+
+.ui-icon {
+  display: inline-flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  align-items: center;
+  justify-content: center;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.settings-menu-item {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  border-width: 1px;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.settings-menu-item:hover {
+  box-shadow: 0 4px 12px rgb(15 23 42 / 0.08);
+  transform: translateY(-1px);
 }
 
 main,
