@@ -28,13 +28,13 @@ describe("Production bottle catalog", () => {
     expect(getBottleUnit("0.3 ဖြူ")).toBe("ကဒ်");
   });
 
-  it("includes the 100/200 ဆံ့ လေးထောင့် cards in the .3 category", () => {
-    expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့်", capacities: [100, 200] });
+  it("includes the 100/200 ဆံ့ လေးထောင့် 13g/16g cards in their own category", () => {
+    expect(BOTTLE_ITEMS).not.toContainEqual({ type: "လေးထောင့်", capacities: [100, 200] });
     expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 16g", capacities: [100, 200] });
     expect(BOTTLE_ITEMS).toContainEqual({ type: "လေးထောင့် 13g", capacities: [100, 200] });
-    expect(getBottleGroup("လေးထောင့်")).toBe("03-white");
-    expect(getBottleGroup("လေးထောင့် 16g")).toBe("03-white");
-    expect(getBottleGroup("လေးထောင့် 13g")).toBe("03-white");
+    expect(getBottleGroup("လေးထောင့်")).toBe("square");
+    expect(getBottleGroup("လေးထောင့် 16g")).toBe("square");
+    expect(getBottleGroup("လေးထောင့် 13g")).toBe("square");
   });
 
   it("includes the medium dairy, candy, and engine-oil cards", () => {
@@ -43,6 +43,8 @@ describe("Production bottle catalog", () => {
     expect(BOTTLE_ITEMS).toContainEqual({ type: "ချိုချဉ်အသေး", capacities: [100] });
     expect(BOTTLE_ITEMS).toContainEqual({ type: "ချိုချဉ်အကြီး (အချိုရည်ဗူးကြီး)", capacities: [100] });
     expect(BOTTLE_ITEMS).toContainEqual({ type: "အင်ဂျင်ဝိုင်", capacities: [100] });
+    expect(getBottleGroup("ချိုချဉ်အကြီး (အချိုရည်ဗူးကြီး)")).toBe("sweet-drink-large");
+    expect(getBottleGroup("အင်ဂျင်ဝိုင်")).toBe("engine-oil");
     expect(getBottleDisplayName("သေးရှည်")).toBe("ဒိန်ဝိုင်းအလတ်");
   });
 });
