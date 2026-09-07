@@ -34,6 +34,7 @@ function makePoint(range) {
     cashAmount: 0,
     cashRetailCount: 0,
     cashWholesaleCount: 0,
+    bottleOutput: 0,
     activityCount: 0,
   };
 }
@@ -54,7 +55,7 @@ export async function GET(request) {
     const end = new Date(ranges[ranges.length - 1].end.getTime() + DAY_MS);
     const points = ranges.map(makePoint);
 
-    const [ledgers, cashSales, allAuditLogs] = await Promise.all([
+    const [ledgers, cashSales, productionReports, allAuditLogs] = await Promise.all([
       prisma.ledger.findMany({
         where: { date: { gte: start, lt: end } },
         select: { id: true, date: true, type: true, amount: true },
@@ -62,6 +63,10 @@ export async function GET(request) {
       prisma.cashSale.findMany({
         where: { date: { gte: start, lt: end } },
         select: { date: true, saleType: true, amount: true },
+      }),
+      prisma.productionReport.findMany({
+        where: { reportDate: { gte: ranges[0].dateLabel, lte: ranges[ranges.length - 1].dateLabel } },
+        select: { reportDate: true, outputQuantity: true, outputCapacity: true, category: true },
       }),
       prisma.auditLog.findMany({
         where: {
@@ -107,6 +112,12 @@ export async function GET(request) {
       else point.cashRetailCount += 1;
     }
 
+    for (const report of productionReports) {
+      const point = points.find((item) => item.date === report.reportDate);
+      if (!point || report.category === "tube") continue;
+      point.bottleOutput += toAmount(report.outputQuantity) * toAmount(report.outputCapacity);
+    }
+
     for (const log of auditLogs) {
       const point = findPoint(points, log.createdAt);
       if (point) point.activityCount += 1;
@@ -123,6 +134,7 @@ export async function GET(request) {
       cashCount: 0,
       cashAmount: 0,
       activityCount: 0,
+      bottleOutput: 0,
     });
 
     return NextResponse.json({

@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   ensureDatabase: vi.fn(),
   findLedger: vi.fn(),
   findCashSale: vi.fn(),
+  findProduction: vi.fn(),
   findAudit: vi.fn(),
   getRecentMyanmarDayRanges: vi.fn(),
 }));
@@ -16,6 +17,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     ledger: { findMany: mocks.findLedger },
     cashSale: { findMany: mocks.findCashSale },
+    productionReport: { findMany: mocks.findProduction },
     auditLog: { findMany: mocks.findAudit },
   },
 }));
@@ -42,6 +44,7 @@ describe("Dashboard Ledger Pulse API", () => {
     mocks.ensureDatabase.mockReset();
     mocks.findLedger.mockReset().mockResolvedValue([]);
     mocks.findCashSale.mockReset().mockResolvedValue([]);
+    mocks.findProduction.mockReset().mockResolvedValue([]);
     mocks.findAudit.mockReset().mockResolvedValue([]);
     mocks.getRecentMyanmarDayRanges.mockReset().mockReturnValue([
       day("2026-08-25"),
@@ -59,6 +62,11 @@ describe("Dashboard Ledger Pulse API", () => {
     mocks.findCashSale.mockResolvedValue([
       { date: new Date("2026-08-25T14:00:00.000Z"), saleType: "WHOLESALE", amount: 9000 },
       { date: new Date("2026-08-26T14:00:00.000Z"), saleType: "RETAIL", amount: 4000 },
+    ]);
+    mocks.findProduction.mockResolvedValue([
+      { reportDate: "2026-08-25", category: "bottle", outputQuantity: 10, outputCapacity: "100" },
+      { reportDate: "2026-08-25", category: "tube", outputQuantity: 4, outputCapacity: "2500" },
+      { reportDate: "2026-08-26", category: "bottle", outputQuantity: 7, outputCapacity: "200" },
     ]);
     mocks.findAudit.mockResolvedValue([
       { createdAt: new Date("2026-08-25T15:00:00.000Z"), entityType: "Ledger", entityId: "paid-1", hiddenAt: null },
@@ -80,6 +88,7 @@ describe("Dashboard Ledger Pulse API", () => {
         cashAmount: 9000,
         cashWholesaleCount: 1,
         cashRetailCount: 0,
+        bottleOutput: 1000,
         activityCount: 3,
       }),
       expect.objectContaining({
@@ -89,9 +98,10 @@ describe("Dashboard Ledger Pulse API", () => {
         cashCount: 1,
         cashAmount: 4000,
         cashRetailCount: 1,
+        bottleOutput: 1400,
         activityCount: 1,
       }),
-      expect.objectContaining({ date: "2026-08-27", paidCount: 0, debtCount: 0, cashCount: 0, activityCount: 0 }),
+      expect.objectContaining({ date: "2026-08-27", paidCount: 0, debtCount: 0, cashCount: 0, bottleOutput: 0, activityCount: 0 }),
     ]);
     expect(body.data.totals).toEqual({
       paidCount: 2,
@@ -100,6 +110,7 @@ describe("Dashboard Ledger Pulse API", () => {
       debtAmount: 2500,
       cashCount: 2,
       cashAmount: 13000,
+      bottleOutput: 2400,
       activityCount: 4,
     });
   });
