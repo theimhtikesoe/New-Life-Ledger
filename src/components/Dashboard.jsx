@@ -1905,10 +1905,10 @@ export default function Dashboard({ view = "overview" }) {
               aria-label="Customer နှင့် ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
               className="neon-card neon-sweep neon-card-rose flex h-full min-h-[110px] min-w-0 w-full flex-col justify-between rounded-xl border border-rose-200 bg-rose-50/85 p-4 text-left shadow-sm transition-shadow hover:border-rose-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
             >
-              <p className="text-xs font-medium uppercase tracking-wide text-rose-600">Customer နှင့် အကြွေးအခြေအနေ</p>
+              <p className="text-sm font-medium uppercase tracking-wide text-rose-600">Customer နှင့် အကြွေးအခြေအနေ</p>
               <div className="mt-3 grid grid-cols-2 gap-3">
-                <div><p className="text-xs text-rose-500">Customer</p><p className="mt-1 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p><p className="text-xs text-rose-500">ယောက်</p></div>
-                <div><p className="text-xs text-rose-500">ရရန်လက်ကျန်</p><p className="mt-1 break-words text-xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p><p className="text-xs text-rose-500">အသေးစိတ် →</p></div>
+                <div><p className="text-sm text-rose-500">Customer</p><p className="mt-1 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p><p className="text-sm text-rose-500">ယောက်</p></div>
+                <div><p className="text-sm text-rose-500">ရရန်လက်ကျန်</p><p className="mt-1 break-words text-xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p><p className="text-sm text-rose-500">အသေးစိတ် →</p></div>
               </div>
             </Link>
 
@@ -1920,9 +1920,9 @@ export default function Dashboard({ view = "overview" }) {
               aria-label={`${selectedKpiDate} ငွေချေမှုများ အသေးစိတ်ကြည့်ရန်`}
               className={`neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
             >
-              <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေမှုများ</p>
+              <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေမှုများ</p>
               <p className="mt-2 text-2xl font-bold text-emerald-700">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
-              <p className="mt-1 text-xs text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
+              <p className="mt-1 text-sm text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
             </button>
 
             <Link
@@ -1938,7 +1938,7 @@ export default function Dashboard({ view = "overview" }) {
                 <p>ကောင်းမွန် {productionSummary.goodPieces.toLocaleString()} ဗူး</p>
                 <p>ပျက်စီး {productionSummary.wasteQuantity.toLocaleString()} ဗူး</p>
               </div>
-              <p className="mt-auto pt-2 text-xs font-bold text-orange-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
+              <p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
             <Link
               href={`/daily-bottle-sales?date=${encodeURIComponent(selectedKpiDate)}`}
@@ -1948,9 +1948,9 @@ export default function Dashboard({ view = "overview" }) {
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-slate-600 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
                 <p className="mt-2 text-2xl font-black text-slate-800">{bottleSalesLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "—" : `${Number(todayBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
-                <p className="mt-1 text-xs font-bold text-slate-600">{bottleSalesLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "KPI data မရသေးပါ" : `သင့်ငွေ ${formatMoney(todayBottleSales.totalAmount)}`}</p>
+                <p className="mt-1 text-sm font-bold text-slate-600">{bottleSalesLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "KPI data မရသေးပါ" : `တကယ်ရငွေ ${formatMoney(todayBottleSales.totalPaidAmount)}`}</p>
               </div>
-              <p className="pt-2 text-xs font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
+              <p className="pt-2 text-sm font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
             </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
           </div>
