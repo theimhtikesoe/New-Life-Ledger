@@ -12,7 +12,7 @@ export async function GET() {
   try {
     await ensureDatabase();
 
-    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports] = await Promise.all([
+    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports, priceSettings] = await Promise.all([
       prisma.customer.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -41,6 +41,7 @@ export async function GET() {
           amount: true,
           note: true,
           paymentType: true,
+          saleItems: true,
           createdAt: true,
         },
       }),
@@ -110,6 +111,7 @@ export async function GET() {
       prisma.dailySalesSummarySource.findMany({ orderBy: [{ linkedAt: "asc" }, { id: "asc" }] }),
       prisma.dailySalesOpening.findMany({ orderBy: [{ month: "asc" }, { id: "asc" }] }),
       prisma.productionReport.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      prisma.priceSetting.findMany({ orderBy: [{ priceDate: "asc" }, { scope: "asc" }, { productName: "asc" }, { capacity: "asc" }] }),
     ]);
 
     const ledgerTotals = new Map();
@@ -161,6 +163,7 @@ export async function GET() {
           dailySalesSummarySources: dailySalesSummarySources.length,
           dailySalesOpenings: dailySalesOpenings.length,
           productionReports: productionReports.length,
+          priceSettings: priceSettings.length,
         },
         integrity: {
           algorithm: "Customer.current_balance = sum(CREDIT amounts) - sum(DEBIT amounts)",
@@ -190,6 +193,7 @@ export async function GET() {
         dailySalesSummarySources,
         dailySalesOpenings,
         productionReports,
+        priceSettings,
       },
     });
   } catch (error) {

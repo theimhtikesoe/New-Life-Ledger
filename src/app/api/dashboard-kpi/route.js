@@ -30,8 +30,8 @@ export async function GET(request) {
         _count: { _all: true },
         _sum: { amount: true },
       }),
-      prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } }),
-      prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } }),
+      typeof prisma.ledger.findMany === "function" ? prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } }) : Promise.resolve([]),
+      typeof prisma.cashSale.findMany === "function" ? prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } }) : Promise.resolve([]),
     ]);
 
     const bottleItemMap = new Map();
