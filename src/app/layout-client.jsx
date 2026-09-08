@@ -118,6 +118,7 @@ const PAGE_HEADERS = {
   '/orders': 'Telegram Orders',
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
   '/production-history': 'ထွက်ရှိမှုမှတ်တမ်းများ',
+  '/price-settings': 'စျေးနှုန်းသတ်မှတ်ရန်',
   '/vercel-build-logs': 'Vercel Build Logs',
 };
 
@@ -206,6 +207,15 @@ function AppZoomControls({ appZoom, onChange, settingsOpen }) {
         >
           <span aria-hidden="true">A+</span>
         </button>
+        <Link
+          href="/price-settings"
+          aria-label="စျေးနှုန်းသတ်မှတ်ရန် Page သို့သွားမည်"
+          title="စျေးနှုန်းသတ်မှတ်ရန်"
+          tabIndex={settingsOpen ? 0 : -1}
+          className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-amber-500 text-xs font-black text-white shadow-lg shadow-amber-950/30 ring-2 ring-amber-500/20 transition hover:bg-amber-600 active:scale-95"
+        >
+          Ks
+        </Link>
         <button
           type="button"
           onClick={() => updateZoom(-APP_ZOOM_STEP)}
