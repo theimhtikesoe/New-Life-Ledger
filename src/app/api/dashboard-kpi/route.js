@@ -13,7 +13,7 @@ export async function GET(request) {
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
 
-    const [customerStats, paymentStats, cashSaleGroups, creditLedgers, cashSalesForItems] = await Promise.all([
+    const [customerStats, paymentStats, cashSaleGroups] = await Promise.all([
       prisma.customer.aggregate({
         where: { deletedAt: null },
         _count: { _all: true },
@@ -30,9 +30,24 @@ export async function GET(request) {
         _count: { _all: true },
         _sum: { amount: true },
       }),
-      typeof prisma.ledger.findMany === "function" ? prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } }) : Promise.resolve([]),
-      typeof prisma.cashSale.findMany === "function" ? prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } }) : Promise.resolve([]),
     ]);
+
+    // Bottle sales are a secondary KPI. Keep the core dashboard usable while
+    // older deployments finish applying the saleItems migration.
+    let creditLedgers = [];
+    let cashSalesForItems = [];
+    try {
+      [creditLedgers, cashSalesForItems] = await Promise.all([
+        typeof prisma.ledger.findMany === "function"
+          ? prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } })
+          : Promise.resolve([]),
+        typeof prisma.cashSale.findMany === "function"
+          ? prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
+          : Promise.resolve([]),
+      ]);
+    } catch (error) {
+      console.warn("Bottle sales KPI is unavailable until the saleItems migration is applied:", error?.message || error);
+    }
 
     const bottleItemMap = new Map();
     let totalBottles = 0;
