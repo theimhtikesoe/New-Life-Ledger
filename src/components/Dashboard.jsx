@@ -1760,7 +1760,14 @@ export default function Dashboard({ view = "overview" }) {
                     id="dashboard-kpi-date"
                     type="date"
                     value={selectedKpiDate}
-                    onChange={(event) => { setSelectedKpiDate(event.target.value); setProductionDate(event.target.value); }}
+                    onChange={(event) => {
+                      const nextDate = event.target.value;
+                      setKpiDateLoading(true);
+                      setProductionLoading(true);
+                      setKpiDateError("");
+                      setSelectedKpiDate(nextDate);
+                      setProductionDate(nextDate);
+                    }}
                     className="rounded-md border border-cyan-200 bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800 shadow-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-200"
                     aria-label="KPI ရက်စွဲရွေးရန်"
                   />
@@ -1939,11 +1946,11 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-orange-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးထွက်ရှိမှု</p>
-                <p className="mt-2 text-2xl font-black text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
+                <p className="mt-2 text-2xl font-black text-orange-800">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
               </div>
               <div className="mt-2 space-y-0.5 text-sm font-bold text-orange-700 sm:text-base">
-                <p>ကောင်းမွန် {productionSummary.goodPieces.toLocaleString()} ဗူး</p>
-                <p>ပျက်စီး {productionSummary.wasteQuantity.toLocaleString()} ဗူး</p>
+                <p>{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `ကောင်းမွန် ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p>
+                <p>{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `ပျက်စီး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p>
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -1954,8 +1961,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-slate-600 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
-                <p className="mt-2 text-2xl font-black text-slate-800">{bottleSalesLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "—" : `${Number(todayBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
-                <p className="mt-1 text-sm font-bold text-slate-600">{bottleSalesLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "KPI data မရသေးပါ" : `တကယ်ရငွေ ${formatMoney(todayBottleSales.totalPaidAmount)}`}</p>
+                <p className="mt-2 text-2xl font-black text-slate-800">{bottleSalesLoading || kpiDateLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "—" : `${Number(todayBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
+                <p className="mt-1 text-sm font-bold text-slate-600">{bottleSalesLoading || kpiDateLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "KPI data မရသေးပါ" : `တကယ်ရငွေ ${formatMoney(todayBottleSales.totalPaidAmount)}`}</p>
               </div>
               <p className="pt-2 text-sm font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
             </Link>
