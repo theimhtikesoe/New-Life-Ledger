@@ -36,87 +36,95 @@ function addItems(target, saleItems) {
   }
 }
 
+function buildCustomerRows(rows) {
+  const customerMap = new Map();
+  for (const row of rows) {
+    if (!Array.isArray(row.saleItems) || !row.saleItems.length) continue;
+    const customer = row.customer || { id: "unknown", name: "Unknown", phone: null };
+    const current = customerMap.get(customer.id) || {
+      customer,
+      totalPaidAmount: 0,
+      items: new Map(),
+      transactions: 0,
+    };
+    current.transactions += 1;
+    addItems(current.items, row.saleItems);
+    const itemAmount = row.saleItems.reduce((sum, item) => sum + Math.max(0, Math.round(Number(item?.totalAmount || 0))), 0);
+    current.totalPaidAmount += Number.isFinite(Number(row.amount)) ? Math.max(0, Math.round(Number(row.amount))) : itemAmount;
+    customerMap.set(customer.id, current);
+  }
+
+  return [...customerMap.values()]
+    .map((entry) => {
+      const items = [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount);
+      const totalBottles = items.reduce((sum, item) => sum + item.bottleCount, 0);
+      const totalAmount = items.reduce((sum, item) => sum + item.totalAmount, 0);
+      const totalCards = items.reduce((sum, item) => sum + item.cardCount, 0);
+      return { ...entry, totalCards, totalBottles, totalAmount, difference: totalAmount - entry.totalPaidAmount, items };
+    })
+    .sort((a, b) => b.totalBottles - a.totalBottles);
+}
+
+function summarizeRows(rows) {
+  return {
+    totalBottles: rows.reduce((sum, row) => sum + row.totalBottles, 0),
+    totalAmount: rows.reduce((sum, row) => sum + row.totalAmount, 0),
+    totalPaidAmount: rows.reduce((sum, row) => sum + row.totalPaidAmount, 0),
+  };
+}
+
+function summarizeItems(rows) {
+  const itemMap = new Map();
+  for (const row of rows) addItems(itemMap, row.items);
+  return [...itemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount);
+}
+
 export async function GET(request) {
   try {
     await ensureDatabase();
     const date = new URL(request.url).searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(date);
     const ledgers = await prisma.ledger.findMany({
-        where: { date: { gte: start, lt: end }, type: "DEBIT" },
-        select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
-        orderBy: { date: "asc" },
-      });
+      where: { date: { gte: start, lt: end }, type: "DEBIT" },
+      select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      orderBy: { date: "asc" },
+    });
     const creditLedgers = await prisma.ledger.findMany({
-        where: { date: { gte: start, lt: end }, type: "CREDIT" },
-        select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
-        orderBy: { date: "asc" },
-      });
+      where: { date: { gte: start, lt: end }, type: "CREDIT" },
+      select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      orderBy: { date: "asc" },
+    });
     const cashSales = await prisma.cashSale.findMany({
-        where: { date: { gte: start, lt: end } },
-        select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
-        orderBy: { date: "asc" },
-      });
+      where: { date: { gte: start, lt: end } },
+      select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      orderBy: { date: "asc" },
+    });
 
-    const customerMap = new Map();
-    for (const row of [...ledgers, ...cashSales]) {
-      if (!Array.isArray(row.saleItems) || !row.saleItems.length) continue;
-      const customer = row.customer || { id: "unknown", name: "Unknown", phone: null };
-      const current = customerMap.get(customer.id) || {
-        customer,
-        totalPaidAmount: 0,
-        items: new Map(),
-        transactions: 0,
-      };
-      current.transactions += 1;
-      addItems(current.items, row.saleItems);
-      const itemAmount = row.saleItems.reduce((sum, item) => sum + Math.max(0, Math.round(Number(item?.totalAmount || 0))), 0);
-      current.totalPaidAmount += Number.isFinite(Number(row.amount)) ? Math.max(0, Math.round(Number(row.amount))) : itemAmount;
-      customerMap.set(customer.id, current);
-    }
+    const paidCustomers = buildCustomerRows(ledgers);
+    const cashCustomers = buildCustomerRows(cashSales);
+    const customers = buildCustomerRows([...ledgers, ...cashSales]);
 
-    const customers = [...customerMap.values()]
-      .map((entry) => {
-        const items = [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount);
-        const totalBottles = items.reduce((sum, item) => sum + item.bottleCount, 0);
-        const totalAmount = items.reduce((sum, item) => sum + item.totalAmount, 0);
-        const totalCards = items.reduce((sum, item) => sum + item.cardCount, 0);
-        return { ...entry, totalCards, totalBottles, totalAmount, difference: totalAmount - entry.totalPaidAmount, items };
-      })
-      .sort((a, b) => b.totalBottles - a.totalBottles);
     const creditItemMap = new Map();
-    const creditCustomerMap = new Map();
-    let creditTotalBottles = 0;
-    let creditTotalAmount = 0;
-    for (const row of creditLedgers) {
-      if (!Array.isArray(row.saleItems)) continue;
-      const customer = row.customer || { id: "unknown", name: "Unknown", phone: null };
-      const customerEntry = creditCustomerMap.get(customer.id) || { customer, items: new Map() };
-      addItems(creditItemMap, row.saleItems);
-      addItems(customerEntry.items, row.saleItems);
-      creditCustomerMap.set(customer.id, customerEntry);
-    }
-    const creditCustomers = [...creditCustomerMap.values()]
-      .map((entry) => {
-        const items = [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount);
-        const totalCards = items.reduce((sum, item) => sum + item.cardCount, 0);
-        const totalBottles = items.reduce((sum, item) => sum + item.bottleCount, 0);
-        const totalAmount = items.reduce((sum, item) => sum + item.totalAmount, 0);
-        return { ...entry, totalCards, totalBottles, totalAmount, items };
-      })
-      .sort((a, b) => b.totalBottles - a.totalBottles);
-    creditTotalBottles = creditCustomers.reduce((sum, row) => sum + row.totalBottles, 0);
-    creditTotalAmount = creditCustomers.reduce((sum, row) => sum + row.totalAmount, 0);
+    for (const row of creditLedgers) addItems(creditItemMap, row.saleItems);
+    const creditCustomers = buildCustomerRows(creditLedgers).map(({ totalPaidAmount, difference, ...customer }) => customer);
+    const creditSummary = summarizeRows(creditCustomers.map((row) => ({ ...row, totalPaidAmount: 0 })));
+    const paidSummary = summarizeRows(paidCustomers);
+    const cashSummary = summarizeRows(cashCustomers);
+    const summary = summarizeRows(customers);
+
     return NextResponse.json({ data: {
       date,
       totalCustomers: customers.length,
-      totalBottles: customers.reduce((sum, row) => sum + row.totalBottles, 0),
-      totalAmount: customers.reduce((sum, row) => sum + row.totalAmount, 0),
-      totalPaidAmount: customers.reduce((sum, row) => sum + row.totalPaidAmount, 0),
+      totalBottles: summary.totalBottles,
+      totalAmount: summary.totalAmount,
+      totalPaidAmount: summary.totalPaidAmount,
       totalDifference: customers.reduce((sum, row) => sum + (row.totalAmount - row.totalPaidAmount), 0),
       customers,
+      paidBottleSales: { ...paidSummary, customers: paidCustomers, items: summarizeItems(paidCustomers) },
+      cashBottleSales: { ...cashSummary, customers: cashCustomers, items: summarizeItems(cashCustomers) },
       creditBottleSales: {
-        totalBottles: creditTotalBottles,
-        totalAmount: creditTotalAmount,
+        totalBottles: creditSummary.totalBottles,
+        totalAmount: creditSummary.totalAmount,
         items: [...creditItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount),
         customers: creditCustomers,
       },
