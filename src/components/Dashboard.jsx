@@ -1966,7 +1966,7 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="pt-2 text-sm font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
             </Link>
-            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
+            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
           </div>
             </section>
           </>

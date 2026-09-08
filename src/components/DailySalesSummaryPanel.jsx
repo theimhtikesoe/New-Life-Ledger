@@ -72,7 +72,7 @@ function toneClasses(tone) {
     : "border-amber-200 bg-amber-50 text-amber-900";
 }
 
-export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0 }) {
+export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0, dateLoading = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [date, setDate] = useState(() => selectedDate || formatMyanmarDateInputValue());
   const [summary, setSummary] = useState(null);
@@ -265,11 +265,11 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
         <p className="text-sm font-black uppercase tracking-wide text-indigo-700 sm:text-base">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
-        <p className="mt-2 flex min-h-8 items-center text-2xl font-black text-indigo-900">{loading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
+        <p className="mt-2 flex min-h-8 items-center text-2xl font-black text-indigo-900">{loading || dateLoading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
         <div className="mt-2 min-h-[4.5rem] space-y-0.5 text-sm font-bold text-indigo-700 sm:text-base">
-          <p>လက်ငင်း {totalCount} ခု</p>
-          <p>လက်လီ {retailCount} ခု</p>
-          <p>လက်ကား {wholesaleCount} ခု</p>
+          <p>{loading || dateLoading ? "ရယူနေသည်..." : `လက်ငင်း ${totalCount} ခု`}</p>
+          <p>{loading || dateLoading ? "ရယူနေသည်..." : `လက်လီ ${retailCount} ခု`}</p>
+          <p>{loading || dateLoading ? "ရယူနေသည်..." : `လက်ကား ${wholesaleCount} ခု`}</p>
         </div>
         <p className="mt-auto pt-2 text-xs font-bold text-indigo-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
       </button>
