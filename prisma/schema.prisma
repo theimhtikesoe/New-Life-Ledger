@@ -170,6 +170,7 @@ model Ledger {
   amount      Int
   note        String?
   paymentType String?
+  saleItems   Json?
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
 
@@ -190,6 +191,7 @@ model CashSale {
   note             String?
   paymentType      String?
   paymentBreakdown Json?
+  saleItems        Json?
   date             DateTime @default(now())
   createdAt        DateTime @default(now())
 
@@ -356,4 +358,24 @@ model ProductionWorker {
   updatedAt DateTime @updatedAt
 
   @@index([active])
+}
+
+model PriceSetting {
+  id             String   @id @default(uuid()) @db.Uuid
+  priceDate      String
+  scope          String   @default("ITEM")
+  categoryKey    String
+  productKey     String
+  productType    String   @default("bottle")
+  productName    String
+  capacity       Int      @default(0)
+  bottlesPerCard Int      @default(0)
+  pricePerBottle Int
+  pricePerCard   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([priceDate, scope, productKey])
+  @@index([priceDate])
+  @@index([productKey])
 }

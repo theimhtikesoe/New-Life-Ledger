@@ -14,6 +14,7 @@ const REQUIRED_TABLES = [
   "ProductionReport",
   "ProductionWorker",
   "CashSale",
+  "PriceSetting",
   "DailySalesSummary",
   "DailySalesSummarySource",
   "DailySalesOpening",
@@ -27,6 +28,8 @@ const REQUIRED_TABLES = [
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
+const REQUIRED_LEDGER_COLUMNS = ["saleItems"];
+const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
 const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit"];
 const REQUIRED_DAILY_SALES_COLUMNS = [
   "enteredAt",
@@ -67,6 +70,20 @@ async function hasExpectedSchema() {
         SELECT COUNT(*)::int
         FROM information_schema.columns
         WHERE table_schema = 'public'
+          AND table_name = 'Ledger'
+          AND column_name IN (${Prisma.join(REQUIRED_LEDGER_COLUMNS)})
+      ) AS ledger_column_count,
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'CashSale'
+          AND column_name IN (${Prisma.join(REQUIRED_CASH_SALE_COLUMNS)})
+      ) AS cash_sale_column_count,
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
           AND table_name = 'ProductionReport'
           AND column_name IN (${Prisma.join(REQUIRED_PRODUCTION_COLUMNS)})
       ) AS production_column_count,
@@ -81,6 +98,8 @@ async function hasExpectedSchema() {
   return Number(result[0]?.table_count || 0) === REQUIRED_TABLES.length
     && Number(result[0]?.auto_report_column_count || 0) === REQUIRED_AUTO_REPORT_COLUMNS.length
     && Number(result[0]?.customer_column_count || 0) === REQUIRED_CUSTOMER_COLUMNS.length
+    && Number(result[0]?.ledger_column_count || 0) === REQUIRED_LEDGER_COLUMNS.length
+    && Number(result[0]?.cash_sale_column_count || 0) === REQUIRED_CASH_SALE_COLUMNS.length
     && Number(result[0]?.production_column_count || 0) === REQUIRED_PRODUCTION_COLUMNS.length
     && Number(result[0]?.daily_sales_column_count || 0) === REQUIRED_DAILY_SALES_COLUMNS.length;
 }
@@ -501,6 +520,8 @@ export async function ensureDatabase() {
         `ALTER TABLE "UnverifiedKpay" ADD COLUMN IF NOT EXISTS "suggestedCustomerId" UUID`,
       );
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "paymentType" TEXT`);
+      await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "saleItems" JSONB`);
+      await setupQuery(`ALTER TABLE "CashSale" ADD COLUMN IF NOT EXISTS "saleItems" JSONB`);
       await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)`);
 
       // Create indexes for faster queries
@@ -587,6 +608,26 @@ export async function ensureDatabase() {
         )
       `);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionWorker_active_idx" ON "ProductionWorker"("active")`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "PriceSetting" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "priceDate" TEXT NOT NULL,
+          "scope" TEXT NOT NULL DEFAULT 'ITEM',
+          "categoryKey" TEXT NOT NULL,
+          "productKey" TEXT NOT NULL,
+          "productType" TEXT NOT NULL DEFAULT 'bottle',
+          "productName" TEXT NOT NULL,
+          "capacity" INTEGER NOT NULL DEFAULT 0,
+          "bottlesPerCard" INTEGER NOT NULL DEFAULT 0,
+          "pricePerBottle" INTEGER NOT NULL,
+          "pricePerCard" INTEGER NOT NULL DEFAULT 0,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT "PriceSetting_priceDate_scope_productKey_key" UNIQUE ("priceDate", "scope", "productKey")
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "PriceSetting_priceDate_idx" ON "PriceSetting"("priceDate")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "PriceSetting_productKey_idx" ON "PriceSetting"("productKey")`);
       const orderTableCheck = await prisma.$queryRaw`
         SELECT count(*)
         FROM information_schema.tables
