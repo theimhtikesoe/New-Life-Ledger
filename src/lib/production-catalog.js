@@ -10,8 +10,6 @@ export const BOTTLE_ITEMS = [
   { type: "လေးထောင့် 13g", capacities: [100, 200] },
   { type: "8 ဒေါင့် ဖြူ", capacities: [100, 250] },
   { type: "8 ဒေါင့် ပြာ", capacities: [100, 250] },
-  { type: "8 ဒေါင့် (S+1)", capacities: [100, 250] },
-  { type: "8 ဒေါင့် (S+S)", capacities: [100, 250, 500] },
   { type: "ဒိန်သေး", capacities: [100, 250] },
   { type: "ဒိန်သေး (S+1)", capacities: [100, 250] },
   { type: "ဒိန်သေး (S+S)", capacities: [250] },
@@ -29,7 +27,8 @@ export const BOTTLE_ITEMS = [
   { type: "0.5 ဖြူ", capacities: [100, 270] },
   { type: "0.6 ဖြူ", capacities: [100, 250] },
   { type: "0.6 ပြာ", capacities: [100, 250] },
-  { type: "25 ကျပ်သား", capacities: [100, 210] },
+  { type: "25 ကျပ်သား အဖြူ", capacities: [100, 210] },
+  { type: "25 ကျပ်သား အပြာ", capacities: [100, 210] },
   { type: "30 ကျပ်သား", capacities: [100, 320] },
   { type: "နွားသေး", capacities: [100, 250] },
   { type: "နွားကြီး", capacities: [100, 250] },
@@ -48,7 +47,6 @@ export const BOTTLE_GROUPS = [
   { key: "square-golden", label: "လေးထောင့် / ရွှေဝိုင်း", description: "လေးထောင့် 13g နှင့် ရွှေဝိုင်း" },
   { key: "08-white", label: "8 ဒေါင့် အဖြူ", description: "8 ဒေါင့် အဖြူ" },
   { key: "08-blue", label: "8 ဒေါင့် အပြာ", description: "8 ဒေါင့် အပြာ" },
-  { key: "08-special", label: "8 ဒေါင့် S+1 / S+S", description: "8 ဒေါင့် S+1 နှင့် S+S" },
   { key: "yogurt", label: "ဒိန်ချဉ်", description: "ဒိန်သေးနှင့် ဒိန်ကြီး" },
   { key: "025", label: ".25 / .25 ပြာ", description: "0.25 နှင့် 0.25 ပြာ" },
   { key: "small-candy", label: "ချိုချဉ်အသေး", description: "ချိုချဉ်အသေး သီးသန့်စျေး" },
@@ -57,7 +55,8 @@ export const BOTTLE_GROUPS = [
   { key: "engine-oil", label: "အင်ဂျင်ဝိုင်", description: "အင်ဂျင်ဝိုင် 100 ဆံ့" },
   { key: "05", label: ".5", description: "0.5 ဖြူ" },
   { key: "06", label: ".6", description: "0.6 ဖြူ / ပြာ" },
-  { key: "25", label: "25 ကျပ်သား", description: "25 ကျပ်သား" },
+  { key: "25-white", label: "2.5 အဖြူ", description: "25 ကျပ်သား အဖြူ" },
+  { key: "25-blue", label: "2.5 အပြာ", description: "25 ကျပ်သား အပြာ" },
   { key: "30", label: "30 ကျပ်သား", description: "30 ကျပ်သား" },
   { key: "45", label: "45 ကျပ်သား", description: "45 ကျပ်သား" },
   { key: "cow", label: "နွား", description: "နွားသေး / နွားကြီး" },
@@ -70,7 +69,6 @@ export function getBottleGroup(type) {
   const value = String(type || "");
   if (value === "8 ဒေါင့် ဖြူ") return "08-white";
   if (value === "8 ဒေါင့် ပြာ") return "08-blue";
-  if (value.startsWith("8 ဒေါင့်")) return "08-special";
   if (value.startsWith("လေးထောင့်") || value === "ရွှေဝိုင်း") return "square-golden";
   if (value === "0.3 ဖြူ") return "03-white";
   if (value.includes("0.3 ပြာ")) return "03-blue";
@@ -82,7 +80,8 @@ export function getBottleGroup(type) {
   if (value === "လုံးချော (16g)") return "round-16g";
   if (value.startsWith("0.5")) return "05";
   if (value.startsWith("0.6")) return "06";
-  if (value.startsWith("25 ")) return "25";
+  if (value === "25 ကျပ်သား အဖြူ") return "25-white";
+  if (value === "25 ကျပ်သား အပြာ") return "25-blue";
   if (value.startsWith("30 ")) return "30";
   if (value.startsWith("45 ")) return "45";
   if (value.startsWith("နွား")) return "cow";
