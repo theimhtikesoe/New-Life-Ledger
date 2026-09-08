@@ -218,7 +218,7 @@ const DASHBOARD_SNAPSHOT_KEY = "new-life-ledger:dashboard-snapshot:v1";
 function readDashboardSnapshot() {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(DASHBOARD_SNAPSHOT_KEY);
+    const raw = window.localStorage.getItem(DASHBOARD_SNAPSHOT_KEY) || window.sessionStorage.getItem(DASHBOARD_SNAPSHOT_KEY);
     const snapshot = raw ? JSON.parse(raw) : null;
     return snapshot && typeof snapshot === "object" ? snapshot : null;
   } catch {
@@ -230,7 +230,7 @@ function saveDashboardSnapshot(partial) {
   if (typeof window === "undefined" || !partial || typeof partial !== "object") return;
   try {
     const current = readDashboardSnapshot() || {};
-    window.sessionStorage.setItem(DASHBOARD_SNAPSHOT_KEY, JSON.stringify({ ...current, ...partial, savedAt: Date.now() }));
+    window.localStorage.setItem(DASHBOARD_SNAPSHOT_KEY, JSON.stringify({ ...current, ...partial, savedAt: Date.now() }));
   } catch (error) {
     console.warn("Dashboard snapshot could not be saved:", error);
   }
@@ -329,7 +329,7 @@ export default function Dashboard({ view = "overview" }) {
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
   // A cached KPI may be stale. Start in loading state so the bottle card never
   // presents a cached/empty 0 as the current result before the fresh request.
-  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(true);
+  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(() => !readDashboardSnapshot()?.dashboardKpi);
   const [dashboardKpiError, setDashboardKpiError] = useState("");
   const [productionRows, setProductionRows] = useState([]);
   const [salesCatalog, setSalesCatalog] = useState([]);
@@ -753,8 +753,7 @@ export default function Dashboard({ view = "overview" }) {
     if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
-    setDashboardKpi(null);
-    setDashboardKpiLoading(true);
+    setDashboardKpiLoading((current) => (dashboardKpi ? current : true));
     setDashboardKpiError("");
     setLoadingTimedOut(false);
     setDataLoadError("");
@@ -879,7 +878,7 @@ export default function Dashboard({ view = "overview" }) {
         setLoadingStage("");
       }
     }
-  }, [clearAutoRetryTimers, loadOverdueDebts, search, showAlert]);
+  }, [clearAutoRetryTimers, dashboardKpi, loadOverdueDebts, search, showAlert]);
 
   // iPhone standalone PWAs can pause while they are in the background. Refresh
   // when the app becomes visible again, or immediately when the connection returns.
@@ -1051,7 +1050,7 @@ export default function Dashboard({ view = "overview" }) {
   const todayCashRetail = dashboardKpi?.retailCount ?? todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length;
   const todayCashWholesale = dashboardKpi?.wholesaleCount ?? (todayCashSales.length - todayCashRetail);
   const todayBottleSales = dashboardKpi?.bottleSales || { totalBottles: 0, totalAmount: 0, items: [] };
-  const bottleSalesLoading = dashboardKpiLoading || kpiDateLoading;
+  const bottleSalesLoading = (dashboardKpiLoading && !dashboardKpi) || kpiDateLoading;
   const productionSummary = useMemo(() => summarizeProduction(productionRows), [productionRows]);
 
   // Pagination logic
