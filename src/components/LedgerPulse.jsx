@@ -26,8 +26,11 @@ function PlantColumn({ point, maxValues, index }) {
       <div className="flex h-40 w-full items-end justify-center gap-0.5 rounded-lg border border-amber-100 bg-white/80 px-1 pb-2 pt-3 shadow-inner sm:h-48 sm:gap-1">
         {series.map((item, seriesIndex) => {
           const amount = Number(point[item.key] || 0);
-          const maxValue = Math.max(1, Number(maxValues[item.key] || 0));
-          const height = amount > 0 ? Math.max(14, Math.round((amount / maxValue) * 100)) : 3;
+          // Leave 15% headroom above the seven-day maximum. This prevents a
+          // single day's bar from visually overflowing to 100% and makes the
+          // relative comparison easier to read on mobile.
+          const maxValue = Math.max(1, Number(maxValues[item.key] || 0) * 1.15);
+          const height = amount > 0 ? Math.min(92, Math.max(14, Math.round((amount / maxValue) * 100))) : 3;
           return (
               <div key={item.key} className="relative flex h-full w-1/5 max-w-6 items-end justify-center sm:max-w-8">
               <div
@@ -98,7 +101,7 @@ export default function LedgerPulse({ data, loading = false, error = "" }) {
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-400" />အကြွေးတိုး</span>
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-sky-400" />လက်ငင်း</span>
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />ဗူးထွက်ရှိမှု</span>
-            <span className="ml-auto text-slate-500">အမြင့် = အမျိုးအစားအလိုက် ၇ ရက်အမြင့်ဆုံးကို 100%</span>
+            <span className="ml-auto text-slate-500">အမြင့် = ၇ ရက်အတွင်း အမြင့်ဆုံးကို ချိန်ညှိပြထားသည် (headroom 15%)</span>
           </div>
         </>
       ) : (
