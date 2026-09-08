@@ -303,6 +303,7 @@ export default function Dashboard({ view = "overview" }) {
     note: "",
     date: "",
     paymentType: "",
+    singlePaymentAmount: "",
     paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
     saleItems: [],
   });
@@ -462,7 +463,7 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     const resetDraftState = () => {
       setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
-      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
+      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
       setEditForm({ name: "", phone: "", routeTag: "" });
       setEditingCustomer(null);
       setSearch("");
@@ -1101,14 +1102,17 @@ export default function Dashboard({ view = "overview" }) {
       const hasCashSaleBreakdown = isCashSale && hasPaymentBreakdownInput(ledgerForm.paymentBreakdown);
       const cashSaleBreakdownTotal = hasCashSaleBreakdown ? paymentSplitTotal(ledgerForm.paymentBreakdown) : 0;
       const listedSaleAmount = getSaleItemsTotal(ledgerForm.saleItems);
+      const singlePaymentValue = String(ledgerForm.singlePaymentAmount ?? "").trim();
+      const hasSinglePayment = isCashSale && !hasCashSaleBreakdown && singlePaymentValue !== "";
+      const singlePaymentAmount = Math.max(0, Math.round(Number(singlePaymentValue || 0)));
       const discountAmount = Math.max(0, Math.round(Number(ledgerForm.paymentBreakdown?.discount || 0)));
-      const cashSaleAmount = listedSaleAmount > 0 && hasCashSaleBreakdown
+      const cashSaleAmount = hasCashSaleBreakdown
         ? Math.max(0, listedSaleAmount - discountAmount)
-        : (Number.isFinite(amount) ? amount : 0);
+        : hasSinglePayment ? singlePaymentAmount : (Number.isFinite(amount) ? amount : 0);
       if (hasCashSaleBreakdown && cashSaleBreakdownTotal !== cashSaleAmount) {
         throw new Error(paymentBreakdownValidationMessage(ledgerForm.paymentBreakdown, cashSaleAmount));
       }
-      const amountToSave = isCashSale && listedSaleAmount > 0 && hasCashSaleBreakdown ? cashSaleBreakdownTotal : amount;
+      const amountToSave = hasCashSaleBreakdown ? cashSaleBreakdownTotal : hasSinglePayment ? singlePaymentAmount : amount;
       
       // Cash sales are stored outside Ledger and never change Customer.current_balance.
       if (!isCashSale) {
@@ -1137,6 +1141,16 @@ export default function Dashboard({ view = "overview" }) {
             discount: discountAmount,
             listedAmount: listedSaleAmount || amount,
             paidAmount: cashSaleBreakdownTotal,
+          } : hasSinglePayment ? {
+            CASH: 0,
+            KPAY: 0,
+            BANK: 0,
+            WAVE: 0,
+            SPECIAL: 0,
+            [ledgerForm.paymentType || "CASH"]: singlePaymentAmount,
+            discount: listedSaleAmount > 0 ? Math.max(0, listedSaleAmount - singlePaymentAmount) : 0,
+            listedAmount: listedSaleAmount || amount,
+            paidAmount: singlePaymentAmount,
           } : undefined,
           date: ledgerForm.date || null,
         }),
@@ -2334,6 +2348,22 @@ export default function Dashboard({ view = "overview" }) {
                               <option value="BANK">Bank Transfer</option>
                               <option value="WAVE">Wave Money</option>
                             </select>
+                            {ledgerForm.type === "CASH_SALE" && !hasCashSaleBreakdown ? (
+                              <label className="mt-2 block rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900">
+                                {ledgerForm.paymentType === "KPAY" ? "KPay" : ledgerForm.paymentType === "BANK" ? "Bank" : ledgerForm.paymentType === "WAVE" ? "Wave" : "Cash"} တစ်ခုတည်းပေးချေငွေ (Ks)
+                                <input
+                                  type="number"
+                                  min="0"
+                                  inputMode="numeric"
+                                  placeholder={formatMoney(cashSaleListedAmount).replace(" Ks", "")}
+                                  value={ledgerForm.singlePaymentAmount || ""}
+                                  onChange={(event) => setLedgerForm({ ...ledgerForm, singlePaymentAmount: event.target.value })}
+                                  className="mt-1 h-11 w-full rounded-lg border border-emerald-200 bg-white px-3 text-right text-base font-black text-slate-900 outline-none focus:border-emerald-500"
+                                  disabled={isSubmitting}
+                                />
+                                <span className="mt-1 block text-[11px] font-normal text-emerald-800">Cash/KPay/Bank တစ်မျိုးတည်းရှင်းလျှင် ဒီနေရာမှာထည့်ပါ။ ခွဲရှင်းလိုလျှင် အောက်က Breakdown fields ကိုသာသုံးပါ။</span>
+                              </label>
+                            ) : null}
                           </div>
 
                           {ledgerForm.type === "CASH_SALE" && (

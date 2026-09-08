@@ -81,8 +81,7 @@ export async function POST(request, { params }) {
     if (!customer || customer.deletedAt) return NextResponse.json({ error: "Customer မတွေ့ပါ သို့မဟုတ် Recycle Bin ထဲ ရှိနေပါသည်။" }, { status: 404 });
     const saleType = body.saleType ? normalizeCashSaleType(body.saleType) : customerDefaultCashSaleType(customer);
 
-    const result = await prisma.$transaction(async (tx) => {
-      const cashSale = await tx.cashSale.create({
+    const cashSale = await prisma.cashSale.create({
         data: {
           customerId: customer.id,
           saleType,
@@ -99,8 +98,9 @@ export async function POST(request, { params }) {
         },
         select: cashSaleSelect,
       });
+    try {
       await writeAuditLog({
-        db: tx,
+        db: prisma,
         actorName: getActorName(request),
         action: "CASH_SALE",
         entityType: "CashSale",
@@ -119,9 +119,10 @@ export async function POST(request, { params }) {
           wholesaleTracking: getWholesaleTracking(amount),
         },
       });
-      return { cashSale };
-    });
-    return NextResponse.json({ data: result }, { status: 201 });
+    } catch (auditError) {
+      console.warn("Cash sale saved but audit log could not be written:", auditError?.message || auditError);
+    }
+    return NextResponse.json({ data: { cashSale } }, { status: 201 });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: error.message?.includes("ပမာဏ") || error.message?.includes("ရက်စွဲ") ? 400 : 500 });
   }

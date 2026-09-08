@@ -22,6 +22,6 @@ describe("Dashboard loading recovery", () => {
   it("calculates the cash-sale paid amount from listed total minus discount", () => {
     expect(source).toContain("const listedSaleAmount = getSaleItemsTotal(ledgerForm.saleItems);");
     expect(source).toContain("const discountAmount = Math.max(0, Math.round(Number(ledgerForm.paymentBreakdown?.discount || 0)))");
-    expect(source).toContain("const amountToSave = isCashSale && listedSaleAmount > 0 && hasCashSaleBreakdown ? cashSaleBreakdownTotal : amount;");
+    expect(source).toContain("const amountToSave = hasCashSaleBreakdown ? cashSaleBreakdownTotal : hasSinglePayment ? singlePaymentAmount : amount;");
   });
 });
