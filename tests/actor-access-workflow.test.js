@@ -8,6 +8,7 @@ const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"
 const productionSource = fs.readFileSync(path.join(root, "src/components/ProductionEntryPage.jsx"), "utf8");
 const middlewareSource = fs.readFileSync(path.join(root, "src/middleware.js"), "utf8");
 const globalStylesSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
+const dashboardSource = fs.readFileSync(path.join(root, "src/components/Dashboard.jsx"), "utf8");
 const sharedHeaderRouteSources = [
   "src/app/activity/page.js",
   "src/app/auto-report-status/page.js",
@@ -96,6 +97,8 @@ describe("Actor access workflow", () => {
     expect(middlewareSource).toContain('PRODUCTION_API_PATHS');
     expect(middlewareSource).toContain('path !== "/production"');
     expect(layoutSource).toContain("SharedPageHeader pathname={pathname} actorName={actorName}");
+    expect(dashboardSource).toContain('isLedgerView && dashboardActorName !== "ဆောင်းဦး"');
+    expect(dashboardSource).toContain('setDashboardActorName(initialActorName.trim())');
     expect(layoutSource).toContain("formatMyanmarClock(currentTime)");
     expect(layoutSource).toContain("text-2xl font-bold tracking-wider");
     expect(layoutSource).not.toContain("sm:text-5xl");
