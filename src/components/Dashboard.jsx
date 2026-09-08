@@ -1809,6 +1809,9 @@ export default function Dashboard({ view = "overview" }) {
                     <Link href="/data-management" className="settings-menu-item border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100">
                       <span className="ui-icon">🗂️</span><span>ဒေတာစီမံခန့်ခွဲမှု</span>
                     </Link>
+                    <Link href="/price-settings" className="settings-menu-item border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+                      <span className="ui-icon">💰</span><span>ဗူး Category / Item Cost</span>
+                    </Link>
                     <button type="button" onClick={() => setShowRecycleBin(true)} className="settings-menu-item border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">
                       <span className="ui-icon">🗑️</span><span>ဖောက်သည်အမှိုက်ပုံး</span>
                     </button>
