@@ -1783,6 +1783,10 @@ export default function Dashboard({ view = "overview" }) {
                 <span>Settings</span>
                 <span className="shrink-0" aria-hidden="true">{expandedDashboardMenu === "settings" ? "⌃" : "⌄"}</span>
               </button>
+              <Link href="/price-settings" className="neon-menu-button neon-card-indigo flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-3 text-center text-base font-black leading-5 text-indigo-700 shadow-sm transition-colors hover:bg-indigo-100">
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💰</span>
+                <span>ဗူး Category / Item Cost</span>
+              </Link>
 
               {expandedDashboardMenu === "settings" ? (
                 <div id="dashboard-settings-menu" className="col-span-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -1808,9 +1812,6 @@ export default function Dashboard({ view = "overview" }) {
                     </Link>
                     <Link href="/data-management" className="settings-menu-item border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100">
                       <span className="ui-icon">🗂️</span><span>ဒေတာစီမံခန့်ခွဲမှု</span>
-                    </Link>
-                    <Link href="/price-settings" className="settings-menu-item border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
-                      <span className="ui-icon">💰</span><span>ဗူး Category / Item Cost</span>
                     </Link>
                     <button type="button" onClick={() => setShowRecycleBin(true)} className="settings-menu-item border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100">
                       <span className="ui-icon">🗑️</span><span>ဖောက်သည်အမှိုက်ပုံး</span>
