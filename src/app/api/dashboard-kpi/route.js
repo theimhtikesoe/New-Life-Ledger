@@ -41,12 +41,12 @@ export async function GET(request) {
     let cashSalesForItems = [];
     try {
       const ledgerRows = typeof prisma.ledger.findMany === "function"
-        ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, saleItems: true } })
+        ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, amount: true, saleItems: true } })
         : [];
       paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
       creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
       cashSalesForItems = typeof prisma.cashSale.findMany === "function"
-        ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
+        ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { amount: true, saleItems: true } })
         : [];
     } catch (error) {
       console.warn("Bottle sales KPI is unavailable until the saleItems migration is applied:", error?.message || error);
@@ -56,8 +56,10 @@ export async function GET(request) {
       const bottleItemMap = new Map();
       let totalBottles = 0;
       let totalBottleAmount = 0;
+      let totalPaidAmount = 0;
       rows.forEach((row) => {
         if (!Array.isArray(row.saleItems)) return;
+        totalPaidAmount += Math.max(0, Math.round(Number(row.amount || 0)));
         row.saleItems.forEach((item) => {
           const bottleCount = Math.max(0, Math.round(Number(item.bottleCount || 0)));
           const totalAmount = Math.max(0, Math.round(Number(item.totalAmount || 0)));
@@ -78,7 +80,7 @@ export async function GET(request) {
           totalBottleAmount += totalAmount;
         });
       });
-      return { totalBottles, totalAmount: totalBottleAmount, items: [...bottleItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount) };
+      return { totalBottles, totalAmount: totalBottleAmount, totalPaidAmount, items: [...bottleItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount) };
     };
     const bottleSales = collectSaleItems([...paidLedgers, ...cashSalesForItems]);
     const creditBottleSales = collectSaleItems(creditLedgers);

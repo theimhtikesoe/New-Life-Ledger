@@ -300,6 +300,7 @@ export default function Dashboard({ view = "overview" }) {
     rate: "",
     deductions: "",
     amount: "",
+    manualAmount: "",
     note: "",
     date: "",
     paymentType: "",
@@ -467,7 +468,7 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     const resetDraftState = () => {
       setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
-      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
+      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
       setEditForm({ name: "", phone: "", routeTag: "" });
       setEditingCustomer(null);
       setSearch("");
@@ -1109,10 +1110,15 @@ export default function Dashboard({ view = "overview" }) {
     setIsSubmitting(true);
     try {
       setMessage("");
-      const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
-      const amount = saleItemsAmount || Number(ledgerForm.amount);
       const type = ledgerForm.type;
       const isCashSale = type === "CASH_SALE";
+      const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
+      const autoAmount = saleItemsAmount || (type === "CREDIT" && ledgerForm.saleType === "RETAIL"
+        ? Math.max(0, Math.round(Number(ledgerForm.cartons || 0) * Number(ledgerForm.rate || 0) - Number(ledgerForm.deductions || 0)))
+        : 0);
+      const manualAmountText = String(ledgerForm.manualAmount ?? "").trim();
+      const hasManualAmount = !isCashSale && manualAmountText !== "";
+      const amount = hasManualAmount ? Math.max(0, Math.round(Number(manualAmountText || 0))) : autoAmount;
       const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
       const hasCashSaleBreakdown = isCashSale && hasPaymentBreakdownInput(ledgerForm.paymentBreakdown);
       const cashSaleBreakdownTotal = hasCashSaleBreakdown ? paymentSplitTotal(ledgerForm.paymentBreakdown) : 0;
@@ -1189,6 +1195,7 @@ export default function Dashboard({ view = "overview" }) {
         rate: "",
         deductions: "",
         amount: "",
+        manualAmount: "",
         note: "",
         date: "",
         paymentType: "",
@@ -1399,6 +1406,7 @@ export default function Dashboard({ view = "overview" }) {
         rate: "",
         deductions: "",
         amount: "",
+        manualAmount: "",
         note: "",
         date: "",
         paymentType: "",
@@ -2296,17 +2304,19 @@ export default function Dashboard({ view = "overview" }) {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">ပမာဏ (Ks)</label>
+                          {ledgerForm.type !== "CASH_SALE" ? <p className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ — {formatMoney(getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || 0)}</p> : null}
+                          <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">{ledgerForm.type === "CASH_SALE" ? "ပမာဏ (Ks)" : "လူကိုယ်တိုင် ထည့်မည့်ပမာဏ (Ks)"}</label>
                           <input
                             type="number"
                             className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
                             placeholder="0"
-                            value={getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount}
-                            onChange={(e) => setLedgerForm({ ...ledgerForm, amount: e.target.value })}
-                            readOnly={getSaleItemsTotal(ledgerForm.saleItems) > 0}
-                            required
-                            disabled={isSubmitting}
-                          />
+                              value={ledgerForm.type === "CASH_SALE" ? (getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount) : ledgerForm.manualAmount}
+                              onChange={(e) => setLedgerForm({ ...ledgerForm, [ledgerForm.type === "CASH_SALE" ? "amount" : "manualAmount"]: e.target.value })}
+                              readOnly={ledgerForm.type === "CASH_SALE" && getSaleItemsTotal(ledgerForm.saleItems) > 0}
+                              required={ledgerForm.type === "CASH_SALE"}
+                              disabled={isSubmitting}
+                            />
+                            {ledgerForm.type !== "CASH_SALE" ? <p className="text-[11px] font-normal text-slate-600">မထည့်လျှင် အပေါ်က auto ပမာဏကို သုံးမည်</p> : null}
                         </div>
                       </div>
 
@@ -2314,11 +2324,7 @@ export default function Dashboard({ view = "overview" }) {
                       <SalesItemPicker
                         catalog={salesCatalog}
                         saleItems={ledgerForm.saleItems || []}
-                        onChange={(saleItems) => setLedgerForm((current) => ({
-                          ...current,
-                          saleItems,
-                          amount: getSaleItemsTotal(saleItems) ? String(getSaleItemsTotal(saleItems)) : "",
-                        }))}
+                        onChange={(saleItems) => setLedgerForm((current) => ({ ...current, saleItems }))}
                         disabled={isSubmitting}
                       />
 

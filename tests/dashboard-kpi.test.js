@@ -53,14 +53,14 @@ describe("Dashboard KPI aggregate route", () => {
     mocks.customerAggregate.mockResolvedValue({ _count: { _all: 12 }, _sum: { current_balance: 3400000 } });
     mocks.ledgerAggregate.mockResolvedValue({ _count: { _all: 4 }, _sum: { amount: 800000 } });
     mocks.ledgerFindMany.mockResolvedValue([
-      { type: "DEBIT", saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
+      { type: "DEBIT", amount: 20000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
     ]);
     mocks.cashSaleGroupBy.mockResolvedValue([
       { saleType: "RETAIL", _count: { _all: 2 }, _sum: { amount: 300000 } },
       { saleType: "WHOLESALE", _count: { _all: 1 }, _sum: { amount: 700000 } },
     ]);
     mocks.cashSaleFindMany.mockResolvedValue([
-      { saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 8, totalAmount: 16000 }] },
+      { amount: 14000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 8, totalAmount: 16000 }] },
     ]);
 
     const response = await GET(new Request("http://localhost/api/dashboard-kpi"));
@@ -82,6 +82,7 @@ describe("Dashboard KPI aggregate route", () => {
       bottleSales: {
         totalBottles: 20,
         totalAmount: 40000,
+        totalPaidAmount: 34000,
         items: [{ productKey: "water-1l", bottleCount: 20, totalAmount: 40000 }],
       },
       creditBottleSales: { totalBottles: 0, totalAmount: 0, items: [] },
