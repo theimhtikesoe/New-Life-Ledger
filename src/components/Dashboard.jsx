@@ -1936,7 +1936,7 @@ export default function Dashboard({ view = "overview" }) {
             >
               <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေမှုများ</p>
               <p className="mt-2 text-2xl font-bold text-emerald-700">{kpiDateLoading || (loading && !hasKpiSnapshot) ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : todayTransactions}</p>
-              <p className="mt-1 text-sm text-emerald-500">{selectedKpiIsToday ? "Today&apos;s Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
+              <p className="mt-1 text-sm text-emerald-500">{selectedKpiIsToday ? "Today's Paid Transactions" : "ရွေးထားသည့်ရက်စွဲ၏ ငွေချေမှုများ"}</p>
             </button>
 
             <Link
