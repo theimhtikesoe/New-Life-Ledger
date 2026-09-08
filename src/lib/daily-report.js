@@ -260,6 +260,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
         amount: true,
         note: true,
         paymentType: true,
+        saleItems: true,
         customer: { select: { id: true, name: true } },
       },
       orderBy: [{ date: "asc" }, { id: "asc" }],
@@ -273,6 +274,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
         amount: true,
         paymentType: true,
         paymentBreakdown: true,
+        saleItems: true,
         customer: { select: { id: true, name: true } },
       },
       orderBy: [{ date: "asc" }, { id: "asc" }],
@@ -417,6 +419,52 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
   };
 }
 
+
+function summarizeBottleSalesForReport(rows = []) {
+  const customers = new Map();
+  for (const row of rows) {
+    if (!Array.isArray(row.saleItems) || !row.saleItems.length) continue;
+    const customer = row.customer || { id: "unknown", name: "Unknown" };
+    const current = customers.get(customer.id) || { customer, transactions: 0, totalPaidAmount: 0, items: new Map() };
+    current.transactions += 1;
+    current.totalPaidAmount += Math.max(0, Math.round(Number(row.amount || 0)));
+    for (const item of row.saleItems) {
+      const key = String(item.productKey || `${item.productName || "ဗူး"}::${item.capacity || 0}`);
+      const entry = current.items.get(key) || { productName: item.productName || "ဗူး", capacity: Number(item.capacity || 0), cardCount: 0, bottleCount: 0, totalAmount: 0 };
+      entry.cardCount += Math.max(0, Math.round(Number(item.cardCount || 0)));
+      entry.bottleCount += Math.max(0, Math.round(Number(item.bottleCount || 0)));
+      entry.totalAmount += Math.max(0, Math.round(Number(item.totalAmount || 0)));
+      current.items.set(key, entry);
+    }
+    customers.set(customer.id, current);
+  }
+  return [...customers.values()].map((entry) => {
+    const items = [...entry.items.values()];
+    const totalCards = items.reduce((sum, item) => sum + item.cardCount, 0);
+    const totalBottles = items.reduce((sum, item) => sum + item.bottleCount, 0);
+    const totalAmount = items.reduce((sum, item) => sum + item.totalAmount, 0);
+    return { ...entry, items, totalCards, totalBottles, totalAmount, difference: totalAmount - entry.totalPaidAmount };
+  }).filter((entry) => entry.totalBottles > 0).sort((a, b) => b.totalBottles - a.totalBottles);
+}
+
+function createBottleSalesSummaryHtml(report, fontDataUri, latinDataUri) {
+  const esc = escapeXml;
+  const sections = [
+    ["ငွေချေထားသော ဗူးများ", "အကြွေးစာရင်းမှ ပြန်လည်ငွေချေထားသော ဗူးရောင်းစာရင်း", "paid", summarizeBottleSalesForReport(report.ledgers.filter((row) => row.type === "DEBIT"))],
+    ["လက်ငင်းချေထားသော ဗူးများ", "လက်ငင်းရောင်းစာရင်းထဲမှ ဗူးရောင်းအား", "cash", summarizeBottleSalesForReport(report.cashSales)],
+    ["အကြွေးတိုးထားသော ဗူးများ", "အကြွေးစာရင်းအဖြစ် သီးခြားမှတ်ထားသော ဗူးရောင်းစာရင်း", "credit", summarizeBottleSalesForReport(report.ledgers.filter((row) => row.type === "CREDIT"))],
+  ];
+  const sectionHtml = sections.map(([title, subtitle, tone, customers]) => {
+    if (!customers.length) return "";
+    const rows = customers.map((customer) => {
+      const itemRows = customer.items.map((item) => `<tr><td>${esc(customer.customer.name)}</td><td>${esc(item.productName)}</td><td>${item.capacity} ဆံ့/ကဒ်</td><td>${item.cardCount.toLocaleString()}</td><td>${item.bottleCount.toLocaleString()}</td><td>${esc(amount(item.totalAmount))}</td><td>${tone === "credit" ? "—" : esc(amount(customer.totalPaidAmount))}</td><td>${tone === "credit" ? "—" : esc(amount(Math.abs(customer.difference)))}</td></tr>`).join("");
+      return itemRows;
+    }).join("");
+    return `<section class="bottle-section ${tone}"><h2>${esc(title)}</h2><p class="subtitle">${esc(subtitle)}</p><table><thead><tr><th>Customer</th><th>Item</th><th>ဆံ့/ကဒ်</th><th>ကဒ်</th><th>ဗူး</th><th>သတ်မှတ်ငွေ</th><th>တကယ်ရှင်းငွေ</th><th>ကွာဟချက်</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+  }).join("");
+  return `<!doctype html><html><head><meta charset="utf-8"><style>@font-face{font-family:Padauk;src:url(data:font/ttf;base64,${fontDataUri})}@font-face{font-family:DejaVu;src:url(data:font/ttf;base64,${latinDataUri})}*{box-sizing:border-box}body{margin:0;background:#f8fafc;color:#0f172a;font-family:Padauk,DejaVu,sans-serif}.sheet{width:1400px;padding:34px;background:#fff;border:1px solid #cbd5e1;border-radius:28px}.brand{font-family:DejaVu,Padauk,sans-serif;font-size:18px;letter-spacing:2px;color:#4338ca;font-weight:700}.title{font-size:38px;font-weight:700;margin-top:6px}.date{font-family:DejaVu,Padauk,sans-serif;font-size:21px;color:#475569;margin-top:6px}.rule{height:2px;background:#e2e8f0;margin:24px 0}.bottle-section{margin-top:22px;padding:20px;border-radius:18px;border:1px solid #cbd5e1}.bottle-section h2{margin:0;font-size:28px}.bottle-section .subtitle{margin:5px 0 12px;color:#475569;font-size:17px}.bottle-section.paid{background:#ecfdf5;border-color:#a7f3d0}.bottle-section.cash{background:#ecfeff;border-color:#a5f3fc}.bottle-section.credit{background:#f5f3ff;border-color:#ddd6fe}.bottle-section table{width:100%;border-collapse:collapse;background:#fff;font-size:18px}.bottle-section th,.bottle-section td{padding:10px 9px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:top}.bottle-section th:nth-child(n+3),.bottle-section td:nth-child(n+3){text-align:right}.bottle-section th{background:#f8fafc;color:#475569}.paid h2{color:#047857}.cash h2{color:#0e7490}.credit h2{color:#6d28d9}</style></head><body><section id="bottle-sales-summary" class="sheet"><div class="brand">NEW LIFE LEDGER</div><div class="title">တစ်နေ့တာ ဗူးရောင်းစာရင်း</div><div class="date">စာရင်းရက် — ${esc(formatReportDateLabel(report.dateLabel))}</div><div class="rule"></div>${sectionHtml || '<p>ဒီနေ့ ဗူးရောင်းစာရင်း မရှိသေးပါ။</p>'}</section></body></html>`;
+}
+
 function resolveFontPath() {
   const bundled = path.join(process.cwd(), "assets", "Padauk-Regular.ttf");
   return fs.existsSync(bundled) ? bundled : null;
@@ -547,15 +595,11 @@ async function renderReportImagesUncached(report) {
     await page.setContent(salesHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const salesSummaryBuffer = Buffer.from(await page.locator("#sales-summary-card").screenshot({ type: "png" }));
-    const productionHtml = createProductionSummaryHtml(
-      report,
-      fs.readFileSync(fontPath).toString("base64"),
-      fs.readFileSync(latinFontPath).toString("base64"),
-    );
-    await page.setContent(productionHtml, { waitUntil: "load" });
+    const bottleSalesHtml = createBottleSalesSummaryHtml(report, fs.readFileSync(fontPath).toString("base64"), fs.readFileSync(latinFontPath).toString("base64"));
+    await page.setContent(bottleSalesHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
-    const productionSummaryBuffer = Buffer.from(await page.locator("#production-summary").screenshot({ type: "png" }));
-    return { summaryBuffer, salesSummaryBuffer, productionSummaryBuffer };
+    const bottleSalesBuffer = Buffer.from(await page.locator("#bottle-sales-summary").screenshot({ type: "png" }));
+    return { summaryBuffer, salesSummaryBuffer, bottleSalesBuffer };
   } finally {
     await browser.close();
   }
@@ -588,9 +632,9 @@ export async function createDailySalesSummaryImage(report) {
 }
 
 export async function createDailyReportPdf(report) {
-  const { summaryBuffer, salesSummaryBuffer, productionSummaryBuffer } = await renderReportImages(report);
+  const { summaryBuffer, salesSummaryBuffer, bottleSalesBuffer } = await renderReportImages(report);
   const pdfDoc = await PDFDocument.create();
-  for (const imageBuffer of [summaryBuffer, salesSummaryBuffer, productionSummaryBuffer]) {
+  for (const imageBuffer of [summaryBuffer, salesSummaryBuffer, bottleSalesBuffer]) {
     const image = await pdfDoc.embedPng(imageBuffer);
     const page = pdfDoc.addPage([900, 900 * image.height / image.width]);
     page.drawImage(image, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
