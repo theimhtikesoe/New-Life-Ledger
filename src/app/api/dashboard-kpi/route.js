@@ -13,7 +13,7 @@ export async function GET(request) {
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
 
-    const [customerStats, paymentStats, cashSaleGroups] = await Promise.all([
+    const [customerStats, paymentStats, cashSaleGroups, creditLedgers, cashSalesForItems] = await Promise.all([
       prisma.customer.aggregate({
         where: { deletedAt: null },
         _count: { _all: true },

@@ -6,7 +6,9 @@ const mocks = vi.hoisted(() => ({
   ensureDatabase: vi.fn(),
   customerAggregate: vi.fn(),
   ledgerAggregate: vi.fn(),
+  ledgerFindMany: vi.fn(),
   cashSaleGroupBy: vi.fn(),
+  cashSaleFindMany: vi.fn(),
 }));
 
 vi.mock("@/lib/database", () => ({
@@ -16,8 +18,8 @@ vi.mock("@/lib/database", () => ({
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     customer: { aggregate: mocks.customerAggregate },
-    ledger: { aggregate: mocks.ledgerAggregate },
-    cashSale: { groupBy: mocks.cashSaleGroupBy },
+    ledger: { aggregate: mocks.ledgerAggregate, findMany: mocks.ledgerFindMany },
+    cashSale: { groupBy: mocks.cashSaleGroupBy, findMany: mocks.cashSaleFindMany },
   },
 }));
 vi.mock("@/lib/myanmar-time", () => ({
@@ -41,16 +43,22 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;");
     expect(dashboardSource).toContain("onClick={() => setShowTodayPaymentsModal(true)}");
     expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
-    expect(dashboardSource).toContain('href={`/production?date=${encodeURIComponent(selectedKpiDate)}`}');
+    expect(dashboardSource).toContain('href={`/production-history?date=${encodeURIComponent(selectedKpiDate)}`}');
   });
 
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.customerAggregate.mockResolvedValue({ _count: { _all: 12 }, _sum: { current_balance: 3400000 } });
     mocks.ledgerAggregate.mockResolvedValue({ _count: { _all: 4 }, _sum: { amount: 800000 } });
+    mocks.ledgerFindMany.mockResolvedValue([
+      { saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
+    ]);
     mocks.cashSaleGroupBy.mockResolvedValue([
       { saleType: "RETAIL", _count: { _all: 2 }, _sum: { amount: 300000 } },
       { saleType: "WHOLESALE", _count: { _all: 1 }, _sum: { amount: 700000 } },
+    ]);
+    mocks.cashSaleFindMany.mockResolvedValue([
+      { saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 8, totalAmount: 16000 }] },
     ]);
 
     const response = await GET(new Request("http://localhost/api/dashboard-kpi"));
@@ -69,6 +77,11 @@ describe("Dashboard KPI aggregate route", () => {
       retailAmount: 300000,
       wholesaleCount: 1,
       wholesaleAmount: 700000,
+      bottleSales: {
+        totalBottles: 20,
+        totalAmount: 40000,
+        items: [{ productKey: "water-1l", bottleCount: 20, totalAmount: 40000 }],
+      },
     });
     expect(mocks.customerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: { deletedAt: null } }));
     expect(mocks.ledgerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ type: "DEBIT" }) }));

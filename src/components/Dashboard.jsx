@@ -21,6 +21,7 @@ const AUTO_RETRY_DELAY_MS = 8000;
 const RESUME_REFRESH_AFTER_MS = 30000;
 const API_REQUEST_TIMEOUT_MS = 20000;
 const MAX_GET_ATTEMPTS = 2;
+const DASHBOARD_LOADING_WATCHDOG_MS = 12000;
 const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
 const EMPTY_PAYMENT_BREAKDOWN = { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" };
 const PAYMENT_BREAKDOWN_FIELDS = [
@@ -307,6 +308,7 @@ export default function Dashboard({ view = "overview" }) {
   });
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [loadingStage, setLoadingStage] = useState("Dashboard data ရယူနေပါသည်");
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
@@ -359,10 +361,16 @@ export default function Dashboard({ view = "overview" }) {
   const telegramPreviewControllerRef = useRef(null);
   const telegramReportSendInFlightRef = useRef(false);
   const lastDashboardAttemptAtRef = useRef(0);
+  const dashboardLoadingWatchdogRef = useRef(null);
+  const dashboardRequestIdRef = useRef(0);
   const dashboardDraftRestoredRef = useRef(false);
   const dashboardDraftActorRef = useRef("");
   const dashboardDraftRestoredPageRef = useRef(false);
   const dashboardDraftWriteSkipRef = useRef(true);
+
+  useEffect(() => () => {
+    if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
+  }, []);
 
   const clearAutoRetryTimers = useCallback(() => {
     if (retryTimerRef.current) {
@@ -733,9 +741,21 @@ export default function Dashboard({ view = "overview" }) {
   }, []);
 
   const loadDashboard = useCallback(async (signal) => {
+    const requestId = dashboardRequestIdRef.current + 1;
+    dashboardRequestIdRef.current = requestId;
+    if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
+    setLoadingTimedOut(false);
     setDataLoadError("");
+    dashboardLoadingWatchdogRef.current = window.setTimeout(() => {
+      if (dashboardRequestIdRef.current !== requestId) return;
+      dashboardLoadingWatchdogRef.current = null;
+      setLoading(false);
+      setLoadingTimedOut(true);
+      setLoadingStage("");
+      setDataLoadError("Dashboard data ရယူရန် ကြာနေပါသည်။ ခဏနားပြီး ပြန်လည်ရယူပါမည်။");
+    }, DASHBOARD_LOADING_WATCHDOG_MS);
     // Keep one stable loading message in the dashboard chrome. Individual KPI
     // cards keep their dimensions and do not duplicate the global indicator.
     setLoadingStage("Data ရယူနေပါသည်");
@@ -828,8 +848,15 @@ export default function Dashboard({ view = "overview" }) {
       setMessage(message);
       showAlert(message, "error");
     } finally {
-      setLoading(false);
-      setLoadingStage("");
+      // A newer search/refresh owns the loading state. An older aborted request
+      // must not clear its spinner, watchdog, or status message.
+      if (dashboardRequestIdRef.current === requestId) {
+        if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
+        dashboardLoadingWatchdogRef.current = null;
+        setLoading(false);
+        setLoadingTimedOut(false);
+        setLoadingStage("");
+      }
     }
   }, [clearAutoRetryTimers, loadOverdueDebts, search, showAlert]);
 
@@ -1631,7 +1658,7 @@ export default function Dashboard({ view = "overview" }) {
       {alert && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
       )}
-      {(loading || isSubmitting) && (
+      {(isSubmitting || (loading && !loadingTimedOut && !dashboardKpi && customers.length === 0 && allCustomersForKPI.length === 0)) && (
         <div
           className="dashboard-loading-status pointer-events-none fixed left-1/2 top-1/2 z-[120] w-[min(calc(100vw-2rem),320px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-cyan-200/90 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 p-4 text-slate-800 shadow-2xl shadow-cyan-900/20 backdrop-blur sm:w-[min(92vw,360px)]"
           role="status"
