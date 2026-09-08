@@ -13,24 +13,24 @@ export async function GET(request) {
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
 
-    const [customerStats, paymentStats, cashSaleGroups] = await Promise.all([
-      prisma.customer.aggregate({
-        where: { deletedAt: null },
-        _count: { _all: true },
-        _sum: { current_balance: true },
-      }),
-      prisma.ledger.aggregate({
-        where: { date: { gte: start, lt: end }, type: "DEBIT" },
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-      prisma.cashSale.groupBy({
-        by: ["saleType"],
-        where: { date: { gte: start, lt: end } },
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-    ]);
+    // Keep these small aggregates sequential so one dashboard load uses one
+    // database connection at a time on the production pool (limit: 5).
+    const customerStats = await prisma.customer.aggregate({
+      where: { deletedAt: null },
+      _count: { _all: true },
+      _sum: { current_balance: true },
+    });
+    const paymentStats = await prisma.ledger.aggregate({
+      where: { date: { gte: start, lt: end }, type: "DEBIT" },
+      _count: { _all: true },
+      _sum: { amount: true },
+    });
+    const cashSaleGroups = await prisma.cashSale.groupBy({
+      by: ["saleType"],
+      where: { date: { gte: start, lt: end } },
+      _count: { _all: true },
+      _sum: { amount: true },
+    });
 
     // Bottle sales are a secondary KPI. Keep the core dashboard usable while
     // older deployments finish applying the saleItems migration.
