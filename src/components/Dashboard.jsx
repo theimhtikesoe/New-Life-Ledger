@@ -1257,6 +1257,10 @@ export default function Dashboard({ view = "overview" }) {
         }
       }
 
+      // KPI bottle totals come from the server-side saleItems aggregates, so
+      // reload them after deletion instead of waiting for the date to change.
+      await loadDashboard();
+
       showAlert(
         isCashSale
           ? "လက်ငင်းမှတ်တမ်းကို ဖျက်ပြီးပါပြီ။ Customer လက်ကျန် မပြောင်းပါ။"
