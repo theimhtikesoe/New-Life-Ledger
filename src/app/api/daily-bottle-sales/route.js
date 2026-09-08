@@ -11,15 +11,25 @@ function addItems(target, saleItems) {
     const bottleCount = Math.max(0, Math.round(Number(item?.bottleCount || 0)));
     const totalAmount = Math.max(0, Math.round(Number(item?.totalAmount || 0)));
     if (!bottleCount && !totalAmount) continue;
-    const productKey = String(item.productKey || `${item.productName || "ဗူး"}::${item.capacity || 0}`);
+    const capacity = Math.max(0, Math.round(Number(item?.capacity || 0)));
+    const explicitCardCount = Number(item?.cardCount);
+    const cardCount = Number.isFinite(explicitCardCount) && explicitCardCount > 0
+      ? Math.round(explicitCardCount)
+      : (capacity > 0 ? Math.round(bottleCount / capacity) : 0);
+    // Capacity is part of the identity as well as productKey. This prevents
+    // legacy/malformed rows with a reused productKey from being merged into
+    // the wrong size line.
+    const productKey = `${String(item.productKey || item.productName || "ဗူး")}::${capacity}`;
     const current = target.get(productKey) || {
       productKey,
       categoryKey: item.categoryKey || null,
       productName: item.productName || "ဗူး",
-      capacity: Number(item.capacity || 0),
+      capacity,
+      cardCount: 0,
       bottleCount: 0,
       totalAmount: 0,
     };
+    current.cardCount += cardCount;
     current.bottleCount += bottleCount;
     current.totalAmount += totalAmount;
     target.set(productKey, current);
@@ -53,24 +63,25 @@ export async function GET(request) {
       const customer = row.customer || { id: "unknown", name: "Unknown", phone: null };
       const current = customerMap.get(customer.id) || {
         customer,
-        totalBottles: 0,
-        totalAmount: 0,
         totalPaidAmount: 0,
         items: new Map(),
         transactions: 0,
       };
       current.transactions += 1;
       addItems(current.items, row.saleItems);
-      for (const item of row.saleItems) {
-        current.totalBottles += Math.max(0, Math.round(Number(item?.bottleCount || 0)));
-        current.totalAmount += Math.max(0, Math.round(Number(item?.totalAmount || 0)));
-      }
-      current.totalPaidAmount += Number.isFinite(Number(row.amount)) ? Math.max(0, Math.round(Number(row.amount))) : Math.max(0, current.totalAmount);
+      const itemAmount = row.saleItems.reduce((sum, item) => sum + Math.max(0, Math.round(Number(item?.totalAmount || 0))), 0);
+      current.totalPaidAmount += Number.isFinite(Number(row.amount)) ? Math.max(0, Math.round(Number(row.amount))) : itemAmount;
       customerMap.set(customer.id, current);
     }
 
     const customers = [...customerMap.values()]
-      .map((entry) => ({ ...entry, difference: entry.totalAmount - entry.totalPaidAmount, items: [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount) }))
+      .map((entry) => {
+        const items = [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount);
+        const totalBottles = items.reduce((sum, item) => sum + item.bottleCount, 0);
+        const totalAmount = items.reduce((sum, item) => sum + item.totalAmount, 0);
+        const totalCards = items.reduce((sum, item) => sum + item.cardCount, 0);
+        return { ...entry, totalCards, totalBottles, totalAmount, difference: totalAmount - entry.totalPaidAmount, items };
+      })
       .sort((a, b) => b.totalBottles - a.totalBottles);
     const creditItemMap = new Map();
     const creditCustomerMap = new Map();
@@ -79,19 +90,22 @@ export async function GET(request) {
     for (const row of creditLedgers) {
       if (!Array.isArray(row.saleItems)) continue;
       const customer = row.customer || { id: "unknown", name: "Unknown", phone: null };
-      const customerEntry = creditCustomerMap.get(customer.id) || { customer, totalBottles: 0, totalAmount: 0, items: new Map() };
+      const customerEntry = creditCustomerMap.get(customer.id) || { customer, items: new Map() };
       addItems(creditItemMap, row.saleItems);
       addItems(customerEntry.items, row.saleItems);
-      for (const item of row.saleItems) {
-        const bottleCount = Math.max(0, Math.round(Number(item?.bottleCount || 0)));
-        const totalAmount = Math.max(0, Math.round(Number(item?.totalAmount || 0)));
-        creditTotalBottles += bottleCount;
-        creditTotalAmount += totalAmount;
-        customerEntry.totalBottles += bottleCount;
-        customerEntry.totalAmount += totalAmount;
-      }
       creditCustomerMap.set(customer.id, customerEntry);
     }
+    const creditCustomers = [...creditCustomerMap.values()]
+      .map((entry) => {
+        const items = [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount);
+        const totalCards = items.reduce((sum, item) => sum + item.cardCount, 0);
+        const totalBottles = items.reduce((sum, item) => sum + item.bottleCount, 0);
+        const totalAmount = items.reduce((sum, item) => sum + item.totalAmount, 0);
+        return { ...entry, totalCards, totalBottles, totalAmount, items };
+      })
+      .sort((a, b) => b.totalBottles - a.totalBottles);
+    creditTotalBottles = creditCustomers.reduce((sum, row) => sum + row.totalBottles, 0);
+    creditTotalAmount = creditCustomers.reduce((sum, row) => sum + row.totalAmount, 0);
     return NextResponse.json({ data: {
       date,
       totalCustomers: customers.length,
@@ -104,9 +118,7 @@ export async function GET(request) {
         totalBottles: creditTotalBottles,
         totalAmount: creditTotalAmount,
         items: [...creditItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount),
-        customers: [...creditCustomerMap.values()]
-          .map((entry) => ({ ...entry, items: [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount) }))
-          .sort((a, b) => b.totalBottles - a.totalBottles),
+        customers: creditCustomers,
       },
     } });
   } catch (error) {
