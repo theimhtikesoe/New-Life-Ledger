@@ -70,12 +70,15 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
     const line = makeLine(selectedItem, cardCount);
     const existing = saleItems.find((item) => item.productKey === line.productKey && item.pricePerBottle === line.pricePerBottle);
     if (existing) {
-      onChange(saleItems.map((item) => item.id === existing.id ? makeLine({ ...selectedItem, effectivePrice: { pricePerBottle: line.pricePerBottle, source: line.priceSource } }, Number(item.cardCount || 0) + line.cardCount) : item));
+          onChange(saleItems.map((item) => item.id === existing.id ? makeLine({ ...selectedItem, effectivePrice: { pricePerBottle: line.pricePerBottle, source: line.priceSource } }, Number(item.cardCount || 0) + line.cardCount) : item));
     } else {
       onChange([...saleItems, line]);
     }
     setError("");
-    setOpen(false);
+    // Keep the picker open so one cash-sale entry can immediately add
+    // another size/type (for example .3 and .6) as another sale-item line.
+    setSelectedKey("");
+    setCardCount("1");
   }
 
   function updateCards(id, value) {
@@ -109,7 +112,7 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-black text-violet-950">ရောင်းသည့်ဗူးများ</p>
-          <p className="mt-1 text-[11px] leading-4 text-violet-800">ဗူးအမျိုးအစားကို ရွေးပြီး ကဒ်အရေအတွက်ထည့်ပါ။ စျေးနှုန်းနှင့် သင့်ငွေကို အလိုအလျောက်တွက်မည်။</p>
+          <p className="mt-1 text-[11px] leading-4 text-violet-800">ဗူးအမျိုးအစား မျိုးစုံ (ဥပမာ .3 နှင့် .6) ကို တစ်ခါတည်း ထည့်နိုင်ပါသည်။ ကဒ်အရေအတွက်၊ စျေးနှုန်းနှင့် သင့်ငွေကို အလိုအလျောက်တွက်မည်။</p>
         </div>
         <button type="button" onClick={openPicker} disabled={disabled || !catalog.length} className="shrink-0 rounded-lg bg-violet-700 px-3 py-2 text-xs font-black text-white shadow-sm hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50">ဗူးထည့်ရန် +</button>
       </div>
