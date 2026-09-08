@@ -56,10 +56,8 @@ export async function GET(request) {
   try {
     await ensureDatabase();
     const date = parseDate(new URL(request.url).searchParams.get("date"));
-    const [exactRows, priorRows] = await Promise.all([
-      prisma.priceSetting.findMany({ where: { priceDate: date }, orderBy: [{ scope: "asc" }, { productName: "asc" }, { capacity: "asc" }] }),
-      prisma.priceSetting.findMany({ where: { priceDate: { lte: date } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] }),
-    ]);
+    const exactRows = await prisma.priceSetting.findMany({ where: { priceDate: date }, orderBy: [{ scope: "asc" }, { productName: "asc" }, { capacity: "asc" }] });
+    const priorRows = await prisma.priceSetting.findMany({ where: { priceDate: { lte: date } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
 
     const effectiveByKey = new Map();
     for (const row of priorRows) {

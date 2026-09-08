@@ -440,6 +440,7 @@ export default function Dashboard({ view = "overview" }) {
   }, [productionDate]);
 
   useEffect(() => {
+    if (!showAddCustomer && !selectedCustomerId) return undefined;
     const priceDate = ledgerForm.date || formatMyanmarDateInputValue();
     const controller = new AbortController();
     setSalesCatalogError("");
@@ -450,9 +451,9 @@ export default function Dashboard({ view = "overview" }) {
           setSalesCatalog([]);
           setSalesCatalogError(error.message || "ဗူးနှင့် စျေးနှုန်း catalog ရယူ၍မရပါ။");
         }
-      });
+    });
     return () => controller.abort();
-  }, [ledgerForm.date]);
+  }, [ledgerForm.date, selectedCustomerId, showAddCustomer]);
 
   // Keep unfinished local work available when the actor-only idle lock appears.
   // Each actor has a separate session draft so shared-phone users do not see one another's form data.
