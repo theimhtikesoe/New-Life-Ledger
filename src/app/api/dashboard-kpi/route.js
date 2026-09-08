@@ -32,33 +32,22 @@ export async function GET(request) {
       _sum: { amount: true },
     });
 
-    // Bottle sales are a secondary KPI. Keep the core dashboard usable while
-    // older deployments finish applying the saleItems migration.
+    // Bottle sales are a secondary KPI. Read both ledger types in one query so
+    // this card does not add a schema probe plus three extra round trips to the
+    // dashboard's critical path. The migration is already part of deployment;
+    // the catch below still keeps older databases from breaking the dashboard.
     let paidLedgers = [];
     let creditLedgers = [];
     let cashSalesForItems = [];
     try {
-      const saleItemColumns = typeof prisma.$queryRaw === "function"
-        ? await prisma.$queryRaw`
-            SELECT "table_name", "column_name"
-            FROM "information_schema"."columns"
-            WHERE "table_schema" = 'public'
-              AND "column_name" = 'saleItems'
-              AND "table_name" IN ('Ledger', 'CashSale')
-          `
+      const ledgerRows = typeof prisma.ledger.findMany === "function"
+        ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, saleItems: true } })
         : [];
-      const availableColumns = new Set(saleItemColumns.map((row) => `${row.table_name}.${row.column_name}`));
-      if (availableColumns.has("Ledger.saleItems") && availableColumns.has("CashSale.saleItems")) {
-        paidLedgers = typeof prisma.ledger.findMany === "function"
-          ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "DEBIT" }, select: { saleItems: true } })
-          : [];
-        cashSalesForItems = typeof prisma.cashSale.findMany === "function"
-          ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
-          : [];
-        creditLedgers = typeof prisma.ledger.findMany === "function"
-          ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } })
-          : [];
-      }
+      paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
+      creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
+      cashSalesForItems = typeof prisma.cashSale.findMany === "function"
+        ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
+        : [];
     } catch (error) {
       console.warn("Bottle sales KPI is unavailable until the saleItems migration is applied:", error?.message || error);
     }

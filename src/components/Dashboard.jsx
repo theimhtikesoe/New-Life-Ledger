@@ -326,6 +326,10 @@ export default function Dashboard({ view = "overview" }) {
   const [todayCashSales, setTodayCashSales] = useState(() => readDashboardSnapshot()?.todayCashSales || []);
   const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
+  // A cached KPI may be stale. Start in loading state so the bottle card never
+  // presents a cached/empty 0 as the current result before the fresh request.
+  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(true);
+  const [dashboardKpiError, setDashboardKpiError] = useState("");
   const [productionRows, setProductionRows] = useState([]);
   const [salesCatalog, setSalesCatalog] = useState([]);
   const [salesCatalogError, setSalesCatalogError] = useState("");
@@ -749,6 +753,8 @@ export default function Dashboard({ view = "overview" }) {
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
     setDashboardKpi(null);
+    setDashboardKpiLoading(true);
+    setDashboardKpiError("");
     setLoadingTimedOut(false);
     setDataLoadError("");
     dashboardLoadingWatchdogRef.current = window.setTimeout(() => {
@@ -769,12 +775,19 @@ export default function Dashboard({ view = "overview" }) {
       const kpiRequest = api("/api/dashboard-kpi", { signal })
         .then((kpi) => {
           setDashboardKpi(kpi);
+          setDashboardKpiError("");
           saveDashboardSnapshot({ dashboardKpi: kpi });
           return kpi;
         })
         .catch((error) => {
-          if (error.name !== "AbortError") console.warn("Dashboard KPI was not loaded:", error);
+          if (error.name !== "AbortError") {
+            console.warn("Dashboard KPI was not loaded:", error);
+            if (dashboardRequestIdRef.current === requestId) setDashboardKpiError("KPI data မရသေးပါ");
+          }
           return null;
+        })
+        .finally(() => {
+          if (dashboardRequestIdRef.current === requestId) setDashboardKpiLoading(false);
         });
 
       // Keep the previous snapshot visible while the lightweight customer
@@ -1037,6 +1050,7 @@ export default function Dashboard({ view = "overview" }) {
   const todayCashRetail = dashboardKpi?.retailCount ?? todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length;
   const todayCashWholesale = dashboardKpi?.wholesaleCount ?? (todayCashSales.length - todayCashRetail);
   const todayBottleSales = dashboardKpi?.bottleSales || { totalBottles: 0, totalAmount: 0, items: [] };
+  const bottleSalesLoading = dashboardKpiLoading || kpiDateLoading;
   const productionSummary = useMemo(() => summarizeProduction(productionRows), [productionRows]);
 
   // Pagination logic
@@ -1933,8 +1947,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-slate-600 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
-                <p className="mt-2 text-2xl font-black text-slate-800">{kpiDateLoading ? "ရယူနေသည်..." : `${Number(todayBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
-                <p className="mt-1 text-xs font-bold text-slate-600">သင့်ငွေ {formatMoney(todayBottleSales.totalAmount)}</p>
+                <p className="mt-2 text-2xl font-black text-slate-800">{bottleSalesLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "—" : `${Number(todayBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
+                <p className="mt-1 text-xs font-bold text-slate-600">{bottleSalesLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "KPI data မရသေးပါ" : `သင့်ငွေ ${formatMoney(todayBottleSales.totalAmount)}`}</p>
               </div>
               <p className="pt-2 text-xs font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
             </Link>

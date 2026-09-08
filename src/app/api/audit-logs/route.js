@@ -39,9 +39,7 @@ export async function GET(request) {
       range ? { createdAt: range } : null,
       ACTORS.includes(actor) ? { actorName: actor } : null,
       isHiddenReportAction ? { action: "__HIDDEN_DAILY_REPORT_SENT__" } : action ? { action } : null,
-      !includeOrders ? accountingAuditLogWhere() : null,
       excludeCustomerEdits ? { NOT: { AND: [{ entityType: "Customer" }, { action: "UPDATE" }] } } : null,
-      !action && !isHiddenReportAction ? { NOT: { action: "DAILY_REPORT_SENT" } } : null,
     ].filter(Boolean);
     const [allAuditLogs, legacyLedgers] = await Promise.all([
       prisma.auditLog.findMany({
@@ -76,7 +74,7 @@ export async function GET(request) {
         : [],
     ]);
 
-    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isProductionReportDeleteActivity(log) && (includeOrders || !isOrderWorkflowActivity(log)) && (!excludeCustomerEdits || !isCustomerEditActivity(log)));
+    const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && (!excludeCustomerEdits || !isCustomerEditActivity(log)));
     const cashSaleIds = allAuditLogs
       .filter((log) => log.entityType === "CashSale" && log.entityId)
       .map((log) => String(log.entityId));

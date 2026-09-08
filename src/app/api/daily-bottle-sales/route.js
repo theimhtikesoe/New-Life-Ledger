@@ -76,15 +76,24 @@ export async function GET(request) {
       .map((entry) => ({ ...entry, items: [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount) }))
       .sort((a, b) => b.totalBottles - a.totalBottles);
     const creditItemMap = new Map();
+    const creditCustomerMap = new Map();
     let creditTotalBottles = 0;
     let creditTotalAmount = 0;
     for (const row of creditLedgers) {
       if (!Array.isArray(row.saleItems)) continue;
+      const customer = row.customer || { id: "unknown", name: "Unknown", phone: null };
+      const customerEntry = creditCustomerMap.get(customer.id) || { customer, totalBottles: 0, totalAmount: 0, items: new Map() };
       addItems(creditItemMap, row.saleItems);
+      addItems(customerEntry.items, row.saleItems);
       for (const item of row.saleItems) {
-        creditTotalBottles += Math.max(0, Math.round(Number(item?.bottleCount || 0)));
-        creditTotalAmount += Math.max(0, Math.round(Number(item?.totalAmount || 0)));
+        const bottleCount = Math.max(0, Math.round(Number(item?.bottleCount || 0)));
+        const totalAmount = Math.max(0, Math.round(Number(item?.totalAmount || 0)));
+        creditTotalBottles += bottleCount;
+        creditTotalAmount += totalAmount;
+        customerEntry.totalBottles += bottleCount;
+        customerEntry.totalAmount += totalAmount;
       }
+      creditCustomerMap.set(customer.id, customerEntry);
     }
     return NextResponse.json({ data: {
       date,
@@ -98,6 +107,9 @@ export async function GET(request) {
         totalBottles: creditTotalBottles,
         totalAmount: creditTotalAmount,
         items: [...creditItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount),
+        customers: [...creditCustomerMap.values()]
+          .map((entry) => ({ ...entry, items: [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount) }))
+          .sort((a, b) => b.totalBottles - a.totalBottles),
       },
     } });
   } catch (error) {

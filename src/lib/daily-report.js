@@ -281,7 +281,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
       where: {
         AND: [
           { createdAt: { gte: start, lt: end } },
-          { NOT: { action: "DAILY_REPORT_SENT" } },
+          { NOT: { action: { in: ["DAILY_REPORT_SENT", "PRICE_SETTINGS_UPDATE"] } } },
           accountingAuditLogWhere(),
         ],
       },

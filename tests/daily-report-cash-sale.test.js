@@ -239,12 +239,13 @@ describe("Telegram daily report CashSale data", () => {
     expect(report.activityLogs.some((log) => log.action === "PRODUCTION_REPORT_SUBMIT")).toBe(false);
     const where = mocks.auditFindMany.mock.calls[0][0].where;
     expect(where.AND).toEqual(expect.arrayContaining([
-      { NOT: { action: "DAILY_REPORT_SENT" } },
+      { NOT: { action: { in: ["DAILY_REPORT_SENT", "PRICE_SETTINGS_UPDATE"] } } },
       { NOT: [
         { entityType: "Order" },
         { entityType: "OrderBatch" },
         { action: { startsWith: "ORDER_" } },
         { action: { in: ["DAILY_SALES_OPENING", "DAILY_SALES_SUMMARY"] } },
+        { action: "PRICE_SETTINGS_UPDATE" },
         { action: "PRODUCTION_REPORT_DELETE" },
         { action: "PRODUCTION_REPORT_SUBMIT" },
         { action: "PRODUCTION_WORKER_CREATE" },
