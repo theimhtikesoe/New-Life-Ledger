@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   ledgerFindMany: vi.fn(),
   cashSaleGroupBy: vi.fn(),
   cashSaleFindMany: vi.fn(),
+  queryRaw: vi.fn(),
 }));
 
 vi.mock("@/lib/database", () => ({
@@ -17,6 +18,7 @@ vi.mock("@/lib/database", () => ({
 }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    $queryRaw: mocks.queryRaw,
     customer: { aggregate: mocks.customerAggregate },
     ledger: { aggregate: mocks.ledgerAggregate, findMany: mocks.ledgerFindMany },
     cashSale: { groupBy: mocks.cashSaleGroupBy, findMany: mocks.cashSaleFindMany },
@@ -52,6 +54,10 @@ describe("Dashboard KPI aggregate route", () => {
     mocks.ledgerAggregate.mockResolvedValue({ _count: { _all: 4 }, _sum: { amount: 800000 } });
     mocks.ledgerFindMany.mockResolvedValue([
       { saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
+    ]);
+    mocks.queryRaw.mockResolvedValue([
+      { table_name: "Ledger", column_name: "saleItems" },
+      { table_name: "CashSale", column_name: "saleItems" },
     ]);
     mocks.cashSaleGroupBy.mockResolvedValue([
       { saleType: "RETAIL", _count: { _all: 2 }, _sum: { amount: 300000 } },

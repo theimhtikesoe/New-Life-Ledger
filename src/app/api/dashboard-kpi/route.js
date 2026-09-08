@@ -37,14 +37,26 @@ export async function GET(request) {
     let creditLedgers = [];
     let cashSalesForItems = [];
     try {
-      [creditLedgers, cashSalesForItems] = await Promise.all([
-        typeof prisma.ledger.findMany === "function"
-          ? prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } })
-          : Promise.resolve([]),
-        typeof prisma.cashSale.findMany === "function"
-          ? prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
-          : Promise.resolve([]),
-      ]);
+      const saleItemColumns = typeof prisma.$queryRaw === "function"
+        ? await prisma.$queryRaw`
+            SELECT "table_name", "column_name"
+            FROM "information_schema"."columns"
+            WHERE "table_schema" = 'public'
+              AND "column_name" = 'saleItems'
+              AND "table_name" IN ('Ledger', 'CashSale')
+          `
+        : [];
+      const availableColumns = new Set(saleItemColumns.map((row) => `${row.table_name}.${row.column_name}`));
+      if (availableColumns.has("Ledger.saleItems") && availableColumns.has("CashSale.saleItems")) {
+        [creditLedgers, cashSalesForItems] = await Promise.all([
+          typeof prisma.ledger.findMany === "function"
+            ? prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } })
+            : Promise.resolve([]),
+          typeof prisma.cashSale.findMany === "function"
+            ? prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
+            : Promise.resolve([]),
+        ]);
+      }
     } catch (error) {
       console.warn("Bottle sales KPI is unavailable until the saleItems migration is applied:", error?.message || error);
     }
