@@ -760,20 +760,22 @@ export default function Dashboard({ view = "overview" }) {
     // cards keep their dimensions and do not duplicate the global indicator.
     setLoadingStage("Data ရယူနေပါသည်");
     try {
-      // Stage 1: fetch only small aggregate values so KPI cards can paint first.
-      const kpi = await api("/api/dashboard-kpi", { signal });
-      setDashboardKpi(kpi);
-      saveDashboardSnapshot({ dashboardKpi: kpi });
+      // Start the small KPI aggregate and the main customer index together.
+      // KPI can be slower on a cold serverless/database connection; it must not
+      // block the customer list and the rest of the dashboard from rendering.
+      const kpiRequest = api("/api/dashboard-kpi", { signal })
+        .then((kpi) => {
+          setDashboardKpi(kpi);
+          saveDashboardSnapshot({ dashboardKpi: kpi });
+          return kpi;
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") console.warn("Dashboard KPI was not loaded:", error);
+          return null;
+        });
 
-      // Stage 2 starts immediately after KPI. It is independent of the main
-      // customer list, so the ledger can render without waiting for slow alerts.
-      setLoadingStage("Data ရယူနေပါသည်");
-      void loadOverdueDebts();
-
-      // Stage 3: load the lightweight customer/ledger index. Keep the previous
-      // snapshot visible while this request is running so navigation/refresh
-      // never turns a populated screen into a false empty state.
-      setLoadingStage("Data ရယူနေပါသည်");
+      // Keep the previous snapshot visible while the lightweight customer
+      // index is loading so refreshes never create a false empty state.
       const customerRequest = api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal });
       const allCustomersRequest = search ? api("/api/customers?includeLedgers=false", { signal }) : customerRequest;
       const [customerRows, allCustomersRows] = await Promise.all([
@@ -786,8 +788,10 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
+      void kpiRequest;
+      void loadOverdueDebts();
 
-      // Stage 4: detailed daily values are intentionally background work.
+      // Detailed daily values are intentionally background work.
       setLoadingStage("Data ရယူနေပါသည်");
       void api("/api/daily-summary", { signal })
         .then((summary) => {
