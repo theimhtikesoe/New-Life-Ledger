@@ -76,6 +76,15 @@ describe("Actor access workflow", () => {
     expect(globalStylesSource).toContain("margin: 0.25rem auto 0;");
   });
 
+  it("keeps ဆောင်းဦး on Ledger and ဇွဲဇွဲ on Production", () => {
+    expect(layoutSource).toContain("isLedgerOnlyActor");
+    expect(layoutSource).toContain("router.replace('/ledger')");
+    expect(layoutSource).toContain("pathname === '/ledger'");
+    expect(middlewareSource).toContain('LEDGER_ONLY_ACTOR');
+    expect(middlewareSource).toContain('LEDGER_BLOCKED_API_PATHS');
+    expect(middlewareSource).toContain('path !== "/ledger"');
+  });
+
   it("keeps Zway Zway on Production while keeping Dashboard navigation for other users", () => {
     expect(layoutSource).toContain("isProductionOnlyActor");
     expect(layoutSource).toContain("router.replace('/production')");

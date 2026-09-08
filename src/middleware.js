@@ -18,9 +18,18 @@ const PRODUCTION_API_PATHS = new Set([
   "/api/production-workers",
 ]);
 const PRODUCTION_ONLY_ACTOR = "ဇွဲဇွဲ";
+const LEDGER_ONLY_ACTOR = "ဆောင်းဦး";
+const LEDGER_BLOCKED_API_PATHS = new Set([
+  "/api/production-reports",
+  "/api/production-workers",
+]);
 
 function isProductionOnlySession(session) {
   return session?.access === "production-only" && session?.actorName === PRODUCTION_ONLY_ACTOR;
+}
+
+function isLedgerOnlySession(session) {
+  return session?.actorName === LEDGER_ONLY_ACTOR;
 }
 
 export async function middleware(request) {
@@ -41,6 +50,12 @@ export async function middleware(request) {
         { status: 403 },
       );
     }
+    if (isLedgerOnlySession(session) && LEDGER_BLOCKED_API_PATHS.has(path)) {
+      return NextResponse.json(
+        { ok: false, error: "ဆောင်းဦး အသုံးပြုသူသည် ငွေရှင်းတမ်းစာမျက်နှာကိုသာ အသုံးပြုနိုင်ပါသည်။" },
+        { status: 403 },
+      );
+    }
     return NextResponse.next();
   }
 
@@ -48,6 +63,12 @@ export async function middleware(request) {
   if (isProductionOnlySession(session) && path !== "/production") {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/production";
+    redirectUrl.search = "";
+    return NextResponse.redirect(redirectUrl);
+  }
+  if (isLedgerOnlySession(session) && path !== "/ledger") {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/ledger";
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }

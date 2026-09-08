@@ -227,6 +227,7 @@ export default function RootLayoutClient({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const isProductionOnlyActor = actorName === 'ဇွဲဇွဲ';
+  const isLedgerOnlyActor = actorName === 'ဆောင်းဦး';
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -236,8 +237,12 @@ export default function RootLayoutClient({ children }) {
   useEffect(() => {
     if (isProductionOnlyActor && pathname !== '/production') {
       router.replace('/production');
+      return;
     }
-  }, [isProductionOnlyActor, pathname, router]);
+    if (isLedgerOnlyActor && pathname !== '/ledger') {
+      router.replace('/ledger');
+    }
+  }, [isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
 
   const handleLoginSuccess = (nextActorName) => {
     setActorName(nextActorName || '');
@@ -249,7 +254,7 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   };
 
-  const canRenderCurrentPage = authenticated && (!isProductionOnlyActor || pathname === '/production');
+  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor) || pathname === '/production' || pathname === '/ledger');
 
   return (
     <>
