@@ -2304,7 +2304,7 @@ export default function Dashboard({ view = "overview" }) {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          {ledgerForm.type !== "CASH_SALE" ? <p className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ — {formatMoney(getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || 0)}</p> : null}
+                          {ledgerForm.type !== "CASH_SALE" ? <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ</p><p className="mt-1 text-2xl font-black text-cyan-950">{formatMoney(getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || 0)}</p></div> : null}
                           <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">{ledgerForm.type === "CASH_SALE" ? "ပမာဏ (Ks)" : "လူကိုယ်တိုင် ထည့်မည့်ပမာဏ (Ks)"}</label>
                           <input
                             type="number"
