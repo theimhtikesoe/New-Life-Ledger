@@ -116,29 +116,28 @@ export async function POST(request) {
       rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      for (const category of BOTTLE_GROUPS) {
-        const raw = categoryPrices[category.key];
-        const where = { priceDate_scope_productKey: { priceDate, scope: "CATEGORY", productKey: category.key } };
-        if (raw === "" || raw === null || raw === undefined) await tx.priceSetting.deleteMany({ where: { priceDate, scope: "CATEGORY", productKey: category.key } });
-        else {
-          const pricePerBottle = positiveInt(raw, `${category.label} စျေးနှုန်း`);
-          await tx.priceSetting.upsert({ where, update: { productName: category.label, pricePerBottle, pricePerCard: 0, updatedAt: new Date() }, create: { priceDate, scope: "CATEGORY", categoryKey: category.key, productKey: category.key, productType: "bottle", productName: category.label, capacity: 0, bottlesPerCard: 0, pricePerBottle, pricePerCard: 0 } });
-        }
-      }
-      for (const item of catalog) {
-        const raw = itemPrices[item.productKey];
-        const where = { priceDate_scope_productKey: { priceDate, scope: "ITEM", productKey: item.productKey } };
-        if (raw === "" || raw === null || raw === undefined) await tx.priceSetting.deleteMany({ where: { priceDate, scope: "ITEM", productKey: item.productKey } });
-        else {
-          const pricePerBottle = positiveInt(raw, `${item.productName} ${item.capacity} စျေးနှုန်း`);
-          const itemData = { categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard };
-          await tx.priceSetting.upsert({ where, update: { ...itemData, updatedAt: new Date() }, create: { ...itemData, priceDate, scope: "ITEM" } });
-        }
-      }
-      await writeAuditLog({ db: tx, actorName: getActorName(request), action: "PRICE_SETTINGS_UPDATE", entityType: "PriceSetting", entityId: priceDate, entityLabel: priceDate, summary: `${priceDate} အတွက် စျေးနှုန်းသတ်မှတ်ချက် ပြင်ဆင်`, metadata: { priceDate, categoryCount: Object.keys(categoryPrices).filter((key) => categoryPrices[key] !== "").length, itemCount: Object.keys(itemPrices).filter((key) => itemPrices[key] !== "").length } });
-      return { count: rows.length };
+    // Save the whole date in two bulk operations. The previous per-item
+    // interactive transaction could exceed Prisma's short serverless
+    // transaction timeout and fail with "Transaction not found".
+    await prisma.$transaction([
+      prisma.priceSetting.deleteMany({ where: { priceDate } }),
+      ...(rows.length ? [prisma.priceSetting.createMany({ data: rows })] : []),
+    ]);
+    await writeAuditLog({
+      db: prisma,
+      actorName: getActorName(request),
+      action: "PRICE_SETTINGS_UPDATE",
+      entityType: "PriceSetting",
+      entityId: priceDate,
+      entityLabel: priceDate,
+      summary: `${priceDate} အတွက် စျေးနှုန်းသတ်မှတ်ချက် ပြင်ဆင်`,
+      metadata: {
+        priceDate,
+        categoryCount: Object.keys(categoryPrices).filter((key) => categoryPrices[key] !== "").length,
+        itemCount: Object.keys(itemPrices).filter((key) => itemPrices[key] !== "").length,
+      },
     });
+    const result = { count: rows.length };
 
     return NextResponse.json({ data: { priceDate, count: result.count } });
   } catch (error) {

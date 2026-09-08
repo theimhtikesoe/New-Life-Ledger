@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   ensureDatabase: vi.fn(),
   upsert: vi.fn(),
   deleteMany: vi.fn(),
+  createMany: vi.fn(),
   transaction: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
@@ -20,7 +21,7 @@ vi.mock("@/lib/production-catalog", async () => {
 });
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    priceSetting: { upsert: mocks.upsert, deleteMany: mocks.deleteMany },
+    priceSetting: { upsert: mocks.upsert, deleteMany: mocks.deleteMany, createMany: mocks.createMany },
     $transaction: mocks.transaction,
   },
 }));
@@ -32,10 +33,9 @@ describe("POST /api/price-settings", () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.upsert.mockResolvedValue({});
     mocks.deleteMany.mockResolvedValue({ count: 0 });
+    mocks.createMany.mockResolvedValue({ count: 2 });
     mocks.writeAuditLog.mockResolvedValue(undefined);
-    mocks.transaction.mockImplementation(async (callback) => callback({
-      priceSetting: { upsert: mocks.upsert, deleteMany: mocks.deleteMany },
-    }));
+    mocks.transaction.mockResolvedValue([{ count: 0 }, { count: 2 }]);
 
     const response = await POST(new Request("http://localhost/api/price-settings", {
       method: "POST",
@@ -50,9 +50,8 @@ describe("POST /api/price-settings", () => {
 
     expect(response.status).toBe(200);
     expect(body.data.count).toBe(2);
-    for (const call of mocks.upsert.mock.calls) {
-      expect(call[0].create).not.toHaveProperty("categoryLabel");
-      expect(call[0].update).not.toHaveProperty("categoryLabel");
-    }
+    expect(mocks.transaction).toHaveBeenCalledTimes(1);
+    expect(mocks.createMany).toHaveBeenCalledTimes(1);
+    expect(mocks.createMany.mock.calls[0][0].data[0]).not.toHaveProperty("categoryLabel");
   });
 });
