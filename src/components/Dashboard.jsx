@@ -1100,10 +1100,15 @@ export default function Dashboard({ view = "overview" }) {
       const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
       const hasCashSaleBreakdown = isCashSale && hasPaymentBreakdownInput(ledgerForm.paymentBreakdown);
       const cashSaleBreakdownTotal = hasCashSaleBreakdown ? paymentSplitTotal(ledgerForm.paymentBreakdown) : 0;
-      const cashSaleAmount = Number.isFinite(amount) ? amount : 0;
+      const listedSaleAmount = getSaleItemsTotal(ledgerForm.saleItems);
+      const discountAmount = Math.max(0, Math.round(Number(ledgerForm.paymentBreakdown?.discount || 0)));
+      const cashSaleAmount = listedSaleAmount > 0 && hasCashSaleBreakdown
+        ? Math.max(0, listedSaleAmount - discountAmount)
+        : (Number.isFinite(amount) ? amount : 0);
       if (hasCashSaleBreakdown && cashSaleBreakdownTotal !== cashSaleAmount) {
         throw new Error(paymentBreakdownValidationMessage(ledgerForm.paymentBreakdown, cashSaleAmount));
       }
+      const amountToSave = isCashSale && listedSaleAmount > 0 && hasCashSaleBreakdown ? cashSaleBreakdownTotal : amount;
       
       // Cash sales are stored outside Ledger and never change Customer.current_balance.
       if (!isCashSale) {
