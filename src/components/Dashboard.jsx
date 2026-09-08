@@ -772,7 +772,7 @@ export default function Dashboard({ view = "overview" }) {
       // Start the small KPI aggregate and the main customer index together.
       // KPI can be slower on a cold serverless/database connection; it must not
       // block the customer list and the rest of the dashboard from rendering.
-      const kpiRequest = api("/api/dashboard-kpi", { signal })
+      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`, { signal })
         .then((kpi) => {
           setDashboardKpi(kpi);
           setDashboardKpiError("");
@@ -809,7 +809,7 @@ export default function Dashboard({ view = "overview" }) {
 
       // Detailed daily values are intentionally background work.
       setLoadingStage("Data ရယူနေပါသည်");
-      void api("/api/daily-summary", { signal })
+      void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal })
         .then((summary) => {
           const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
           const payments = (summary.transactions || [])
@@ -878,7 +878,7 @@ export default function Dashboard({ view = "overview" }) {
         setLoadingStage("");
       }
     }
-  }, [clearAutoRetryTimers, dashboardKpi, loadOverdueDebts, search, showAlert]);
+  }, [clearAutoRetryTimers, dashboardKpi, loadOverdueDebts, search, selectedKpiDate, showAlert]);
 
   // iPhone standalone PWAs can pause while they are in the background. Refresh
   // when the app becomes visible again, or immediately when the connection returns.
