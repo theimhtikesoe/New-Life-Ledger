@@ -595,11 +595,19 @@ async function renderReportImagesUncached(report) {
     await page.setContent(salesHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const salesSummaryBuffer = Buffer.from(await page.locator("#sales-summary-card").screenshot({ type: "png" }));
+    const productionHtml = createProductionSummaryHtml(
+      report,
+      fs.readFileSync(fontPath).toString("base64"),
+      fs.readFileSync(latinFontPath).toString("base64"),
+    );
+    await page.setContent(productionHtml, { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
+    const productionSummaryBuffer = Buffer.from(await page.locator("#production-summary").screenshot({ type: "png" }));
     const bottleSalesHtml = createBottleSalesSummaryHtml(report, fs.readFileSync(fontPath).toString("base64"), fs.readFileSync(latinFontPath).toString("base64"));
     await page.setContent(bottleSalesHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const bottleSalesBuffer = Buffer.from(await page.locator("#bottle-sales-summary").screenshot({ type: "png" }));
-    return { summaryBuffer, salesSummaryBuffer, bottleSalesBuffer };
+    return { summaryBuffer, salesSummaryBuffer, productionSummaryBuffer, bottleSalesBuffer };
   } finally {
     await browser.close();
   }
@@ -632,9 +640,9 @@ export async function createDailySalesSummaryImage(report) {
 }
 
 export async function createDailyReportPdf(report) {
-  const { summaryBuffer, salesSummaryBuffer, bottleSalesBuffer } = await renderReportImages(report);
+  const { summaryBuffer, salesSummaryBuffer, productionSummaryBuffer, bottleSalesBuffer } = await renderReportImages(report);
   const pdfDoc = await PDFDocument.create();
-  for (const imageBuffer of [summaryBuffer, salesSummaryBuffer, bottleSalesBuffer]) {
+  for (const imageBuffer of [summaryBuffer, salesSummaryBuffer, productionSummaryBuffer, bottleSalesBuffer]) {
     const image = await pdfDoc.embedPng(imageBuffer);
     const page = pdfDoc.addPage([900, 900 * image.height / image.width]);
     page.drawImage(image, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
