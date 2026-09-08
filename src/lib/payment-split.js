@@ -92,6 +92,10 @@ export function paymentSplitForInput(body, amount) {
   if (candidate) {
     const mismatch = paymentBreakdownValidationMessage(split, amount);
     if (mismatch) throw new Error(mismatch);
+    for (const key of ["discount", "listedAmount", "paidAmount"]) {
+      const value = toAmount(candidate[key]);
+      if (value > 0) split[key] = value;
+    }
     return split;
   }
 

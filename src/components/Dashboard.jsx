@@ -1123,11 +1123,16 @@ export default function Dashboard({ view = "overview" }) {
           cartons: Number(ledgerForm.cartons || 0) || null,
           rate: Number(ledgerForm.rate || 0) || null,
           deductions: Number(ledgerForm.deductions || 0),
-          amount,
+          amount: amountToSave,
           note: ledgerForm.note,
           saleItems: ledgerForm.saleItems?.length ? ledgerForm.saleItems : undefined,
           paymentType: hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType || (isCashSale ? "CASH" : null),
-          paymentBreakdown: hasCashSaleBreakdown ? ledgerForm.paymentBreakdown : undefined,
+          paymentBreakdown: hasCashSaleBreakdown ? {
+            ...ledgerForm.paymentBreakdown,
+            discount: discountAmount,
+            listedAmount: listedSaleAmount || amount,
+            paidAmount: cashSaleBreakdownTotal,
+          } : undefined,
           date: ledgerForm.date || null,
         }),
       });
@@ -1600,7 +1605,9 @@ export default function Dashboard({ view = "overview" }) {
   const cashSaleBreakdownInput = ledgerForm.paymentBreakdown || EMPTY_PAYMENT_BREAKDOWN;
   const hasCashSaleBreakdown = hasPaymentBreakdownInput(cashSaleBreakdownInput);
   const cashSaleBreakdownTotal = paymentSplitTotal(cashSaleBreakdownInput);
-  const cashSaleBreakdownAmount = getSaleItemsTotal(ledgerForm.saleItems) || Number(ledgerForm.amount || 0);
+  const cashSaleListedAmount = getSaleItemsTotal(ledgerForm.saleItems) || Number(ledgerForm.amount || 0);
+  const cashSaleDiscount = Math.max(0, Math.round(Number(cashSaleBreakdownInput.discount || 0)));
+  const cashSaleBreakdownAmount = Math.max(0, cashSaleListedAmount - cashSaleDiscount);
   const cashSaleBreakdownMismatch = ledgerForm.type === "CASH_SALE"
     && hasCashSaleBreakdown
     && cashSaleBreakdownTotal !== cashSaleBreakdownAmount;
@@ -2350,10 +2357,27 @@ export default function Dashboard({ view = "overview" }) {
                                   </label>
                                 ))}
                               </div>
+                              <label className="block rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+                                လျှော့စျေး / Discount (Ks)
+                                <input
+                                  type="number"
+                                  min="0"
+                                  inputMode="numeric"
+                                  placeholder="0"
+                                  value={cashSaleBreakdownInput.discount || ""}
+                                  onChange={(event) => setLedgerForm({
+                                    ...ledgerForm,
+                                    paymentBreakdown: { ...cashSaleBreakdownInput, discount: event.target.value },
+                                  })}
+                                  className="mt-1 h-10 w-full rounded-lg border border-amber-200 bg-white px-2.5 text-sm font-black text-slate-900 outline-none focus:border-amber-500"
+                                  disabled={isSubmitting}
+                                />
+                              </label>
                               <div className="flex flex-col gap-1 rounded-lg border border-cyan-200 bg-white/80 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                                 <span className="font-semibold text-slate-700">ခွဲပေါင်း: {formatMoney(cashSaleBreakdownTotal)}</span>
-                                <span className="font-semibold text-slate-700">ပမာဏ: {formatMoney(cashSaleBreakdownAmount)}</span>
+                                <span className="font-semibold text-slate-700">ပေးရမည့်ပမာဏ: {formatMoney(cashSaleBreakdownAmount)}</span>
                               </div>
+                              {cashSaleDiscount > 0 ? <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-900">သတ်မှတ်စျေး {formatMoney(cashSaleListedAmount)} − လျှော့စျေး {formatMoney(cashSaleDiscount)} = ပေးချေရန် {formatMoney(cashSaleBreakdownAmount)}</p> : null}
                               {cashSaleBreakdownMismatch ? (
                                 <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold leading-5 text-rose-800" role="alert">{cashSaleBreakdownMessage} စာရင်းသိမ်း၍ မရပါ။</p>
                               ) : hasCashSaleBreakdown ? (

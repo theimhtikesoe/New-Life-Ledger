@@ -34,7 +34,7 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
   const [open, setOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
   const [selectedKey, setSelectedKey] = useState("");
-  const [cardCount, setCardCount] = useState("1");
+  const [cardCount, setCardCount] = useState("");
   const [error, setError] = useState("");
 
   const categories = useMemo(() => {
@@ -50,7 +50,7 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
   const selectedItem = catalog.find((item) => item.productKey === selectedKey) || null;
   const previewItem = selectedItem || visibleItems[0] || null;
   const selectedPrice = Number(selectedItem?.effectivePrice?.pricePerBottle || 0);
-  const previewCards = Math.max(1, Math.round(Number(cardCount || 0)));
+  const previewCards = Math.max(0, Math.round(Number(cardCount || 0)));
   const previewBottles = previewCards * Number(previewItem?.bottlesPerCard || 0);
   const previewTotal = previewBottles * selectedPrice;
   const totalAmount = saleItems.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
@@ -60,13 +60,14 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
     setError("");
     setActiveCategory((current) => current || categories[0]?.key || "");
     setSelectedKey("");
-    setCardCount("1");
+    setCardCount("");
     setOpen(true);
   }
 
   function addItem() {
     if (!selectedItem) return setError("ဗူးအမျိုးအစား ရွေးပါ။");
     if (!selectedPrice) return setError("ဒီဗူးအတွက် Cost စျေးနှုန်း မသတ်မှတ်ရသေးပါ။ Cost Page မှာ အရင်သတ်မှတ်ပါ။");
+    if (!Number(cardCount)) return setError("ကဒ်အရေအတွက် ထည့်ပါ။");
     const line = makeLine(selectedItem, cardCount);
     const existing = saleItems.find((item) => item.productKey === line.productKey && item.pricePerBottle === line.pricePerBottle);
     if (existing) {
@@ -78,7 +79,7 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
     // Keep the picker open so one cash-sale entry can immediately add
     // another size/type (for example .3 and .6) as another sale-item line.
     setSelectedKey("");
-    setCardCount("1");
+    setCardCount("");
   }
 
   function updateCards(id, value) {

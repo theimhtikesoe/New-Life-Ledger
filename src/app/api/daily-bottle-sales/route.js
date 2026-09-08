@@ -50,15 +50,20 @@ export async function GET(request) {
         customer,
         totalBottles: 0,
         totalAmount: 0,
+        totalDiscount: 0,
+        totalPaidAmount: 0,
         items: new Map(),
         transactions: 0,
       };
       current.transactions += 1;
+      const discount = Math.max(0, Math.round(Number(row.paymentBreakdown?.discount || 0)));
       addItems(current.items, row.saleItems);
       for (const item of row.saleItems) {
         current.totalBottles += Math.max(0, Math.round(Number(item?.bottleCount || 0)));
         current.totalAmount += Math.max(0, Math.round(Number(item?.totalAmount || 0)));
       }
+      current.totalDiscount += discount;
+      current.totalPaidAmount += Number.isFinite(Number(row.amount)) ? Math.max(0, Math.round(Number(row.amount))) : Math.max(0, current.totalAmount);
       customerMap.set(customer.id, current);
     }
 
@@ -70,6 +75,8 @@ export async function GET(request) {
       totalCustomers: customers.length,
       totalBottles: customers.reduce((sum, row) => sum + row.totalBottles, 0),
       totalAmount: customers.reduce((sum, row) => sum + row.totalAmount, 0),
+      totalDiscount: customers.reduce((sum, row) => sum + row.totalDiscount, 0),
+      totalPaidAmount: customers.reduce((sum, row) => sum + row.totalPaidAmount, 0),
       customers,
     } });
   } catch (error) {
