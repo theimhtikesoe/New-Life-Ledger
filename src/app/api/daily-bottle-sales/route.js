@@ -36,10 +36,10 @@ function addItems(target, saleItems) {
   }
 }
 
-function buildCustomerRows(rows, includeRowsWithoutItems = false) {
+function buildCustomerRows(rows) {
   const customerMap = new Map();
   for (const row of rows) {
-    if (!includeRowsWithoutItems && (!Array.isArray(row.saleItems) || !row.saleItems.length)) continue;
+    if (!Array.isArray(row.saleItems) || !row.saleItems.length) continue;
     const customer = row.customer || { id: "unknown", name: "Unknown", phone: null };
     const current = customerMap.get(customer.id) || {
       customer,
@@ -102,7 +102,7 @@ export async function GET(request) {
       orderBy: { date: "asc" },
     });
 
-    const paidCustomers = buildCustomerRows(ledgers, true);
+    const paidCustomers = buildCustomerRows(ledgers);
     const cashCustomers = buildCustomerRows(cashSales);
     const customers = buildCustomerRows([...ledgers, ...cashSales]);
 
