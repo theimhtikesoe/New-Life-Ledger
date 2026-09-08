@@ -30,7 +30,39 @@ export async function GET(request) {
         _count: { _all: true },
         _sum: { amount: true },
       }),
+      prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } }),
+      prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } }),
     ]);
+
+    const bottleItemMap = new Map();
+    let totalBottles = 0;
+    let totalBottleAmount = 0;
+    const collectSaleItems = (rows = []) => {
+      rows.forEach((row) => {
+        if (!Array.isArray(row.saleItems)) return;
+        row.saleItems.forEach((item) => {
+          const bottleCount = Math.max(0, Math.round(Number(item.bottleCount || 0)));
+          const totalAmount = Math.max(0, Math.round(Number(item.totalAmount || 0)));
+          if (!bottleCount && !totalAmount) return;
+          const key = String(item.productKey || `${item.productName || "ဗူး"}::${item.capacity || 0}`);
+          const current = bottleItemMap.get(key) || {
+            productKey: key,
+            categoryKey: item.categoryKey || null,
+            productName: item.productName || "ဗူး",
+            capacity: Number(item.capacity || 0),
+            bottleCount: 0,
+            totalAmount: 0,
+          };
+          current.bottleCount += bottleCount;
+          current.totalAmount += totalAmount;
+          bottleItemMap.set(key, current);
+          totalBottles += bottleCount;
+          totalBottleAmount += totalAmount;
+        });
+      });
+    };
+    collectSaleItems(creditLedgers);
+    collectSaleItems(cashSalesForItems);
 
     const cashSales = cashSaleGroups.reduce((summary, group) => {
       const count = Number(group._count?._all || 0);
@@ -55,6 +87,11 @@ export async function GET(request) {
         todayPaidCount: Number(paymentStats._count?._all || 0),
         todayPaidAmount: Number(paymentStats._sum?.amount || 0),
         ...cashSales,
+        bottleSales: {
+          totalBottles,
+          totalAmount: totalBottleAmount,
+          items: [...bottleItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount),
+        },
       },
     });
   } catch (error) {
