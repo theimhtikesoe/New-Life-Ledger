@@ -17,6 +17,7 @@ const ledgerSelect = {
   amount: true,
   note: true,
   paymentType: true,
+  saleItems: true,
 };
 
 const cashSaleSelect = {
@@ -31,6 +32,7 @@ const cashSaleSelect = {
   note: true,
   paymentType: true,
   paymentBreakdown: true,
+  saleItems: true,
   createdAt: true,
 };
 

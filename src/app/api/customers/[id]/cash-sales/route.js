@@ -20,6 +20,7 @@ const cashSaleSelect = {
   note: true,
   paymentType: true,
   paymentBreakdown: true,
+  saleItems: true,
   createdAt: true,
 };
 
@@ -72,6 +73,7 @@ export async function POST(request, { params }) {
     const body = await request.json();
     const amount = parseAmount(body.amount);
     const paymentBreakdown = paymentSplitForInput(body, amount);
+    const saleItems = Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
     const hasBreakdown = hasPaymentBreakdownInput(body.paymentBreakdown);
     const storedPaymentType = hasBreakdown ? "MIXED" : body.paymentType?.trim() || "CASH";
     const date = parseDate(body.date);
@@ -92,6 +94,7 @@ export async function POST(request, { params }) {
           note: body.note?.trim() || null,
           paymentType: storedPaymentType,
           paymentBreakdown,
+          saleItems,
           date,
         },
         select: cashSaleSelect,
@@ -111,6 +114,7 @@ export async function POST(request, { params }) {
           paymentBreakdown: cashSale.paymentBreakdown,
           saleType: cashSale.saleType,
           note: cashSale.note,
+          saleItems: cashSale.saleItems,
           date: cashSale.date,
           wholesaleTracking: getWholesaleTracking(amount),
         },

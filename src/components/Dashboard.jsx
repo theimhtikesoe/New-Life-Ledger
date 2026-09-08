@@ -11,6 +11,7 @@ import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-
 import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
+import SalesItemPicker from "./SalesItemPicker";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
 
 
@@ -52,6 +53,15 @@ function clearDashboardDraftFields(fields) {
 
 function formatMoney(value) {
   return `${money.format(Number(value || 0))} Ks`;
+}
+
+function getSaleItemsTotal(items = []) {
+  return items.reduce((sum, item) => sum + Math.max(0, Math.round(Number(item?.totalAmount || 0))), 0);
+}
+
+function saleItemsSummary(items = []) {
+  if (!Array.isArray(items) || !items.length) return "";
+  return items.map((item) => `${item.productName || "ဗူး"} ${item.capacity || 0} ဆံ့ × ${item.cardCount || 0} ကဒ် = ${Number(item.bottleCount || 0).toLocaleString()} ဗူး`).join("၊ ");
 }
 
 function summarizeProduction(rows = []) {
@@ -293,6 +303,7 @@ export default function Dashboard({ view = "overview" }) {
     date: "",
     paymentType: "",
     paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
+    saleItems: [],
   });
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -313,6 +324,8 @@ export default function Dashboard({ view = "overview" }) {
   const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
   const [productionRows, setProductionRows] = useState([]);
+  const [salesCatalog, setSalesCatalog] = useState([]);
+  const [salesCatalogError, setSalesCatalogError] = useState("");
   const [productionDate, setProductionDate] = useState(() => formatMyanmarDateInputValue());
   const [productionLoading, setProductionLoading] = useState(false);
   const [productionError, setProductionError] = useState("");
@@ -418,6 +431,21 @@ export default function Dashboard({ view = "overview" }) {
     return () => controller.abort();
   }, [productionDate]);
 
+  useEffect(() => {
+    const priceDate = ledgerForm.date || formatMyanmarDateInputValue();
+    const controller = new AbortController();
+    setSalesCatalogError("");
+    api(`/api/price-settings?date=${encodeURIComponent(priceDate)}`, { signal: controller.signal, cache: "no-store" })
+      .then((data) => setSalesCatalog(Array.isArray(data?.catalog) ? data.catalog : []))
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setSalesCatalog([]);
+          setSalesCatalogError(error.message || "ဗူးနှင့် စျေးနှုန်း catalog ရယူ၍မရပါ။");
+        }
+      });
+    return () => controller.abort();
+  }, [ledgerForm.date]);
+
   // Keep unfinished local work available when the actor-only idle lock appears.
   // Each actor has a separate session draft so shared-phone users do not see one another's form data.
   // sessionStorage survives a refresh in this tab and clears when the tab/PWA session closes.
@@ -425,7 +453,7 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     const resetDraftState = () => {
       setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
-      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } });
+      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
       setEditForm({ name: "", phone: "", routeTag: "" });
       setEditingCustomer(null);
       setSearch("");
@@ -1032,7 +1060,8 @@ export default function Dashboard({ view = "overview" }) {
     setIsSubmitting(true);
     try {
       setMessage("");
-      const amount = Number(ledgerForm.amount);
+      const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
+      const amount = saleItemsAmount || Number(ledgerForm.amount);
       const type = ledgerForm.type;
       const isCashSale = type === "CASH_SALE";
       const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
@@ -1061,8 +1090,9 @@ export default function Dashboard({ view = "overview" }) {
           cartons: Number(ledgerForm.cartons || 0) || null,
           rate: Number(ledgerForm.rate || 0) || null,
           deductions: Number(ledgerForm.deductions || 0),
-          amount: Number(ledgerForm.amount),
+          amount,
           note: ledgerForm.note,
+          saleItems: ledgerForm.saleItems?.length ? ledgerForm.saleItems : undefined,
           paymentType: hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType || (isCashSale ? "CASH" : null),
           paymentBreakdown: hasCashSaleBreakdown ? ledgerForm.paymentBreakdown : undefined,
           date: ledgerForm.date || null,
@@ -1091,6 +1121,7 @@ export default function Dashboard({ view = "overview" }) {
         date: "",
         paymentType: "",
         paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
+        saleItems: [],
       });
       clearDashboardDraftFields(["ledgerForm"]);
       
@@ -1222,7 +1253,7 @@ export default function Dashboard({ view = "overview" }) {
       return;
     }
 
-    const amount = computedSaleAmount || Number(ledgerForm.amount || 0);
+    const amount = getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || Number(ledgerForm.amount || 0);
 
     setIsSubmitting(true);
     try {
@@ -1295,6 +1326,8 @@ export default function Dashboard({ view = "overview" }) {
         note: "",
         date: "",
         paymentType: "",
+        paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
+        saleItems: [],
       });
       clearDashboardDraftFields(["ledgerForm"]);
       
@@ -1534,7 +1567,7 @@ export default function Dashboard({ view = "overview" }) {
   const cashSaleBreakdownInput = ledgerForm.paymentBreakdown || EMPTY_PAYMENT_BREAKDOWN;
   const hasCashSaleBreakdown = hasPaymentBreakdownInput(cashSaleBreakdownInput);
   const cashSaleBreakdownTotal = paymentSplitTotal(cashSaleBreakdownInput);
-  const cashSaleBreakdownAmount = Number(ledgerForm.amount || 0);
+  const cashSaleBreakdownAmount = getSaleItemsTotal(ledgerForm.saleItems) || Number(ledgerForm.amount || 0);
   const cashSaleBreakdownMismatch = ledgerForm.type === "CASH_SALE"
     && hasCashSaleBreakdown
     && cashSaleBreakdownTotal !== cashSaleBreakdownAmount;
@@ -1543,13 +1576,15 @@ export default function Dashboard({ view = "overview" }) {
     : "";
 
   const computedSaleAmount = useMemo(() => {
+    const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
+    if (saleItemsAmount > 0) return saleItemsAmount;
     if (ledgerForm.type !== "CREDIT" || ledgerForm.saleType !== "RETAIL") return null;
     const cartons = Number(ledgerForm.cartons || 0);
     const rate = Number(ledgerForm.rate || 0);
     const deductions = Number(ledgerForm.deductions || 0);
     if (!cartons || !rate) return null;
     return cartons * rate - deductions;
-  }, [ledgerForm.cartons, ledgerForm.rate, ledgerForm.deductions, ledgerForm.type, ledgerForm.saleType]);
+  }, [ledgerForm.saleItems, ledgerForm.cartons, ledgerForm.rate, ledgerForm.deductions, ledgerForm.type, ledgerForm.saleType]);
 
   // Calculate KPI metrics from the lightweight customer list and today's summary.
   const kpiMetrics = useMemo(() => ({
@@ -2172,13 +2207,26 @@ export default function Dashboard({ view = "overview" }) {
                             type="number"
                             className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
                             placeholder="0"
-                            value={ledgerForm.amount}
+                            value={getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount}
                             onChange={(e) => setLedgerForm({ ...ledgerForm, amount: e.target.value })}
+                            readOnly={getSaleItemsTotal(ledgerForm.saleItems) > 0}
                             required
                             disabled={isSubmitting}
                           />
                         </div>
                       </div>
+
+                      {salesCatalogError ? <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">{salesCatalogError}</p> : null}
+                      <SalesItemPicker
+                        catalog={salesCatalog}
+                        saleItems={ledgerForm.saleItems || []}
+                        onChange={(saleItems) => setLedgerForm((current) => ({
+                          ...current,
+                          saleItems,
+                          amount: getSaleItemsTotal(saleItems) ? String(getSaleItemsTotal(saleItems)) : "",
+                        }))}
+                        disabled={isSubmitting}
+                      />
 
                       {ledgerForm.type === "CASH_SALE" && (
                         <div className="space-y-1">
@@ -2317,6 +2365,7 @@ export default function Dashboard({ view = "overview" }) {
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.type === "CASH_SALE" ? `${paymentSplitLabel(getPaymentSplit(ledger)) || ledger.paymentType || "CASH"} · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.paymentType || "-"}</p></div>
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
                       </div>
+                      {saleItemsSummary(ledger.saleItems) ? <p className="mt-2 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-medium leading-4 text-violet-900">ဗူး: {saleItemsSummary(ledger.saleItems)}</p> : null}
                       <button type="button" onClick={() => setDeletingTransaction(ledger)} className="mt-2 min-h-8 w-full rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
                     </article>
                   )) : <div className="rounded-lg border border-slate-200 px-3 py-6 text-center text-sm text-slate-500">Transaction မရှိသေးပါ။</div>}</div>
@@ -2363,8 +2412,9 @@ export default function Dashboard({ view = "overview" }) {
                               <td className="px-4 py-3 text-xs text-slate-600">
                                 {ledger.type === "CASH_SALE" ? (paymentSplitLabel(getPaymentSplit(ledger)) || ledger.paymentType || "CASH") : ledger.paymentType || "-"}
                               </td>
-                              <td className="px-4 py-3 text-xs text-slate-600 max-w-[200px] truncate">
-                                {ledger.note || "-"}
+                              <td className="px-4 py-3 text-xs text-slate-600 max-w-[200px]">
+                                <p className="truncate">{ledger.note || "-"}</p>
+                                {saleItemsSummary(ledger.saleItems) ? <p className="mt-1 max-w-[320px] truncate font-medium text-violet-800">ဗူး: {saleItemsSummary(ledger.saleItems)}</p> : null}
                               </td>
                               <td className="px-4 py-3 text-center">
                                 <button

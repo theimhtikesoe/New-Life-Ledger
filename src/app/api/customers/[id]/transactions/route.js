@@ -49,6 +49,7 @@ export async function GET(request, { params }) {
           amount: true,
           note: true,
           paymentType: true,
+          saleItems: true,
         },
         orderBy: [{ date: "desc" }, { id: "desc" }],
         skip: offset,
@@ -82,6 +83,7 @@ export async function POST(request, { params }) {
     const type = body.type === "DEBIT" ? "DEBIT" : "CREDIT";
     const amount = Math.round(Number(body.amount || 0));
     const deductions = Math.round(Number(body.deductions || 0));
+    const saleItems = Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "amount must be greater than zero" }, { status: 400 });
@@ -117,6 +119,7 @@ export async function POST(request, { params }) {
           amount,
           note: body.note?.trim() || null,
           paymentType: body.paymentType || null,
+          saleItems,
           date: body.date ? new Date(`${body.date}T00:00:00Z`) : new Date(),
         },
         select: {
@@ -131,6 +134,7 @@ export async function POST(request, { params }) {
           amount: true,
           note: true,
           paymentType: true,
+          saleItems: true,
         },
       });
 
@@ -150,6 +154,7 @@ export async function POST(request, { params }) {
           amount,
           paymentType: ledger.paymentType,
           note: ledger.note,
+          saleItems: ledger.saleItems,
           wholesaleTracking: getWholesaleTracking(amount),
         },
       });
