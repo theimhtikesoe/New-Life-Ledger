@@ -23,6 +23,10 @@ function rowLabel(row) {
   return getBottleDisplayName(row.bottleType) || "ဗူးအမျိုးအစား မသတ်မှတ်ရသေးပါ";
 }
 
+function normalizeWorkerNames(value) {
+  return [...new Set((Array.isArray(value) ? value : []).map((name) => String(name || "").trim()).filter(Boolean))];
+}
+
 export default function ProductionHistoryPage() {
   const [date, setDate] = useState("");
   const [rows, setRows] = useState([]);
@@ -65,7 +69,7 @@ export default function ProductionHistoryPage() {
         reportDate: row.reportDate,
         machineName: row.machineName || row.machineCode,
         actorName: row.actorName,
-        workers: Array.isArray(row.involvedWorkers) ? row.involvedWorkers : [],
+        workers: [],
         rows: [],
         totalPieces: 0,
         wasteQuantity: 0,
@@ -73,6 +77,7 @@ export default function ProductionHistoryPage() {
         tubeQuantityValue: "0",
         tubeQuantityUnit: row.tubeQuantityUnit || "အိတ်",
       };
+      current.workers = [...new Set([...current.workers, ...normalizeWorkerNames(row.involvedWorkers)])];
       current.rows.push(row);
       current.totalPieces += Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0);
       current.wasteQuantity = Math.max(current.wasteQuantity, Number(row.wasteQuantity || 0));
@@ -149,7 +154,7 @@ export default function ProductionHistoryPage() {
         {summaries.tubes.length ? <div className="mt-4 overflow-x-auto rounded-xl border border-orange-200 bg-white"><table className="w-full table-fixed text-left text-sm"><thead className="bg-orange-100 text-orange-950"><tr><th className="px-3 py-2 font-black">Tube အမျိုးအစား</th><th className="px-3 py-2 font-black">တစ်ကြိမ်ဆံ့</th><th className="px-3 py-2 text-right font-black">အိတ်အရေအတွက်</th><th className="px-3 py-2 text-right font-black">စုစုပေါင်း Tube</th></tr></thead><tbody>{summaries.tubes.map((item) => <tr key={`${item.label}|${item.capacity}`} className="border-t border-slate-100"><td className="px-3 py-2 font-bold">{item.label}</td><td className="px-3 py-2 font-bold">{formatNumber(item.capacity)} ခု</td><td className="px-3 py-2 text-right font-black">{formatNumber(item.quantity)} {item.unit}</td><td className="px-3 py-2 text-right font-black text-orange-700">{formatNumber(item.pieces)} ခု</td></tr>)}</tbody><tfoot className="border-t-2 border-orange-200 bg-orange-50"><tr><td colSpan="3" className="px-3 py-2 font-black">Tube စုစုပေါင်း</td><td className="px-3 py-2 text-right font-black text-orange-800">{formatNumber(summaries.tubes.reduce((sum, item) => sum + item.pieces, 0))} ခု</td></tr></tfoot></table></div> : null}
       </section> : null}
 
-      {loading ? <div className="rounded-2xl border border-dashed p-10 text-center font-bold text-slate-500">ထုတ်လုပ်မှုမှတ်တမ်း ရယူနေသည်...</div> : groups.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center font-bold text-slate-500">{date} အတွက် ထုတ်လုပ်မှုမှတ်တမ်း မရှိသေးပါ။</div> : <section className="space-y-4">{groups.map((group) => <article key={group.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-lg font-black text-slate-900">{group.machineName}</h3><p className="text-sm text-slate-500">{group.reportDate} · {group.actorName || "User"}</p></div><div className="rounded-full bg-blue-100 px-3 py-1 text-sm font-black text-blue-800">ပူးတွဲဆင်းသူ — {group.workers.join(", ") || "မရှိ"}</div></div><div className="mt-4 grid gap-2">{group.rows.map((row) => <div key={row.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800"><span>{rowLabel(row)} · {row.outputCapacity} ဆံ့</span><span className="float-right">{formatNumber(row.outputQuantity)} {row.outputUnit || "ကဒ်"} = {formatNumber(Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0))} ဗူး</span></div>)}</div><div className="mt-4 grid gap-2 text-sm font-black sm:grid-cols-3"><p className="text-emerald-700">စုစုပေါင်း {formatNumber(group.totalPieces)} ဗူး</p><p className="text-red-700">ဗူးပျက် {formatNumber(group.wasteQuantity)} ဗူး</p><p className="text-orange-700">Tube {group.tubeQuantityValue} {group.tubeQuantityUnit}</p></div></article>)}</section>}
+      {loading ? <div className="rounded-2xl border border-dashed p-10 text-center font-bold text-slate-500">ထုတ်လုပ်မှုမှတ်တမ်း ရယူနေသည်...</div> : groups.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center font-bold text-slate-500">{date} အတွက် ထုတ်လုပ်မှုမှတ်တမ်း မရှိသေးပါ။</div> : <section className="space-y-4">{groups.map((group) => <article key={group.key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-lg font-black text-slate-900">{group.machineName}</h3><p className="text-sm text-slate-500">{group.reportDate}</p><p className="mt-1 text-xs font-bold text-slate-500">မှတ်တမ်းတင်သူ — {group.actorName || "User"}</p></div><div className="min-w-[220px] rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-blue-900"><p className="text-xs font-black uppercase tracking-wide text-blue-700">ပူးတွဲဆင်းသူများ</p><div className="mt-1 flex flex-wrap gap-1.5">{group.workers.length ? group.workers.map((worker) => <span key={worker} className="rounded-full bg-blue-600 px-2.5 py-1 text-xs font-black text-white">{worker}</span>) : <span className="text-sm font-bold text-blue-700">မရှိ</span>}</div></div></div><div className="mt-4 grid gap-2">{group.rows.map((row) => <div key={row.id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800"><span>{rowLabel(row)} · {row.outputCapacity} ဆံ့</span><span className="float-right">{formatNumber(row.outputQuantity)} {row.outputUnit || "ကဒ်"} = {formatNumber(Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0))} ဗူး</span></div>)}</div><div className="mt-4 grid gap-2 text-sm font-black sm:grid-cols-3"><p className="text-emerald-700">စုစုပေါင်း {formatNumber(group.totalPieces)} ဗူး</p><p className="text-red-700">ဗူးပျက် {formatNumber(group.wasteQuantity)} ဗူး</p><p className="text-orange-700">Tube {group.tubeQuantityValue} {group.tubeQuantityUnit}</p></div></article>)}</section>}
     </main>
   );
 }

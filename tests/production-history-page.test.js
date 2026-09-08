@@ -21,6 +21,9 @@ describe("Production history page", () => {
     expect(pageSource).toContain("row.submissionId || row.id");
     expect(pageSource).toContain("မှတ်တမ်း Date");
     expect(pageSource).toContain("ပူးတွဲဆင်းသူ");
+    expect(pageSource).toContain("normalizeWorkerNames");
+    expect(pageSource).toContain("current.workers = [...new Set");
+    expect(pageSource).toContain("group.workers.map");
   });
 
   it("provides book-style product/capacity and Tube summaries without the deferred print control", () => {
