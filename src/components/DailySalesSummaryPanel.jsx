@@ -132,10 +132,6 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
     load(date);
   }, [isOpen, load, date]);
 
-  useEffect(() => {
-    setHistoryPage(1);
-  }, [date]);
-
   const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
   const values = draft || toDraft(automatic);
   const dailyTotal = Number(values.retailTotal || 0) + Number(values.wholesaleTotal || 0);
@@ -179,6 +175,11 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
     (visibleHistoryPage - 1) * HISTORY_PAGE_SIZE,
     visibleHistoryPage * HISTORY_PAGE_SIZE,
   );
+
+  useEffect(() => {
+    const selectedDateIndex = tableRows.findIndex((row) => row.date === date);
+    setHistoryPage(selectedDateIndex >= 0 ? Math.floor(selectedDateIndex / HISTORY_PAGE_SIZE) + 1 : 1);
+  }, [date, tableRows]);
 
   const currentTableOpening = tableRows.find((row) => row.date === date)?.monthlyCumulative;
   const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;
