@@ -748,6 +748,7 @@ export default function Dashboard({ view = "overview" }) {
     if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
+    setDashboardKpi(null);
     setLoadingTimedOut(false);
     setDataLoadError("");
     dashboardLoadingWatchdogRef.current = window.setTimeout(() => {

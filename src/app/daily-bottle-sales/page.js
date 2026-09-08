@@ -39,9 +39,7 @@ export default function DailyBottleSalesPage() {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Daily Bottle Sales</p>
-              <h2 className="mt-1 text-2xl font-black text-slate-900">တစ်နေ့တာ ဗူးရောင်းစာရင်း</h2>
-              <p className="mt-2 text-sm text-slate-600">Customer တစ်ဦးချင်းအလိုက် ရောင်းထားသော item၊ ဆံ့၊ ဗူးအရေအတွက်နှင့် စုစုပေါင်းငွေ</p>
+              <p className="text-sm text-slate-600">Customer တစ်ဦးချင်းအလိုက် ရောင်းထားသော item၊ ဆံ့၊ ဗူးအရေအတွက်နှင့် စုစုပေါင်းငွေ</p>
             </div>
             <label className="shrink-0 text-sm font-bold text-slate-700">ရက်စွဲ<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 h-12 rounded-xl border-2 border-slate-300 bg-slate-50 px-3 text-base font-black" /></label>
           </div>
