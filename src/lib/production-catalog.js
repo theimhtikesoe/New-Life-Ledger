@@ -7,7 +7,6 @@ export const BOTTLE_ITEMS = [
   { type: "0.3 ဖြူ", capacities: [100, 200, 400] },
   { type: "0.3 ပြာ (S+1)", capacities: [100, 200, 400] },
   { type: "0.3 ပြာ (S+S)", capacities: [100, 200, 400] },
-  { type: "လေးထောင့် 16g", capacities: [100, 200] },
   { type: "လေးထောင့် 13g", capacities: [100, 200] },
   { type: "8 ဒေါင့် ဖြူ", capacities: [100, 250] },
   { type: "8 ဒေါင့် (S+1)", capacities: [100, 250] },
@@ -43,13 +42,14 @@ export const BOTTLE_ITEMS = [
 ];
 
 export const BOTTLE_GROUPS = [
-  { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူနှင့် လေးထောင့်" },
+  { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူ" },
   { key: "03-blue", label: ".3 ပြာ", description: "0.3 ပြာ" },
-  { key: "square", label: "လေးထောင့်", description: "လေးထောင့် 16g နှင့် 13g" },
+  { key: "square-golden", label: "လေးထောင့် / ရွှေဝိုင်း", description: "လေးထောင့် 13g နှင့် ရွှေဝိုင်း" },
   { key: "08-corner", label: "8 ဒေါင့်", description: "8 ဒေါင့် ဖြူ၊ S+1 နှင့် S+S" },
-  { key: "special", label: "ဒိန်ချဉ်/ရွှေဝိုင်း", description: "ဒိန်သေး၊ ဒိန်ကြီး၊ ရွှေဝိုင်း" },
-  { key: "025", label: ".25", description: "0.25 အမျိုးအစား" },
-  { key: "candy", label: "ချိုချဉ် / လုံးချော", description: "ချိုချဉ်အသေးနှင့် အခြားအရွယ်အစား" },
+  { key: "yogurt", label: "ဒိန်ချဉ်", description: "ဒိန်သေးနှင့် ဒိန်ကြီး" },
+  { key: "025", label: ".25 / .25 ပြာ", description: "0.25 နှင့် 0.25 ပြာ" },
+  { key: "small-candy", label: "ချိုချဉ်အသေး", description: "ချိုချဉ်အသေး သီးသန့်စျေး" },
+  { key: "round-16g", label: "လုံးချော 16g", description: "လုံးချော 16g သီးသန့်စျေး" },
   { key: "sweet-drink-large", label: "ချိုချဉ်အကြီး (အချိုရည်ဗူး)", description: "ချိုချဉ်အကြီး 100 ဆံ့" },
   { key: "engine-oil", label: "အင်ဂျင်ဝိုင်", description: "အင်ဂျင်ဝိုင် 100 ဆံ့" },
   { key: "05", label: ".5", description: "0.5 ဖြူ" },
@@ -66,14 +66,15 @@ export const BOTTLE_GROUPS = [
 export function getBottleGroup(type) {
   const value = String(type || "");
   if (value.startsWith("8 ဒေါင့်")) return "08-corner";
-  if (value.startsWith("လေးထောင့်")) return "square";
+  if (value.startsWith("လေးထောင့်") || value === "ရွှေဝိုင်း") return "square-golden";
   if (value === "0.3 ဖြူ") return "03-white";
   if (value.includes("0.3 ပြာ")) return "03-blue";
-  if (["ဒိန်သေး", "ဒိန်သေး (S+1)", "ဒိန်သေး (S+S)", "ဒိန်ကြီး", "ဒိန်ကြီး (S+1)", "ဒိန်ကြီး (S+S)", "ဒိန်ဝိုင်းအလတ်", "ရွှေဝိုင်း"].includes(value)) return "special";
+  if (["ဒိန်သေး", "ဒိန်သေး (S+1)", "ဒိန်သေး (S+S)", "ဒိန်ကြီး", "ဒိန်ကြီး (S+1)", "ဒိန်ကြီး (S+S)", "ဒိန်ဝိုင်းအလတ်"].includes(value)) return "yogurt";
   if (value.startsWith("0.25")) return "025";
   if (value === "ချိုချဉ်အကြီး (အချိုရည်ဗူးကြီး)") return "sweet-drink-large";
   if (value === "အင်ဂျင်ဝိုင်") return "engine-oil";
-  if (["ချိုချဉ်", "ချိုချဉ်အသေး", "လုံးချော (16g)"].includes(value)) return "candy";
+  if (value === "ချိုချဉ်အသေး") return "small-candy";
+  if (value === "လုံးချော (16g)") return "round-16g";
   if (value.startsWith("0.5")) return "05";
   if (value.startsWith("0.6")) return "06";
   if (value.startsWith("25 ")) return "25";

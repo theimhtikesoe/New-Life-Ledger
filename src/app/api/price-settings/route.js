@@ -113,7 +113,7 @@ export async function POST(request) {
       const raw = itemPrices[item.productKey];
       if (raw === "" || raw === null || raw === undefined) continue;
       const pricePerBottle = positiveInt(raw, `${item.productName} ${item.capacity} စျေးနှုန်း`);
-      rows.push({ ...item, priceDate, scope: "ITEM", pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard });
+      rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard });
     }
 
     const result = await prisma.$transaction(async (tx) => {
@@ -132,7 +132,8 @@ export async function POST(request) {
         if (raw === "" || raw === null || raw === undefined) await tx.priceSetting.deleteMany({ where: { priceDate, scope: "ITEM", productKey: item.productKey } });
         else {
           const pricePerBottle = positiveInt(raw, `${item.productName} ${item.capacity} စျေးနှုန်း`);
-          await tx.priceSetting.upsert({ where, update: { ...item, productName: item.productName, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard, updatedAt: new Date() }, create: { ...item, priceDate, scope: "ITEM", pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard } });
+          const itemData = { categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard };
+          await tx.priceSetting.upsert({ where, update: { ...itemData, updatedAt: new Date() }, create: { ...itemData, priceDate, scope: "ITEM" } });
         }
       }
       await writeAuditLog({ db: tx, actorName: getActorName(request), action: "PRICE_SETTINGS_UPDATE", entityType: "PriceSetting", entityId: priceDate, entityLabel: priceDate, summary: `${priceDate} အတွက် စျေးနှုန်းသတ်မှတ်ချက် ပြင်ဆင်`, metadata: { priceDate, categoryCount: Object.keys(categoryPrices).filter((key) => categoryPrices[key] !== "").length, itemCount: Object.keys(itemPrices).filter((key) => itemPrices[key] !== "").length } });
