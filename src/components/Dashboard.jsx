@@ -1895,14 +1895,18 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="mt-auto pt-2 text-xs font-bold text-orange-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
-            <div className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-slate-300 bg-slate-100/90 p-4 text-left shadow-sm sm:min-h-[170px]">
+            <Link
+              href={`/daily-bottle-sales?date=${encodeURIComponent(selectedKpiDate)}`}
+              aria-label={`${selectedKpiDate} ဗူးရောင်းစာရင်း အသေးစိတ်ကြည့်ရန်`}
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-slate-300 bg-slate-100/90 p-4 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-300 sm:min-h-[170px]"
+            >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-slate-600 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
                 <p className="mt-2 text-2xl font-black text-slate-800">{kpiDateLoading ? "ရယူနေသည်..." : `${Number(todayBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
                 <p className="mt-1 text-xs font-bold text-slate-600">သင့်ငွေ {formatMoney(todayBottleSales.totalAmount)}</p>
               </div>
-              <p className="pt-2 text-xs font-bold text-slate-600">Category/Item အလိုက် စုစုပေါင်း</p>
-            </div>
+              <p className="pt-2 text-xs font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
+            </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} />
           </div>
             </section>

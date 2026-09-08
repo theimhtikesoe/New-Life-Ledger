@@ -113,6 +113,7 @@ const PAGE_HEADERS = {
   '/auto-report-status': 'Auto Report အခြေအနေ',
   '/balance-detail': 'Balance Detail',
   '/customer-management': 'Customer Management',
+  '/daily-bottle-sales': 'တစ်နေ့တာ ဗူးရောင်းစာရင်း',
   '/daily-summary': 'Daily Summary',
   '/data-management': 'Data Management',
   '/orders': 'Telegram Orders',
