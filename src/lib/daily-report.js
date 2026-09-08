@@ -538,7 +538,6 @@ async function renderReportImagesUncached(report) {
     await page.setContent(html, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const summaryBuffer = Buffer.from(await page.locator("#summary").screenshot({ type: "png" }));
-    const activityBuffer = Buffer.from(await page.locator("#activity").screenshot({ type: "png" }));
     const salesData = await getDailySalesSummaryCardData(report.dateLabel);
     const salesHtml = createDailySalesSummaryCardHtml(
       salesData,
@@ -556,7 +555,7 @@ async function renderReportImagesUncached(report) {
     await page.setContent(productionHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const productionSummaryBuffer = Buffer.from(await page.locator("#production-summary").screenshot({ type: "png" }));
-    return { summaryBuffer, activityBuffer, salesSummaryBuffer, productionSummaryBuffer };
+    return { summaryBuffer, salesSummaryBuffer, productionSummaryBuffer };
   } finally {
     await browser.close();
   }
@@ -589,9 +588,9 @@ export async function createDailySalesSummaryImage(report) {
 }
 
 export async function createDailyReportPdf(report) {
-  const { summaryBuffer, activityBuffer, salesSummaryBuffer, productionSummaryBuffer } = await renderReportImages(report);
+  const { summaryBuffer, salesSummaryBuffer, productionSummaryBuffer } = await renderReportImages(report);
   const pdfDoc = await PDFDocument.create();
-  for (const imageBuffer of [summaryBuffer, activityBuffer, salesSummaryBuffer, productionSummaryBuffer]) {
+  for (const imageBuffer of [summaryBuffer, salesSummaryBuffer, productionSummaryBuffer]) {
     const image = await pdfDoc.embedPng(imageBuffer);
     const page = pdfDoc.addPage([900, 900 * image.height / image.width]);
     page.drawImage(image, { x: 0, y: 0, width: page.getWidth(), height: page.getHeight() });
