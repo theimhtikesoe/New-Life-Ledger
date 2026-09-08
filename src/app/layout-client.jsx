@@ -146,6 +146,8 @@ function ActorSwitcher({ actorName }) {
 
 function SharedPageHeader({ pathname, actorName }) {
   const title = PAGE_HEADERS[pathname];
+  const normalizedActorName = String(actorName || '').trim();
+  const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဆောင်းဦး';
   const [currentTime, setCurrentTime] = useState(() => new Date());
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
@@ -156,7 +158,7 @@ function SharedPageHeader({ pathname, actorName }) {
   return (
     <header className="shared-page-header shared-page-header-route neon-surface neon-sweep mx-3 flex min-h-[170px] flex-col justify-between rounded-2xl border border-cyan-200/80 bg-white/90 px-3 py-3 shadow-sm backdrop-blur sm:mx-6 sm:px-5 sm:py-5">
       <div className="relative flex min-h-[136px] flex-1 flex-col justify-between">
-        {actorName !== 'ဇွဲဇွဲ' && actorName !== 'ဆောင်းဦး' ? (
+        {showDashboardLink ? (
           <div className="shared-page-header-nav flex min-h-10 items-center">
             <Link href="/" className="text-sm font-medium text-cyan-700 transition hover:text-cyan-900">← Dashboard</Link>
           </div>

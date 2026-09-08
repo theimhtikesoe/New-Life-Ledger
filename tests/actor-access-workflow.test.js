@@ -89,7 +89,8 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("isProductionOnlyActor");
     expect(layoutSource).toContain("router.replace('/production')");
     expect(layoutSource).toContain("pathname === '/production'");
-    expect(layoutSource).toContain("actorName !== 'ဇွဲဇွဲ'");
+    expect(layoutSource).toContain("const normalizedActorName = String(actorName || '').trim();");
+    expect(layoutSource).toContain("const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဆောင်းဦး';");
     expect(layoutSource).toContain('<Link href="/"');
     expect(productionSource).not.toContain('ထွက်ရှိမှု မှတ်တမ်းတင်ရန်</h1>');
     expect(middlewareSource).toContain('PRODUCTION_API_PATHS');
