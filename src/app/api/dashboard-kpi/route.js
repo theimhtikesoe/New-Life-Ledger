@@ -34,6 +34,7 @@ export async function GET(request) {
 
     // Bottle sales are a secondary KPI. Keep the core dashboard usable while
     // older deployments finish applying the saleItems migration.
+    let paidLedgers = [];
     let creditLedgers = [];
     let cashSalesForItems = [];
     try {
@@ -48,23 +49,24 @@ export async function GET(request) {
         : [];
       const availableColumns = new Set(saleItemColumns.map((row) => `${row.table_name}.${row.column_name}`));
       if (availableColumns.has("Ledger.saleItems") && availableColumns.has("CashSale.saleItems")) {
-        [creditLedgers, cashSalesForItems] = await Promise.all([
-          typeof prisma.ledger.findMany === "function"
-            ? prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } })
-            : Promise.resolve([]),
-          typeof prisma.cashSale.findMany === "function"
-            ? prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
-            : Promise.resolve([]),
-        ]);
+        paidLedgers = typeof prisma.ledger.findMany === "function"
+          ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "DEBIT" }, select: { saleItems: true } })
+          : [];
+        cashSalesForItems = typeof prisma.cashSale.findMany === "function"
+          ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { saleItems: true } })
+          : [];
+        creditLedgers = typeof prisma.ledger.findMany === "function"
+          ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "CREDIT" }, select: { saleItems: true } })
+          : [];
       }
     } catch (error) {
       console.warn("Bottle sales KPI is unavailable until the saleItems migration is applied:", error?.message || error);
     }
 
-    const bottleItemMap = new Map();
-    let totalBottles = 0;
-    let totalBottleAmount = 0;
     const collectSaleItems = (rows = []) => {
+      const bottleItemMap = new Map();
+      let totalBottles = 0;
+      let totalBottleAmount = 0;
       rows.forEach((row) => {
         if (!Array.isArray(row.saleItems)) return;
         row.saleItems.forEach((item) => {
@@ -87,9 +89,10 @@ export async function GET(request) {
           totalBottleAmount += totalAmount;
         });
       });
+      return { totalBottles, totalAmount: totalBottleAmount, items: [...bottleItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount) };
     };
-    collectSaleItems(creditLedgers);
-    collectSaleItems(cashSalesForItems);
+    const bottleSales = collectSaleItems([...paidLedgers, ...cashSalesForItems]);
+    const creditBottleSales = collectSaleItems(creditLedgers);
 
     const cashSales = cashSaleGroups.reduce((summary, group) => {
       const count = Number(group._count?._all || 0);
@@ -114,11 +117,8 @@ export async function GET(request) {
         todayPaidCount: Number(paymentStats._count?._all || 0),
         todayPaidAmount: Number(paymentStats._sum?.amount || 0),
         ...cashSales,
-        bottleSales: {
-          totalBottles,
-          totalAmount: totalBottleAmount,
-          items: [...bottleItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount),
-        },
+        bottleSales,
+        creditBottleSales,
       },
     });
   } catch (error) {

@@ -52,9 +52,11 @@ describe("Dashboard KPI aggregate route", () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.customerAggregate.mockResolvedValue({ _count: { _all: 12 }, _sum: { current_balance: 3400000 } });
     mocks.ledgerAggregate.mockResolvedValue({ _count: { _all: 4 }, _sum: { amount: 800000 } });
-    mocks.ledgerFindMany.mockResolvedValue([
-      { saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
-    ]);
+    mocks.ledgerFindMany.mockImplementation(({ where }) => Promise.resolve(
+      where?.type === "CREDIT" ? [] : [
+        { saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
+      ],
+    ));
     mocks.queryRaw.mockResolvedValue([
       { table_name: "Ledger", column_name: "saleItems" },
       { table_name: "CashSale", column_name: "saleItems" },
@@ -88,6 +90,7 @@ describe("Dashboard KPI aggregate route", () => {
         totalAmount: 40000,
         items: [{ productKey: "water-1l", bottleCount: 20, totalAmount: 40000 }],
       },
+      creditBottleSales: { totalBottles: 0, totalAmount: 0, items: [] },
     });
     expect(mocks.customerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: { deletedAt: null } }));
     expect(mocks.ledgerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ type: "DEBIT" }) }));

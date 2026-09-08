@@ -32,6 +32,11 @@ export async function GET(request) {
     const date = new URL(request.url).searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(date);
     const ledgers = await prisma.ledger.findMany({
+        where: { date: { gte: start, lt: end }, type: "DEBIT" },
+        select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+        orderBy: { date: "asc" },
+      });
+    const creditLedgers = await prisma.ledger.findMany({
         where: { date: { gte: start, lt: end }, type: "CREDIT" },
         select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
         orderBy: { date: "asc" },
@@ -70,6 +75,17 @@ export async function GET(request) {
     const customers = [...customerMap.values()]
       .map((entry) => ({ ...entry, items: [...entry.items.values()].sort((a, b) => b.bottleCount - a.bottleCount) }))
       .sort((a, b) => b.totalBottles - a.totalBottles);
+    const creditItemMap = new Map();
+    let creditTotalBottles = 0;
+    let creditTotalAmount = 0;
+    for (const row of creditLedgers) {
+      if (!Array.isArray(row.saleItems)) continue;
+      addItems(creditItemMap, row.saleItems);
+      for (const item of row.saleItems) {
+        creditTotalBottles += Math.max(0, Math.round(Number(item?.bottleCount || 0)));
+        creditTotalAmount += Math.max(0, Math.round(Number(item?.totalAmount || 0)));
+      }
+    }
     return NextResponse.json({ data: {
       date,
       totalCustomers: customers.length,
@@ -78,6 +94,11 @@ export async function GET(request) {
       totalDiscount: customers.reduce((sum, row) => sum + row.totalDiscount, 0),
       totalPaidAmount: customers.reduce((sum, row) => sum + row.totalPaidAmount, 0),
       customers,
+      creditBottleSales: {
+        totalBottles: creditTotalBottles,
+        totalAmount: creditTotalAmount,
+        items: [...creditItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount),
+      },
     } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });

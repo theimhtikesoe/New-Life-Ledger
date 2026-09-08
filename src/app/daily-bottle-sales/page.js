@@ -46,12 +46,13 @@ export default function DailyBottleSalesPage() {
         </section>
 
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
-        <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-bold text-slate-500">Customer</p><p className="mt-1 text-2xl font-black text-slate-900">{loading ? "—" : Number(data?.totalCustomers || 0).toLocaleString()} ယောက်</p></div>
           <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4"><p className="text-xs font-bold text-cyan-700">စုစုပေါင်း ဗူး</p><p className="mt-1 text-2xl font-black text-cyan-900">{loading ? "—" : Number(data?.totalBottles || 0).toLocaleString()} ဗူး</p></div>
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-bold text-amber-700">စုစုပေါင်းငွေ</p><p className="mt-1 text-2xl font-black text-amber-900">{loading ? "—" : money(data?.totalAmount)}</p></div>
           <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><p className="text-xs font-bold text-orange-700">လျှော့စျေး</p><p className="mt-1 text-2xl font-black text-orange-900">{loading ? "—" : money(data?.totalDiscount)}</p></div>
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-bold text-emerald-700">တကယ်ရှင်းငွေ</p><p className="mt-1 text-2xl font-black text-emerald-900">{loading ? "—" : money(data?.totalPaidAmount)}</p></div>
+          <div className="rounded-xl border border-violet-200 bg-violet-50 p-4"><p className="text-xs font-bold text-violet-700">အကြွေးတိုးဗူး (သီးခြား)</p><p className="mt-1 text-2xl font-black text-violet-900">{loading ? "—" : Number(data?.creditBottleSales?.totalBottles || 0).toLocaleString()} ဗူး</p></div>
         </section>
 
         {loading ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">ဗူးရောင်းစာရင်း ရယူနေသည်...</div> : null}
@@ -67,6 +68,15 @@ export default function DailyBottleSalesPage() {
             </article>
           ))}
         </section>
+        {!loading && Number(data?.creditBottleSales?.totalBottles || 0) > 0 ? (
+          <section className="rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm">
+            <div className="flex flex-col gap-1 border-b border-violet-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><h3 className="text-lg font-black text-violet-950">အကြွေးတိုးထားသော ဗူးများ (ဗူးရောင်း KPI မပါ)</h3><p className="text-xs text-violet-700">အကြွေးစာရင်းအဖြစ် သီးခြားမှတ်ထားပြီး ငွေချေသည့်အခါ အထက်ပါ ဗူးရောင်းစာရင်းထဲမှသာ ပါဝင်ပါမည်။</p></div>
+              <div className="text-left sm:text-right"><p className="text-sm font-black text-violet-800">{Number(data.creditBottleSales.totalBottles).toLocaleString()} ဗူး</p><p className="text-sm font-black text-violet-800">{money(data.creditBottleSales.totalAmount)}</p></div>
+            </div>
+            <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[560px] text-sm"><thead><tr className="border-b border-violet-200 text-left text-xs text-violet-700"><th className="px-2 py-2">Item</th><th className="px-2 py-2">ဆံ့/ကဒ်</th><th className="px-2 py-2 text-right">ဗူး</th><th className="px-2 py-2 text-right">သတ်မှတ်ငွေ</th></tr></thead><tbody>{data.creditBottleSales.items.map((item) => <tr key={item.productKey} className="border-b border-violet-100 last:border-0"><td className="px-2 py-2 font-bold text-violet-950">{item.productName}</td><td className="px-2 py-2"><span className="rounded-full bg-white px-2 py-1 text-xs font-black text-violet-800">{item.capacity} ဆံ့/ကဒ်</span></td><td className="px-2 py-2 text-right font-black text-violet-800">{item.bottleCount.toLocaleString()}</td><td className="px-2 py-2 text-right font-black text-violet-800">{money(item.totalAmount)}</td></tr>)}</tbody></table></div>
+          </section>
+        ) : null}
       </div>
     </main>
   );
