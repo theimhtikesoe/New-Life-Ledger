@@ -209,6 +209,10 @@ Production KPI နှင့် Sales KPI ကို မရောစေရန် P
 
 ## ၉။ လက်ရှိ repository အခြေအနေ
 
+### Implementation checkpoint — 2026-09-08
+
+Cost Page route နှင့် Settings navigation ကို `8a28b45` commit ဖြင့် push လုပ်ပြီးဖြစ်သည်။ PriceSetting schema/API/Page foundation ကို `e28ce73` commit ဖြင့် push လုပ်ထားပြီး `pnpm prisma validate`၊ `pnpm prisma generate` နှင့် `pnpm build` ကို dummy local schema URLs ဖြင့် အောင်မြင်စွာ စစ်ဆေးပြီးဖြစ်သည်။ Live database migration ကိုတော့ deployment environment တွင် `DATABASE_URL`/`DIRECT_URL` ရှိသောအချိန်တွင် ထပ်မံအတည်ပြုရန် ကျန်ရှိသည်။
+
 လက်ရှိ working tree တွင် အောက်ပါအခြေခံအပိုင်းများကို စတင်ပြင်ဆင်ထားပြီးဖြစ်သည်။
 
 | အပိုင်း | အခြေအနေ |
