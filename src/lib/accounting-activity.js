@@ -41,6 +41,7 @@ export function accountingAuditLogWhere() {
       { entityType: "OrderBatch" },
       { action: { startsWith: "ORDER_" } },
       { action: { in: [...DAILY_SALES_ACTIVITY_ACTIONS] } },
+      { action: "PRICE_SETTINGS_UPDATE" },
       { action: "PRODUCTION_REPORT_DELETE" },
       { action: "PRODUCTION_REPORT_SUBMIT" },
       { action: "PRODUCTION_WORKER_CREATE" },
