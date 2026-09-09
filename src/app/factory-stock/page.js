@@ -42,7 +42,7 @@ export default function FactoryStockPage() {
 
   return (
     <main className="app-page-main">
-      <div className="app-page-container space-y-4">
+      <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
         <section className="rounded-2xl border border-orange-200 bg-white p-4 shadow-sm sm:p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-orange-700">Factory Inventory</p>
           <h1 className="mt-1 text-2xl font-black text-slate-900">စက်ရုံ ဗူးကဒ်လက်ကျန်</h1>
