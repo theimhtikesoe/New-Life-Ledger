@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { BOTTLE_GROUPS } from "@/lib/production-catalog";
+import { PRICE_GROUPS } from "@/lib/production-catalog";
 
 function todayValue() {
   const now = new Date();
@@ -15,7 +15,7 @@ function money(value) {
 
 export default function PriceSettingsPage() {
   const [date, setDate] = useState(todayValue);
-  const [activeCategory, setActiveCategory] = useState(BOTTLE_GROUPS[0]?.key || "");
+  const [activeCategory, setActiveCategory] = useState(PRICE_GROUPS[0]?.key || "");
   const [catalog, setCatalog] = useState([]);
   const [categoryPrices, setCategoryPrices] = useState({});
   const [itemPrices, setItemPrices] = useState({});
@@ -37,7 +37,7 @@ export default function PriceSettingsPage() {
       for (const category of data.categories || []) {
         const exact = data.categoryPrices?.[category.key];
         const effective = data.catalog?.find((item) => item.categoryKey === category.key && item.effectivePrice?.source === "CATEGORY")?.effectivePrice;
-        const value = exact?.pricePerBottle ?? effective?.pricePerBottle;
+        const value = exact?.pricePerBottle ?? effective?.pricePerBottle ?? category.defaultPrice;
         if (value !== undefined && value !== null) nextCategoryPrices[category.key] = String(value);
       }
       const nextItemPrices = {};
@@ -124,11 +124,11 @@ export default function PriceSettingsPage() {
               <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-800">ဗူးတစ်လုံးစျေး</span>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {BOTTLE_GROUPS.map((category) => (
+              {PRICE_GROUPS.map((category) => (
                 <label key={category.key} className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 text-sm font-bold text-slate-800">
                   <span className="block">{category.label}</span><span className="mt-1 block text-[11px] font-normal text-slate-500">{category.description}</span>
-                  <div className="mt-2 flex items-center gap-2"><input type="number" min="0" step="1" inputMode="numeric" value={categoryPrices[category.key] || ""} onChange={(event) => setCategoryPrice(category.key, event.target.value)} placeholder="မသတ်မှတ်ရသေး" aria-label={`${category.label} category price`} className="h-11 min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 text-right font-black" /><span className="text-xs font-black">Ks/ဗူး</span></div>
-                  {categoryPrices[category.key] ? <p className="mt-1 text-right text-[11px] font-black text-emerald-700">သတ်မှတ်ပြီး: {money(categoryPrices[category.key])}/ဗူး</p> : null}
+                  <div className="mt-2 flex items-center gap-2"><input type="number" min="0" step="1" inputMode="numeric" value={categoryPrices[category.key] || ""} onChange={(event) => setCategoryPrice(category.key, event.target.value)} placeholder="မသတ်မှတ်ရသေး" aria-label={`${category.label} category price`} className="h-11 min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 text-right font-black" /><span className="text-xs font-black">Ks/{category.key === "CAP" ? "ဖုံး" : "ဗူး"}</span></div>
+                  {categoryPrices[category.key] ? <p className="mt-1 text-right text-[11px] font-black text-emerald-700">သတ်မှတ်ပြီး: {money(categoryPrices[category.key])}/{category.key === "CAP" ? "ဖုံး" : "ဗူး"}</p> : null}
                 </label>
               ))}
             </div>
@@ -137,13 +137,17 @@ export default function PriceSettingsPage() {
           <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div><h3 className="text-lg font-black text-slate-900">2. Item တစ်ခုချင်းစီအလိုက် စျေးပြင်ရန်</h3><p className="mt-1 text-xs leading-5 text-slate-500">Item Override မထည့်ထားလျှင် Category စျေးကို အလိုအလျောက်သုံးပါမယ်။ Customer စျေးကွာလျှင် ငွေရှင်းတမ်းထဲမှာ အဲဒီ transaction အတွက် စျေးကို ပြန်ညှိနိုင်ပါမယ်။</p></div>
-              <select value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)} className="h-11 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-3 text-sm font-black text-cyan-950">{BOTTLE_GROUPS.map((category) => <option key={category.key} value={category.key}>{category.label}</option>)}</select>
+              <select value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)} className="h-11 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-3 text-sm font-black text-cyan-950">{PRICE_GROUPS.map((category) => <option key={category.key} value={category.key}>{category.label}</option>)}</select>
             </div>
             {loading ? <p className="py-10 text-center text-sm text-slate-500">Catalog နှင့် စျေးနှုန်းများ ရယူနေသည်...</p> : <div className="mt-4 space-y-2">{visibleItems.map((item) => {
               const categoryPrice = categoryPrices[item.categoryKey];
               const itemPrice = itemPrices[item.productKey] || "";
               const effectivePrice = itemPrice || categoryPrice || item.effectivePrice?.pricePerBottle || "";
-              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_150px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{item.capacity} ဆံ့ / ကဒ်</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {effectivePrice ? `${money(effectivePrice)}/ဗူး` : "စျေးမသတ်မှတ်ရသေး"}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">ကဒ်တစ်ကဒ်<br /><span className="font-black">{effectivePrice ? money(Number(effectivePrice) * item.capacity) : "—"}</span></div><label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/ဗူး</span> : null}</label><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!itemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
+              const isCap = item.productType === "cap" || item.categoryKey === "CAP";
+              const unitLabel = isCap ? "ဖုံး" : "ဗူး";
+              const quantityLabel = isCap ? "အဖုံးတစ်ဖုံး" : "ကဒ်တစ်ကဒ်";
+              const unitTotal = isCap ? Number(effectivePrice || 0) : Number(effectivePrice || 0) * item.capacity;
+              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_150px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{isCap ? "အဖုံး သီးသန့်" : `${item.capacity} ဆံ့ / ကဒ်`}</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {effectivePrice ? `${money(effectivePrice)}/${unitLabel}` : "စျေးမသတ်မှတ်ရသေး"}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">{quantityLabel}<br /><span className="font-black">{effectivePrice ? money(unitTotal) : "—"}</span></div><label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/{unitLabel}</span> : null}</label><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!itemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
             })}</div>}
           </section>
 

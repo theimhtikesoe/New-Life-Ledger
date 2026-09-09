@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleGroup } from "@/lib/production-catalog";
+import { BOTTLE_GROUPS, BOTTLE_ITEMS, CAP_ITEMS, PRICE_GROUPS, getBottleGroup } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ function productKey(productName, capacity) {
 }
 
 function buildCatalog() {
-  return BOTTLE_ITEMS.flatMap((item) => item.capacities.map((capacity) => ({
+  const bottles = BOTTLE_ITEMS.flatMap((item) => item.capacities.map((capacity) => ({
     scope: "ITEM",
     productType: "bottle",
     productKey: productKey(item.type, capacity),
@@ -34,6 +34,18 @@ function buildCatalog() {
     capacity,
     bottlesPerCard: capacity,
   })));
+  const caps = CAP_ITEMS.map((item) => ({
+    scope: "ITEM",
+    productType: item.productType,
+    productKey: item.productKey,
+    categoryKey: item.categoryKey,
+    categoryLabel: item.categoryLabel,
+    productName: item.productName,
+    capacity: 0,
+    bottlesPerCard: 1,
+    defaultPrice: item.defaultPrice,
+  }));
+  return [...bottles, ...caps];
 }
 
 function serialize(row) {
@@ -81,11 +93,11 @@ export async function GET(request) {
         ...item,
         effectivePrice: effective
           ? { ...effective, source: itemPrice ? "ITEM" : "CATEGORY" }
-          : null,
+          : (item.defaultPrice !== undefined ? { pricePerBottle: item.defaultPrice, pricePerCard: item.defaultPrice, source: "DEFAULT" } : null),
       };
     });
 
-    return NextResponse.json({ data: { date, categories: BOTTLE_GROUPS, catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices } });
+    return NextResponse.json({ data: { date, categories: PRICE_GROUPS, catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices } });
   } catch (error) {
     console.error("Price settings read failed", error);
     return NextResponse.json({ error: error.message || "စျေးနှုန်းစာရင်း ရယူ၍မရပါ။" }, { status: 400 });
@@ -102,11 +114,11 @@ export async function POST(request) {
     const catalog = buildCatalog();
     const rows = [];
 
-    for (const category of BOTTLE_GROUPS) {
+    for (const category of PRICE_GROUPS) {
       const raw = categoryPrices[category.key];
       if (raw === "" || raw === null || raw === undefined) continue;
       const pricePerBottle = positiveInt(raw, `${category.label} စျေးနှုန်း`);
-      rows.push({ priceDate, scope: "CATEGORY", categoryKey: category.key, productKey: category.key, productType: "bottle", productName: category.label, capacity: 0, bottlesPerCard: 0, pricePerBottle, pricePerCard: 0 });
+      rows.push({ priceDate, scope: "CATEGORY", categoryKey: category.key, productKey: category.key, productType: category.productType || "bottle", productName: category.label, capacity: 0, bottlesPerCard: 0, pricePerBottle, pricePerCard: pricePerBottle });
     }
 
     for (const item of catalog) {

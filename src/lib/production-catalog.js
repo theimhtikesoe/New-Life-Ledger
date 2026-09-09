@@ -65,6 +65,30 @@ export const BOTTLE_GROUPS = [
   { key: "liter", label: "1 လီတာ", description: "1 လီတာ ဖြူ / ပြာ" },
 ];
 
+export const CAP_GROUP = { key: "CAP", label: "အဖုံး", description: "အဖုံးအရောင်အလိုက် သီးခြားရောင်းချမှု", productType: "cap", defaultPrice: 40 };
+
+export const CAP_ITEMS = [
+  ["ဖြူ", "CAP_WHITE"],
+  ["နီ", "CAP_RED"],
+  ["ပြာ", "CAP_BLUE"],
+  ["ဝါ", "CAP_YELLOW"],
+  ["ခရမ်း", "CAP_PURPLE"],
+  ["အပန်း", "CAP_PINK"],
+  ["အစိမ်း", "CAP_GREEN"],
+  ["အမဲ", "CAP_BLACK"],
+].map(([color, productKey]) => ({
+  productKey,
+  categoryKey: CAP_GROUP.key,
+  categoryLabel: CAP_GROUP.label,
+  productType: CAP_GROUP.productType,
+  productName: `အဖုံး - ${color}`,
+  capacity: 0,
+  bottlesPerCard: 1,
+  defaultPrice: CAP_GROUP.defaultPrice,
+}));
+
+export const PRICE_GROUPS = [...BOTTLE_GROUPS, CAP_GROUP];
+
 export function getBottleGroup(type) {
   const value = String(type || "");
   if (value === "8 ဒေါင့် ဖြူ") return "08-white";
