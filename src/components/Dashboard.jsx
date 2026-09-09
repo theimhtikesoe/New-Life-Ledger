@@ -1027,6 +1027,7 @@ export default function Dashboard({ view = "overview" }) {
     () => Number(dashboardKpi?.factoryStockCards ?? (factoryStock?.summary || []).reduce((sum, item) => sum + Number(item.currentCards || 0), 0)),
     [dashboardKpi, factoryStock],
   );
+  const factoryTubePieces = Number(dashboardKpi?.factoryTubePieces || 0);
 
     const hasKpiSnapshot = Boolean(dashboardKpi);
   const currentMyanmarDate = formatMyanmarDateInputValue(currentTime);
@@ -1995,6 +1996,18 @@ export default function Dashboard({ view = "overview" }) {
               <p className="pt-2 text-sm font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
             </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
+            <Link
+              href="/tube-production-history"
+              aria-label="စက်ရုံ Tube လက်ကျန် အသေးစိတ်ကြည့်ရန်"
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-blue-300 bg-blue-50/95 p-4 text-left shadow-sm transition-all hover:border-blue-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 sm:min-h-[170px]"
+            >
+              <div>
+                <p className="text-sm font-black uppercase tracking-wide text-blue-800 sm:text-base">စက်ရုံ Tube လက်ကျန်</p>
+                <p className="mt-2 text-2xl font-black text-blue-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePieces.toLocaleString()} pcs`}</p>
+                <p className="mt-1 text-sm font-bold text-blue-700">ကိုယ်တိုင်ထုတ်လုပ်ထားသမျှ</p>
+              </div>
+              <p className="pt-2 text-sm font-bold text-blue-700">အသေးစိတ်ကြည့်ရန် →</p>
+            </Link>
             <Link
               href="/factory-stock"
               aria-label="စက်ရုံဗူးလက်ကျန် အသေးစိတ်ကြည့်ရန်"

@@ -21,6 +21,8 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryHelperSource).toContain("export async function loadDerivedFactoryStockMovements");
     expect(factoryRouteSource).toContain('dataSource = "LIVE_DERIVED_FALLBACK"');
     expect(dashboardRouteSource).toContain("loadDerivedFactoryStockMovements");
+    expect(dashboardRouteSource).toContain("factoryTubePieces");
+    expect(dashboardSource).toContain("စက်ရုံ Tube လက်ကျန်");
   });
 
   it("shows the planned stock fields and status in the page table", () => {

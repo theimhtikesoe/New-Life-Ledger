@@ -37,6 +37,10 @@ export async function GET(request) {
       stockMovements = await loadDerivedFactoryStockMovements();
     }
     const factoryStockCards = stockMovements.reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
+    const tubeProductionRows = typeof prisma.productionReport?.findMany === "function"
+      ? await prisma.productionReport.findMany({ where: { category: "tube" }, select: { outputQuantity: true, outputCapacity: true } })
+      : [];
+    const factoryTubePieces = tubeProductionRows.reduce((sum, row) => sum + (Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0)), 0);
     const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
 
@@ -99,6 +103,7 @@ export async function GET(request) {
         bottleSales,
         creditBottleSales,
         factoryStockCards,
+        factoryTubePieces,
       },
     });
   } catch (error) {
