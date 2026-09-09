@@ -195,7 +195,7 @@ function ActorSwitcher({ actorName }) {
 function SharedPageHeader({ pathname, actorName }) {
   const title = PAGE_HEADERS[pathname];
   const normalizedActorName = String(actorName || '').trim();
-  const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဆောင်းဦး';
+  const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail');
   const [currentTime, setCurrentTime] = useState(() => new Date());
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
@@ -298,7 +298,7 @@ export default function RootLayoutClient({ children }) {
       router.replace('/production');
       return;
     }
-    if (isLedgerOnlyActor && pathname !== '/' && pathname !== '/ledger') {
+    if (isLedgerOnlyActor && pathname !== '/' && pathname !== '/ledger' && pathname !== '/balance-detail') {
       router.replace('/');
     }
   }, [isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
@@ -313,7 +313,7 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   };
 
-  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor) || pathname === '/production' || pathname === '/ledger' || (isLedgerOnlyActor && pathname === '/'));
+  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor) || pathname === '/production' || pathname === '/ledger' || (isLedgerOnlyActor && (pathname === '/' || pathname === '/balance-detail')));
 
   return (
     <>

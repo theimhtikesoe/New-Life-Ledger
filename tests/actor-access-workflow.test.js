@@ -81,9 +81,12 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("isLedgerOnlyActor");
     expect(layoutSource).toContain("router.replace('/')");
     expect(layoutSource).toContain("pathname === '/'");
+    expect(layoutSource).toContain("pathname === '/balance-detail'");
+    expect(layoutSource).toContain("normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail'");
     expect(middlewareSource).toContain('LEDGER_ONLY_ACTOR');
     expect(middlewareSource).toContain('LEDGER_BLOCKED_API_PATHS');
     expect(middlewareSource).toContain('path !== "/"');
+    expect(middlewareSource).toContain('path !== "/balance-detail"');
     expect(dashboardSource).toContain('const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး"');
     expect(dashboardSource).toContain('CUSTOMER နှင့် အကြွေးအခြေအနေ');
   });
@@ -93,7 +96,7 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("router.replace('/production')");
     expect(layoutSource).toContain("pathname === '/production'");
     expect(layoutSource).toContain("const normalizedActorName = String(actorName || '').trim();");
-    expect(layoutSource).toContain("const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဆောင်းဦး';");
+    expect(layoutSource).toContain("const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail');");
     expect(layoutSource).toContain('<Link href="/"');
     expect(productionSource).not.toContain('ထွက်ရှိမှု မှတ်တမ်းတင်ရန်</h1>');
     expect(middlewareSource).toContain('PRODUCTION_API_PATHS');
