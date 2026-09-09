@@ -108,6 +108,50 @@ function SettingsToggle({ open, onToggle }) {
   );
 }
 
+function GlobalActionLoadingIndicator() {
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [recentAction, setRecentAction] = useState(false);
+
+  useEffect(() => {
+    const originalFetch = window.fetch.bind(window);
+    let actionTimer;
+    const startAction = () => {
+      setRecentAction(true);
+      window.clearTimeout(actionTimer);
+      actionTimer = window.setTimeout(() => setRecentAction(false), 1500);
+    };
+    const handleAction = (event) => {
+      if (event.target?.closest?.('[data-no-global-loading="true"]')) return;
+      startAction();
+    };
+    const trackedFetch = (...args) => {
+      setPendingRequests((count) => count + 1);
+      startAction();
+      return originalFetch(...args).finally(() => {
+        setPendingRequests((count) => Math.max(0, count - 1));
+      });
+    };
+
+    window.fetch = trackedFetch;
+    document.addEventListener('click', handleAction, true);
+    document.addEventListener('submit', handleAction, true);
+    return () => {
+      window.fetch = originalFetch;
+      document.removeEventListener('click', handleAction, true);
+      document.removeEventListener('submit', handleAction, true);
+      window.clearTimeout(actionTimer);
+    };
+  }, []);
+
+  if (!recentAction && pendingRequests === 0) return null;
+  return (
+    <div className="pointer-events-none fixed left-1/2 top-3 z-[200] flex -translate-x-1/2 items-center gap-2 rounded-full border border-cyan-200 bg-white/95 px-3 py-1.5 text-xs font-bold text-cyan-800 shadow-lg backdrop-blur-sm" role="status" aria-live="polite" aria-label="လုပ်ဆောင်နေသည်">
+      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-700" aria-hidden="true" />
+      <span>လုပ်ဆောင်နေသည်...</span>
+    </div>
+  );
+}
+
 const PAGE_HEADERS = {
   '/activity': 'Activity History',
   '/auto-report-status': 'Auto Report အခြေအနေ',
@@ -281,13 +325,14 @@ export default function RootLayoutClient({ children }) {
               first overdue-status/audio event during the PWA startup handshake. */}
           <BackgroundMusicPlayer settingsOpen={settingsOpen} />
           <RefreshOverlay />
+          <GlobalActionLoadingIndicator />
           <SettingsToggle open={settingsOpen} onToggle={() => setSettingsOpen((current) => !current)} />
           <AppZoomControls appZoom={appZoom} onChange={setAppZoom} settingsOpen={settingsOpen} />
           <div className="neon-app-shell-viewport">
             <div
               className="neon-app-shell"
               data-app-zoom={appZoom}
-              style={{ '--app-zoom': appZoom, zoom: appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
+              style={{ zoom: appZoom, '--app-zoom': appZoom, width: `${100 / appZoom}%`, marginInline: 'auto' }}
             >
               <SharedPageHeader pathname={pathname} actorName={actorName} />
               {children}
