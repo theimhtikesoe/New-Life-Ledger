@@ -18,8 +18,9 @@ describe("Telegram daily report caption", () => {
     for (const [key, value] of formData.entries()) entries.push([key, String(value)]);
     const caption = entries.find(([key]) => key === "caption")?.[1] || "";
     expect(caption).toContain("စာမျက်နှာ ၁ — စာရင်းချုပ်");
-    expect(caption).toContain("စာမျက်နှာ ၃ — လက်လီ / လက်ကားစာရင်း");
-    expect(caption).toContain("စာမျက်နှာ ၄ — ဗူးထွက်ရှိမှုစာရင်း");
+    expect(caption).toContain("စာမျက်နှာ ၂ — လက်လီ / လက်ကားစာရင်း");
+    expect(caption).toContain("စာမျက်နှာ ၃ — ဗူးထွက်ရှိမှုစာရင်း");
+    expect(caption).toContain("စာမျက်နှာ ၄ — ဗူးရောင်းစာရင်း");
   });
 
   afterEach(() => {
