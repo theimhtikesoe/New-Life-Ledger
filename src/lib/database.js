@@ -12,6 +12,7 @@ const REQUIRED_TABLES = [
   "AuditLog",
   "AutoReportRun",
   "ProductionReport",
+  "FactoryStockMovement",
   "ProductionWorker",
   "CashSale",
   "PriceSetting",
@@ -598,6 +599,30 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
+      await setupQuery(`
+        CREATE TABLE IF NOT EXISTS "FactoryStockMovement" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "movementDate" TEXT NOT NULL,
+          "movementType" TEXT NOT NULL,
+          "stockType" TEXT NOT NULL DEFAULT 'BOTTLE',
+          "productKey" TEXT NOT NULL,
+          "productName" TEXT NOT NULL,
+          "capacity" INTEGER NOT NULL DEFAULT 0,
+          "quantityCards" INTEGER NOT NULL,
+          "quantityBottles" INTEGER NOT NULL DEFAULT 0,
+          "sourceType" TEXT,
+          "sourceId" TEXT,
+          "sourceVersion" TEXT,
+          "reason" TEXT,
+          "note" TEXT,
+          "actorName" TEXT NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementDate_idx" ON "FactoryStockMovement"("movementDate")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_productKey_idx" ON "FactoryStockMovement"("productKey")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementType_idx" ON "FactoryStockMovement"("movementType")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_source_idx" ON "FactoryStockMovement"("sourceType", "sourceId")`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "ProductionWorker" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),

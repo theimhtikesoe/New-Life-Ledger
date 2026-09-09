@@ -350,6 +350,30 @@ model ProductionReport {
   @@index([machineCode])
 }
 
+model FactoryStockMovement {
+  id              String   @id @default(uuid()) @db.Uuid
+  movementDate    String
+  movementType    String
+  stockType       String   @default("BOTTLE")
+  productKey      String
+  productName     String
+  capacity        Int      @default(0)
+  quantityCards   Int
+  quantityBottles Int      @default(0)
+  sourceType      String?
+  sourceId        String?
+  sourceVersion   String?
+  reason          String?
+  note            String?
+  actorName       String
+  createdAt       DateTime @default(now())
+
+  @@index([movementDate])
+  @@index([productKey])
+  @@index([movementType])
+  @@index([sourceType, sourceId])
+}
+
 model ProductionWorker {
   id        String   @id @default(uuid()) @db.Uuid
   name      String   @unique
