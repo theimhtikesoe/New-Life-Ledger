@@ -116,10 +116,12 @@ export default function PriceSettingsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cost / Price Settings</p>
-              <h2 className="mt-1 text-2xl font-black text-slate-900">နေ့စဉ် စျေးနှုန်းသတ်မှတ်ရန်</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">Category စျေးကို အခြေခံစျေးအဖြစ်ထားပြီး item တစ်ခုချင်းစီက စျေးကွာလျှင် Item Override ထည့်ပါ။ Item စျေးရှိလျှင် Category စျေးကို ဦးစားပေးမည်။</p>
             </div>
-            <label className="shrink-0 text-sm font-bold text-slate-700">Date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 h-12 rounded-xl border-2 border-amber-300 bg-amber-50 px-3 text-base font-black" /></label>
+            <label className="flex shrink-0 flex-col gap-1.5 text-sm font-bold text-slate-700">
+              <span className="leading-none">Date</span>
+              <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 min-w-[170px] rounded-xl border-2 border-amber-300 bg-amber-50 px-3 text-base font-black" />
+            </label>
           </div>
         </section>
 
