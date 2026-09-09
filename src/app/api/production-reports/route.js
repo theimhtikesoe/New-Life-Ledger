@@ -68,9 +68,10 @@ function serialize(row) {
     damagedPieces: Number(row.damagedPieces || 0),
     tubeDamageQuantity: Number(row.tubeDamageQuantity || 0),
     tubeQuantity: Number(row.tubeQuantity || 0),
-    tubeQuantityValue: String(row.tubeQuantityValue ?? row.tubeQuantity ?? 0),
-    tubeQuantityUnit: row.tubeQuantityUnit === "ခြင်း" ? "ခြင်း" : "အိတ်",
-    involvedWorkers: Array.isArray(row.involvedWorkers) ? row.involvedWorkers : [],
+      tubeQuantityValue: String(row.tubeQuantityValue ?? row.tubeQuantity ?? 0),
+      tubeQuantityUnit: row.tubeQuantityUnit === "ခြင်း" ? "ခြင်း" : "အိတ်",
+      tubeMetrics: row.tubeMetrics && typeof row.tubeMetrics === "object" ? row.tubeMetrics : null,
+      involvedWorkers: Array.isArray(row.involvedWorkers) ? row.involvedWorkers : [],
   };
 }
 
@@ -131,6 +132,7 @@ export async function POST(request) {
       tubeQuantity: index === 0 ? tubeQuantity : 0,
       tubeQuantityValue: index === 0 ? tubeQuantityValue : "0",
       tubeQuantityUnit: index === 0 ? tubeQuantityUnitValue : "အိတ်",
+      tubeMetrics: index === 0 && body.tubeMetrics && typeof body.tubeMetrics === "object" ? body.tubeMetrics : null,
       involvedWorkers,
       notes,
     }));
@@ -188,6 +190,7 @@ export async function PATCH(request) {
       tubeQuantity: index === 0 ? tubeQuantity : 0,
       tubeQuantityValue: index === 0 ? tubeQuantityValue : "0",
       tubeQuantityUnit: index === 0 ? tubeQuantityUnitValue : "အိတ်",
+      tubeMetrics: index === 0 && body.tubeMetrics && typeof body.tubeMetrics === "object" ? body.tubeMetrics : null,
       involvedWorkers, notes,
     }));
     const result = await prisma.$transaction(async (tx) => {

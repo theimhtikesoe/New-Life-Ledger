@@ -341,6 +341,7 @@ model ProductionReport {
   tubeQuantity       Int      @default(0)
   tubeQuantityValue  String   @default("0")
   tubeQuantityUnit   String   @default("အိတ်")
+  tubeMetrics        Json?
   involvedWorkers    Json?
   notes           String?
   createdAt       DateTime @default(now())

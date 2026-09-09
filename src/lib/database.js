@@ -31,7 +31,7 @@ const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSent
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
 const REQUIRED_LEDGER_COLUMNS = ["saleItems"];
 const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
-const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit"];
+const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit", "tubeMetrics"];
 const REQUIRED_DAILY_SALES_COLUMNS = [
   "enteredAt",
   "enteredBy",
@@ -241,6 +241,7 @@ export async function ensureDatabase() {
         await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeQuantity" INTEGER NOT NULL DEFAULT 0`);
         await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeQuantityValue" TEXT NOT NULL DEFAULT '0'`);
         await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT 'အိတ်'`);
+        await setupQuery(`ALTER TABLE "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeMetrics" JSONB`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_idx" ON "ProductionReport"("reportDate")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_submissionId_idx" ON "ProductionReport"("submissionId")`);
         await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_machineCode_idx" ON "ProductionReport"("machineCode")`);
