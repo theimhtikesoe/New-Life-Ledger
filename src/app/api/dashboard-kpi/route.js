@@ -13,38 +13,20 @@ export async function GET(request) {
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
 
-    // These queries are independent. Run them together so a cold dashboard
-    // connection does not make the KPI cards wait through five round trips.
-    const [customerStats, paymentStats, cashSaleGroups, saleItemRows] = await Promise.all([
-      prisma.customer.aggregate({
-        where: { deletedAt: null },
-        _count: { _all: true },
-        _sum: { current_balance: true },
-      }),
-      prisma.ledger.aggregate({
-        where: { date: { gte: start, lt: end }, type: "DEBIT" },
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-      prisma.cashSale.groupBy({
-        by: ["saleType"],
-        where: { date: { gte: start, lt: end } },
-        _count: { _all: true },
-        _sum: { amount: true },
-      }),
-      Promise.all([
-        typeof prisma.ledger.findMany === "function"
-          ? prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, amount: true, saleItems: true } })
-          : [],
-        typeof prisma.cashSale.findMany === "function"
-          ? prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { amount: true, saleItems: true } })
-          : [],
-      ]),
-    ]).catch((error) => {
-      console.warn("Dashboard KPI query failed:", error?.message || error);
-      throw error;
-    });
-    const [ledgerRows, cashSalesForItems] = saleItemRows;
+    // The deployed database uses a small connection_limit. Keep this request
+    // single-connection and sequential instead of making Promise.all contend
+    // for a second connection during cold starts.
+    const customerStats = await prisma.customer.aggregate({ where: { deletedAt: null }, _count: { _all: true }, _sum: { current_balance: true } });
+    const paymentStats = await prisma.ledger.aggregate({ where: { date: { gte: start, lt: end }, type: "DEBIT" }, _count: { _all: true }, _sum: { amount: true } });
+    const cashSaleGroups = await prisma.cashSale.groupBy({ by: ["saleType"], where: { date: { gte: start, lt: end } }, _count: { _all: true }, _sum: { amount: true } });
+    const ledgerRows = typeof prisma.ledger.findMany === "function"
+      ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, amount: true, saleItems: true } })
+      : [];
+    const cashSalesForItems = typeof prisma.cashSale.findMany === "function"
+      ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { amount: true, saleItems: true } })
+      : [];
+    const stockMovements = await prisma.factoryStockMovement.findMany({ select: { quantityCards: true } });
+    const factoryStockCards = stockMovements.reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
     const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
 
@@ -106,6 +88,7 @@ export async function GET(request) {
         ...cashSales,
         bottleSales,
         creditBottleSales,
+        factoryStockCards,
       },
     });
   } catch (error) {

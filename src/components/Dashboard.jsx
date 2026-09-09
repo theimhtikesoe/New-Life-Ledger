@@ -331,8 +331,7 @@ export default function Dashboard({ view = "overview" }) {
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState(() => readDashboardSnapshot()?.todayPaymentsList || []);
   const [todayCashSales, setTodayCashSales] = useState(() => readDashboardSnapshot()?.todayCashSales || []);
-  const [factoryStock, setFactoryStock] = useState(() => readDashboardSnapshot()?.factoryStock || null);
-  const [factoryStockLoading, setFactoryStockLoading] = useState(false);
+  const [factoryStock] = useState(() => readDashboardSnapshot()?.factoryStock || null);
   const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
   // A cached KPI may be stale. Start in loading state so the bottle card never
@@ -894,41 +893,6 @@ export default function Dashboard({ view = "overview" }) {
     };
   }, [dataLoadError, dashboardKpi, loadDashboard, loading]);
 
-  useEffect(() => {
-    let active = true;
-    let inFlight = false;
-    const loadFactoryStock = () => {
-      if (!active || inFlight || navigator.onLine === false) return;
-      inFlight = true;
-      setFactoryStockLoading(true);
-      api(`/api/factory-stock?refresh=${Date.now()}`, { timeoutMs: 20000, cache: "no-store" })
-        .then((payload) => {
-          if (!active) return;
-          setFactoryStock(payload || null);
-          saveDashboardSnapshot({ factoryStock: payload || null });
-        })
-        .catch((error) => {
-          if (active && error.name !== "AbortError") console.warn("Factory stock KPI was not loaded:", error);
-        })
-        .finally(() => { inFlight = false; if (active) setFactoryStockLoading(false); });
-    };
-    const refreshOnResume = () => {
-      if (document.visibilityState !== "hidden") loadFactoryStock();
-    };
-    loadFactoryStock();
-    const interval = window.setInterval(loadFactoryStock, 60000);
-    window.addEventListener("pageshow", refreshOnResume);
-    window.addEventListener("online", refreshOnResume);
-    document.addEventListener("visibilitychange", refreshOnResume);
-    return () => {
-      active = false;
-      window.clearInterval(interval);
-      window.removeEventListener("pageshow", refreshOnResume);
-      window.removeEventListener("online", refreshOnResume);
-      document.removeEventListener("visibilitychange", refreshOnResume);
-    };
-  }, []);
-
   // Keep retrying a failed initial load in the foreground instead of leaving
   // the Home Screen app stuck on the connection-error panel.
   useEffect(() => {
@@ -1057,8 +1021,8 @@ export default function Dashboard({ view = "overview" }) {
   );
 
   const factoryStockCards = useMemo(
-    () => (factoryStock?.summary || []).reduce((sum, item) => sum + Number(item.currentCards || 0), 0),
-    [factoryStock],
+    () => Number(dashboardKpi?.factoryStockCards ?? (factoryStock?.summary || []).reduce((sum, item) => sum + Number(item.currentCards || 0), 0)),
+    [dashboardKpi, factoryStock],
   );
 
     const hasKpiSnapshot = Boolean(dashboardKpi);
@@ -1995,7 +1959,7 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-stone-800 sm:text-base">စက်ရုံဗူးလက်ကျန်</p>
-                <p className="mt-2 text-2xl font-black text-stone-950">{factoryStockLoading && !factoryStock ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
+                <p className="mt-2 text-2xl font-black text-stone-950">{dashboardKpiLoading && !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
                 <p className="mt-1 text-sm font-bold text-stone-700">Database စနစ်လက်ကျန်</p>
               </div>
               <p className="pt-2 text-sm font-bold text-stone-700">အသေးစိတ်ကြည့်ရန် →</p>
