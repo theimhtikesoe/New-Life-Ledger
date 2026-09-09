@@ -1733,7 +1733,7 @@ export default function Dashboard({ view = "overview" }) {
 
       <div className="dashboard-content-stack mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-6 overflow-x-clip px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="neon-surface neon-sweep min-w-0 rounded-2xl border border-cyan-200/80 bg-white/90 px-3 py-3 sm:px-5 sm:py-5">
-          {isLedgerView && dashboardActorName !== "ဆောင်းဦး" ? (
+          {isLedgerView ? (
             <Link href="/" className="text-sm font-medium text-cyan-700">← Dashboard</Link>
           ) : null}
           <div className="grid min-w-0 grid-cols-1 gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] lg:items-center lg:gap-x-6">

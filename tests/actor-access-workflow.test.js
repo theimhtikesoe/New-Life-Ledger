@@ -105,7 +105,7 @@ describe("Actor access workflow", () => {
     expect(middlewareSource).toContain('"ဖြိုးကို"');
     expect(middlewareSource).toContain('path !== "/production"');
     expect(layoutSource).toContain("SharedPageHeader pathname={pathname} actorName={actorName}");
-    expect(dashboardSource).toContain('isLedgerView && dashboardActorName !== "ဆောင်းဦး"');
+    expect(dashboardSource).toContain('{isLedgerView ? (');
     expect(dashboardSource).toContain('setDashboardActorName(initialActorName.trim())');
     expect(layoutSource).toContain("formatMyanmarClock(currentTime)");
     expect(layoutSource).toContain("text-2xl font-bold tracking-wider");
