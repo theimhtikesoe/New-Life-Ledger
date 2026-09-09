@@ -164,6 +164,7 @@ const PAGE_HEADERS = {
   '/orders': 'Telegram Orders',
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
   '/production-history': 'ထွက်ရှိမှုမှတ်တမ်းများ',
+  '/tube-production-history': 'Tube ထွက်ရှိမှု အသေးစိတ်',
   '/price-settings': 'စျေးနှုန်းသတ်မှတ်ရန်',
   '/vercel-build-logs': 'Vercel Build Logs',
 };

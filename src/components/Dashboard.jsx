@@ -1038,6 +1038,12 @@ export default function Dashboard({ view = "overview" }) {
   const todayBottleSales = dashboardKpi?.bottleSales || { totalBottles: 0, totalAmount: 0, items: [] };
   const bottleSalesLoading = (dashboardKpiLoading && !dashboardKpi) || kpiDateLoading;
   const productionSummary = useMemo(() => summarizeProduction(productionRows), [productionRows]);
+  const tubeProductionSummary = useMemo(() => {
+    const rows = productionRows.filter((row) => row.category === "tube");
+    const totalPacks = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0), 0);
+    const totalPieces = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0), 0);
+    return { rows, totalPacks, totalPieces };
+  }, [productionRows]);
 
   // Pagination logic
   const paginatedCustomers = useMemo(() => {
@@ -1939,6 +1945,18 @@ export default function Dashboard({ view = "overview" }) {
                 <p>{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `ပျက်စီး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p>
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p>
+            </Link>
+            <Link
+              href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`}
+              aria-label={`${selectedKpiDate} Tube ထွက်ရှိမှု အသေးစိတ်ကြည့်ရန်`}
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/90 p-4 text-left shadow-sm transition-all hover:border-cyan-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"
+            >
+              <div>
+                <p className="text-sm font-black uppercase tracking-wide text-cyan-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} Tube ထွက်ရှိမှု</p>
+                <p className="mt-2 text-2xl font-black text-cyan-900">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs`}</p>
+                <p className="mt-1 text-sm font-bold text-cyan-700">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ် · ${tubeProductionSummary.rows.length} မျိုး`}</p>
+              </div>
+              <p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
             <Link
               href={`/daily-bottle-sales?date=${encodeURIComponent(selectedKpiDate)}`}
