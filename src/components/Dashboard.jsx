@@ -353,7 +353,7 @@ export default function Dashboard({ view = "overview" }) {
   const [expandedDashboardMenu, setExpandedDashboardMenu] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
-  const [kpiDateLoading, setKpiDateLoading] = useState(false);
+  const [kpiDateLoading, setKpiDateLoading] = useState(true);
   const [kpiDateError, setKpiDateError] = useState("");
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -361,8 +361,6 @@ export default function Dashboard({ view = "overview" }) {
   const [nextAutoRetrySeconds, setNextAutoRetrySeconds] = useState(0);
   const retryTimerRef = useRef(null);
   const retryCountdownRef = useRef(null);
-  const kpiDateInitializedRef = useRef(false);
-  const kpiDateRequestRef = useRef(0);
   const telegramPreviewRequestRef = useRef(0);
   const telegramPreviewControllerRef = useRef(null);
   const telegramReportSendInFlightRef = useRef(false);
@@ -394,39 +392,6 @@ export default function Dashboard({ view = "overview" }) {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (!kpiDateInitializedRef.current) {
-      kpiDateInitializedRef.current = true;
-      return undefined;
-    }
-    if (!selectedKpiDate) return undefined;
-
-    const controller = new AbortController();
-    const requestId = kpiDateRequestRef.current + 1;
-    kpiDateRequestRef.current = requestId;
-    setKpiDateLoading(true);
-    setKpiDateError("");
-
-    api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`, {
-      signal: controller.signal,
-      cache: "no-store",
-    })
-      .then((kpi) => {
-        if (kpiDateRequestRef.current !== requestId) return;
-        setDashboardKpi(kpi);
-      })
-      .catch((error) => {
-        if (error.name !== "AbortError" && kpiDateRequestRef.current === requestId) {
-          setKpiDateError("KPI data ပြောင်းလဲရာတွင် အမှားရှိပါသည်။");
-        }
-      })
-      .finally(() => {
-        if (kpiDateRequestRef.current === requestId) setKpiDateLoading(false);
-      });
-
-    return () => controller.abort();
-  }, [selectedKpiDate]);
 
   useEffect(() => {
     if (!productionDate) return undefined;
@@ -753,7 +718,9 @@ export default function Dashboard({ view = "overview" }) {
     if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
     lastDashboardAttemptAtRef.current = Date.now();
     setLoading(true);
-    setDashboardKpiLoading((current) => (dashboardKpi ? current : true));
+    setKpiDateLoading(true);
+    setKpiDateError("");
+    setDashboardKpiLoading(true);
     setDashboardKpiError("");
     setLoadingTimedOut(false);
     setDataLoadError("");
@@ -782,12 +749,18 @@ export default function Dashboard({ view = "overview" }) {
         .catch((error) => {
           if (error.name !== "AbortError") {
             console.warn("Dashboard KPI was not loaded:", error);
-            if (dashboardRequestIdRef.current === requestId) setDashboardKpiError("KPI data မရသေးပါ");
+            if (dashboardRequestIdRef.current === requestId) {
+              setDashboardKpiError("KPI data မရသေးပါ");
+              setKpiDateError("KPI data ပြောင်းလဲရာတွင် အမှားရှိပါသည်။");
+            }
           }
           return null;
         })
         .finally(() => {
-          if (dashboardRequestIdRef.current === requestId) setDashboardKpiLoading(false);
+          if (dashboardRequestIdRef.current === requestId) {
+            setDashboardKpiLoading(false);
+            setKpiDateLoading(false);
+          }
         });
 
       // Keep the previous snapshot visible while the lightweight customer
@@ -878,7 +851,7 @@ export default function Dashboard({ view = "overview" }) {
         setLoadingStage("");
       }
     }
-  }, [clearAutoRetryTimers, dashboardKpi, loadOverdueDebts, search, selectedKpiDate, showAlert]);
+  }, [clearAutoRetryTimers, loadOverdueDebts, search, selectedKpiDate, showAlert]);
 
   // iPhone standalone PWAs can pause while they are in the background. Refresh
   // when the app becomes visible again, or immediately when the connection returns.
