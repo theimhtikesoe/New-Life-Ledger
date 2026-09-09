@@ -25,7 +25,12 @@ export async function GET(request) {
     const cashSalesForItems = typeof prisma.cashSale.findMany === "function"
       ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { amount: true, saleItems: true } })
       : [];
-    const stockMovements = await prisma.factoryStockMovement.findMany({ select: { quantityCards: true } });
+    // Keep the dashboard KPI endpoint compatible with older generated clients
+    // while the factory-stock table is being rolled out. A missing optional
+    // model should show zero stock, not take down every dashboard KPI.
+    const stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
+      ? await prisma.factoryStockMovement.findMany({ select: { quantityCards: true } })
+      : [];
     const factoryStockCards = stockMovements.reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
     const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
