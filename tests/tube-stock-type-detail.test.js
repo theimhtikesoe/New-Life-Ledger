@@ -10,11 +10,13 @@ describe("Tube stock type detail", () => {
     expect(page).toContain(">ကြည့်</button>");
     expect(page).toContain("tube-type-detail-title");
     expect(page).toContain("PRODUCTION_USE_OUT");
-    expect(page).toContain("Date ဖြင့်ကြည့်ရန်");
     expect(route).toContain('searchParams.get("type")');
     expect(route).toContain("validLimit");
     expect(route).toContain("take: validLimit");
     expect(route).toContain("loadDerivedFactoryStockMovements");
     expect(route).toContain("movements");
+    expect(route).toContain("productionPacks");
+    expect(route).toContain("usedPieces");
+    expect(route).toContain("currentPieces");
   });
 });

@@ -62,8 +62,6 @@ export default function FactoryStockPage() {
           <p className="text-xs font-bold uppercase tracking-wide text-orange-700">Factory Inventory</p>
           <p className="mt-2 text-sm leading-6 text-slate-600">ထုတ်လုပ်မှုတိုးခြင်းနှင့် ဗူးရောင်းစာရင်းလျော့ခြင်းကို အခြေခံ၍ Database မှတွက်ထားသော လက်ကျန်ဖြစ်ပါသည်။</p>
         </section>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold leading-6 text-amber-900">{data?.warnings?.[0] || "ဤလက်ကျန်သည် Database-derived System Stock ဖြစ်ပါသည်။"}</div>
-        {data?.dataSource === "LIVE_DERIVED_FALLBACK" ? <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm font-bold leading-6 text-sky-900">Movement ledger မရှိသေးသော်လည်း Production နှင့် ရောင်းစာရင်းများမှ လက်ရှိ System Stock ကို တိုက်ရိုက်တွက်ပြထားပါသည်။</div> : null}
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
         {loading ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">စက်ရုံလက်ကျန် ရယူနေသည်...</div> : null}
         {!loading && !data?.summary?.length ? <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center font-bold text-slate-500">Stock movement မရှိသေးပါ။ Rebuild ပြီးမှ လက်ကျန်ပေါ်လာပါမည်။</div> : null}

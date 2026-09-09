@@ -30,7 +30,8 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryPageSource).toContain("စာရင်းညှိ");
     expect(factoryPageSource).toContain("အခြေအနေ");
     expect(factoryPageSource).toContain("stockStatus");
-    expect(factoryPageSource).toContain("LIVE_DERIVED_FALLBACK");
+    expect(factoryPageSource).toContain("ထုတ်လုပ်ဝင်");
+    expect(factoryPageSource).not.toContain("FACTORY INVENTORY");
     expect(factoryPageSource).toContain('role="dialog"');
     expect(factoryPageSource).toContain("အသေးစိတ်မှတ်တမ်း");
   });
