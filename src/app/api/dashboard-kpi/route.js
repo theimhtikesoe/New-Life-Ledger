@@ -38,7 +38,7 @@ export async function GET(request) {
     }
     const factoryStockCards = stockMovements.reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
     const tubeProductionRows = typeof prisma.productionReport?.findMany === "function"
-      ? await prisma.productionReport.findMany({ where: { category: "tube" }, select: { outputQuantity: true, outputCapacity: true } })
+      ? await prisma.productionReport.findMany({ where: { category: "tube", reportDate: dateParam }, select: { outputQuantity: true, outputCapacity: true } })
       : [];
     const factoryTubePieces = tubeProductionRows.reduce((sum, row) => sum + (Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0)), 0);
     const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
