@@ -14,19 +14,20 @@ describe("Production page enhancements", () => {
     expect(productionSource).toContain('const [tubeQuantityUnit, setTubeQuantityUnit] = useState("အိတ်");');
     expect(productionSource).toContain('<option value="အိတ်">အိတ်</option>');
     expect(productionSource).toContain('<option value="ခြင်း">ခြင်း</option>');
-    expect(productionSource).toContain("tubeQuantityUnit, involvedWorkers");
+    expect(productionSource).toContain("tubeQuantityUnit, tubeMetrics");
+    expect(productionSource).toContain("involvedWorkers: workerNames");
     expect(routeSource).toContain('if (!["အိတ်", "ခြင်း"].includes(unit))');
     expect(routeSource).toContain("tubeQuantityUnit: index === 0 ? tubeQuantityUnitValue : \"အိတ်\"");
     expect(schemaSource).toContain('tubeQuantityUnit   String   @default("အိတ်")');
     expect(migrationSource).toContain('ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
-    expect(databaseSource).toContain('const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit"];');
+    expect(databaseSource).toContain('const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit", "tubeMetrics"];');
     expect(databaseSource).toContain('ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
   });
 
   it("accepts decimal tube quantities and preserves the exact entered value", () => {
     expect(productionSource).toContain('type="text" inputMode="decimal" value={tubeQuantity}');
     expect(productionSource).toContain("onChange={(event) => setTubeQuantity(event.target.value)}");
-    expect(productionSource).toContain("tubeQuantityValue: tubeQuantity");
+    expect(productionSource).toContain("tubeQuantityValue: category === \"tube\"");
     expect(routeSource).toContain("function decimalTubeQuantity(value)");
     expect(routeSource).toContain("tubeQuantityValue: String(row.tubeQuantityValue ?? row.tubeQuantity ?? 0)");
     expect(schemaSource).toContain('tubeQuantityValue  String   @default("0")');

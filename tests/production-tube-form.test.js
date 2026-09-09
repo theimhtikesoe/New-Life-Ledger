@@ -25,8 +25,9 @@ describe("Tube production entry", () => {
     expect(page).toContain("tubeMetrics");
   });
 
-  it("does not submit attached workers for Tube and persists the metrics", () => {
-    expect(page).toContain('involvedWorkers: category === "tube" ? [] : workerNames');
+  it("submits selected Tube workers and persists the metrics", () => {
+    expect(page).toContain("DEFAULT_TUBE_WORKERS");
+    expect(page).toContain("involvedWorkers: workerNames");
     expect(page).toContain("tubeMetrics: category === \"tube\" ? tubeMetrics : null");
     expect(route).toContain("tubeMetrics: row.tubeMetrics");
     expect(schema).toContain("tubeMetrics        Json?");
