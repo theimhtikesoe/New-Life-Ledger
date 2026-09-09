@@ -268,7 +268,9 @@ export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
 
 export default function Dashboard({ view = "overview" }) {
   const isLedgerView = view === "ledger";
-  const [dashboardActorName, setDashboardActorName] = useState("");
+  const [dashboardActorName, setDashboardActorName] = useState(() => (
+    typeof window === "undefined" ? "" : (window.localStorage.getItem("actorName") || "").trim()
+  ));
   const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး";
   const [customers, setCustomers] = useState(() => readDashboardSnapshot()?.customers || []);
   const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => readDashboardSnapshot()?.allCustomersForKPI || []);
