@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 import { getBottleUnit, getMachine, MACHINES } from "@/lib/production-catalog";
-import { productionMovementRows, reversalMovementRows } from "@/lib/factory-stock";
+import { loadTubeMappings, productionMovementRows, reversalMovementRows } from "@/lib/factory-stock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -138,7 +138,7 @@ export async function POST(request) {
     }));
     const created = await prisma.$transaction(async (tx) => {
       const result = await tx.productionReport.createMany({ data });
-      const stockMovements = productionMovementRows(data, { actorName });
+      const stockMovements = productionMovementRows(data, { actorName, tubeMappings: await loadTubeMappings() });
       if (stockMovements.length) await tx.factoryStockMovement.createMany({ data: stockMovements });
       return result;
     });
@@ -198,8 +198,9 @@ export async function PATCH(request) {
       const existing = existingRows[0];
       if (!existing) throw new Error("ပြင်ဆင်မည့် report မတွေ့ပါ။");
       await tx.productionReport.deleteMany({ where: { submissionId } });
-      const oldMovements = productionMovementRows(existingRows, { actorName });
-      const newMovements = productionMovementRows(data, { actorName });
+      const tubeMappings = await loadTubeMappings();
+      const oldMovements = productionMovementRows(existingRows, { actorName, tubeMappings });
+      const newMovements = productionMovementRows(data, { actorName, tubeMappings });
       if (oldMovements.length) await tx.factoryStockMovement.createMany({ data: reversalMovementRows(oldMovements, { actorName }) });
       const created = await tx.productionReport.createMany({ data });
       if (newMovements.length) await tx.factoryStockMovement.createMany({ data: newMovements });
@@ -223,7 +224,7 @@ export async function DELETE(request) {
     const existingRows = await prisma.productionReport.findMany({ where: { submissionId } });
     const result = await prisma.$transaction(async (tx) => {
       const deleted = await tx.productionReport.deleteMany({ where: { submissionId } });
-      const oldMovements = productionMovementRows(existingRows, { actorName });
+      const oldMovements = productionMovementRows(existingRows, { actorName, tubeMappings: await loadTubeMappings() });
       if (oldMovements.length) await tx.factoryStockMovement.createMany({ data: reversalMovementRows(oldMovements, { actorName }) });
       return deleted;
     });

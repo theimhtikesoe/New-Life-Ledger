@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { aggregateStockMovements, ensureFactoryStockTable, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows, STOCK_TYPES } from "@/lib/factory-stock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,9 +27,16 @@ export async function GET(request) {
       orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     });
     let dataSource = "MOVEMENT_LEDGER";
-    if (!movements.length && !productKey && !Object.keys(dateFilter(searchParams)).length) {
-      movements = await loadDerivedFactoryStockMovements({ actorName: getActorName(request) });
-      dataSource = "LIVE_DERIVED_FALLBACK";
+    if (!productKey && !Object.keys(dateFilter(searchParams)).length) {
+      const derived = await loadDerivedFactoryStockMovements({ actorName: getActorName(request) });
+      const hasTubeLedger = movements.some((movement) => movement.stockType === STOCK_TYPES.TUBE);
+      if (!movements.length) {
+        movements = derived;
+        dataSource = "LIVE_DERIVED_FALLBACK";
+      } else if (!hasTubeLedger) {
+        movements = [...movements, ...derived.filter((movement) => movement.stockType === STOCK_TYPES.TUBE)];
+        dataSource = "MOVEMENT_LEDGER_PLUS_TUBE_DERIVED";
+      }
     }
     const summary = aggregateStockMovements(movements);
     return NextResponse.json({ data: {
@@ -54,12 +61,12 @@ export async function POST(request) {
     if (body.action !== "rebuild") return NextResponse.json({ error: "Factory Stock API action မမှန်ပါ။" }, { status: 400 });
 
     const movements = await loadDerivedFactoryStockMovements({ actorName });
-    const productionMovements = movements.filter((movement) => movement.sourceType === "PRODUCTION");
+    const productionMovements = movements.filter((movement) => ["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION"].includes(movement.sourceType));
     const ledgerMovements = movements.filter((movement) => movement.sourceType === "LEDGER");
     const cashMovements = movements.filter((movement) => movement.sourceType === "CASH_SALE");
 
     const result = await prisma.$transaction(async (tx) => {
-      await tx.factoryStockMovement.deleteMany({ where: { sourceType: { in: ["PRODUCTION", "LEDGER", "CASH_SALE"] } } });
+      await tx.factoryStockMovement.deleteMany({ where: { sourceType: { in: ["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION", "LEDGER", "CASH_SALE"] } } });
       if (movements.length) await tx.factoryStockMovement.createMany({ data: movements });
       await writeAuditLog({
         db: tx,

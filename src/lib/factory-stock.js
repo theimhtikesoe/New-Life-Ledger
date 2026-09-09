@@ -3,12 +3,14 @@ import { prisma } from "@/lib/prisma";
 export const STOCK_TYPES = {
   BOTTLE: "BOTTLE",
   CAP: "CAP",
+  TUBE: "TUBE",
 };
 
 export const MOVEMENT_TYPES = {
   OPENING_BALANCE: "OPENING_BALANCE",
   PRODUCTION_IN: "PRODUCTION_IN",
   SALE_OUT: "SALE_OUT",
+  PRODUCTION_USE_OUT: "PRODUCTION_USE_OUT",
   ADJUSTMENT_IN: "ADJUSTMENT_IN",
   ADJUSTMENT_OUT: "ADJUSTMENT_OUT",
   REVERSAL: "REVERSAL",
@@ -54,10 +56,18 @@ export async function ensureFactoryStockTable() {
   return factoryStockTablePromise;
 }
 
+export async function loadTubeMappings() {
+  if (typeof prisma.priceSetting?.findMany !== "function") return new Map();
+  const rows = await prisma.priceSetting.findMany({ where: { scope: "ITEM", tubeType: { not: null } }, select: { productKey: true, tubeType: true }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
+  const mappings = new Map();
+  for (const row of rows) if (!mappings.has(row.productKey) && row.tubeType) mappings.set(row.productKey, row.tubeType);
+  return mappings;
+}
+
 export async function loadDerivedFactoryStockMovements({ actorName = "system" } = {}) {
   const [productionRows, ledgerRows, cashSales] = await Promise.all([
     prisma.productionReport.findMany({
-      select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, submissionId: true, notes: true, actorName: true },
+      select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true },
       orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }],
     }),
     prisma.ledger.findMany({
@@ -71,8 +81,9 @@ export async function loadDerivedFactoryStockMovements({ actorName = "system" } 
       orderBy: [{ date: "asc" }, { id: "asc" }],
     }),
   ]);
+  const tubeMappings = await loadTubeMappings();
   return [
-    ...productionMovementRows(productionRows, { actorName }),
+    ...productionMovementRows(productionRows, { actorName, tubeMappings }),
     ...saleMovementRows(ledgerRows, { actorName, sourceType: "LEDGER" }),
     ...saleMovementRows(cashSales, { actorName, sourceType: "CASH_SALE" }),
   ];
@@ -109,30 +120,47 @@ function positiveInteger(value) {
   return Number.isFinite(number) && number > 0 ? number : 0;
 }
 
-export function productionMovementRows(rows = [], { actorName = "system", sourceVersion = "v1" } = {}) {
-  return rows
-    .filter((row) => row.category !== "tube" && clean(row.bottleType) && normalizeCapacity(row.outputCapacity))
-    .map((row) => {
-      const identity = normalizeBottleIdentity({ productName: row.bottleType, capacity: row.outputCapacity });
-      const cards = positiveInteger(row.outputQuantity);
-      return {
-        movementDate: clean(row.reportDate),
-        movementType: MOVEMENT_TYPES.PRODUCTION_IN,
-        stockType: STOCK_TYPES.BOTTLE,
-        ...identity,
-        quantityCards: cards,
-        quantityBottles: cards * identity.capacity,
-        sourceType: "PRODUCTION",
-        sourceId: clean(row.submissionId),
-        sourceVersion,
-        reason: "ထုတ်လုပ်မှုမှတ်တမ်း",
-        note: clean(row.notes) || null,
-        actorName: clean(actorName) || "system",
-      };
-    })
-    .filter((row) => row.quantityCards > 0 && row.sourceId);
+export function normalizeTubeIdentity(value, capacity = 0) {
+  const raw = clean(value);
+  const aliases = {
+    "1 လီတာ ဖြူ": "24g W (အဖြူ)",
+    "1 လီတာ ပြာ": "24g B (S+1)",
+    ".3 ဖြူ": "13g W (အဖြူ)",
+    ".3 ပြာ (S+S)": "13g (S+S)",
+  };
+  const prefixAliases = [["24g W", "24g W (အဖြူ)"], ["24g B", "24g B (S+1)"], ["16g W", "16g W (အဖြူ)"], ["16g S+1", "16g (S+1)"], ["13g W", "13g W (အဖြူ)"], ["13g S+1", "13g (S+1)"], ["13g S+S", "13g (S+S)"]];
+  const fromPrefix = prefixAliases.find(([prefix]) => raw.startsWith(prefix))?.[1];
+  const productName = aliases[raw] || fromPrefix || raw || "Tube မသတ်မှတ်ရသေး";
+  const inferredCapacity = productName.startsWith("24g") ? 1500 : productName.startsWith("16g") ? 2000 : productName.startsWith("13g") ? 2500 : 0;
+  const normalizedCapacity = normalizeCapacity(capacity) || inferredCapacity;
+  return { productName, productKey: `${productName}::${normalizedCapacity}`, capacity: normalizedCapacity };
 }
 
+export function productionMovementRows(rows = [], { actorName = "system", sourceVersion = "v1", tubeMappings = new Map() } = {}) {
+  const movements = [];
+  for (const row of rows) {
+    const cards = positiveInteger(row.outputQuantity);
+    const capacity = normalizeCapacity(row.outputCapacity);
+    const reportId = clean(row.submissionId);
+    if (!cards || !capacity || !reportId) continue;
+    if (row.category === "tube" && clean(row.tubeG)) {
+      const identity = normalizeTubeIdentity(`${row.tubeG} ${row.tubeColor || ""}`, capacity);
+      movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_IN, stockType: STOCK_TYPES.TUBE, ...identity, quantityCards: cards, quantityBottles: cards * capacity, sourceType: "TUBE_PRODUCTION", sourceId: reportId, sourceVersion, reason: "Tube ထုတ်လုပ်မှုမှတ်တမ်း", note: clean(row.notes) || null, actorName: clean(actorName) || "system" });
+      continue;
+    }
+    if (row.category !== "tube" && clean(row.bottleType)) {
+      const bottleIdentity = normalizeBottleIdentity({ productName: row.bottleType, capacity });
+      movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_IN, stockType: STOCK_TYPES.BOTTLE, ...bottleIdentity, quantityCards: cards, quantityBottles: cards * capacity, sourceType: "PRODUCTION", sourceId: reportId, sourceVersion, reason: "ထုတ်လုပ်မှုမှတ်တမ်း", note: clean(row.notes) || null, actorName: clean(actorName) || "system" });
+      const mapped = tubeMappings.get(bottleIdentity.productKey);
+      if (mapped) {
+        const tubeIdentity = normalizeTubeIdentity(mapped, 0);
+        const piecesUsed = cards * capacity;
+        movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_USE_OUT, stockType: STOCK_TYPES.TUBE, ...tubeIdentity, quantityCards: 0, quantityBottles: -piecesUsed, sourceType: "BOTTLE_PRODUCTION", sourceId: reportId, sourceVersion, reason: "ဗူးထုတ်လုပ်ရာတွင် Tube သုံးစွဲ", note: `${bottleIdentity.productName} ${capacity} ဆံ့`, actorName: clean(actorName) || "system" });
+      }
+    }
+  }
+  return movements;
+}
 export function saleMovementRows(rows = [], { actorName = "system", sourceType = "SALE", sourceVersion = "v1" } = {}) {
   const movements = [];
   for (const row of rows) {
@@ -168,6 +196,7 @@ export function aggregateStockMovements(movements = []) {
   for (const movement of movements) {
     const current = summary.get(movement.productKey) || {
       productKey: movement.productKey,
+      stockType: movement.stockType,
       productName: movement.productName,
       capacity: movement.capacity,
       productionCards: 0,
@@ -176,6 +205,9 @@ export function aggregateStockMovements(movements = []) {
       currentCards: 0,
       productionBottles: 0,
       soldBottles: 0,
+      usedBottles: 0,
+      usedCards: 0,
+      adjustmentBottles: 0,
       currentBottles: 0,
     };
     const cards = Number(movement.quantityCards || 0);
@@ -188,8 +220,12 @@ export function aggregateStockMovements(movements = []) {
     } else if (movement.movementType === MOVEMENT_TYPES.SALE_OUT) {
       current.soldCards += Math.abs(cards);
       current.soldBottles += Math.abs(bottles);
+    } else if (movement.movementType === MOVEMENT_TYPES.PRODUCTION_USE_OUT) {
+      current.usedCards += Math.abs(cards);
+      current.usedBottles += Math.abs(bottles);
     } else {
       current.adjustmentCards += cards;
+      current.adjustmentBottles += bottles;
     }
     summary.set(movement.productKey, current);
   }
