@@ -239,3 +239,97 @@ Cost Page route နှင့် Settings navigation ကို `8a28b45` commit �
 ## ၁၁။ အတည်ပြုရမည့် အဆုံးသတ်ရလဒ်
 
 လုပ်ငန်းပြီးဆုံးသည့်အခါ User သည် Customer ကိုရွေးပြီး `ဗူးထည့်ရန် +` ကို နှိပ်ရုံဖြင့် ဗူးအမျိုးအစားနှင့် ကဒ်အရေအတွက်ကို ရွေးနိုင်ရမည်။ System သည် ဆံ့၊ ဗူးပေါင်း၊ Cost စျေး၊ Customer အတွက် ပြန်ညှိထားသောစျေးနှင့် သင့်ငွေကို အလိုအလျောက်တွက်ရမည်။ User သည် Cash/KPay/Bank ဖြင့် ငွေချေသည့်အခါ payment split ကို ထည့်နိုင်ရမည်။ Transaction ကို သိမ်းပြီးနောက် အဲဒီအချိန်က စျေးနှုန်း snapshot နှင့် ဗူးစာရင်းကို ပြန်ကြည့်နိုင်ရမည်။ Dashboard တွင်လည်း ရက်စွဲအလိုက် မည်သည့်ဗူး ဘယ်နှစ်ဗူးရောင်းခဲ့သည်ကို KPI အဖြစ် ပြန်တွက်နိုင်ရမည်။
+
+
+## ၇။ နောက်ပိုင်း ထည့်သွင်းမည့် Material / Packaging Count KPI များ
+
+### ၇.၁ ရည်ရွယ်ချက်
+
+နောက်ပိုင်းတွင် Production data မှနေ၍ အောက်ပါအရေအတွက်များကို Dashboard၊ Stock နှင့် Daily Summary များတွင် ပြန်လည်တွက်ချက်ပြသရန် လိုအပ်မည်။
+
+1. **အဖုံး အရေအတွက်**
+2. **ခုတ်ဖက် အရေအတွက်**
+3. **ကော်စေ့ အိတ် အရေအတွက်**
+4. **ထုတ်ပိုးအိတ်ခွံ အရေအတွက်**
+
+ယခုအဆင့်တွင် production form နှင့် database logic ကို မပြောင်းသေးဘဲ၊ မည်သည့် source data မှ မည်သို့တွက်မည်ကို အရင်ဆုံး သတ်မှတ်ထားရမည်။ နောက်ပိုင်း calculation rule ကို user က အတည်ပြုပြီးမှ implementation လုပ်ရမည်။
+
+### ၇.၂ လက်ရှိ Data မှ ပြန်ယူနိုင်သောအပိုင်းများ
+
+| နောက်ပိုင်းလိုချင်သော Data | လက်ရှိ source data | ယာယီတွက်ချက်နိုင်သည့်နည်း | အတည်ပြုရန်လိုသည့်အချက် |
+|---|---|---|---|
+| အဖုံး အရေအတွက် | ဗူးခွံ production row ၏ `outputQuantity`, `outputCapacity`, bottle type/color | ပုံမှန်အားဖြင့် `outputQuantity × outputCapacity` ကို ဗူးအရေအတွက်အဖြစ်ယူနိုင်သည် | အဖုံးတစ်ဗူးလျှင် ၁ ခုလား၊ အဖုံးပျက်/အပိုအဖုံး ရှိသလား၊ အဖုံးအရောင်အလိုက် ခွဲမလား |
+| ခုတ်ဖက် အရေအတွက် | Tube `tubeMetrics.scrapTubeCount`, `scrapGlueCount`, `scrapKg` | ခုတ်ဖက် count ကို `scrapTubeCount` မှ တိုက်ရိုက်ယူနိုင်သည်။ kg ကို သီးခြားစုနိုင်သည် | `scrapTubeCount` တစ်ခုသည် Tube တစ်ခုလား၊ အပိုင်း/အိတ်လား၊ kg နှင့် count ဆက်စပ်မှုရှိသလား |
+| ကော်စေ့ အိတ် အရေအတွက် | Tube `tubeMetrics.usedGlueBags`, `remainingGlueBags`, `scrapGlueCount` | အသုံးပြုသည့်အိတ်ကို `usedGlueBags`၊ လက်ကျန်ကို `remainingGlueBags` အဖြစ် စုနိုင်သည် | `scrapGlueCount` သည် အိတ်လား/အလုံးလား၊ ကော်စေ့အိတ်အရွယ်အစား မတူရင် kg သို့ပြောင်းနည်းလိုမလား |
+| ထုတ်ပိုးအိတ်ခွံ အရေအတွက် | လက်ရှိ ProductionReport တွင် သီးခြား field မရှိသေး | Tube output အိတ်အရေအတွက် (`outputQuantity`) ကို proxy အဖြစ်သာ ကြည့်နိုင်သည် | ထုတ်ပိုးအိတ်ခွံ ၁ အိတ်တွင် Tube ဘယ်နှစ်လုံး/ဘယ်နှစ် pcs ထည့်သလဲ၊ အိတ်ပျက်/အပိုအိတ်ကို မှတ်မလား |
+
+### ၇.၃ အရေးကြီးသော Data ခွဲခြားမှု
+
+လက်ရှိ data ထဲတွင် **ထုတ်လုပ်မှု output**၊ **ကုန်ကြမ်းအသုံးပြုမှု**၊ **အပျက်အစီး** နှင့် **လက်ကျန်** တို့သည် အချို့နေရာတွင် ရောနှောနေသေးသည်။ ထို့ကြောင့် နောက်ပိုင်း KPI များကို တိကျစွာတွက်ရန် အောက်ပါ data type များကို သီးခြားသိမ်းသင့်သည်။
+
+```text
+OUTPUT       = ထုတ်လုပ်ပြီးသော Tube / ဗူး အရေအတွက်
+CONSUMED     = အသုံးပြုခဲ့သော ကော်စေ့ / ထုတ်ပိုးအိတ် အရေအတွက်
+WASTE        = ခုတ်ဖက်၊ Tube ပျက်၊ ကော်ပျက်၊ အိတ်ပျက်
+REMAINING    = အလုပ်ပြီးချိန်တွင် ကျန်ရှိသည့် ကုန်ကြမ်း / ပစ္စည်း
+ADJUSTMENT   = လက်ဖြင့် ပြန်ညှိထားသော အရေအတွက်နှင့် အကြောင်းပြချက်
+```
+
+`သုံးကော်စေ့`၊ `ကျန်ကော်စေ့`၊ `ခုတ်ဖက်` နှင့် `ကော်ပျက်` တို့ကို တစ်ခုချင်းစီ ပြန်ခွဲသိမ်းထားသည့် လက်ရှိ `tubeMetrics` structure ကို မဖျက်ဘဲ ဆက်သုံးရမည်။ နောက်ပိုင်း field အသစ်များထည့်လျှင်လည်း အဟောင်း report များ မပျက်စေရန် JSON backward-compatible default ထားရမည်။
+
+### ၇.၄ အကြံပြုထားသော နောက်ပိုင်း Calculation Layer
+
+KPI component တစ်ခုချင်းစီက database rows ကို ကိုယ်တိုင်ပြန်တွက်မည့်အစား shared calculation function တစ်ခုထားသင့်သည်။ ဥပမာ—
+
+```text
+calculateMaterialSummary(productionRows, dateRange, machineCode?)
+
+returns:
+- capCount
+- scrapCount
+- scrapKg
+- glueUsedBags
+- glueUsedKg
+- glueRemainingBags
+- packagingShellCount
+- wasteCount
+- sourceReportCount
+- calculationWarnings[]
+```
+
+ထို function ကို Production history၊ Dashboard KPI၊ Stock detail၊ Daily Summary နှင့် နောက်ပိုင်း report/export များက တစ်နေရာတည်းမှ ပြန်အသုံးပြုသင့်သည်။ ဤနည်းဖြင့် Page တစ်ခုနှင့်တစ်ခု အရေအတွက်မတူခြင်းကို လျှော့ချနိုင်မည်။
+
+### ၇.၅ လက်တွေ့အကြံပြုချက်
+
+**အဖုံး** နှင့် **ထုတ်ပိုးအိတ်ခွံ** ကို output မှ အလိုအလျောက်တွက်နိုင်သော်လည်း ပစ္စည်းတစ်မျိုးချင်းစီ၏ တကယ့်အသုံးပြုမှုနှင့် ပျက်စီးမှုမှာ output တစ်ခုတည်းဖြင့် မသိနိုင်ပါ။ ထို့ကြောင့် proxy calculation ဖြင့် KPI ပြသမည့်အခါ `ခန့်မှန်း` သို့မဟုတ် `ထုတ်လုပ်မှုအပေါ်အခြေခံ` ဟု source label ထားသင့်သည်။
+
+**ခုတ်ဖက်** နှင့် **ကော်စေ့** အတွက် လက်ရှိ `scrapTubeCount`, `scrapGlueCount`, `scrapKg`, `usedGlueBags`, `usedGlueKg` fields များသည် အခြေခံကောင်းပြီးသားဖြစ်သည်။ သို့သော် count unit သည် `အလုံး`, `အပိုင်း`, `အိတ်` မည်သည်ကို အတည်ပြုပြီးမှ KPI ထုတ်သင့်သည်။ kg နှင့် count ကို အလိုအလျောက်ပြောင်းလဲရန် conversion rate မခန့်မှန်းသင့်ပါ။
+
+နောက်ဆုံးတွင် Daily Production Summary ကို row-based ပုံစံဖြင့် ထုတ်သင့်သည်။ အနည်းဆုံး `Date၊ Machine၊ Worker၊ Tube type၊ Output pcs၊ Used glue bags၊ Scrap count၊ Scrap kg၊ Packaging shell count` များ ပါရမည်။ အဲဒီ summary သည် စာအုပ်ထဲက လက်ရေးမှတ်တမ်းနှင့် Website data ကို တစ်ကြောင်းချင်း တိုက်စစ်ရန် အလွယ်ဆုံးအခြေခံဖြစ်မည်။
+
+### ၇.၆ Implementation အစီအစဉ်
+
+1. User ထံမှ item တစ်ခုချင်းစီ၏ **အဓိပ္ပါယ်နှင့် unit** ကို အတည်ပြုရန်။
+2. လက်ရှိ data မှ တိုက်ရိုက်ရနိုင်သော count နှင့် မရနိုင်သေးသော count ကို ခွဲရန်။
+3. `MaterialSummary` shared calculation function နှင့် unit normalization ထည့်ရန်။
+4. လိုအပ်သော field များကို backward-compatible migration ဖြင့် ထည့်ရန်။
+5. Production form တွင် လိုအပ်သော manual adjustment fields များသာ ထည့်ရန်။
+6. Dashboard KPI နှင့် detail report တွင် source label၊ date filter၊ machine filter ဖြင့် ပြရန်။
+7. စာအုပ်မှတ်တမ်း ၃–၅ ရက်နှင့် Website result ကို တိုက်စစ်ပြီးမှ stock/KPI အဖြစ် production အသုံးပြုရန်။
+
+**အရေးကြီးဆုံး မူဝါဒ:** ယူနစ်နှင့် conversion rule မသေချာသေးသော data ကို အလိုအလျောက် ခန့်မှန်းပြီး “တိကျသော လက်ကျန်” အဖြစ် မပြရ။ အတည်ပြုထားသော source၊ calculation formula နှင့် warning ကို အမြဲတမ်း ခွဲပြထားရမည်။
+
+## ၈။ Future implementation notes
+
+ဤအပိုင်းသည် roadmap သာဖြစ်ပြီး လက်ရှိ Production form၊ API၊ database record သို့မဟုတ် KPI behavior ကို မပြောင်းလဲပါ။ User က count အဓိပ္ပါယ်၊ unit၊ conversion နှင့် စာအုပ်မှတ်တမ်းနှင့် ကိုက်ညီသော rule များကို အတည်ပြုပြီးမှ implementation task အဖြစ် ခွဲပြီး ပြင်ဆင်ရမည်။
+
+---
+
+## ၉။ လက်ရှိ implementation status
+
+- Production report တွင် Tube output၊ worker snapshot နှင့် `tubeMetrics` data များ ရှိပြီးဖြစ်သည်။
+- Tube history နှင့် Dashboard Tube KPI သည် date-filtered production report data ကို ပြန်အသုံးပြုနေသည်။
+- အဖုံး၊ ခုတ်ဖက်၊ ကော်စေ့အိတ်နှင့် ထုတ်ပိုးအိတ်ခွံ KPI များအတွက် shared calculation layer ကို မထည့်ရသေးပါ။
+- အထက်ပါ data source နှင့် unit rules အတည်ပြုပြီးနောက်သာ calculation layer နှင့် stock adjustment flow ကို စတင်သင့်သည်။
+
+---
