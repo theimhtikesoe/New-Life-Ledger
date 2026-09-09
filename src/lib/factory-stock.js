@@ -132,6 +132,25 @@ export function aggregateStockMovements(movements = []) {
   return [...summary.values()].sort((a, b) => a.productName.localeCompare(b.productName, "my"));
 }
 
+export function reversalMovementRows(movements = [], { actorName = "system", sourceVersion = "reversal-v1" } = {}) {
+  return movements.map((movement) => ({
+    movementDate: movement.movementDate,
+    movementType: MOVEMENT_TYPES.REVERSAL,
+    stockType: movement.stockType,
+    productKey: movement.productKey,
+    productName: movement.productName,
+    capacity: movement.capacity,
+    quantityCards: -Number(movement.quantityCards || 0),
+    quantityBottles: -Number(movement.quantityBottles || 0),
+    sourceType: movement.sourceType,
+    sourceId: movement.sourceId,
+    sourceVersion,
+    reason: `${movement.reason || "Stock movement"} ပြန်လှန်ခြင်း`,
+    note: movement.note || null,
+    actorName: clean(actorName) || "system",
+  }));
+}
+
 export async function loadFactoryStockMovements(where = {}) {
   return prisma.factoryStockMovement.findMany({ where, orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }] });
 }

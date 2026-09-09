@@ -3,6 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
+import { saleMovementRows } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -137,6 +138,9 @@ export async function POST(request, { params }) {
           saleItems: true,
         },
       });
+
+      const stockMovements = saleMovementRows([ledger], { actorName: getActorName(request), sourceType: "LEDGER" });
+      if (stockMovements.length) await tx.factoryStockMovement.createMany({ data: stockMovements });
 
       await writeAuditLog({
         db: tx,

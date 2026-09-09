@@ -5,6 +5,7 @@ import { getActorName, writeAuditLog } from "@/lib/audit";
 import { customerDefaultCashSaleType, normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 import { hasPaymentBreakdownInput, paymentSplitForInput } from "@/lib/payment-split";
+import { saleMovementRows } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +99,8 @@ export async function POST(request, { params }) {
         },
         select: cashSaleSelect,
       });
+    const stockMovements = saleMovementRows([cashSale], { actorName: getActorName(request), sourceType: "CASH_SALE" });
+    if (stockMovements.length) await prisma.factoryStockMovement.createMany({ data: stockMovements });
     try {
       await writeAuditLog({
         db: prisma,

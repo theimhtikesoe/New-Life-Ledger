@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 import { getBottleUnit, getMachine, MACHINES } from "@/lib/production-catalog";
+import { productionMovementRows, reversalMovementRows } from "@/lib/factory-stock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -133,7 +134,12 @@ export async function POST(request) {
       involvedWorkers,
       notes,
     }));
-    const created = await prisma.$transaction((tx) => tx.productionReport.createMany({ data }));
+    const created = await prisma.$transaction(async (tx) => {
+      const result = await tx.productionReport.createMany({ data });
+      const stockMovements = productionMovementRows(data, { actorName });
+      if (stockMovements.length) await tx.factoryStockMovement.createMany({ data: stockMovements });
+      return result;
+    });
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
     await writeAuditLog({
       actorName,
@@ -185,10 +191,16 @@ export async function PATCH(request) {
       involvedWorkers, notes,
     }));
     const result = await prisma.$transaction(async (tx) => {
-      const existing = await tx.productionReport.findFirst({ where: { submissionId }, select: { id: true } });
+      const existingRows = await tx.productionReport.findMany({ where: { submissionId } });
+      const existing = existingRows[0];
       if (!existing) throw new Error("ပြင်ဆင်မည့် report မတွေ့ပါ။");
       await tx.productionReport.deleteMany({ where: { submissionId } });
-      return tx.productionReport.createMany({ data });
+      const oldMovements = productionMovementRows(existingRows, { actorName });
+      const newMovements = productionMovementRows(data, { actorName });
+      if (oldMovements.length) await tx.factoryStockMovement.createMany({ data: reversalMovementRows(oldMovements, { actorName }) });
+      const created = await tx.productionReport.createMany({ data });
+      if (newMovements.length) await tx.factoryStockMovement.createMany({ data: newMovements });
+      return created;
     });
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ဗူး)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers } });
@@ -205,7 +217,13 @@ export async function DELETE(request) {
     const submissionId = String(new URL(request.url).searchParams.get("submissionId") || "").trim();
     if (!submissionId) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
     const actorName = getActorName(request);
-    const result = await prisma.productionReport.deleteMany({ where: { submissionId } });
+    const existingRows = await prisma.productionReport.findMany({ where: { submissionId } });
+    const result = await prisma.$transaction(async (tx) => {
+      const deleted = await tx.productionReport.deleteMany({ where: { submissionId } });
+      const oldMovements = productionMovementRows(existingRows, { actorName });
+      if (oldMovements.length) await tx.factoryStockMovement.createMany({ data: reversalMovementRows(oldMovements, { actorName }) });
+      return deleted;
+    });
     if (!result.count) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_DELETE", entityType: "ProductionReport", entityId: submissionId, entityLabel: submissionId, summary: "ထုတ်လုပ်မှုမှတ်တမ်း ဖျက်လိုက်သည်", metadata: { submissionId, deletedRows: result.count } });
     return NextResponse.json({ data: { submissionId, deletedRows: result.count } });
