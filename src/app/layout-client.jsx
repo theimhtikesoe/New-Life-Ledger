@@ -294,6 +294,17 @@ export default function RootLayoutClient({ children }) {
   }, []);
 
   useEffect(() => {
+    const handleActorSelected = (event) => {
+      const nextActorName = String(event.detail?.actorName || '').trim();
+      if (!nextActorName) return;
+      setActorName(nextActorName);
+      setAuthenticated(true);
+    };
+    window.addEventListener('new-life-ledger:actor-selected', handleActorSelected);
+    return () => window.removeEventListener('new-life-ledger:actor-selected', handleActorSelected);
+  }, []);
+
+  useEffect(() => {
     if (isProductionOnlyActor && pathname !== '/production') {
       router.replace('/production');
       return;
