@@ -14,6 +14,46 @@ export const MOVEMENT_TYPES = {
   REVERSAL: "REVERSAL",
 };
 
+let factoryStockTablePromise;
+
+export async function ensureFactoryStockTable() {
+  if (typeof prisma.$executeRawUnsafe !== "function") return;
+  if (!factoryStockTablePromise) {
+    factoryStockTablePromise = (async () => {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "FactoryStockMovement" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "movementDate" TEXT NOT NULL,
+          "movementType" TEXT NOT NULL,
+          "stockType" TEXT NOT NULL DEFAULT 'BOTTLE',
+          "productKey" TEXT NOT NULL,
+          "productName" TEXT NOT NULL,
+          "capacity" INTEGER NOT NULL DEFAULT 0,
+          "quantityCards" INTEGER NOT NULL,
+          "quantityBottles" INTEGER NOT NULL DEFAULT 0,
+          "sourceType" TEXT,
+          "sourceId" TEXT,
+          "sourceVersion" TEXT,
+          "reason" TEXT,
+          "note" TEXT,
+          "actorName" TEXT NOT NULL,
+          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await Promise.all([
+        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementDate_idx" ON "FactoryStockMovement"("movementDate")`),
+        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_productKey_idx" ON "FactoryStockMovement"("productKey")`),
+        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementType_idx" ON "FactoryStockMovement"("movementType")`),
+        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_source_idx" ON "FactoryStockMovement"("sourceType", "sourceId")`),
+      ]);
+    })().catch((error) => {
+      factoryStockTablePromise = undefined;
+      throw error;
+    });
+  }
+  return factoryStockTablePromise;
+}
+
 function clean(value) {
   if (value instanceof Date) return value.toISOString();
   return String(value || "").trim();

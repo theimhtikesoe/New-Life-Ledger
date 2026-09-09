@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { aggregateStockMovements, productionMovementRows, saleMovementRows } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable, productionMovementRows, saleMovementRows } from "@/lib/factory-stock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +19,7 @@ function dateFilter(searchParams) {
 export async function GET(request) {
   try {
     await ensureDatabase();
+    await ensureFactoryStockTable();
     const { searchParams } = new URL(request.url);
     const productKey = String(searchParams.get("productKey") || "").trim();
     const movements = await prisma.factoryStockMovement.findMany({
@@ -41,6 +42,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     await ensureDatabase();
+    await ensureFactoryStockTable();
     const actorName = getActorName(request);
     const body = await request.json().catch(() => ({}));
     if (body.action !== "rebuild") return NextResponse.json({ error: "Factory Stock API action မမှန်ပါ။" }, { status: 400 });

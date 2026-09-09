@@ -3,12 +3,14 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
+import { ensureFactoryStockTable } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
     await ensureDatabase();
+    await ensureFactoryStockTable();
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);

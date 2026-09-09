@@ -160,6 +160,7 @@ const PAGE_HEADERS = {
   '/daily-bottle-sales': 'တစ်နေ့တာ ဗူးရောင်းစာရင်း',
   '/daily-summary': 'Daily Summary',
   '/data-management': 'Data Management',
+  '/factory-stock': 'စက်ရုံဗူးလက်ကျန်',
   '/orders': 'Telegram Orders',
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
   '/production-history': 'ထွက်ရှိမှုမှတ်တမ်းများ',
