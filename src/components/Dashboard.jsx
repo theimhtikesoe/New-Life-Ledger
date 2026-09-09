@@ -1994,6 +1994,7 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="pt-2 text-sm font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
             </Link>
+            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
             <Link
               href="/factory-stock"
               aria-label="စက်ရုံဗူးလက်ကျန် အသေးစိတ်ကြည့်ရန်"
@@ -2006,7 +2007,6 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
-            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
             </>}
           </div>
             </section>
