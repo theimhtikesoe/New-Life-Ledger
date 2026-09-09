@@ -35,8 +35,8 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain("rememberAuthorizedActor(pendingActor)");
     expect(pinLoginSource).toContain("new-life-ledger:open-actor-selector");
     expect(pinLoginSource).toContain("actorSelectionLoading");
-    expect(pinLoginSource).toContain("ACTOR_IDLE_TIMEOUT_MS");
-    expect(pinLoginSource).toContain("After five idle minutes");
+    expect(pinLoginSource).toContain("ACTOR_SESSION_TIMEOUT_MS");
+    expect(pinLoginSource).toContain("long-lived session itself has reached its safety limit");
     expect(pinLoginSource).toContain("အခြား User ပြန်ရွေးရန်");
     expect(pinLoginSource).toContain("Every manual switch must re-confirm the selected user with the PIN");
     expect(pinLoginSource).toContain("အသုံးပြုသူကို ပြန်ရွေးပြီး PIN code ထည့်ပါ");

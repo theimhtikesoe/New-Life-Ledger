@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Rhyzoe"];
-const ACTOR_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const ACTOR_SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
 const AUTHORIZED_ACTORS_KEY = "new-life-ledger:authorized-actors-v1";
@@ -66,9 +66,8 @@ export default function PINLogin({ onSuccess, onLogout }) {
   const lastActivityAtRef = useRef(Date.now());
 
   const lockActorSelection = useCallback(() => {
-    // Keep the server session alive; only clear the local actor attribution.
-    // After five idle minutes, the next action must choose the active user again
-    // without forcing the owner to enter the PIN a second time.
+    // Keep the server session alive; only clear the local actor attribution
+    // when the long-lived session itself has reached its safety limit.
     localStorage.removeItem("actorName");
     setActorLocked(true);
     setSelectingActor(true);
@@ -130,11 +129,11 @@ export default function PINLogin({ onSuccess, onLogout }) {
     let timerId;
     const checkIdle = () => {
       const elapsed = Date.now() - lastActivityAtRef.current;
-      if (elapsed >= ACTOR_IDLE_TIMEOUT_MS) {
+      if (elapsed >= ACTOR_SESSION_TIMEOUT_MS) {
         lockActorSelection();
         return;
       }
-      timerId = window.setTimeout(checkIdle, Math.min(ACTOR_IDLE_TIMEOUT_MS - elapsed, 1000));
+      timerId = window.setTimeout(checkIdle, Math.min(ACTOR_SESSION_TIMEOUT_MS - elapsed, 1000));
     };
 
     const handleVisibilityChange = () => {
