@@ -875,10 +875,11 @@ export default function Dashboard({ view = "overview" }) {
 
   useEffect(() => {
     const refreshOnResume = () => {
-      if (document.visibilityState === "hidden" || navigator.onLine === false || loading) return;
+      if (document.visibilityState === "hidden" || navigator.onLine === false) return;
       const hasConnectionError = Boolean(dataLoadError);
       const dataIsStale = Date.now() - lastDashboardAttemptAtRef.current >= RESUME_REFRESH_AFTER_MS;
-      if (hasConnectionError || dataIsStale) {
+      const loadAppearsStuck = loading && Date.now() - lastDashboardAttemptAtRef.current >= DASHBOARD_LOADING_WATCHDOG_MS;
+      if (hasConnectionError || dataIsStale || loadAppearsStuck || !dashboardKpi) {
         loadDashboard();
       }
     };
@@ -891,22 +892,41 @@ export default function Dashboard({ view = "overview" }) {
       window.removeEventListener("online", refreshOnResume);
       document.removeEventListener("visibilitychange", refreshOnResume);
     };
-  }, [dataLoadError, loadDashboard, loading]);
+  }, [dataLoadError, dashboardKpi, loadDashboard, loading]);
 
   useEffect(() => {
     let active = true;
-    setFactoryStockLoading(true);
-    api("/api/factory-stock", { timeoutMs: 20000, cache: "no-store" })
-      .then((payload) => {
-        if (!active) return;
-        setFactoryStock(payload || null);
-        saveDashboardSnapshot({ factoryStock: payload || null });
-      })
-      .catch((error) => {
-        if (active) console.warn("Factory stock KPI was not loaded:", error);
-      })
-      .finally(() => { if (active) setFactoryStockLoading(false); });
-    return () => { active = false; };
+    let inFlight = false;
+    const loadFactoryStock = () => {
+      if (!active || inFlight || navigator.onLine === false) return;
+      inFlight = true;
+      setFactoryStockLoading(true);
+      api(`/api/factory-stock?refresh=${Date.now()}`, { timeoutMs: 20000, cache: "no-store" })
+        .then((payload) => {
+          if (!active) return;
+          setFactoryStock(payload || null);
+          saveDashboardSnapshot({ factoryStock: payload || null });
+        })
+        .catch((error) => {
+          if (active && error.name !== "AbortError") console.warn("Factory stock KPI was not loaded:", error);
+        })
+        .finally(() => { inFlight = false; if (active) setFactoryStockLoading(false); });
+    };
+    const refreshOnResume = () => {
+      if (document.visibilityState !== "hidden") loadFactoryStock();
+    };
+    loadFactoryStock();
+    const interval = window.setInterval(loadFactoryStock, 60000);
+    window.addEventListener("pageshow", refreshOnResume);
+    window.addEventListener("online", refreshOnResume);
+    document.addEventListener("visibilitychange", refreshOnResume);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("pageshow", refreshOnResume);
+      window.removeEventListener("online", refreshOnResume);
+      document.removeEventListener("visibilitychange", refreshOnResume);
+    };
   }, []);
 
   // Keep retrying a failed initial load in the foreground instead of leaving
