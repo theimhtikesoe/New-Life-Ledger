@@ -30,17 +30,19 @@ export async function GET(request) {
     // Keep the dashboard KPI endpoint compatible with older generated clients
     // while the factory-stock table is being rolled out. A missing optional
     // model should show zero stock, not take down every dashboard KPI.
+    const derivedStockMovements = typeof prisma.productionReport?.findMany === "function"
+      ? await loadDerivedFactoryStockMovements()
+      : [];
     let stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
       ? await prisma.factoryStockMovement.findMany({ select: { quantityCards: true } })
       : [];
     if (!stockMovements.length && typeof prisma.productionReport?.findMany === "function") {
-      stockMovements = await loadDerivedFactoryStockMovements();
+      stockMovements = derivedStockMovements;
     }
     const factoryStockCards = stockMovements.reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
-    const tubeProductionRows = typeof prisma.productionReport?.findMany === "function"
-      ? await prisma.productionReport.findMany({ where: { category: "tube", reportDate: dateParam }, select: { outputQuantity: true, outputCapacity: true } })
-      : [];
-    const factoryTubePieces = tubeProductionRows.reduce((sum, row) => sum + (Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0)), 0);
+    const factoryTubePieces = derivedStockMovements
+      .filter((movement) => movement.stockType === "TUBE")
+      .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);
     const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
 

@@ -22,7 +22,7 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryRouteSource).toContain('dataSource = "LIVE_DERIVED_FALLBACK"');
     expect(dashboardRouteSource).toContain("loadDerivedFactoryStockMovements");
     expect(dashboardRouteSource).toContain("factoryTubePieces");
-    expect(dashboardRouteSource).toContain('category: "tube", reportDate: dateParam');
+    expect(dashboardRouteSource).toContain('movement.stockType === "TUBE"');
     expect(dashboardSource).toContain("စက်ရုံ Tube လက်ကျန်");
   });
 
