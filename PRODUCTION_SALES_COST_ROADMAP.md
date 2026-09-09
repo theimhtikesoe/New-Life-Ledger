@@ -333,3 +333,121 @@ returns:
 - အထက်ပါ data source နှင့် unit rules အတည်ပြုပြီးနောက်သာ calculation layer နှင့် stock adjustment flow ကို စတင်သင့်သည်။
 
 ---
+
+
+## ၁၀။ ခုတ်ဖက်နှင့် ကော်စေ့ သီးခြားစာရင်းစနစ်
+
+### ၁၀.၁ အခြေခံဒီဇိုင်း
+
+လက်ရှိ Production Page ထဲတွင် `ခုတ်ဖက်` နှင့် `ကော်စေ့` ကို ထုတ်လုပ်မှုတစ်ကြိမ်၏ အသုံးပြုမှု/အပျက်အဖြစ် မှတ်တမ်းတင်ထားသည်။ ထို data သည် ထုတ်လုပ်မှု report အတွက် လိုအပ်သော်လည်း **ဝယ်ယူမှု၊ source၊ လက်ကျန်နှင့် တန်ဖိုး** ကို အပြည့်အစုံမဖော်ပြနိုင်သေးသောကြောင့် အောက်ပါစာရင်းနှစ်မျိုးကို သီးခြားထားသင့်သည်။
+
+1. **ခုတ်ဖက် စာရင်း** — ဝယ်ယူသည့်နေရာ၊ ဝယ်ယူသည့်ရက်၊ kg၊ စျေးနှုန်း၊ သယ်ယူစရိတ်၊ အသုံးပြုမှု၊ လက်ကျန်။
+2. **ကော်စေ့ စာရင်း** — ဝယ်ယူသည့်ရက်၊ အိတ်အရေအတွက်၊ တစ်အိတ် kg၊ စုစုပေါင်း kg၊ စျေးနှုန်း၊ ထုတ်လုပ်မှုတွင် အသုံးပြုမှု၊ လက်ကျန်။
+
+Production report သည် ထို inventory ledger များကို အစားထိုးမည်မဟုတ်ပါ။ Production report ထဲရှိ `scrapKg`, `scrapTubeCount`, `scrapGlueCount`, `usedGlueKg`, `usedGlueBags` များသည် ထိုနေ့ထုတ်လုပ်မှုတွင် အသုံးပြု/ပျက်စီးသည့် **usage snapshot** အဖြစ် ဆက်ရှိရမည်။
+
+### ၁၀.၂ ခုတ်ဖက် ဝယ်ယူသည့်နေရာများ
+
+ခုတ်ဖက်သည် အောက်ပါ source သုံးနေရာမှ ဝယ်ယူရသောကြောင့် source ကို free-text အဖြစ် မထားဘဲ catalog key အဖြစ် စံသတ်မှတ်သင့်သည်။
+
+| Source key | ပြသမည့်အမည် | မှတ်တမ်းတင်ရမည့်အချက် |
+|---|---|---|
+| `MANDALAY` | မန္တလေး | ဝယ်ယူရက်၊ kg၊ တစ် kg စျေး၊ စုစုပေါင်း၊ ပို့ဆောင်စရိတ်၊ invoice/note |
+| `PYAWBWE` | ပျော်ဘွယ် | ဝယ်ယူရက်၊ kg၊ တစ် kg စျေး၊ စုစုပေါင်း၊ ပို့ဆောင်စရိတ်၊ invoice/note |
+| `AUNGTHAYAR` | အေးသာယာ | ဝယ်ယူရက်၊ kg၊ တစ် kg စျေး၊ စုစုပေါင်း၊ ပို့ဆောင်စရိတ်၊ invoice/note |
+
+နောက်ပိုင်း source အသစ်ထပ်လာနိုင်သောကြောင့် database မှာ enum ကို တင်းကျပ်စွာ မပိတ်ထားဘဲ `sourceKey` နှင့် `sourceName` သို့မဟုတ် သီးခြား `MaterialSource` table သုံးသင့်သည်။ UI တွင်တော့ အထက်ပါ ၃ ခုကို card/select အဖြစ် default ပြပြီး “အခြား” ကို နောက်ပိုင်းထည့်နိုင်သည်။
+
+### ၁၀.၃ အကြံပြုထားသော data model
+
+```text
+MaterialType
+- SCRAP
+- GLUE_SEED
+
+MaterialPurchase
+- id
+- materialType
+- purchaseDate
+- sourceKey             # ခုတ်ဖက်အတွက် MANDALAY/PYAWBWE/AUNGTHAYAR
+- sourceName
+- quantity              # မူရင်းယူနစ်အရေအတွက်
+- unit                  # kg / အိတ် / pcs
+- weightKg              # ပြောင်းတွက်နိုင်လျှင်
+- unitPrice
+- totalAmount
+- transportCost
+- note
+- actorName
+- createdAt
+
+MaterialUsage
+- id
+- productionReportId
+- materialType
+- quantity
+- unit
+- weightKg
+- usageDate
+- note
+
+MaterialAdjustment
+- id
+- materialType
+- adjustmentDate
+- quantity
+- unit
+- weightKg
+- reason
+- actorName
+- note
+```
+
+တကယ့် implementation အဆင့်တွင် `MaterialPurchase` နှင့် `MaterialUsage` ကို မိသားစုတစ်ခုတည်း JSON ထဲတွင် မထည့်ဘဲ သီးခြား row/table များအဖြစ် သိမ်းသင့်သည်။ ထိုနည်းဖြင့် source အလိုက်၊ date အလိုက်၊ material အလိုက်၊ လက်ကျန်အလိုက် query လုပ်ရလွယ်မည်။
+
+### ၁၀.၄ လက်ကျန်တွက်နည်း
+
+```text
+လက်ကျန် kg
+= ဝယ်ယူမှု စုစုပေါင်း kg
++ လက်ကျန်အဖွင့် / adjustment
+- ထုတ်လုပ်မှုအသုံးပြုမှု kg
+- ပျက်စီးမှု kg
+```
+
+ကော်စေ့တွင် အိတ်နှင့် kg နှစ်မျိုးလုံးရှိသောကြောင့် တစ်အိတ်လျှင် kg ကို purchase record တိုင်းတွင် snapshot ထားရမည်။ အိတ်အရွယ်အစား မတူနိုင်ပါက `usedGlueBags` တစ်ခုတည်းဖြင့် လက်ကျန်မတွက်ရ။ `usedGlueKg` ကို အဓိကထားပြီး အိတ်အရေအတွက်ကို auxiliary display အဖြစ် ပြသသင့်သည်။
+
+ခုတ်ဖက်တွင် source သုံးခုက material quality/price မတူနိုင်သောကြောင့် **မန္တလေးမှ ဝယ်ထားသည့် kg နှင့် ပျော်ဘွယ်မှ ဝယ်ထားသည့် kg ကို တစ်စုတည်း မပျောက်စေရ**။ လက်ကျန်ကို source အလိုက်လည်း ပြရမည်။ အသုံးပြုမှုကို source မရွေးထားနိုင်သေးလျှင် FIFO သို့မဟုတ် user ရွေးချယ်မှု rule တစ်ခု အတည်ပြုရမည်။
+
+### ၁၀.၅ Production Page နှင့် ချိတ်ဆက်မည့်နည်း
+
+Production မှတ်တမ်းတင်ချိန်တွင်—
+
+- `ခုတ်ဖက် အသုံးပြုမှု kg` ကို `MaterialUsage(SCRAP)` အဖြစ် ချိတ်မည်။
+- `ကော်စေ့ အသုံးပြုမှု kg` နှင့် `အိတ်` ကို `MaterialUsage(GLUE_SEED)` အဖြစ် ချိတ်မည်။
+- မည်သည့် purchase batch/source မှ သုံးသည်ကို မသတ်မှတ်နိုင်သေးလျှင် usage ကို source မပါသော စုစုပေါင်း usage အဖြစ် အရင်သိမ်းပြီး နောက်ပိုင်း allocation ပြုလုပ်မည်။
+- ထိုနေ့ production report ထဲရှိ `tubeMetrics` ကို မဖျက်ဘဲ report snapshot အဖြစ် ဆက်သိမ်းမည်။
+- Material ledger သို့ ချိတ်မည့်အခါ duplicate မဖြစ်စေရန် `productionReportId + materialType` unique key သို့မဟုတ် idempotency key သုံးမည်။
+
+### ၁၀.၆ အဆင့်လိုက် တည်ဆောက်ရန် အကြံပြုချက်
+
+1. **Phase 1 — Purchase entry**: ခုတ်ဖက်ဝယ်ယူမှုတွင် source သုံးခု၊ kg၊ စျေး၊ သယ်ယူစရိတ်၊ ရက်စွဲကို မှတ်တမ်းတင်ရန်။ ကော်စေ့ဝယ်ယူမှုတွင် အိတ်၊ တစ်အိတ် kg၊ စုစုပေါင်း kg၊ စျေးကို မှတ်တမ်းတင်ရန်။
+2. **Phase 2 — Separate history**: ခုတ်ဖက်နှင့် ကော်စေ့ စာရင်းကို tab/page နှစ်ခုခွဲပြီး date/source filter၊ total purchase၊ used၊ remaining ပြရန်။
+3. **Phase 3 — Production usage link**: Production submit/update/delete အားလုံးတွင် MaterialUsage ကို idempotent ချိတ်ရန်။
+4. **Phase 4 — Stock dashboard**: မန္တလေး၊ ပျော်ဘွယ်၊ အေးသာယာအလိုက် ခုတ်ဖက်လက်ကျန်နှင့် ကော်စေ့အိတ်/kg လက်ကျန်ကို ပြရန်။
+5. **Phase 5 — Cost analysis**: source အလိုက် weighted average cost၊ သယ်ယူစရိတ်ပါပြီး တကယ့် cost/kg ကို တွက်ရန်။
+
+**အဓိကအကြံပြုချက်:** ခုတ်ဖက်နှင့် ကော်စေ့ကို Production Page ထဲရှိ input field သာဖြင့် stock စာရင်းလုပ်မထားသင့်ပါ။ Production usage နှင့် purchase stock ကို သီးခြား ledger နှစ်ခုအဖြစ်ထားပြီး report တွင် snapshot၊ inventory တွင် source/batch အလိုက် row သိမ်းပါက နောက်ပိုင်း လက်ကျန်၊ cost၊ source comparison နှင့် audit အားလုံးကို မှန်ကန်စွာ ပြန်တွက်နိုင်မည်။
+
+## ၁၁။ Source confirmation လိုအပ်သည့် မေးခွန်းများ
+
+Implementation မစတင်မီ အောက်ပါအချက်များကို အတည်ပြုရမည်။
+
+- ခုတ်ဖက်ကို kg ဖြင့်သာ ဝယ်/သုံးသလား၊ အိတ်/ပုံးအရေအတွက်လည်း လိုသလား။
+- မန္တလေး၊ ပျော်ဘွယ်၊ အေးသာယာ source တစ်ခုချင်းစီတွင် စျေးနှုန်း သို့မဟုတ် quality ကွာသလား။
+- ကော်စေ့ တစ်အိတ်လျှင် kg တူသလား၊ supplier အလိုက် ကွာသလား။
+- Production တစ်ကြိမ်တွင် သုံးသော material ကို source/batch ရွေးသိမ်းရန် လိုသလား၊ စုစုပေါင်း usage သာ လုံလောက်သလား။
+- သယ်ယူစရိတ်ကို material cost ထဲ ထည့်တွက်မလား၊ သီးခြားပြမလား။
+- လက်ကျန်ကို source အလိုက် မဖြစ်မနေကြည့်ရမလား၊ စုစုပေါင်းသာ လုံလောက်သလား။
+
+---
