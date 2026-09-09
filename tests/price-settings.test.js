@@ -44,6 +44,7 @@ describe("POST /api/price-settings", () => {
         priceDate: "2026-09-08",
         categoryPrices: { "square-golden": "100" },
         itemPrices: { "လေးထောင့် 13g::100": "120" },
+        tubeMappings: { "လေးထောင့် 13g::100": "1 လီတာ ဖြူ" },
       }),
     }));
     const body = await response.json();
@@ -53,5 +54,6 @@ describe("POST /api/price-settings", () => {
     expect(mocks.transaction).toHaveBeenCalledTimes(1);
     expect(mocks.createMany).toHaveBeenCalledTimes(1);
     expect(mocks.createMany.mock.calls[0][0].data[0]).not.toHaveProperty("categoryLabel");
+    expect(mocks.createMany.mock.calls[0][0].data.find((row) => row.scope === "ITEM").tubeType).toBe("1 လီတာ ဖြူ");
   });
 });

@@ -647,6 +647,7 @@ export async function ensureDatabase() {
           "bottlesPerCard" INTEGER NOT NULL DEFAULT 0,
           "pricePerBottle" INTEGER NOT NULL,
           "pricePerCard" INTEGER NOT NULL DEFAULT 0,
+          "tubeType" TEXT,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           CONSTRAINT "PriceSetting_priceDate_scope_productKey_key" UNIQUE ("priceDate", "scope", "productKey")
@@ -654,6 +655,7 @@ export async function ensureDatabase() {
       `);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "PriceSetting_priceDate_idx" ON "PriceSetting"("priceDate")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "PriceSetting_productKey_idx" ON "PriceSetting"("productKey")`);
+      await setupQuery(`ALTER TABLE "PriceSetting" ADD COLUMN IF NOT EXISTS "tubeType" TEXT`);
       const orderTableCheck = await prisma.$queryRaw`
         SELECT count(*)
         FROM information_schema.tables

@@ -61,6 +61,7 @@ function serialize(row) {
     bottlesPerCard: Number(row.bottlesPerCard || 0),
     pricePerBottle: Number(row.pricePerBottle || 0),
     pricePerCard: Number(row.pricePerCard || 0),
+    tubeType: String(row.tubeType || "").trim(),
   };
 }
 
@@ -82,7 +83,7 @@ export async function GET(request) {
     for (const row of exactRows) {
       const serialized = serialize(row);
       if (row.scope === "CATEGORY") exactCategoryPrices[row.productKey] = serialized;
-      else exactItemPrices[row.productKey] = serialized;
+      else if (serialized.pricePerBottle > 0) exactItemPrices[row.productKey] = serialized;
     }
 
     const catalog = buildCatalog().map((item) => {
@@ -91,13 +92,16 @@ export async function GET(request) {
       const effective = itemPrice || categoryPrice || null;
       return {
         ...item,
+        tubeType: effectiveByKey.get(`ITEM:${item.productKey}`)?.tubeType || "",
         effectivePrice: effective
           ? { ...effective, source: itemPrice ? "ITEM" : "CATEGORY" }
           : (item.defaultPrice !== undefined ? { pricePerBottle: item.defaultPrice, pricePerCard: item.defaultPrice, source: "DEFAULT" } : null),
       };
     });
 
-    return NextResponse.json({ data: { date, categories: PRICE_GROUPS, catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices } });
+    const tubeMappings = {};
+    for (const item of catalog) if (item.tubeType) tubeMappings[item.productKey] = item.tubeType;
+    return NextResponse.json({ data: { date, categories: PRICE_GROUPS, catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices, tubeMappings } });
   } catch (error) {
     console.error("Price settings read failed", error);
     return NextResponse.json({ error: error.message || "စျေးနှုန်းစာရင်း ရယူ၍မရပါ။" }, { status: 400 });
@@ -111,6 +115,7 @@ export async function POST(request) {
     const priceDate = parseDate(body.priceDate);
     const categoryPrices = body.categoryPrices && typeof body.categoryPrices === "object" ? body.categoryPrices : {};
     const itemPrices = body.itemPrices && typeof body.itemPrices === "object" ? body.itemPrices : {};
+    const tubeMappings = body.tubeMappings && typeof body.tubeMappings === "object" ? body.tubeMappings : {};
     const catalog = buildCatalog();
     const rows = [];
 
@@ -125,7 +130,14 @@ export async function POST(request) {
       const raw = itemPrices[item.productKey];
       if (raw === "" || raw === null || raw === undefined) continue;
       const pricePerBottle = positiveInt(raw, `${item.productName} ${item.capacity} စျေးနှုန်း`);
-      rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard });
+      rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard, tubeType: String(tubeMappings[item.productKey] || "").trim() || null });
+    }
+
+    for (const item of catalog) {
+      if (item.productType === "cap" || itemPrices[item.productKey] !== undefined) continue;
+      const tubeType = String(tubeMappings[item.productKey] || "").trim();
+      if (!tubeType) continue;
+      rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle: 0, pricePerCard: 0, tubeType });
     }
 
     // Save the whole date in two bulk operations. The previous per-item
@@ -147,6 +159,7 @@ export async function POST(request) {
         priceDate,
         categoryCount: Object.keys(categoryPrices).filter((key) => categoryPrices[key] !== "").length,
         itemCount: Object.keys(itemPrices).filter((key) => itemPrices[key] !== "").length,
+        tubeMappingCount: Object.values(tubeMappings).filter(Boolean).length,
       },
     });
     const result = { count: rows.length };

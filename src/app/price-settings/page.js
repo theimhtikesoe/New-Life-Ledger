@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
-import { PRICE_GROUPS } from "@/lib/production-catalog";
+import { PRICE_GROUPS, TUBE_PRODUCT_TYPES } from "@/lib/production-catalog";
 
 function todayValue() {
   const now = new Date();
@@ -19,6 +19,7 @@ export default function PriceSettingsPage() {
   const [catalog, setCatalog] = useState([]);
   const [categoryPrices, setCategoryPrices] = useState({});
   const [itemPrices, setItemPrices] = useState({});
+  const [tubeMappings, setTubeMappings] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -41,12 +42,16 @@ export default function PriceSettingsPage() {
         if (value !== undefined && value !== null) nextCategoryPrices[category.key] = String(value);
       }
       const nextItemPrices = {};
+      const nextTubeMappings = {};
       for (const item of data.catalog || []) {
         const exact = data.itemPrices?.[item.productKey];
-        if (exact?.pricePerBottle !== undefined) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
+        if (exact?.pricePerBottle > 0) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
+        const tubeType = data.tubeMappings?.[item.productKey] || item.tubeType || "";
+        if (tubeType) nextTubeMappings[item.productKey] = tubeType;
       }
       setCategoryPrices(nextCategoryPrices);
       setItemPrices(nextItemPrices);
+      setTubeMappings(nextTubeMappings);
     } catch (loadError) {
       setError(loadError.message || "စျေးနှုန်းစာရင်း ရယူ၍မရပါ။");
     } finally {
@@ -70,6 +75,10 @@ export default function PriceSettingsPage() {
     setItemPrices((current) => ({ ...current, [key]: value }));
   }
 
+  function setTubeMapping(key, value) {
+    setTubeMappings((current) => ({ ...current, [key]: value }));
+  }
+
   function clearItemPrice(key) {
     setItemPrices((current) => {
       const next = { ...current };
@@ -87,11 +96,11 @@ export default function PriceSettingsPage() {
       const response = await fetch("/api/price-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceDate: date, categoryPrices, itemPrices }),
+        body: JSON.stringify({ priceDate: date, categoryPrices, itemPrices, tubeMappings }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "စျေးနှုန်းသိမ်း၍မရပါ။");
-      setMessage(`${date} အတွက် စျေးနှုန်းများ သိမ်းပြီးပါပြီ။ Category ${body.data?.count || 0} ခု/Item များကို update လုပ်ထားပါတယ်။`);
+      setMessage(`${date} အတွက် စျေးနှုန်းနှင့် သတ်မှတ် Tube များ သိမ်းပြီးပါပြီ။ Category ${body.data?.count || 0} ခု/Item များကို update လုပ်ထားပါတယ်။`);
       await loadPrices(date);
     } catch (saveError) {
       setError(saveError.message || "စျေးနှုန်းသိမ်း၍မရပါ။");
@@ -147,11 +156,11 @@ export default function PriceSettingsPage() {
               const unitLabel = isCap ? "ဖုံး" : "ဗူး";
               const quantityLabel = isCap ? "အဖုံးတစ်ဖုံး" : "ကဒ်တစ်ကဒ်";
               const unitTotal = isCap ? Number(effectivePrice || 0) : Number(effectivePrice || 0) * item.capacity;
-              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_150px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{isCap ? "အဖုံး သီးသန့်" : `${item.capacity} ဆံ့ / ကဒ်`}</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {effectivePrice ? `${money(effectivePrice)}/${unitLabel}` : "စျေးမသတ်မှတ်ရသေး"}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">{quantityLabel}<br /><span className="font-black">{effectivePrice ? money(unitTotal) : "—"}</span></div><label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/{unitLabel}</span> : null}</label><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!itemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
+              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_180px_150px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{isCap ? "အဖုံး သီးသန့်" : `${item.capacity} ဆံ့ / ကဒ်`}</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {effectivePrice ? `${money(effectivePrice)}/${unitLabel}` : "စျေးမသတ်မှတ်ရသေး"}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">{quantityLabel}<br /><span className="font-black">{effectivePrice ? money(unitTotal) : "—"}</span></div><label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/{unitLabel}</span> : null}</label><label className="text-xs font-bold text-slate-700">သတ်မှတ် Tube<select value={isCap ? "" : (tubeMappings[item.productKey] || "")} onChange={(event) => setTubeMapping(item.productKey, event.target.value)} disabled={isCap} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 font-black disabled:bg-slate-100"><option value="">{isCap ? "မသက်ဆိုင်" : "Tube ရွေးရန်"}</option>{TUBE_PRODUCT_TYPES.map((tubeType) => <option key={tubeType} value={tubeType}>{tubeType}</option>)}</select></label><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!itemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
             })}</div>}
           </section>
 
-          <div className="sticky bottom-3 z-10 flex justify-end"><button type="submit" disabled={saving || loading} className="w-full rounded-xl bg-amber-500 px-5 py-4 text-lg font-black text-white shadow-lg shadow-amber-900/20 hover:bg-amber-600 disabled:opacity-50 sm:w-auto">{saving ? "သိမ်းနေသည်..." : "စျေးနှုန်းသတ်မှတ်ချက် သိမ်းမည်"}</button></div>
+          <div className="sticky bottom-3 z-10 flex justify-end"><button type="submit" disabled={saving || loading} className="w-full rounded-xl bg-amber-500 px-5 py-4 text-lg font-black text-white shadow-lg shadow-amber-900/20 hover:bg-amber-600 disabled:opacity-50 sm:w-auto">{saving ? "သိမ်းနေသည်..." : "စျေးနှုန်းသတ်မှတ်ချက် နှင့် သတ်မှတ် Tube သိမ်းမည်"}</button></div>
         </form>
       </div>
     </main>
