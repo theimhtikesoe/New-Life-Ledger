@@ -336,7 +336,7 @@ export default function Dashboard({ view = "overview" }) {
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
   // A cached KPI may be stale. Start in loading state so the bottle card never
   // presents a cached/empty 0 as the current result before the fresh request.
-  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(() => !readDashboardSnapshot()?.dashboardKpi);
+  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(true);
   const [dashboardKpiError, setDashboardKpiError] = useState("");
   const [productionRows, setProductionRows] = useState([]);
   const [salesCatalog, setSalesCatalog] = useState([]);

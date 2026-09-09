@@ -12,6 +12,7 @@ const dashboardRouteSource = fs.readFileSync(path.join(root, "src/app/api/dashbo
 describe("factory stock and dashboard loading contract", () => {
   it("does not render an initial production zero before the first request", () => {
     expect(dashboardSource).toContain("const [productionLoading, setProductionLoading] = useState(true);");
+    expect(dashboardSource).toContain("const [dashboardKpiLoading, setDashboardKpiLoading] = useState(true);");
     expect(dashboardSource).toContain("productionLoading || kpiDateLoading");
     expect(dashboardSource).toContain("dashboardKpiLoading || !dashboardKpi");
   });
@@ -27,5 +28,7 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryPageSource).toContain("အခြေအနေ");
     expect(factoryPageSource).toContain("stockStatus");
     expect(factoryPageSource).toContain("LIVE_DERIVED_FALLBACK");
+    expect(factoryPageSource).toContain('role="dialog"');
+    expect(factoryPageSource).toContain("အသေးစိတ်မှတ်တမ်း");
   });
 });
