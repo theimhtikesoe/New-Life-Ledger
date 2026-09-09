@@ -26,8 +26,7 @@ export default function TubeStockDetailPage() {
       <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
         <section className="rounded-2xl border border-blue-300 bg-blue-50 p-4 shadow-sm sm:p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Factory Tube Stock</p>
-          <h1 className="mt-1 text-2xl font-black text-blue-950">စက်ရုံ Tube လက်ကျန် အသေးစိတ်</h1>
-          <p className="mt-2 text-sm font-semibold leading-6 text-blue-800">ကိုယ်တိုင်ထုတ်လုပ်ထားသမျှ Tube များကို အမျိုးအစားအလိုက် စုစုပေါင်းကြည့်နိုင်ပါသည်။ လက်ရှိအဆင့်တွင် ဗူးထုတ်လုပ်ရာတွင် အသုံးပြုသွားသော Tube ကို မနုတ်ရသေးပါ။</p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-blue-800">ကိုယ်တိုင်ထုတ်လုပ်ထားသော Tube များ၊ ဗူးထုတ်လုပ်ရာတွင် အသုံးပြုနှုတ်ထားသော Tube များနှင့် လက်ကျန်ကို အမျိုးအစားအလိုက် ကြည့်နိုင်ပါသည်။</p>
         </section>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
         <section className="grid gap-3 sm:grid-cols-3">
