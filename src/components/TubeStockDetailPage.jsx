@@ -26,10 +26,6 @@ export default function TubeStockDetailPage() {
   return (
     <main className="app-page-main">
       <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
-        <section className="rounded-2xl border border-blue-300 bg-blue-50 p-4 shadow-sm sm:p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Factory Tube Stock</p>
-          <p className="mt-2 text-sm font-semibold leading-6 text-blue-800">ကိုယ်တိုင်ထုတ်လုပ်ထားသော Tube များ၊ ဗူးထုတ်လုပ်ရာတွင် အသုံးပြုနှုတ်ထားသော Tube များနှင့် လက်ကျန်ကို အမျိုးအစားအလိုက် ကြည့်နိုင်ပါသည်။</p>
-        </section>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
         <section className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-blue-200 bg-white p-4 shadow-sm"><p className="text-xs font-black text-blue-700">လက်ကျန် Tube</p><p className="mt-1 text-2xl font-black text-blue-950">{loading ? "ရယူနေသည်..." : `${number(data?.totalPieces)} pcs`}</p></div>
