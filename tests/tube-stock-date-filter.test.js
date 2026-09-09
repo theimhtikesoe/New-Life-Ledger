@@ -13,6 +13,6 @@ describe("Tube stock date-filtered history", () => {
     expect(route).toContain('searchParams.get("date")');
     expect(route).toContain("recentRows");
     expect(route).toContain("...(validDate ? { reportDate: validDate } : {})");
-    expect(route).toContain("take: 30");
+    expect(route).toContain("take: validLimit");
   });
 });

@@ -8,6 +8,9 @@ export default function TubeStockDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [recentDate, setRecentDate] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [detailRows, setDetailRows] = useState([]);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -23,6 +26,22 @@ export default function TubeStockDetailPage() {
     return () => controller.abort();
   }, [recentDate]);
 
+  async function openTypeDetails(item) {
+    setSelectedType(item.tubeType);
+    setDetailRows([]);
+    setDetailLoading(true);
+    try {
+      const response = await fetch(`/api/tube-stock?type=${encodeURIComponent(item.tubeType)}&limit=100`, { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Tube အသေးစိတ် ရယူ၍မရပါ။");
+      setDetailRows(body.data?.recent || []);
+    } catch (fetchError) {
+      setError(fetchError.message);
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
   return (
     <main className="app-page-main">
       <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
@@ -36,7 +55,7 @@ export default function TubeStockDetailPage() {
           <h2 className="text-lg font-black text-slate-900">Tube အမျိုးအစားအလိုက် လက်ကျန်</h2>
           <div className="mt-3 space-y-2">
             {!loading && !data?.byType?.length ? <p className="rounded-xl bg-slate-50 p-4 text-center font-bold text-slate-500">Tube လက်ကျန် data မရှိသေးပါ။</p> : null}
-            {(data?.byType || []).map((item) => <div key={item.tubeType} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50/60 p-3"><div><p className="font-black text-slate-900">{item.tubeType}</p><p className="text-sm font-semibold text-slate-600">{number(item.records)} ကြိမ်ထုတ်လုပ် · {number(item.packs)} အိတ်</p></div><p className="text-xl font-black text-blue-900">{number(item.pieces)} pcs</p></div>)}
+            {(data?.byType || []).map((item) => <div key={item.tubeType} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-3"><div><p className="font-black text-slate-900">{item.tubeType}</p><p className="text-sm font-semibold text-slate-600">{number(item.records)} ကြိမ်ထုတ်လုပ် · {number(item.packs)} အိတ်</p></div><div className="flex items-center gap-3"><p className="text-xl font-black text-blue-900">{number(item.pieces)} pcs</p><button type="button" onClick={() => openTypeDetails(item)} className="rounded-lg border border-blue-300 bg-white px-3 py-2 text-xs font-black text-blue-800 hover:bg-blue-100">ကြည့်</button></div></div>)}
           </div>
         </section>
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -51,6 +70,7 @@ export default function TubeStockDetailPage() {
           </div>
         </section>
       </div>
+      {selectedType ? <div className="fixed inset-0 z-[140] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedType(""); }}><section role="dialog" aria-modal="true" aria-labelledby="tube-type-detail-title" className="max-h-[85dvh] w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-xl sm:rounded-2xl"><div className="flex items-start justify-between gap-3 border-b border-blue-100 bg-blue-50 px-4 py-4"><div><h2 id="tube-type-detail-title" className="text-lg font-black text-slate-900">{selectedType} အသေးစိတ်</h2><p className="mt-1 text-sm font-black text-blue-800">ထုတ်လုပ်မှုမှတ်တမ်း</p></div><button type="button" onClick={() => setSelectedType("")} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700">ပိတ်</button></div><div className="max-h-[65dvh] space-y-2 overflow-y-auto p-4">{detailLoading ? <p className="py-8 text-center font-bold text-slate-500">အသေးစိတ် ရယူနေသည်...</p> : detailRows.length ? detailRows.map((row) => <article key={row.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-black text-slate-900">{row.reportDate}</p><p className="font-black text-blue-900">{number(row.pieces)} pcs</p></div><p className="mt-1 text-sm font-semibold text-slate-600">{row.packs} အိတ် × {number(row.capacity)} pcs · {row.machineName}</p><p className="mt-1 text-sm font-bold text-slate-600">ပူးတွဲဆင်းသူ: {row.involvedWorkers?.length ? row.involvedWorkers.join(" · ") : "မရှိ"}</p></article>) : <p className="py-8 text-center font-bold text-slate-500">မှတ်တမ်းမရှိသေးပါ။</p>}</div></section></div> : null}
     </main>
   );
 }
