@@ -165,6 +165,10 @@ export async function ensureDatabase() {
   // Start setup and cache the promise
   setupPromise = (async () => {
     try {
+      // Additive migration must run before the readiness fast-path and before
+      // any Prisma PriceSetting query. IF EXISTS also keeps fresh databases safe.
+      await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "tubeType" TEXT`);
+
       // Production requests normally arrive after migrations have already
       // created the complete schema. Avoid repeating many CREATE/ALTER/index
       // statements on every cold serverless function. If the readiness probe
