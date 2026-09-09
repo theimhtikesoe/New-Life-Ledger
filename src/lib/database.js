@@ -31,6 +31,7 @@ const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSent
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
 const REQUIRED_LEDGER_COLUMNS = ["saleItems"];
 const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
+const REQUIRED_PRICE_SETTING_COLUMNS = ["tubeType"];
 const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit", "tubeMetrics"];
 const REQUIRED_DAILY_SALES_COLUMNS = [
   "enteredAt",
@@ -85,6 +86,13 @@ async function hasExpectedSchema() {
         SELECT COUNT(*)::int
         FROM information_schema.columns
         WHERE table_schema = 'public'
+          AND table_name = 'PriceSetting'
+          AND column_name IN (${Prisma.join(REQUIRED_PRICE_SETTING_COLUMNS)})
+      ) AS price_setting_column_count,
+      (
+        SELECT COUNT(*)::int
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
           AND table_name = 'ProductionReport'
           AND column_name IN (${Prisma.join(REQUIRED_PRODUCTION_COLUMNS)})
       ) AS production_column_count,
@@ -101,6 +109,7 @@ async function hasExpectedSchema() {
     && Number(result[0]?.customer_column_count || 0) === REQUIRED_CUSTOMER_COLUMNS.length
     && Number(result[0]?.ledger_column_count || 0) === REQUIRED_LEDGER_COLUMNS.length
     && Number(result[0]?.cash_sale_column_count || 0) === REQUIRED_CASH_SALE_COLUMNS.length
+    && Number(result[0]?.price_setting_column_count || 0) === REQUIRED_PRICE_SETTING_COLUMNS.length
     && Number(result[0]?.production_column_count || 0) === REQUIRED_PRODUCTION_COLUMNS.length
     && Number(result[0]?.daily_sales_column_count || 0) === REQUIRED_DAILY_SALES_COLUMNS.length;
 }
