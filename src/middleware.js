@@ -66,9 +66,9 @@ export async function middleware(request) {
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
-  if (isLedgerOnlySession(session) && path !== "/ledger") {
+  if (isLedgerOnlySession(session) && path !== "/" && path !== "/ledger") {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/ledger";
+    redirectUrl.pathname = "/";
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }

@@ -68,12 +68,15 @@ export default function ProductionEntryPage() {
 
   const selectedMachine = useMemo(() => MACHINES.find((machine) => machine.code === machineCode), [machineCode]);
   const tubeItems = useMemo(() => getTubeItemsForMachine(machineCode), [machineCode]);
+  const visibleWorkers = useMemo(() => category === "tube"
+    ? savedWorkers.filter((worker) => DEFAULT_TUBE_WORKERS.includes(worker.name))
+    : savedWorkers, [category, savedWorkers]);
 
   useEffect(() => {
     setActiveBottleGroup("03-white");
     setActiveTubeKey("");
     setLines({});
-    if (category === "tube") setInvolvedWorkers(DEFAULT_TUBE_WORKERS);
+    if (category === "tube") setInvolvedWorkers([]);
   }, [machineCode, selectedMachine]);
 
   useEffect(() => {
@@ -183,7 +186,7 @@ export default function ProductionEntryPage() {
   function handleCategoryChange(nextCategory) {
     setCategory(nextCategory);
     if (selectedMachine?.category && selectedMachine.category !== nextCategory) setMachineCode("");
-    if (nextCategory === "tube") setInvolvedWorkers(DEFAULT_TUBE_WORKERS);
+    if (nextCategory === "tube") setInvolvedWorkers([]);
   }
 
   function updateTubeMetric(key, value) {
@@ -273,7 +276,7 @@ export default function ProductionEntryPage() {
     setTubeQuantity("0");
     setTubeQuantityUnit("အိတ်");
     setTubeMetrics({ usedGlueKg: "", usedGlueBags: "", remainingGlueKg: "", remainingGlueBags: "", scrapKg: "", scrapTubeCount: "", scrapGlueCount: "", tubeCountBags: "", tubeCountPcs: "", tubeDamageKg: "", glueWasteKg: "" });
-    setInvolvedWorkers(category === "tube" ? DEFAULT_TUBE_WORKERS : []);
+    setInvolvedWorkers([]);
     setWorkerNameDraft("");
   }
 
@@ -373,7 +376,7 @@ export default function ProductionEntryPage() {
           <>
             <div className="flex items-center justify-between gap-2"><h2 className="mb-1 text-lg font-black text-slate-800">{category === "tube" ? "Tube ပူးတွဲဆင်းသူများ" : "ပူးတွဲဆင်းသူများ"}</h2><span className="text-sm font-black text-blue-700">{involvedWorkers.length} ယောက်ရွေးထား</span></div>
             <p className="mb-3 text-xs font-normal text-slate-500">ဆင်းတဲ့သူတွေကို နှိပ်ရွေးပါ။ Worker ခလုတ်ကို ကြာကြာဖိထားရင် shared list မှ ဖျက်နိုင်ပါတယ်။ Tube အတွက် သတ်မှတ်ထားသော worker များကို အလိုအလျောက်ရွေးထားပါသည်။</p>
-            <div className="flex flex-wrap gap-2">{loadingWorkers ? <span className="text-sm text-slate-500">Worker စာရင်း ရယူနေသည်...</span> : null}{!loadingWorkers && savedWorkers.length === 0 ? <span className="text-sm text-slate-500">Worker မရှိသေးပါ။ အောက်ကနေ အရင်ထည့်ပါ။</span> : null}{savedWorkers.map((worker) => { const selected = involvedWorkers.includes(worker.name); return <button key={worker.id || worker.name} type="button" onClick={() => { if (suppressWorkerClickRef.current) { suppressWorkerClickRef.current = false; return; } toggleWorker(worker.name); }} onPointerDown={() => worker.isDefaultTubeWorker ? undefined : startWorkerLongPress(worker.name, worker.id)} onPointerUp={endWorkerLongPress} onPointerLeave={endWorkerLongPress} onPointerCancel={endWorkerLongPress} className="rounded-xl border-2 border-blue-200 bg-blue-50 px-3 py-2 text-sm font-black text-blue-900">{selected ? "✓ " : ""}{worker.name}</button>; })}</div>
+            <div className="flex flex-wrap gap-2">{loadingWorkers ? <span className="text-sm text-slate-500">Worker စာရင်း ရယူနေသည်...</span> : null}{!loadingWorkers && visibleWorkers.length === 0 ? <span className="text-sm text-slate-500">Worker မရှိသေးပါ။ အောက်ကနေ အရင်ထည့်ပါ။</span> : null}{visibleWorkers.map((worker) => { const selected = involvedWorkers.includes(worker.name); return <button key={worker.id || worker.name} type="button" onClick={() => { if (suppressWorkerClickRef.current) { suppressWorkerClickRef.current = false; return; } toggleWorker(worker.name); }} onPointerDown={() => worker.isDefaultTubeWorker ? undefined : startWorkerLongPress(worker.name, worker.id)} onPointerUp={endWorkerLongPress} onPointerLeave={endWorkerLongPress} onPointerCancel={endWorkerLongPress} className="rounded-xl border-2 border-blue-200 bg-blue-50 px-3 py-2 text-sm font-black text-blue-900">{selected ? "✓ " : ""}{worker.name}</button>; })}</div>
             <div className="mt-3 flex gap-2" role="group" aria-label="Worker အသစ်ထည့်ရန်"><input value={workerNameDraft} onChange={(event) => setWorkerNameDraft(event.target.value)} onFocus={() => focusField("worker")} onBlur={blurField} onKeyDown={handleWorkerDraftKeyDown} placeholder="Worker အသစ်ထည့်ရန်" className="min-w-0 flex-1 rounded-xl border border-slate-300 p-3" /><button type="button" onClick={addSavedWorker} disabled={!workerNameDraft.trim() || loadingWorkers} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white disabled:opacity-50">ထည့် +</button></div>
           </>
         </section>

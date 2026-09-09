@@ -79,11 +79,13 @@ describe("Actor access workflow", () => {
 
   it("keeps ဆောင်းဦး on Ledger and ဇွဲဇွဲ on Production", () => {
     expect(layoutSource).toContain("isLedgerOnlyActor");
-    expect(layoutSource).toContain("router.replace('/ledger')");
-    expect(layoutSource).toContain("pathname === '/ledger'");
+    expect(layoutSource).toContain("router.replace('/')");
+    expect(layoutSource).toContain("pathname === '/'");
     expect(middlewareSource).toContain('LEDGER_ONLY_ACTOR');
     expect(middlewareSource).toContain('LEDGER_BLOCKED_API_PATHS');
-    expect(middlewareSource).toContain('path !== "/ledger"');
+    expect(middlewareSource).toContain('path !== "/"');
+    expect(dashboardSource).toContain('const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး"');
+    expect(dashboardSource).toContain('CUSTOMER နှင့် အကြွေးအခြေအနေ');
   });
 
   it("keeps Zway Zway on Production while keeping Dashboard navigation for other users", () => {

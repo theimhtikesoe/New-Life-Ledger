@@ -269,6 +269,7 @@ export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
 export default function Dashboard({ view = "overview" }) {
   const isLedgerView = view === "ledger";
   const [dashboardActorName, setDashboardActorName] = useState("");
+  const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး";
   const [customers, setCustomers] = useState(() => readDashboardSnapshot()?.customers || []);
   const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => readDashboardSnapshot()?.allCustomersForKPI || []);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
@@ -1768,7 +1769,17 @@ export default function Dashboard({ view = "overview" }) {
                 </div>
               ) : null}
             </div>
-            {!isLedgerView ? (
+            {isSangEulDashboard && !isLedgerView ? <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-1 items-center rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[180px] lg:justify-self-end">
+              <Link
+                href="/ledger"
+                className="neon-menu-button neon-card-cyan flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                title="ငွေရှင်းတမ်း"
+              >
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💳</span>
+                <span>ငွေရှင်းတမ်း</span>
+              </Link>
+            </div> : null}
+            {!isLedgerView && !isSangEulDashboard ? (
             <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
               <div className="col-span-2 flex min-w-0 [&>button]:w-full">
                 <OverdueNotificationBell
@@ -1906,6 +1917,17 @@ export default function Dashboard({ view = "overview" }) {
             <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {/* Customer and balance overview */}
+            {isSangEulDashboard ? <Link
+              href="/balance-detail"
+              aria-label="Customer နှင့် အကြွေးအခြေအနေ အသေးစိတ်ကြည့်ရန်"
+              className="neon-card neon-sweep neon-card-rose flex h-full min-h-[110px] min-w-0 w-full flex-col justify-between rounded-xl border border-rose-300 bg-rose-50/90 p-4 text-left shadow-sm transition-shadow hover:border-rose-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-rose-300 sm:min-h-[158px]"
+            >
+              <p className="text-sm font-black uppercase tracking-wide text-rose-700">CUSTOMER နှင့် အကြွေးအခြေအနေ</p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div><p className="text-sm text-rose-600">Customer</p><p className="mt-1 text-2xl font-bold text-rose-800">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p><p className="text-sm text-rose-600">ယောက်</p></div>
+                <div><p className="text-sm text-rose-600">အကြွေးအခြေအနေ</p><p className="mt-1 break-words text-xl font-bold text-rose-800">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p><p className="text-sm text-rose-600">အသေးစိတ်ကြည့်ရန် →</p></div>
+              </div>
+            </Link> : <>
             <Link
               href="/balance-detail"
               aria-label="Customer နှင့် ရရန်လက်ကျန် အသေးစိတ်ကြည့်ရန်"
@@ -1983,12 +2005,13 @@ export default function Dashboard({ view = "overview" }) {
               <p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
+            </>}
           </div>
             </section>
           </>
         ) : null}
 
-        {!isLedgerView ? (
+        {!isLedgerView && !isSangEulDashboard ? (
           <LedgerPulse data={ledgerPulse} loading={ledgerPulseLoading} error={ledgerPulseError} />
         ) : null}
 

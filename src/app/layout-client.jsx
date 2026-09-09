@@ -298,8 +298,8 @@ export default function RootLayoutClient({ children }) {
       router.replace('/production');
       return;
     }
-    if (isLedgerOnlyActor && pathname !== '/ledger') {
-      router.replace('/ledger');
+    if (isLedgerOnlyActor && pathname !== '/' && pathname !== '/ledger') {
+      router.replace('/');
     }
   }, [isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
 
@@ -313,7 +313,7 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   };
 
-  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor) || pathname === '/production' || pathname === '/ledger');
+  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor) || pathname === '/production' || pathname === '/ledger' || (isLedgerOnlyActor && pathname === '/'));
 
   return (
     <>
