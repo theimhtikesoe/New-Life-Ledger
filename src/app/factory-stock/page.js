@@ -58,10 +58,6 @@ export default function FactoryStockPage() {
   return (
     <main className="app-page-main">
       <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
-        <section className="rounded-2xl border border-orange-200 bg-white p-4 shadow-sm sm:p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-orange-700">Factory Inventory</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">ထုတ်လုပ်မှုတိုးခြင်းနှင့် ဗူးရောင်းစာရင်းလျော့ခြင်းကို အခြေခံ၍ Database မှတွက်ထားသော လက်ကျန်ဖြစ်ပါသည်။</p>
-        </section>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
         {loading ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">စက်ရုံလက်ကျန် ရယူနေသည်...</div> : null}
         {!loading && !data?.summary?.length ? <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center font-bold text-slate-500">Stock movement မရှိသေးပါ။ Rebuild ပြီးမှ လက်ကျန်ပေါ်လာပါမည်။</div> : null}
