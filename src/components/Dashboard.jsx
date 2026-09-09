@@ -62,7 +62,13 @@ function getSaleItemsTotal(items = []) {
 
 function saleItemsSummary(items = []) {
   if (!Array.isArray(items) || !items.length) return "";
-  return items.map((item) => `${item.productName || "ဗူး"} ${item.capacity || 0} ဆံ့ × ${item.cardCount || 0} ကဒ် = ${Number(item.bottleCount || 0).toLocaleString()} ဗူး`).join("၊ ");
+  return items.map((item) => {
+    if (item?.isCap || item?.categoryKey === "CAP") {
+      const count = Number(item.cardCount || item.unitCount || 0);
+      return `${item.productName || "အဖုံး"} × ${count.toLocaleString()} အဖုံး = ${formatMoney(item.totalAmount)}`;
+    }
+    return `${item.productName || "ဗူး"} ${item.capacity || 0} ဆံ့ × ${item.cardCount || 0} ကဒ် = ${Number(item.bottleCount || 0).toLocaleString()} ဗူး`;
+  }).join("၊ ");
 }
 
 function summarizeProduction(rows = []) {
