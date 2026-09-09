@@ -342,7 +342,7 @@ export default function Dashboard({ view = "overview" }) {
   const [salesCatalog, setSalesCatalog] = useState([]);
   const [salesCatalogError, setSalesCatalogError] = useState("");
   const [productionDate, setProductionDate] = useState(() => formatMyanmarDateInputValue());
-  const [productionLoading, setProductionLoading] = useState(false);
+  const [productionLoading, setProductionLoading] = useState(true);
   const [productionError, setProductionError] = useState("");
   const [showProductionModal, setShowProductionModal] = useState(false);
   const [ledgerPulse, setLedgerPulse] = useState(() => readDashboardSnapshot()?.ledgerPulse || null);

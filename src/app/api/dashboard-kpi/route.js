@@ -3,7 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { ensureFactoryStockTable } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable, loadDerivedFactoryStockMovements } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +30,12 @@ export async function GET(request) {
     // Keep the dashboard KPI endpoint compatible with older generated clients
     // while the factory-stock table is being rolled out. A missing optional
     // model should show zero stock, not take down every dashboard KPI.
-    const stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
+    let stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
       ? await prisma.factoryStockMovement.findMany({ select: { quantityCards: true } })
       : [];
+    if (!stockMovements.length && typeof prisma.productionReport?.findMany === "function") {
+      stockMovements = await loadDerivedFactoryStockMovements();
+    }
     const factoryStockCards = stockMovements.reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
     const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");

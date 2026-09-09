@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { aggregateStockMovements, ensureFactoryStockTable, productionMovementRows, saleMovementRows } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows } from "@/lib/factory-stock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,14 +22,20 @@ export async function GET(request) {
     await ensureFactoryStockTable();
     const { searchParams } = new URL(request.url);
     const productKey = String(searchParams.get("productKey") || "").trim();
-    const movements = await prisma.factoryStockMovement.findMany({
+    let movements = await prisma.factoryStockMovement.findMany({
       where: { ...dateFilter(searchParams), ...(productKey ? { productKey } : {}) },
       orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     });
+    let dataSource = "MOVEMENT_LEDGER";
+    if (!movements.length && !productKey && !Object.keys(dateFilter(searchParams)).length) {
+      movements = await loadDerivedFactoryStockMovements({ actorName: getActorName(request) });
+      dataSource = "LIVE_DERIVED_FALLBACK";
+    }
     const summary = aggregateStockMovements(movements);
     return NextResponse.json({ data: {
       calculationMode: "DATABASE_DERIVED",
       isPhysicalVerified: false,
+      dataSource,
       summary,
       movements,
       warnings: ["ဤလက်ကျန်သည် Database မှတွက်ထားသော System Stock ဖြစ်ပြီး မြေပြင်လက်ကျန်နှင့် ကွာနိုင်ပါသည်။"],
@@ -47,15 +53,10 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     if (body.action !== "rebuild") return NextResponse.json({ error: "Factory Stock API action မမှန်ပါ။" }, { status: 400 });
 
-    const [productionRows, ledgerRows, cashSales] = await Promise.all([
-      prisma.productionReport.findMany({ select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, submissionId: true, notes: true, actorName: true }, orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }] }),
-      prisma.ledger.findMany({ where: { saleItems: { not: null } }, select: { id: true, date: true, saleItems: true }, orderBy: [{ date: "asc" }, { id: "asc" }] }),
-      prisma.cashSale.findMany({ where: { saleItems: { not: null } }, select: { id: true, date: true, saleItems: true }, orderBy: [{ date: "asc" }, { id: "asc" }] }),
-    ]);
-    const productionMovements = productionMovementRows(productionRows, { actorName });
-    const ledgerMovements = saleMovementRows(ledgerRows, { actorName, sourceType: "LEDGER" });
-    const cashMovements = saleMovementRows(cashSales, { actorName, sourceType: "CASH_SALE" });
-    const movements = [...productionMovements, ...ledgerMovements, ...cashMovements];
+    const movements = await loadDerivedFactoryStockMovements({ actorName });
+    const productionMovements = movements.filter((movement) => movement.sourceType === "PRODUCTION");
+    const ledgerMovements = movements.filter((movement) => movement.sourceType === "LEDGER");
+    const cashMovements = movements.filter((movement) => movement.sourceType === "CASH_SALE");
 
     const result = await prisma.$transaction(async (tx) => {
       await tx.factoryStockMovement.deleteMany({ where: { sourceType: { in: ["PRODUCTION", "LEDGER", "CASH_SALE"] } } });

@@ -54,6 +54,30 @@ export async function ensureFactoryStockTable() {
   return factoryStockTablePromise;
 }
 
+export async function loadDerivedFactoryStockMovements({ actorName = "system" } = {}) {
+  const [productionRows, ledgerRows, cashSales] = await Promise.all([
+    prisma.productionReport.findMany({
+      select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, submissionId: true, notes: true, actorName: true },
+      orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.ledger.findMany({
+      where: { saleItems: { not: null } },
+      select: { id: true, date: true, saleItems: true },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
+    }),
+    prisma.cashSale.findMany({
+      where: { saleItems: { not: null } },
+      select: { id: true, date: true, saleItems: true },
+      orderBy: [{ date: "asc" }, { id: "asc" }],
+    }),
+  ]);
+  return [
+    ...productionMovementRows(productionRows, { actorName }),
+    ...saleMovementRows(ledgerRows, { actorName, sourceType: "LEDGER" }),
+    ...saleMovementRows(cashSales, { actorName, sourceType: "CASH_SALE" }),
+  ];
+}
+
 function clean(value) {
   if (value instanceof Date) return value.toISOString();
   return String(value || "").trim();
