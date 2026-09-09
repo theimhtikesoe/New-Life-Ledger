@@ -1943,7 +1943,7 @@ export default function Dashboard({ view = "overview" }) {
             <Link
               href={`/daily-bottle-sales?date=${encodeURIComponent(selectedKpiDate)}`}
               aria-label={`${selectedKpiDate} ဗူးရောင်းစာရင်း အသေးစိတ်ကြည့်ရန်`}
-              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-slate-300 bg-slate-100/90 p-4 text-left shadow-sm transition-all hover:border-slate-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-300 sm:min-h-[170px]"
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-slate-400 bg-slate-100/95 p-4 text-left shadow-sm transition-all hover:border-slate-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-slate-400 sm:min-h-[170px]"
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-slate-600 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
@@ -1955,14 +1955,14 @@ export default function Dashboard({ view = "overview" }) {
             <Link
               href="/factory-stock"
               aria-label="စက်ရုံဗူးလက်ကျန် အသေးစိတ်ကြည့်ရန်"
-              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-stone-400 bg-stone-200/95 p-4 text-left shadow-sm transition-all hover:border-stone-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-stone-400 sm:min-h-[170px]"
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-500 bg-amber-100/95 p-4 text-left shadow-sm transition-all hover:border-amber-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 sm:min-h-[170px]"
             >
               <div>
-                <p className="text-sm font-black uppercase tracking-wide text-stone-800 sm:text-base">စက်ရုံဗူးလက်ကျန်</p>
-                <p className="mt-2 text-2xl font-black text-stone-950">{dashboardKpiLoading && !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
-                <p className="mt-1 text-sm font-bold text-stone-700">Database စနစ်လက်ကျန်</p>
+                <p className="text-sm font-black uppercase tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူးလက်ကျန်</p>
+                <p className="mt-2 text-2xl font-black text-amber-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
+                <p className="mt-1 text-sm font-bold text-amber-800">Database စနစ်လက်ကျန်</p>
               </div>
-              <p className="pt-2 text-sm font-bold text-stone-700">အသေးစိတ်ကြည့်ရန် →</p>
+              <p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
           </div>
