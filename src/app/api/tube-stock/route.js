@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { loadDerivedFactoryStockMovements, normalizeTubeIdentity, STOCK_TYPES } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,17 @@ export async function GET(request) {
       take: validLimit,
       select: { id: true, reportDate: true, tubeG: true, tubeColor: true, outputQuantity: true, outputCapacity: true, machineName: true, machineCode: true, actorName: true, involvedWorkers: true },
     });
+    const movements = tubeType
+      ? (await loadDerivedFactoryStockMovements()).filter((movement) => movement.stockType === STOCK_TYPES.TUBE && movement.productName === normalizeTubeIdentity(tubeType).productName).map((movement) => ({
+        movementDate: movement.movementDate,
+        movementType: movement.movementType,
+        sourceType: movement.sourceType,
+        quantityBottles: movement.quantityBottles,
+        quantityCards: movement.quantityCards,
+        reason: movement.reason,
+        note: movement.note,
+      }))
+      : [];
     const byType = new Map();
     let totalPacks = 0;
     let totalPieces = 0;
@@ -48,6 +60,7 @@ export async function GET(request) {
         recentDate: validDate || null,
         recentType: tubeType || null,
         recentLimit: validLimit,
+        movements,
         recent: recentRows.map((row) => ({
           id: row.id,
           reportDate: row.reportDate,
