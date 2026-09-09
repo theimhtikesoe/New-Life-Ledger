@@ -73,6 +73,16 @@ export default function ProductionEntryPage() {
     : savedWorkers, [category, savedWorkers]);
 
   useEffect(() => {
+    const applyActorDefaults = (actorName = window.localStorage.getItem("actorName")) => {
+      if (actorName === "ဖြိုးကို") setCategory("tube");
+    };
+    applyActorDefaults();
+    const handleActorSelected = (event) => applyActorDefaults(event.detail?.actorName);
+    window.addEventListener("new-life-ledger:actor-selected", handleActorSelected);
+    return () => window.removeEventListener("new-life-ledger:actor-selected", handleActorSelected);
+  }, []);
+
+  useEffect(() => {
     setActiveBottleGroup("03-white");
     setActiveTubeKey("");
     setLines({});
