@@ -13,6 +13,7 @@ describe("daily Tube production KPI", () => {
     expect(dashboard).toContain('row.category === "tube"');
     expect(dashboard).toContain("tubeProductionSummary.totalPieces");
     expect(dashboard).toContain("/tube-production-history?date=");
+    expect(dashboard).toContain('href="/tube-stock"');
     expect(dashboard).toContain("Tube ထွက်ရှိမှု");
   });
 

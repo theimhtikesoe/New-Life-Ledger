@@ -1997,7 +1997,7 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
             <Link
-              href="/tube-production-history"
+              href="/tube-stock"
               aria-label="စက်ရုံ Tube လက်ကျန် အသေးစိတ်ကြည့်ရန်"
               className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-blue-300 bg-blue-50/95 p-4 text-left shadow-sm transition-all hover:border-blue-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 sm:min-h-[170px]"
             >

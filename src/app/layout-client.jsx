@@ -165,6 +165,7 @@ const PAGE_HEADERS = {
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
   '/production-history': 'ထွက်ရှိမှုမှတ်တမ်းများ',
   '/tube-production-history': 'Tube ထွက်ရှိမှု အသေးစိတ်',
+  '/tube-stock': 'စက်ရုံ Tube လက်ကျန် အသေးစိတ်',
   '/price-settings': 'စျေးနှုန်းသတ်မှတ်ရန်',
   '/vercel-build-logs': 'Vercel Build Logs',
 };
