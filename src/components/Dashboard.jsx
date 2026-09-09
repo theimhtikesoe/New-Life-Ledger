@@ -331,6 +331,8 @@ export default function Dashboard({ view = "overview" }) {
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState(() => readDashboardSnapshot()?.todayPaymentsList || []);
   const [todayCashSales, setTodayCashSales] = useState(() => readDashboardSnapshot()?.todayCashSales || []);
+  const [factoryStock, setFactoryStock] = useState(() => readDashboardSnapshot()?.factoryStock || null);
+  const [factoryStockLoading, setFactoryStockLoading] = useState(false);
   const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
   const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
   // A cached KPI may be stale. Start in loading state so the bottle card never
@@ -891,6 +893,22 @@ export default function Dashboard({ view = "overview" }) {
     };
   }, [dataLoadError, loadDashboard, loading]);
 
+  useEffect(() => {
+    let active = true;
+    setFactoryStockLoading(true);
+    api("/api/factory-stock", { timeoutMs: 20000, cache: "no-store" })
+      .then((payload) => {
+        if (!active) return;
+        setFactoryStock(payload || null);
+        saveDashboardSnapshot({ factoryStock: payload || null });
+      })
+      .catch((error) => {
+        if (active) console.warn("Factory stock KPI was not loaded:", error);
+      })
+      .finally(() => { if (active) setFactoryStockLoading(false); });
+    return () => { active = false; };
+  }, []);
+
   // Keep retrying a failed initial load in the foreground instead of leaving
   // the Home Screen app stuck on the connection-error panel.
   useEffect(() => {
@@ -1016,6 +1034,11 @@ export default function Dashboard({ view = "overview" }) {
   const customerCount = useMemo(
     () => allCustomersForKPI.length,
     [allCustomersForKPI],
+  );
+
+  const factoryStockCards = useMemo(
+    () => (factoryStock?.summary || []).reduce((sum, item) => sum + Number(item.currentCards || 0), 0),
+    [factoryStock],
   );
 
     const hasKpiSnapshot = Boolean(dashboardKpi);
@@ -1944,6 +1967,18 @@ export default function Dashboard({ view = "overview" }) {
                 <p className="mt-1 text-sm font-bold text-slate-600">{bottleSalesLoading || kpiDateLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "KPI data မရသေးပါ" : `တကယ်ရငွေ ${formatMoney(todayBottleSales.totalPaidAmount)}`}</p>
               </div>
               <p className="pt-2 text-sm font-bold text-slate-600">Customer/Category/Item အသေးစိတ် →</p>
+            </Link>
+            <Link
+              href="/factory-stock"
+              aria-label="စက်ရုံဗူးလက်ကျန် အသေးစိတ်ကြည့်ရန်"
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-stone-400 bg-stone-200/95 p-4 text-left shadow-sm transition-all hover:border-stone-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-stone-400 sm:min-h-[170px]"
+            >
+              <div>
+                <p className="text-sm font-black uppercase tracking-wide text-stone-800 sm:text-base">စက်ရုံဗူးလက်ကျန်</p>
+                <p className="mt-2 text-2xl font-black text-stone-950">{factoryStockLoading && !factoryStock ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
+                <p className="mt-1 text-sm font-bold text-stone-700">Database စနစ်လက်ကျန်</p>
+              </div>
+              <p className="pt-2 text-sm font-bold text-stone-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
             <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
           </div>
