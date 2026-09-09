@@ -285,7 +285,7 @@ export default function RootLayoutClient({ children }) {
   const [appZoom, setAppZoom] = useState(1);
   const pathname = usePathname();
   const router = useRouter();
-  const isProductionOnlyActor = actorName === 'ဇွဲဇွဲ';
+  const isProductionOnlyActor = actorName === 'ဇွဲဇွဲ' || actorName === 'ဖြိုးကို';
   const isLedgerOnlyActor = actorName === 'ဆောင်းဦး';
   const [settingsOpen, setSettingsOpen] = useState(false);
 

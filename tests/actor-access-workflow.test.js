@@ -24,7 +24,8 @@ const sharedHeaderRouteSources = [
 describe("Actor access workflow", () => {
   it("starts with actor selection and asks PIN only for non-Zway Zway users", () => {
     expect(pinLoginSource).toContain("setSelectingActor(true);");
-    expect(pinLoginSource).toContain('if (actorName === "ဇွဲဇွဲ")');
+    expect(pinLoginSource).toContain('const PRODUCTION_ONLY_ACTORS = ["ဇွဲဇွဲ", "ဖြိုးကို"];');
+    expect(pinLoginSource).toContain('PRODUCTION_ONLY_ACTORS.includes(actorName)');
     expect(pinLoginSource).toContain('fetchAuthJson("/api/auth/actor-session"');
     expect(pinLoginSource).toContain("setPendingActor(actorName);");
     expect(pinLoginSource).toContain("body: JSON.stringify({ actorName })");
@@ -93,6 +94,7 @@ describe("Actor access workflow", () => {
 
   it("keeps Zway Zway on Production while keeping Dashboard navigation for other users", () => {
     expect(layoutSource).toContain("isProductionOnlyActor");
+    expect(layoutSource).toContain("actorName === 'ဇွဲဇွဲ' || actorName === 'ဖြိုးကို'");
     expect(layoutSource).toContain("router.replace('/production')");
     expect(layoutSource).toContain("pathname === '/production'");
     expect(layoutSource).toContain("const normalizedActorName = String(actorName || '').trim();");
@@ -100,6 +102,7 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain('<Link href="/"');
     expect(productionSource).not.toContain('ထွက်ရှိမှု မှတ်တမ်းတင်ရန်</h1>');
     expect(middlewareSource).toContain('PRODUCTION_API_PATHS');
+    expect(middlewareSource).toContain('"ဖြိုးကို"');
     expect(middlewareSource).toContain('path !== "/production"');
     expect(layoutSource).toContain("SharedPageHeader pathname={pathname} actorName={actorName}");
     expect(dashboardSource).toContain('isLedgerView && dashboardActorName !== "ဆောင်းဦး"');

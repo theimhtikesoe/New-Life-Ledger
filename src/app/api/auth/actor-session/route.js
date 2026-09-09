@@ -4,12 +4,12 @@ import { createSessionToken, sessionCookieOptions } from "@/lib/auth-session";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PRODUCTION_ONLY_ACTOR = "ဇွဲဇွဲ";
+const PRODUCTION_ONLY_ACTORS = ["ဇွဲဇွဲ", "ဖြိုးကို"];
 
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const actorName = String(body?.actorName || "").trim();
-  if (actorName !== PRODUCTION_ONLY_ACTOR) {
+  if (!PRODUCTION_ONLY_ACTORS.includes(actorName)) {
     return NextResponse.json({ ok: false, error: "ဒီအသုံးပြုသူအတွက် PIN ဖြင့် ဝင်ရောက်ပါ။" }, { status: 403 });
   }
 

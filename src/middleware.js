@@ -17,7 +17,7 @@ const PRODUCTION_API_PATHS = new Set([
   "/api/production-reports",
   "/api/production-workers",
 ]);
-const PRODUCTION_ONLY_ACTOR = "ဇွဲဇွဲ";
+const PRODUCTION_ONLY_ACTORS = new Set(["ဇွဲဇွဲ", "ဖြိုးကို"]);
 const LEDGER_ONLY_ACTOR = "ဆောင်းဦး";
 const LEDGER_BLOCKED_API_PATHS = new Set([
   "/api/production-reports",
@@ -25,7 +25,7 @@ const LEDGER_BLOCKED_API_PATHS = new Set([
 ]);
 
 function isProductionOnlySession(session) {
-  return session?.access === "production-only" && session?.actorName === PRODUCTION_ONLY_ACTOR;
+  return session?.access === "production-only" && PRODUCTION_ONLY_ACTORS.has(session?.actorName);
 }
 
 function isLedgerOnlySession(session) {
