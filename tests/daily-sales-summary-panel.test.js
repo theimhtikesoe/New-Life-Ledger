@@ -42,7 +42,7 @@ describe("DailySalesSummaryPanel", () => {
   });
 
   it("uses the current table Opening value in the green card", () => {
-    expect(source).toContain("const currentTableOpening = tableRows.find((row) => row.date === date)?.monthlyCumulative;");
+    expect(source).toContain("const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;");
     expect(source).toContain("const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;");
     expect(source).toContain("{formatMoney(displayedOpening)}");
     expect(source).toContain("အောက်ကဇယားရဲ့ လက်ရှိ Opening တန်ဖိုးအတိုင်း ပြထားသည်");

@@ -66,6 +66,10 @@ function getPreviousMyanmarDateInputValue(value) {
   return formatMyanmarDateInputValue(new Date(previous.getTime() - (6 * 60 + 30) * 60 * 1000));
 }
 
+function dateKey(value) {
+  return String(value || "").slice(0, 10);
+}
+
 function toneClasses(tone) {
   return tone === "violet"
     ? "border-violet-200 bg-violet-50 text-violet-900"
@@ -152,7 +156,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
     let running = Number(summary.opening?.amount || 0);
     const openingAsOfDate = summary.opening?.asOfDate || "";
     return summary.rows.map((row) => {
-      const displayRow = row.date === date
+      const displayRow = dateKey(row.date) === dateKey(date)
         ? {
             ...row,
             retailTotal: Number(values.retailTotal || 0),
@@ -177,11 +181,11 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   );
 
   useEffect(() => {
-    const selectedDateIndex = tableRows.findIndex((row) => row.date === date);
+    const selectedDateIndex = tableRows.findIndex((row) => dateKey(row.date) === dateKey(date));
     setHistoryPage(selectedDateIndex >= 0 ? Math.floor(selectedDateIndex / HISTORY_PAGE_SIZE) + 1 : 1);
   }, [date, tableRows]);
 
-  const currentTableOpening = tableRows.find((row) => row.date === date)?.monthlyCumulative;
+  const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;
   const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;
 
   const currentLabel = useMemo(() => {
@@ -375,7 +379,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {historyPageRows.map((row) => (
-                        <tr key={row.date} className={row.date === date ? "bg-indigo-50/50" : ""}>
+                        <tr key={row.date} className={dateKey(row.date) === dateKey(date) ? "bg-indigo-50/50" : ""}>
                           <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-900">{row.date.slice(8, 10)}/{row.date.slice(5, 7)}</td>
                           <td className="px-3 py-2 text-slate-700">{formatMoney(row.retailTotal)}</td>
                           <td className="px-3 py-2 text-slate-700">{formatMoney(row.wholesaleTotal)}</td>
