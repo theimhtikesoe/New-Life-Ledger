@@ -124,7 +124,15 @@ export function getBottleDisplayName(type) {
   return String(type || "") === "သေးရှည်" ? "ဒိန်ဝိုင်းအလတ်" : String(type || "");
 }
 
-export const TUBE_PRODUCT_TYPES = ["1 လီတာ ဖြူ", "1 လီတာ ပြာ", ".3 ဖြူ", ".3 ပြာ (S+S)"];
+export const TUBE_PRODUCT_TYPES = [
+  "24g W (အဖြူ)",
+  "24g B (S+1)",
+  "16g W (အဖြူ)",
+  "16g (S+1)",
+  "13g W (အဖြူ)",
+  "13g (S+1)",
+  "13g (S+S)",
+];
 
 export const TUBE_BY_MACHINE = {
   TB1: [
