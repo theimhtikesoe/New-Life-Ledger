@@ -17,11 +17,11 @@ import OverdueAlertAudio from "@/components/OverdueAlertAudio";
 
 const money = new Intl.NumberFormat("en-US");
 const today = new Date().toISOString().slice(0, 10);
-const AUTO_RETRY_DELAY_MS = 8000;
+const AUTO_RETRY_DELAY_MS = 5000;
 const RESUME_REFRESH_AFTER_MS = 30000;
-const API_REQUEST_TIMEOUT_MS = 20000;
+const API_REQUEST_TIMEOUT_MS = 25000;
 const MAX_GET_ATTEMPTS = 2;
-const DASHBOARD_LOADING_WATCHDOG_MS = 12000;
+const DASHBOARD_LOADING_WATCHDOG_MS = 45000;
 const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
 const EMPTY_PAYMENT_BREAKDOWN = { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" };
 const PAYMENT_BREAKDOWN_FIELDS = [
@@ -760,7 +760,9 @@ export default function Dashboard({ view = "overview" }) {
           if (error.name !== "AbortError") {
             console.warn("Dashboard KPI was not loaded:", error);
             if (dashboardRequestIdRef.current === requestId) {
-              setDashboardKpiError("KPI data မရသေးပါ");
+              // Keep the last successful KPI snapshot visible during a transient
+              // date/API failure instead of replacing usable cards with blanks.
+              if (!dashboardKpi) setDashboardKpiError("KPI data မရသေးပါ");
               setKpiDateError("KPI data ပြောင်းလဲရာတွင် အမှားရှိပါသည်။");
             }
           }
@@ -1768,7 +1770,7 @@ export default function Dashboard({ view = "overview" }) {
                     aria-label="KPI ရက်စွဲရွေးရန်"
                   />
                   {kpiDateLoading ? <span className="text-[10px] text-cyan-600">ပြောင်းနေသည်...</span> : null}
-                  {kpiDateError ? <span className="text-[10px] text-rose-600">ပြန်စမ်းပါ</span> : null}
+                  {kpiDateError ? <button type="button" onClick={() => loadDashboard()} className="text-[10px] font-bold text-rose-600 underline underline-offset-2 hover:text-rose-800">ပြန်စမ်းပါ</button> : null}
                 </div>
               ) : null}
             </div>
