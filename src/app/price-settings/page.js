@@ -45,7 +45,9 @@ export default function PriceSettingsPage() {
       const nextTubeMappings = {};
       for (const item of data.catalog || []) {
         const exact = data.itemPrices?.[item.productKey];
-        if (exact?.pricePerBottle > 0) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
+        const effectiveItemPrice = item.effectivePrice?.source === "ITEM" ? Number(item.effectivePrice.pricePerBottle || 0) : 0;
+        if (Number(exact?.pricePerBottle || 0) > 0) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
+        else if (effectiveItemPrice > 0) nextItemPrices[item.productKey] = String(effectiveItemPrice);
         const tubeType = data.tubeMappings?.[item.productKey] || item.tubeType || "";
         if (tubeType) nextTubeMappings[item.productKey] = tubeType;
       }
@@ -116,7 +118,7 @@ export default function PriceSettingsPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cost / Price Settings</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Category စျေးကို အခြေခံစျေးအဖြစ်ထားပြီး item တစ်ခုချင်းစီက စျေးကွာလျှင် Item Override ထည့်ပါ။ Item စျေးရှိလျှင် Category စျေးကို ဦးစားပေးမည်။</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Category စျေးကို အခြေခံစျေးအဖြစ်ထားပြီး item တစ်ခုချင်းစီက စျေးကွာလျှင် Item Override ထည့်ပါ။ Item Override ရှိလျှင် အဲဒီ Item စျေးကိုပဲ ဦးစားပေးသုံးပါမယ်။</p>
             </div>
             <label className="flex shrink-0 flex-col gap-1.5 text-sm font-bold text-slate-700">
               <span className="leading-none">Date</span>
@@ -152,7 +154,7 @@ export default function PriceSettingsPage() {
             </div>
             {loading ? <p className="py-10 text-center text-sm text-slate-500">Catalog နှင့် စျေးနှုန်းများ ရယူနေသည်...</p> : <div className="mt-4 space-y-2">{visibleItems.map((item) => {
               const categoryPrice = categoryPrices[item.categoryKey];
-              const itemPrice = itemPrices[item.productKey] || "";
+              const itemPrice = itemPrices[item.productKey] ?? "";
               const effectivePrice = itemPrice || categoryPrice || item.effectivePrice?.pricePerBottle || "";
               const isCap = item.productType === "cap" || item.categoryKey === "CAP";
               const unitLabel = isCap ? "ဖုံး" : "ဗူး";
