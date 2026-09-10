@@ -30,12 +30,19 @@ export async function GET(request) {
     if (!productKey && !Object.keys(dateFilter(searchParams)).length) {
       const derived = await loadDerivedFactoryStockMovements({ actorName: getActorName(request) });
       const hasTubeLedger = movements.some((movement) => movement.stockType === STOCK_TYPES.TUBE);
+      const hasBottleLedger = movements.some((movement) => movement.stockType !== STOCK_TYPES.TUBE);
       if (!movements.length) {
         movements = derived;
         dataSource = "LIVE_DERIVED_FALLBACK";
-      } else if (!hasTubeLedger) {
-        movements = [...movements, ...derived.filter((movement) => movement.stockType === STOCK_TYPES.TUBE)];
-        dataSource = "MOVEMENT_LEDGER_PLUS_TUBE_DERIVED";
+      } else {
+        const missingMovements = [
+          ...(hasBottleLedger ? [] : derived.filter((movement) => movement.stockType !== STOCK_TYPES.TUBE)),
+          ...(hasTubeLedger ? [] : derived.filter((movement) => movement.stockType === STOCK_TYPES.TUBE)),
+        ];
+        if (missingMovements.length) {
+          movements = [...movements, ...missingMovements];
+          dataSource = "MOVEMENT_LEDGER_PLUS_DERIVED_STOCK";
+        }
       }
     }
     const summary = aggregateStockMovements(movements);

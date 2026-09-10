@@ -36,8 +36,13 @@ export async function GET(request) {
     let stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
       ? await prisma.factoryStockMovement.findMany({ select: { stockType: true, quantityCards: true } })
       : [];
-    if (!stockMovements.length && typeof prisma.productionReport?.findMany === "function") {
-      stockMovements = derivedStockMovements;
+    if (typeof prisma.productionReport?.findMany === "function") {
+      const hasBottleMovements = stockMovements.some((movement) => movement.stockType !== "TUBE");
+      if (!stockMovements.length) {
+        stockMovements = derivedStockMovements;
+      } else if (!hasBottleMovements) {
+        stockMovements = [...stockMovements, ...derivedStockMovements.filter((movement) => movement.stockType !== "TUBE")];
+      }
     }
     const factoryStockCards = stockMovements.filter((movement) => movement.stockType !== "TUBE").reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
     const factoryTubePieces = derivedStockMovements

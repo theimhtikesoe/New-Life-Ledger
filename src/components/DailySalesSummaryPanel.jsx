@@ -264,17 +264,17 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="neon-card neon-sweep neon-card-indigo flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-indigo-200 bg-indigo-50/85 p-4 text-left shadow-sm transition-all hover:border-indigo-300 hover:shadow-md sm:min-h-[170px]"
+        className="neon-card neon-sweep neon-card-violet flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-violet-200 bg-violet-50/85 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[170px]"
         aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
       >
-        <p className="text-sm font-black uppercase tracking-wide text-indigo-700 sm:text-base">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
-        <p className="mt-2 flex min-h-8 items-center text-2xl font-black text-indigo-900">{loading || dateLoading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
-        <div className="mt-2 min-h-[4.5rem] space-y-0.5 text-sm font-bold text-indigo-700 sm:text-base">
+        <p className="text-sm font-black uppercase tracking-wide text-violet-700 sm:text-base">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
+        <p className="mt-2 flex min-h-8 items-center text-2xl font-black text-violet-900">{loading || dateLoading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
+        <div className="mt-2 min-h-[4.5rem] space-y-0.5 text-sm font-bold text-violet-700 sm:text-base">
           <p>{loading || dateLoading ? "ရယူနေသည်..." : `လက်ငင်း ${totalCount} ခု`}</p>
           <p>{loading || dateLoading ? "ရယူနေသည်..." : `လက်လီ ${retailCount} ခု`}</p>
           <p>{loading || dateLoading ? "ရယူနေသည်..." : `လက်ကား ${wholesaleCount} ခု`}</p>
         </div>
-        <p className="mt-auto pt-2 text-xs font-bold text-indigo-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
+        <p className="mt-auto pt-2 text-xs font-bold text-violet-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
       </button>
 
       {isOpen ? (
