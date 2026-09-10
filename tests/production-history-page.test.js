@@ -32,4 +32,13 @@ describe("Production history page", () => {
     expect(pageSource).toContain("summaries.tubes");
     expect(pageSource).not.toContain("window.print()");
   });
+
+  it("keeps Tube rows in pcs and carries all Tube metric fields into history KPIs", () => {
+    expect(pageSource).toContain("tubeMetrics");
+    expect(pageSource).toContain("tubeCountPcs");
+    expect(pageSource).toContain("scrapTubeCount");
+    expect(pageSource).toContain("scrapGlueCount");
+    expect(pageSource).toContain("glueWasteKg");
+    expect(pageSource).toContain("pcs");
+  });
 });

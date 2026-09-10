@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const page = fs.readFileSync(path.join(root, "src/components/ProductionEntryPage.jsx"), "utf8");
 const route = fs.readFileSync(path.join(root, "src/app/api/production-reports/route.js"), "utf8");
+const audit = fs.readFileSync(path.join(root, "src/lib/audit.js"), "utf8");
 const schema = fs.readFileSync(path.join(root, "prisma/schema.prisma"), "utf8");
 const database = fs.readFileSync(path.join(root, "src/lib/database.js"), "utf8");
 
@@ -23,14 +24,20 @@ describe("Tube production entry", () => {
     expect(page).toContain("Tube ပျက်");
     expect(page).toContain("ကော်ပျက်");
     expect(page).toContain("tubeMetrics");
+    expect(page).toContain('value=".3 အပြာ(S+S)"');
+    expect(page).toContain('value=".6 အဖြူ"');
+    expect(page).toContain('value=".6 (S+1)"');
   });
 
   it("submits selected Tube workers and persists the metrics", () => {
     expect(page).toContain("DEFAULT_TUBE_WORKERS");
     expect(page).toContain("involvedWorkers: workerNames");
-    expect(page).toContain("tubeMetrics: category === \"tube\" ? tubeMetrics : null");
+    expect(page).toContain("tubeMetrics: persistedTubeMetrics");
     expect(route).toContain("tubeMetrics: row.tubeMetrics");
     expect(schema).toContain("tubeMetrics        Json?");
     expect(database).toContain('"tubeMetrics"');
+    expect(page).toContain("tubeCountPcs");
+    expect(page).toContain("pcs");
+    expect(audit).toContain("ဖြိုးကို");
   });
 });
