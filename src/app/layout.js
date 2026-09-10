@@ -64,9 +64,9 @@ function ServiceWorkerRegister() {
               registrationPromise = registrationPromise || (async () => {
                 const registrations = await navigator.serviceWorker.getRegistrations();
                 await Promise.all(registrations
-                  .filter((registration) => registration.active?.scriptURL.endsWith('/service-worker-v8.js'))
+                  .filter((registration) => /\/service-worker-v(?:8|9)\.js$/.test(registration.active?.scriptURL || ''))
                   .map((registration) => registration.unregister()));
-                return navigator.serviceWorker.register('/service-worker-v9.js', {
+                return navigator.serviceWorker.register('/service-worker-v10.js', {
                   updateViaCache: 'none',
                 });
               })();
