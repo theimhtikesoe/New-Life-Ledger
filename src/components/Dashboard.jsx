@@ -348,6 +348,7 @@ export default function Dashboard({ view = "overview" }) {
   const [dashboardKpiLoading, setDashboardKpiLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
   const [dashboardKpiError, setDashboardKpiError] = useState("");
   const [productionRows, setProductionRows] = useState([]);
+  const [tubeProductionRows, setTubeProductionRows] = useState([]);
   const [salesCatalog, setSalesCatalog] = useState([]);
   const [salesCatalogError, setSalesCatalogError] = useState("");
   const [productionDate, setProductionDate] = useState(() => formatMyanmarDateInputValue());
@@ -414,11 +415,18 @@ export default function Dashboard({ view = "overview" }) {
     const controller = new AbortController();
     setProductionLoading(true);
     setProductionError("");
-    api(`/api/production-reports?date=${encodeURIComponent(productionDate)}&category=bottle`, { signal: controller.signal, cache: "no-store" })
-      .then((rows) => setProductionRows(Array.isArray(rows) ? rows.filter((row) => row.category !== "tube") : []))
+    Promise.all([
+      api(`/api/production-reports?date=${encodeURIComponent(productionDate)}&category=bottle`, { signal: controller.signal, cache: "no-store" }),
+      api(`/api/production-reports?date=${encodeURIComponent(productionDate)}&category=tube`, { signal: controller.signal, cache: "no-store" }),
+    ])
+      .then(([bottleRows, tubeRows]) => {
+        setProductionRows(Array.isArray(bottleRows) ? bottleRows.filter((row) => row.category !== "tube") : []);
+        setTubeProductionRows(Array.isArray(tubeRows) ? tubeRows.filter((row) => row.category === "tube") : []);
+      })
       .catch((error) => {
         if (error.name !== "AbortError") {
           setProductionRows([]);
+          setTubeProductionRows([]);
           setProductionError(error.message || "ထုတ်လုပ်မှု data ရယူ၍မရပါ။");
         }
       })
@@ -1052,11 +1060,11 @@ export default function Dashboard({ view = "overview" }) {
   const bottleSalesLoading = (dashboardKpiLoading && !dashboardKpi) || kpiDateLoading;
   const productionSummary = useMemo(() => summarizeProduction(productionRows), [productionRows]);
   const tubeProductionSummary = useMemo(() => {
-    const rows = productionRows.filter((row) => row.category === "tube");
+    const rows = tubeProductionRows;
     const totalPacks = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0), 0);
     const totalPieces = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0), 0);
     return { rows, totalPacks, totalPieces };
-  }, [productionRows]);
+  }, [tubeProductionRows]);
 
   // Pagination logic
   const paginatedCustomers = useMemo(() => {
