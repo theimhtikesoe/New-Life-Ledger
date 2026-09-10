@@ -224,7 +224,7 @@ async function api(path, options) {
   throw new Error("Request failed");
 }
 
-const DASHBOARD_SNAPSHOT_KEY = "new-life-ledger:dashboard-snapshot:v1";
+const DASHBOARD_SNAPSHOT_KEY = "new-life-ledger:dashboard-snapshot:v2";
 
 function readDashboardSnapshot() {
   if (typeof window === "undefined") return null;
