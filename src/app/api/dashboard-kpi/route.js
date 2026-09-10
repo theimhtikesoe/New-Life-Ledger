@@ -3,7 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { ensureFactoryStockTable, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,8 @@ export async function GET(request) {
     const { movements: stockMovements } = typeof prisma.productionReport?.findMany === "function"
       ? await loadCanonicalFactoryStockMovements()
       : { movements: [] };
-    const factoryStockCards = stockMovements.filter((movement) => movement.stockType !== "TUBE").reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
+    const factoryStockSummary = aggregateStockMovements(stockMovements);
+    const factoryStockCards = factoryStockSummary.filter((item) => item.stockType !== "TUBE").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
     const factoryTubePieces = stockMovements
       .filter((movement) => movement.stockType === "TUBE")
       .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);

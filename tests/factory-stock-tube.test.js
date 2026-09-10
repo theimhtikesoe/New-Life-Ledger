@@ -44,7 +44,7 @@ describe("Tube factory stock movements", () => {
   });
   it("keeps the factory bottle KPI from counting Tube packs", () => {
     const route = fs.readFileSync("src/app/api/dashboard-kpi/route.js", "utf8");
-    expect(route).toContain('filter((movement) => movement.stockType !== "TUBE")');
+    expect(route).toContain('factoryStockSummary.filter((item) => item.stockType !== "TUBE")');
     expect(factoryStockPage).toContain('filter((item) => item.stockType !== "TUBE")');
     expect(factoryStockPage).toContain("ဗူးအမျိုးအစား");
   });
