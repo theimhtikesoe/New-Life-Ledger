@@ -129,7 +129,7 @@ export function normalizeTubeIdentity(value, capacity = 0) {
     ".3 ဖြူ": "13g W (အဖြူ)",
     ".3 ပြာ (S+S)": "13g (S+S)",
   };
-  const prefixAliases = [["24g W", "24g W (အဖြူ)"], ["24g B", "24g B (S+1)"], ["16g W", "16g W (အဖြူ)"], ["16g S+1", "16g (S+1)"], ["13g W", "13g W (အဖြူ)"], ["13g S+1", "13g (S+1)"], ["13g S+S", "13g (S+S)"]];
+  const prefixAliases = [["24g W", "24g W (အဖြူ)"], ["24g B", "24g B (S+1)"], ["16g W", "16g W (အဖြူ)"], ["16g S+1", "16g (S+1)"], ["16g B", "16g B (S+S)"], ["13g W", "13g W (အဖြူ)"], ["13g S+1", "13g (S+1)"], ["13g S+S", "13g (S+S)"]];
   const fromPrefix = prefixAliases.find(([prefix]) => raw.startsWith(prefix))?.[1];
   const productName = aliases[raw] || fromPrefix || raw || "Tube မသတ်မှတ်ရသေး";
   const inferredCapacity = productName.startsWith("24g") ? 1500 : productName.startsWith("16g") ? 2000 : productName.startsWith("13g") ? 2500 : 0;

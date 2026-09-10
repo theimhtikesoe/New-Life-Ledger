@@ -155,6 +155,7 @@ export const TUBE_PRODUCT_TYPES = [
   "24g B (S+1)",
   "16g W (အဖြူ)",
   "16g (S+1)",
+  "16g B (S+S)",
   "13g W (အဖြူ)",
   "13g (S+1)",
   "13g (S+S)",
@@ -166,6 +167,7 @@ export const TUBE_BY_MACHINE = {
     { g: "24g", color: "B (S+1)", pcsPerBag: 1500, label: "24g B (S+1)" },
     { g: "16g", color: "W", pcsPerBag: 2000, label: "16g W (အဖြူ)" },
     { g: "16g", color: "S+1", pcsPerBag: 2000, label: "16g (S+1)" },
+    { g: "16g", color: "B (S+S)", pcsPerBag: 2000, label: "16g B (S+S)" },
   ],
   TB2: [
     { g: "13g", color: "W", pcsPerBag: 2500, label: "13g W (အဖြူ)" },
