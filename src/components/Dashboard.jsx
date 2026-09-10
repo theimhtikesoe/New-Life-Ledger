@@ -372,6 +372,11 @@ export default function Dashboard({ view = "overview" }) {
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
   const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
   const [kpiDateError, setKpiDateError] = useState("");
+  const hasCachedDashboardForSelectedDate = Boolean(
+    initialDashboardSnapshot?.dashboardKpi?.date === selectedKpiDate
+      && Array.isArray(initialDashboardSnapshot?.customers)
+      && Array.isArray(initialDashboardSnapshot?.allCustomersForKPI),
+  );
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === "undefined" ? true : navigator.onLine
   ));
@@ -742,10 +747,12 @@ export default function Dashboard({ view = "overview" }) {
     dashboardRequestIdRef.current = requestId;
     if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
     lastDashboardAttemptAtRef.current = Date.now();
-    setLoading(true);
-    setKpiDateLoading(true);
+    // Stale-while-revalidate: a previous successful snapshot is already usable
+    // UI data. Keep it visible while the fresh server response runs silently.
+    setLoading(!hasCachedDashboardForSelectedDate);
+    setKpiDateLoading(!hasCachedDashboardForSelectedDate);
     setKpiDateError("");
-    setDashboardKpiLoading(true);
+    setDashboardKpiLoading(!hasCachedDashboardForSelectedDate);
     setDashboardKpiError("");
     setLoadingTimedOut(false);
     setDataLoadError("");
@@ -878,7 +885,7 @@ export default function Dashboard({ view = "overview" }) {
         setLoadingStage("");
       }
     }
-  }, [clearAutoRetryTimers, loadOverdueDebts, search, selectedKpiDate, showAlert]);
+  }, [clearAutoRetryTimers, hasCachedDashboardForSelectedDate, loadOverdueDebts, search, selectedKpiDate, showAlert]);
 
   // iPhone standalone PWAs can pause while they are in the background. Refresh
   // when the app becomes visible again, or immediately when the connection returns.
