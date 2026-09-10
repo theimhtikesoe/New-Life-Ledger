@@ -21,7 +21,7 @@ const AUTO_RETRY_DELAY_MS = 5000;
 const RESUME_REFRESH_AFTER_MS = 30000;
 const API_REQUEST_TIMEOUT_MS = 25000;
 const MAX_GET_ATTEMPTS = 2;
-const DASHBOARD_LOADING_WATCHDOG_MS = 45000;
+const DASHBOARD_LOADING_WATCHDOG_MS = 12000;
 const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
 const EMPTY_PAYMENT_BREAKDOWN = { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" };
 const PAYMENT_BREAKDOWN_FIELDS = [
@@ -171,7 +171,7 @@ function waitBeforeRetry(milliseconds, signal) {
 }
 
 async function api(path, options) {
-  const { signal, timeoutMs = API_REQUEST_TIMEOUT_MS, ...restOptions } = options || {};
+  const { signal, timeoutMs = API_REQUEST_TIMEOUT_MS, background = false, ...restOptions } = options || {};
   const method = String(restOptions.method || "GET").toUpperCase();
   const canRetry = method === "GET";
   const actorName = typeof window !== "undefined" ? localStorage.getItem("actorName") : "";
@@ -184,6 +184,7 @@ async function api(path, options) {
       const response = await fetchWithTimeout(path, {
         headers: {
           "Content-Type": "application/json",
+          ...(background ? { "x-background-request": "true" } : {}),
           ...(actorName ? { "x-actor-name": encodeActorHeader(actorName) } : {}),
         },
         ...restOptions,
@@ -268,12 +269,13 @@ export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
 
 export default function Dashboard({ view = "overview" }) {
   const isLedgerView = view === "ledger";
+  const initialDashboardSnapshot = readDashboardSnapshot();
   const [dashboardActorName, setDashboardActorName] = useState(() => (
     typeof window === "undefined" ? "" : (window.localStorage.getItem("actorName") || "").trim()
   ));
   const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး";
-  const [customers, setCustomers] = useState(() => readDashboardSnapshot()?.customers || []);
-  const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => readDashboardSnapshot()?.allCustomersForKPI || []);
+  const [customers, setCustomers] = useState(() => initialDashboardSnapshot?.customers || []);
+  const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => initialDashboardSnapshot?.allCustomersForKPI || []);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
   const [showRecycleBin, setShowRecycleBin] = useState(false);
   const [deletedCustomerDetail, setDeletedCustomerDetail] = useState(null);
@@ -318,9 +320,9 @@ export default function Dashboard({ view = "overview" }) {
     saleItems: [],
   });
   const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !Array.isArray(initialDashboardSnapshot?.customers));
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
-  const [loadingStage, setLoadingStage] = useState("Dashboard data ရယူနေပါသည်");
+  const [loadingStage, setLoadingStage] = useState(() => (Array.isArray(initialDashboardSnapshot?.customers) ? "" : "Dashboard data ရယူနေပါသည်"));
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [showCustomerList, setShowCustomerList] = useState(true);
@@ -332,14 +334,14 @@ export default function Dashboard({ view = "overview" }) {
   const [transactionPagination, setTransactionPagination] = useState({ offset: 0, limit: 50, total: 0, hasMore: false });
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
-  const [todayPaymentsList, setTodayPaymentsList] = useState(() => readDashboardSnapshot()?.todayPaymentsList || []);
-  const [todayCashSales, setTodayCashSales] = useState(() => readDashboardSnapshot()?.todayCashSales || []);
-  const [factoryStock] = useState(() => readDashboardSnapshot()?.factoryStock || null);
-  const [overdueDebts, setOverdueDebts] = useState(() => readDashboardSnapshot()?.overdueDebts || null);
-  const [dashboardKpi, setDashboardKpi] = useState(() => readDashboardSnapshot()?.dashboardKpi || null);
+  const [todayPaymentsList, setTodayPaymentsList] = useState(() => initialDashboardSnapshot?.todayPaymentsList || []);
+  const [todayCashSales, setTodayCashSales] = useState(() => initialDashboardSnapshot?.todayCashSales || []);
+  const [factoryStock] = useState(() => initialDashboardSnapshot?.factoryStock || null);
+  const [overdueDebts, setOverdueDebts] = useState(() => initialDashboardSnapshot?.overdueDebts || null);
+  const [dashboardKpi, setDashboardKpi] = useState(() => initialDashboardSnapshot?.dashboardKpi || null);
   // A cached KPI may be stale. Start in loading state so the bottle card never
   // presents a cached/empty 0 as the current result before the fresh request.
-  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(true);
+  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
   const [dashboardKpiError, setDashboardKpiError] = useState("");
   const [productionRows, setProductionRows] = useState([]);
   const [salesCatalog, setSalesCatalog] = useState([]);
@@ -348,7 +350,7 @@ export default function Dashboard({ view = "overview" }) {
   const [productionLoading, setProductionLoading] = useState(true);
   const [productionError, setProductionError] = useState("");
   const [showProductionModal, setShowProductionModal] = useState(false);
-  const [ledgerPulse, setLedgerPulse] = useState(() => readDashboardSnapshot()?.ledgerPulse || null);
+  const [ledgerPulse, setLedgerPulse] = useState(() => initialDashboardSnapshot?.ledgerPulse || null);
   const [ledgerPulseLoading, setLedgerPulseLoading] = useState(false);
   const [ledgerPulseError, setLedgerPulseError] = useState("");
   const [showTelegramReportModal, setShowTelegramReportModal] = useState(false);
@@ -363,7 +365,7 @@ export default function Dashboard({ view = "overview" }) {
   const [expandedDashboardMenu, setExpandedDashboardMenu] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
-  const [kpiDateLoading, setKpiDateLoading] = useState(true);
+  const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
   const [kpiDateError, setKpiDateError] = useState("");
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === "undefined" ? true : navigator.onLine
@@ -710,6 +712,7 @@ export default function Dashboard({ view = "overview" }) {
       const overdueRows = await api(`/api/overdue-debts?refresh=${Date.now()}`, {
         timeoutMs: 20000,
         cache: "no-store",
+        background: true,
       });
       const rows = Array.isArray(overdueRows) ? overdueRows : [];
       setOverdueDebts(rows);
@@ -794,7 +797,7 @@ export default function Dashboard({ view = "overview" }) {
 
       // Detailed daily values are intentionally background work.
       setLoadingStage("Data ရယူနေပါသည်");
-      void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal })
+      void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
         .then((summary) => {
           const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
           const payments = (summary.transactions || [])
@@ -817,7 +820,7 @@ export default function Dashboard({ view = "overview" }) {
 
       // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
       setLoadingStage("Data ရယူနေပါသည်");
-      void api("/api/unverified-kpay?status=PENDING", { signal })
+      void api("/api/unverified-kpay?status=PENDING", { signal, background: true })
         .then((kpayRows) => setPendingKpay(kpayRows))
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Pending KPay data was not loaded:", error);
@@ -826,7 +829,7 @@ export default function Dashboard({ view = "overview" }) {
       // Stage 6: the visual pulse is non-critical and loads after the main data.
       setLedgerPulseLoading(true);
       setLedgerPulseError("");
-      void api("/api/dashboard-pulse?days=7", { signal, cache: "no-store", timeoutMs: 20000 })
+      void api("/api/dashboard-pulse?days=7", { signal, cache: "no-store", timeoutMs: 20000, background: true })
         .then((payload) => {
           const pulse = payload || null;
           setLedgerPulse(pulse);

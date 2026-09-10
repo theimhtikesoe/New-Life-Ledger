@@ -8,7 +8,7 @@ import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 import { isCustomerEditActivity, isDailySalesActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity, isProductionWorkerCreateActivity } from "@/lib/accounting-activity";
 
-const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "Rhyzoe"];
+const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "ဖြိုးကို", "Rhyzoe"];
 const ACTIONS = ["PAYMENT", "DEBT_INCREASE", "CASH_SALE", "CREATE", "UPDATE", "RESTORE", "DELETE", "PERMANENT_DELETE"];
 
 function formatMyanmarDateInputValue(value = new Date()) {
@@ -146,7 +146,7 @@ export default function ActivityPage() {
       setLoading(true);
     }
     setError("");
-    const params = new URLSearchParams({ date, limit: "500", excludeCustomerEdits: "true" });
+    const params = new URLSearchParams({ date, limit: "200", excludeCustomerEdits: "true" });
     if (actor) params.set("actor", actor);
     if (action) params.set("action", action);
     fetchLogs(params.toString())

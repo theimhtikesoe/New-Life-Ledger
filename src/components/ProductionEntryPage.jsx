@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleDisplayName, getBottleGroup, getBottleUnit, getTubeItemsForMachine, MACHINES } from "@/lib/production-catalog";
 
 const DEFAULT_TUBE_WORKERS = ["AKA", "NMZ", "PPO", "ATZ", "KKK", "YMT", "KZP", "TZO"];
+const PRODUCTION_WORKERS_CACHE_KEY = "new-life-ledger:production-workers-v1";
 
 function todayMyanmar() {
   const now = new Date(Date.now() + (6 * 60 + 30) * 60 * 1000);
@@ -96,7 +97,17 @@ export default function ProductionEntryPage() {
   }, [activeTubeKey, category, tubeItems]);
 
   const loadWorkers = useCallback(async () => {
-    setLoadingWorkers(true);
+    let hasCachedWorkers = false;
+    try {
+      const cached = JSON.parse(window.sessionStorage.getItem(PRODUCTION_WORKERS_CACHE_KEY) || "null");
+      if (Array.isArray(cached?.workers)) {
+        setSavedWorkers(cached.workers);
+        hasCachedWorkers = true;
+      }
+    } catch {
+      // Ignore unavailable or malformed session cache.
+    }
+    setLoadingWorkers(!hasCachedWorkers);
     try {
       const response = await fetch("/api/production-workers", { cache: "no-store" });
       const body = await response.json();
@@ -104,7 +115,13 @@ export default function ProductionEntryPage() {
       const fetchedWorkers = Array.isArray(body.data) ? body.data : [];
       const fetchedNames = new Set(fetchedWorkers.map((worker) => worker.name));
       const defaultWorkers = DEFAULT_TUBE_WORKERS.filter((name) => !fetchedNames.has(name)).map((name) => ({ id: `tube-default-${name}`, name, active: true, isDefaultTubeWorker: true }));
-      setSavedWorkers([...fetchedWorkers, ...defaultWorkers].sort((left, right) => left.name.localeCompare(right.name)));
+      const workers = [...fetchedWorkers, ...defaultWorkers].sort((left, right) => left.name.localeCompare(right.name));
+      setSavedWorkers(workers);
+      try {
+        window.sessionStorage.setItem(PRODUCTION_WORKERS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), workers }));
+      } catch {
+        // The live request still provides the current worker list.
+      }
     } catch (loadError) {
       setError(loadError.message);
     } finally {

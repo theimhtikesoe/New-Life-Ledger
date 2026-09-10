@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from "react";
 
+const TUBE_STOCK_CACHE_KEY = "new-life-ledger:tube-stock-v1";
+
 function number(value) { return Number(value || 0).toLocaleString(); }
 
 function stockStatus(item) {
@@ -31,11 +33,25 @@ export default function TubeStockDetailPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    try {
+      const cached = JSON.parse(window.sessionStorage.getItem(TUBE_STOCK_CACHE_KEY) || "null");
+      if (cached?.data) {
+        setData(cached.data);
+        setLoading(false);
+      }
+    } catch {
+      // Ignore unavailable or malformed session cache.
+    }
     fetch("/api/tube-stock", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Tube လက်ကျန် ရယူ၍မရပါ။");
         setData(body.data);
+        try {
+          window.sessionStorage.setItem(TUBE_STOCK_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data: body.data }));
+        } catch {
+          // The live response is still rendered normally.
+        }
       })
       .catch((fetchError) => { if (fetchError.name !== "AbortError") setError(fetchError.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });

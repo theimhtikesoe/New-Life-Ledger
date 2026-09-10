@@ -873,3 +873,21 @@ textarea {
     padding-top: 6rem;
   }
 }
+@media screen and (min-width: 1440px) and (hover: hover) and (pointer: fine) {
+  .app-page-container,
+  .shared-page-header {
+    max-width: 96rem;
+  }
+  .dashboard-content-stack {
+    max-width: 96rem !important;
+  }
+  .pwa-quick-actions,
+  .pwa-settings-toggle,
+  .pwa-music-control,
+  .pwa-zoom-controls {
+    right: max(
+      calc(env(safe-area-inset-right, 0px) + 1rem),
+      calc((100vw - 96rem) / 2 + 1rem)
+    );
+  }
+}

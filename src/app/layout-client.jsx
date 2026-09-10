@@ -125,6 +125,10 @@ function GlobalActionLoadingIndicator() {
       startAction();
     };
     const trackedFetch = (...args) => {
+      const requestHeaders = args[1]?.headers;
+      const isBackgroundRequest = requestHeaders?.get?.('x-background-request') === 'true'
+        || requestHeaders?.['x-background-request'] === 'true';
+      if (isBackgroundRequest) return originalFetch(...args);
       setPendingRequests((count) => count + 1);
       startAction();
       return originalFetch(...args).finally(() => {

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const FACTORY_STOCK_CACHE_KEY = "new-life-ledger:factory-stock-v1";
+
 function todayValue() {
   const now = new Date();
   const local = new Date(now.getTime() + (6 * 60 + 30) * 60 * 1000);
@@ -31,13 +33,26 @@ export default function FactoryStockPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
+    try {
+      const cached = JSON.parse(window.sessionStorage.getItem(FACTORY_STOCK_CACHE_KEY) || "null");
+      if (cached?.data) {
+        setData(cached.data);
+        setLoading(false);
+      }
+    } catch {
+      // Ignore unavailable or malformed session cache.
+    }
     setError("");
     fetch("/api/factory-stock", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "စက်ရုံလက်ကျန် ရယူ၍မရပါ။");
         setData(body.data);
+        try {
+          window.sessionStorage.setItem(FACTORY_STOCK_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data: body.data }));
+        } catch {
+          // The live response is still rendered normally.
+        }
       })
       .catch((fetchError) => { if (fetchError.name !== "AbortError") setError(fetchError.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
