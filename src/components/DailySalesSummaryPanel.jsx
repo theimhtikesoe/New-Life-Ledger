@@ -130,10 +130,9 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   }, [selectedDate]);
 
   useEffect(() => {
-    if (!isOpen) return;
     setIsEditing(false);
     load(date);
-  }, [isOpen, load, date]);
+  }, [load, date]);
 
   const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
   const values = draft || toDraft(automatic);
