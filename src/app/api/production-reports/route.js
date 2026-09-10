@@ -78,9 +78,12 @@ function serialize(row) {
 export async function GET(request) {
   try {
     await ensureDatabase();
-    const date = parseDate(new URL(request.url).searchParams.get("date"), { allowFuture: true });
+    const searchParams = new URL(request.url).searchParams;
+    const date = parseDate(searchParams.get("date"), { allowFuture: true });
+    const category = searchParams.get("category");
+    const categoryFilter = category === "bottle" || category === "tube" ? { category } : {};
     const rows = await prisma.productionReport.findMany({
-      where: { reportDate: date },
+      where: { reportDate: date, ...categoryFilter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     return NextResponse.json({ data: rows.map(serialize) });

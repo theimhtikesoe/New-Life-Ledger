@@ -26,7 +26,7 @@ export default function TubeProductionHistoryPage() {
     const controller = new AbortController();
     setLoading(true);
     setError("");
-    fetch(`/api/production-reports?date=${encodeURIComponent(date)}`, { cache: "no-store", signal: controller.signal })
+    fetch(`/api/production-reports?date=${encodeURIComponent(date)}&category=tube`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Tube ထွက်ရှိမှု ရယူ၍မရပါ။");

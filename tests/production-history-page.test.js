@@ -26,19 +26,18 @@ describe("Production history page", () => {
     expect(pageSource).toContain("group.workers.map");
   });
 
-  it("provides book-style product/capacity and Tube summaries without the deferred print control", () => {
-    expect(pageSource).toContain("စာအုပ်မှတ်တမ်းအကျဉ်းချုပ်");
+  it("provides a book-style bottle product/capacity summary without the deferred print control", () => {
+    expect(pageSource).toContain("ဗူးစာအုပ်မှတ်တမ်းအကျဉ်းချုပ်");
     expect(pageSource).toContain("summaries.bottles");
-    expect(pageSource).toContain("summaries.tubes");
+    expect(pageSource).toContain("category=bottle");
+    expect(pageSource).not.toContain("summaries.tubes.length");
     expect(pageSource).not.toContain("window.print()");
   });
 
-  it("keeps Tube rows in pcs and carries all Tube metric fields into history KPIs", () => {
-    expect(pageSource).toContain("tubeMetrics");
-    expect(pageSource).toContain("tubeCountPcs");
-    expect(pageSource).toContain("scrapTubeCount");
-    expect(pageSource).toContain("scrapGlueCount");
-    expect(pageSource).toContain("glueWasteKg");
-    expect(pageSource).toContain("pcs");
+  it("keeps the bottle history view free of Tube summary fields", () => {
+    expect(pageSource).toContain('data.filter((row) => row.category === "bottle")');
+    expect(pageSource).not.toContain("Tube စုစုပေါင်း");
+    expect(pageSource).not.toContain("Tube ပျက်");
+    expect(pageSource).not.toContain("Tube {group.tubeMetrics");
   });
 });
