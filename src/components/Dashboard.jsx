@@ -67,14 +67,18 @@ function saleItemsSummary(items = []) {
       const count = Number(item.cardCount || item.unitCount || 0);
       return `${item.productName || "အဖုံး"} × ${count.toLocaleString()} အဖုံး = ${formatMoney(item.totalAmount)}`;
     }
+    if (item?.productType === "tube" || item?.categoryKey === "TUBE") {
+      return `${item.productName || "Tube"} × ${item.cardCount || 0} အိတ် = ${Number(item.bottleCount || 0).toLocaleString()} Tube = ${formatMoney(item.totalAmount)}`;
+    }
     return `${item.productName || "ဗူး"} ${item.capacity || 0} ဆံ့ × ${item.cardCount || 0} ကဒ် = ${Number(item.bottleCount || 0).toLocaleString()} ဗူး`;
   }).join("၊ ");
 }
 
 function summarizeProduction(rows = []) {
-  const totalPieces = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0), 0);
-  const wasteQuantity = rows.reduce((sum, row) => sum + Number(row.wasteQuantity || row.damagedPieces || 0), 0);
-  const machines = new Set(rows.map((row) => row.machineCode).filter(Boolean));
+  const bottleRows = rows.filter((row) => row.category !== "tube");
+  const totalPieces = bottleRows.reduce((sum, row) => sum + Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0), 0);
+  const wasteQuantity = bottleRows.reduce((sum, row) => sum + Number(row.wasteQuantity || row.damagedPieces || 0), 0);
+  const machines = new Set(bottleRows.map((row) => row.machineCode).filter(Boolean));
   return { totalPieces, wasteQuantity, goodPieces: Math.max(0, totalPieces - wasteQuantity), machineCount: machines.size };
 }
 
@@ -410,8 +414,8 @@ export default function Dashboard({ view = "overview" }) {
     const controller = new AbortController();
     setProductionLoading(true);
     setProductionError("");
-    api(`/api/production-reports?date=${encodeURIComponent(productionDate)}`, { signal: controller.signal, cache: "no-store" })
-      .then((rows) => setProductionRows(Array.isArray(rows) ? rows : []))
+    api(`/api/production-reports?date=${encodeURIComponent(productionDate)}&category=bottle`, { signal: controller.signal, cache: "no-store" })
+      .then((rows) => setProductionRows(Array.isArray(rows) ? rows.filter((row) => row.category !== "tube") : []))
       .catch((error) => {
         if (error.name !== "AbortError") {
           setProductionRows([]);

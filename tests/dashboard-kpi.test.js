@@ -42,7 +42,9 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain('type="date"');
     expect(dashboardSource).toContain("{!isLedgerView ? (");
     expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`');
-    expect(dashboardSource).toContain("DASHBOARD_LOADING_WATCHDOG_MS = 45000");
+    expect(dashboardSource).toContain("DASHBOARD_LOADING_WATCHDOG_MS = 12000");
+    expect(dashboardSource).toContain("category=bottle");
+    expect(dashboardSource).toContain('const bottleRows = rows.filter((row) => row.category !== "tube");');
     expect(dashboardSource).toContain("Keep the last successful KPI snapshot visible");
     expect(dashboardSource).toContain("const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;");
     expect(dashboardSource).toContain("onClick={() => setShowTodayPaymentsModal(true)}");
