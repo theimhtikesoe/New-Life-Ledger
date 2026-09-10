@@ -136,12 +136,13 @@ export async function POST(request) {
       involvedWorkers,
       notes,
     }));
+    const tubeMappings = await loadTubeMappings();
+    const stockMovements = productionMovementRows(data, { actorName, tubeMappings });
     const created = await prisma.$transaction(async (tx) => {
       const result = await tx.productionReport.createMany({ data });
-      const stockMovements = productionMovementRows(data, { actorName, tubeMappings: await loadTubeMappings() });
       if (stockMovements.length) await tx.factoryStockMovement.createMany({ data: stockMovements });
       return result;
-    });
+    }, { maxWait: 10000, timeout: 15000 });
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
     await writeAuditLog({
       actorName,
@@ -193,19 +194,19 @@ export async function PATCH(request) {
       tubeMetrics: index === 0 && body.tubeMetrics && typeof body.tubeMetrics === "object" ? body.tubeMetrics : null,
       involvedWorkers, notes,
     }));
+    const existingRows = await prisma.productionReport.findMany({ where: { submissionId } });
+    const existing = existingRows[0];
+    if (!existing) throw new Error("ပြင်ဆင်မည့် report မတွေ့ပါ။");
+    const tubeMappings = await loadTubeMappings();
+    const oldMovements = productionMovementRows(existingRows, { actorName, tubeMappings });
+    const newMovements = productionMovementRows(data, { actorName, tubeMappings });
     const result = await prisma.$transaction(async (tx) => {
-      const existingRows = await tx.productionReport.findMany({ where: { submissionId } });
-      const existing = existingRows[0];
-      if (!existing) throw new Error("ပြင်ဆင်မည့် report မတွေ့ပါ။");
       await tx.productionReport.deleteMany({ where: { submissionId } });
-      const tubeMappings = await loadTubeMappings();
-      const oldMovements = productionMovementRows(existingRows, { actorName, tubeMappings });
-      const newMovements = productionMovementRows(data, { actorName, tubeMappings });
       if (oldMovements.length) await tx.factoryStockMovement.createMany({ data: reversalMovementRows(oldMovements, { actorName }) });
       const created = await tx.productionReport.createMany({ data });
       if (newMovements.length) await tx.factoryStockMovement.createMany({ data: newMovements });
       return created;
-    });
+    }, { maxWait: 10000, timeout: 15000 });
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ဗူး)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers } });
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: result.count, totalPieces, wasteQuantity } });
@@ -222,12 +223,13 @@ export async function DELETE(request) {
     if (!submissionId) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
     const actorName = getActorName(request);
     const existingRows = await prisma.productionReport.findMany({ where: { submissionId } });
+    const tubeMappings = await loadTubeMappings();
+    const oldMovements = productionMovementRows(existingRows, { actorName, tubeMappings });
     const result = await prisma.$transaction(async (tx) => {
       const deleted = await tx.productionReport.deleteMany({ where: { submissionId } });
-      const oldMovements = productionMovementRows(existingRows, { actorName, tubeMappings: await loadTubeMappings() });
       if (oldMovements.length) await tx.factoryStockMovement.createMany({ data: reversalMovementRows(oldMovements, { actorName }) });
       return deleted;
-    });
+    }, { maxWait: 10000, timeout: 15000 });
     if (!result.count) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_DELETE", entityType: "ProductionReport", entityId: submissionId, entityLabel: submissionId, summary: "ထုတ်လုပ်မှုမှတ်တမ်း ဖျက်လိုက်သည်", metadata: { submissionId, deletedRows: result.count } });
     return NextResponse.json({ data: { submissionId, deletedRows: result.count } });
