@@ -210,7 +210,13 @@ export async function createOrderDraft({
   }
 
   const normalizedSource = String(source || "telegram").trim().toLowerCase();
-  const sourceLabel = normalizedSource === "viber" ? "Viber" : normalizedSource === "telegram" ? "Telegram" : "Manual";
+  const sourceLabel = normalizedSource === "telegram"
+    ? "Telegram"
+    : normalizedSource === "customer_website" || normalizedSource === "website"
+      ? "Customer Website"
+      : normalizedSource === "viber"
+        ? "Viber"
+        : "Customer/Manual";
   await writeAuditLog({
     actorName: "Rhyzoe",
     action: "ORDER_DRAFT",

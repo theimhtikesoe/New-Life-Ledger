@@ -109,7 +109,7 @@ export async function sendFactoryNotificationForOrder(orderId, { actorName = "Rh
       entityType: "Order",
       entityId: orderId,
       entityLabel: order.customer?.name || order.draftCustomerName || "Order",
-      summary: "Order ကို စက်ရုံ Telegram group သို့ ပို့ပြီး",
+      summary: "Order ကို စက်ရုံ group သို့ ပို့ပြီး",
       metadata: { mode: "IMMEDIATE", deliveryId: delivery.id },
     });
     return { sent: true, duplicate: false, messageId: result.messageId, order: updated };

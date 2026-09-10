@@ -57,7 +57,7 @@ export async function POST(request) {
       sourceMessageId: body.sourceMessageId || null,
       sourceUpdateId: body.sourceUpdateId || null,
       sourceText,
-      source: body.source || "viber",
+      source: body.source || "customer_website",
       extracted: body.extracted || {},
     });
     return NextResponse.json(result, { status: result.duplicate ? 200 : 201 });
@@ -81,7 +81,7 @@ export async function PATCH(request) {
         await syncTelegramOrderMessage(data, "🌐 Website မှ Customer ချိတ်ပြီးပါပြီ။", { includeActions: true });
       } catch (syncError) {
         console.warn("Customer link Telegram message sync failed", syncError);
-        warning = "Customer ချိတ်ပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+        warning = "Customer ချိတ်ပြီးပါပြီ။ မူရင်း Order message ကို update မလုပ်နိုင်သေးပါ။";
       }
       return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }
@@ -92,7 +92,7 @@ export async function PATCH(request) {
         await syncTelegramOrderMessage(data, "🌐 Website မှ Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းထားပါပြီ။ Main Customer/Ledger စာရင်းထဲ မထည့်ရသေးပါ။", { includeActions: true });
       } catch (syncError) {
         console.warn("Customer creation Telegram message sync failed", syncError);
-        warning = "Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+        warning = "Order အတွက် Customer အမည်ကို သီးသန့်သိမ်းပြီးပါပြီ။ မူရင်း Order message ကို update မလုပ်နိုင်သေးပါ။";
       }
       return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }
@@ -111,7 +111,7 @@ export async function PATCH(request) {
         await syncTelegramOrderMessage(data, "🔄 Website မှ AI ဖြင့် ပြန်စစ်ပြီးပါပြီ။", { includeActions: true });
       } catch (syncError) {
         console.warn("Website AI retry Telegram message sync failed", syncError);
-        warning = "Website မှ AI ပြန်စစ်ပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+        warning = "Website မှ AI ပြန်စစ်ပြီးပါပြီ။ မူရင်း Order message ကို update မလုပ်နိုင်သေးပါ။";
       }
       return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }
@@ -134,7 +134,7 @@ export async function PATCH(request) {
           await syncTelegramOrderMessage(finalOrder, warning ? "⚠️ Website မှ Confirm လုပ်ပြီးပါပြီ။ Factory notification Pending ဖြစ်နေပါသည်။" : "✅ Website မှ Confirm လုပ်ပြီး Factory group သို့ ပို့ပြီးပါပြီ။");
         } catch (syncError) {
           console.warn("Website confirm Telegram message sync failed", syncError);
-          warning = `${warning}${warning ? " " : ""}Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။`;
+          warning = `${warning}${warning ? " " : ""}မူရင်း Order message ကို update မလုပ်နိုင်သေးပါ။`;
         }
         return NextResponse.json({ ok: true, data: finalOrder, delivery: delivery ? { sent: Boolean(delivery.sent), duplicate: Boolean(delivery.duplicate), messageId: delivery.messageId } : { sent: false, pending: true }, ...(warning ? { warning } : {}) });
       }
@@ -143,7 +143,7 @@ export async function PATCH(request) {
         await syncTelegramOrderMessage(data, "📦 Website မှ 08:10 morning batch ထဲ ထည့်ပြီးပါပြီ။");
       } catch (syncError) {
         console.warn("Website batch Telegram message sync failed", syncError);
-        warning = `${warning} Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။`;
+        warning = `${warning} မူရင်း Order message ကို update မလုပ်နိုင်သေးပါ။`;
       }
       return NextResponse.json({ ok: true, data, warning });
     }
@@ -154,7 +154,7 @@ export async function PATCH(request) {
         await syncTelegramOrderMessage(data, "❌ Website မှ Cancel လုပ်ပြီးပါပြီ။");
       } catch (syncError) {
         console.warn("Website cancel Telegram message sync failed", syncError);
-        warning = "Order ကို Cancel လုပ်ပြီးပါပြီ။ Telegram မူရင်း message ကို update မလုပ်နိုင်သေးပါ။";
+        warning = "Order ကို Cancel လုပ်ပြီးပါပြီ။ မူရင်း Order message ကို update မလုပ်နိုင်သေးပါ။";
       }
       return NextResponse.json({ ok: true, data, ...(warning ? { warning } : {}) });
     }

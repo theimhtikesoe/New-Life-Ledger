@@ -461,7 +461,7 @@ export default function OrdersPage() {
     const text = manualOrderText.trim();
     if (!text) {
       setManualOrderPreview(null);
-      setError("Viber/Order စာသားကို အရင်ထည့်ပါ။");
+      setError("Customer Order စာသားကို အရင်ထည့်ပါ။");
       return;
     }
     setError("");
@@ -477,8 +477,8 @@ export default function OrdersPage() {
     setError("");
     setMessage("");
     try {
-      const body = await requestJson("/api/orders", { method: "POST", body: JSON.stringify({ sourceText: text, source: "viber", extracted }), timeoutMs: 15000 });
-      setMessage(body.duplicate ? "ဒီစာသားနဲ့ Draft ရှိပြီးသားပါ။ ထပ်မဖန်တီးပါ။" : "Viber/Order စာကို Draft အဖြစ် သိမ်းပြီးပါပြီ။ Payment/ပြေစာကို Ledger ထဲ မရေးသေးပါ။");
+      const body = await requestJson("/api/orders", { method: "POST", body: JSON.stringify({ sourceText: text, source: "customer_website", extracted }), timeoutMs: 15000 });
+      setMessage(body.duplicate ? "ဒီစာသားနဲ့ Draft ရှိပြီးသားပါ။ ထပ်မဖန်တီးပါ။" : "Customer Website/အခြား Channel Order စာကို Draft အဖြစ် သိမ်းပြီးပါပြီ။ Payment/ပြေစာကို Ledger ထဲ မရေးသေးပါ။");
       setManualOrderText("");
       setManualOrderPreview(null);
       await load();
@@ -490,13 +490,13 @@ export default function OrdersPage() {
   };
 
   const publishTelegramGuide = async () => {
-    if (!window.confirm("Telegram Order group ထဲမှာ Order ရေးနည်း guide message အသစ်တစ်စောင် ပို့ပြီး pin လုပ်မလား။")) return;
+    if (!window.confirm("Telegram Group ထဲမှာ Customer Order ရေးနည်း guide message အသစ်တစ်စောင် ပို့ပြီး pin လုပ်မလား။")) return;
     setPublishingGuide(true);
     setError("");
     setMessage("");
     try {
       const body = await requestJson("/api/admin/telegram-order-guide", { method: "POST" });
-      setMessage(body.pinned ? "Telegram Order guide ကို group ထဲ ပို့ပြီး pin လုပ်ထားပါပြီ။" : "Telegram Order guide ကို group ထဲ ပို့ထားပါပြီ။");
+      setMessage(body.pinned ? "Customer Order guide ကို Telegram group ထဲ ပို့ပြီး pin လုပ်ထားပါပြီ။" : "Customer Order guide ကို Telegram group ထဲ ပို့ထားပါပြီ။");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -530,11 +530,11 @@ export default function OrdersPage() {
         {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : null}
 
         <section className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-2 shadow-sm sm:p-2.5" aria-labelledby="manual-order-title">
-          <button type="button" aria-expanded={showManualOrder} aria-controls="viber-copied-order-panel" onClick={() => setShowManualOrder((current) => !current)} className="inline-flex min-h-9 items-center rounded-lg border border-cyan-300 bg-white px-3 py-1.5 text-xs font-bold text-cyan-800 shadow-sm transition hover:bg-cyan-100 active:scale-[0.98]">
-            <span id="manual-order-title">Viber Order ထည့်ရန်</span>
+          <button type="button" aria-expanded={showManualOrder} aria-controls="customer-copied-order-panel" onClick={() => setShowManualOrder((current) => !current)} className="inline-flex min-h-9 items-center rounded-lg border border-cyan-300 bg-white px-3 py-1.5 text-xs font-bold text-cyan-800 shadow-sm transition hover:bg-cyan-100 active:scale-[0.98]">
+            <span id="manual-order-title">Customer Website / အခြား Channel Order ထည့်ရန်</span>
           </button>
-          {showManualOrder ? <div id="viber-copied-order-panel" className="mt-2 border-t border-cyan-200/80 pt-3">
-          <p className="text-xs leading-5 text-cyan-900">Viber စာကို ကူးထည့်ပြီး Preview ကြည့်ကာ Draft အဖြစ် သိမ်းနိုင်ပါတယ်။</p>
+          {showManualOrder ? <div id="customer-copied-order-panel" className="mt-2 border-t border-cyan-200/80 pt-3">
+          <p className="text-xs leading-5 text-cyan-900">Customer Website သို့မဟုတ် အခြား Channel က ရလာတဲ့မှာယူစာကို ကူးထည့်ပြီး Preview ကြည့်ကာ Draft အဖြစ် သိမ်းနိုင်ပါတယ်။</p>
           <textarea value={manualOrderText} onChange={(event) => { setManualOrderText(event.target.value); setManualOrderPreview(null); }} placeholder={`ဥပမာ\nဒို့ရှမ်းပုဂံ\nနွားသေး\n3ကဒ်x100ဘူးx380k\n=114,000 kyats\n(အဖုံးအဝါ)\nKpay နဲ့ရှင်းမည်\nပစ္စည်းပို့ပြေစာပဲ ပေးရန်`} className="mt-3 min-h-36 w-full rounded-xl border border-cyan-300 bg-white px-3 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400" />
           <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={previewManualOrder} className="rounded-lg border border-cyan-400 bg-white px-3 py-2 text-sm font-bold text-cyan-800 hover:bg-cyan-100">ဖတ်ပြီး Preview ပြရန်</button>{manualOrderPreview ? <button type="button" onClick={saveManualOrder} disabled={savingManualOrder} className="rounded-lg bg-cyan-700 px-3 py-2 text-sm font-bold text-white hover:bg-cyan-800 disabled:opacity-50">{savingManualOrder ? "Draft သိမ်းနေသည်..." : "Draft အဖြစ် သိမ်းရန်"}</button> : null}</div>
           {manualOrderPreview ? <ManualOrderPreviewDetails order={manualOrderPreview} /> : null}
@@ -549,10 +549,10 @@ export default function OrdersPage() {
         {showGuide ? <div id="telegram-order-guide-modal" role="dialog" aria-modal="true" aria-labelledby="telegram-order-guide-title" className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-3 sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowGuide(false); }}>
           <section className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-cyan-200 bg-white p-4 shadow-2xl sm:p-6">
             <div className="flex items-start justify-between gap-3">
-              <div><p className="text-xs font-bold uppercase tracking-wider text-cyan-700">Telegram Order Guide</p><h2 id="telegram-order-guide-title" className="mt-1 text-lg font-bold text-slate-900">Group ထဲမှာ Order ရေးရန်</h2></div>
+              <div><p className="text-xs font-bold uppercase tracking-wider text-cyan-700">Order Channel Guide</p><h2 id="telegram-order-guide-title" className="mt-1 text-lg font-bold text-slate-900">Order လက်ခံမည့် Channel များ</h2></div>
               <button type="button" aria-label="Guide ပိတ်ရန်" onClick={() => setShowGuide(false)} className="min-h-10 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">ပိတ်ရန်</button>
             </div>
-            <div className="mt-4 flex flex-wrap items-start justify-between gap-3"><p className="text-sm text-slate-600">စာအစမှာ <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">မှာယူမှု</code> သို့မဟုတ် <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">/order</code> ထည့်ရေးပါ။</p><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800">ပုံမှန်စကားများ မဖမ်းပါ</span><button type="button" onClick={publishTelegramGuide} disabled={publishingGuide} className="rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800 hover:bg-cyan-100 disabled:opacity-50">{publishingGuide ? "ပို့နေသည်..." : "📌 Group ထဲ Guide တင်ရန်"}</button></div></div>
+            <div className="mt-4 flex flex-wrap items-start justify-between gap-3"><p className="text-sm text-slate-600">Telegram Group မှာ စာအစက <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">မှာယူမှု</code> သို့မဟုတ် <code className="rounded bg-cyan-100 px-1.5 py-0.5 font-semibold text-cyan-900">/order</code> ထည့်ရေးပါ။ Customer Website မှာယူမှုများကိုလည်း ဒီ Order စာရင်းထဲသို့ ထည့်သွင်းနိုင်ပါတယ်။</p><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-cyan-100 px-3 py-1 text-xs font-semibold text-cyan-800">Channel မရွေး Customer Order တစ်နေရာတည်း</span><button type="button" onClick={publishTelegramGuide} disabled={publishingGuide} className="rounded-lg border border-cyan-300 bg-white px-3 py-2 text-xs font-bold text-cyan-800 hover:bg-cyan-100 disabled:opacity-50">{publishingGuide ? "ပို့နေသည်..." : "📌 Telegram Group Guide တင်ရန်"}</button></div></div>
             <pre className="mt-4 overflow-x-auto rounded-xl bg-slate-950 p-4 text-xs leading-6 text-cyan-50">မှာယူမှု ကံလီ{`\n`}0.3 Liter အပြာ{`\n`}400 ဆံ့ 20 ကဒ်{`\n`}အဖုံးပြာ 5000 pcs + အပို 20{`\n`}ပုလဲဂိတ်{`\n`}မနက်ဖြန်</pre>
             <p className="mt-3 text-xs text-slate-500">AI စစ်ပြီး Draft ပြန်ပေးပါမယ်။ Confirm/Cancel ခလုတ်ကို group admin သာ သုံးနိုင်ပါမယ်။</p>
           </section>

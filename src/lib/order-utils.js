@@ -427,9 +427,12 @@ export function formatFactoryOrderMessage(order, { batch = false, source = "WEBS
     return `${index + 1}. ${[line.bottleType || "ဘူး", capacity, `${line.cardCount || 0} ကဒ် × ${line.bottlesPerCard || 0} ဘူး = ${line.totalBottles || 0} ဘူး`].filter(Boolean).join(" / ")}${line.quotedAmount ? ` · ${line.quotedAmount.toLocaleString()} Ks` : ""}`;
   });
   const factoryNumber = Number.isInteger(order.factoryOrderNumber) && order.factoryOrderNumber > 0 ? ` ${order.factoryOrderNumber}` : "";
-  const sourceLabel = source === "TELEGRAM"
-    ? "Telegram မှ Confirm ပြီးသော order ဖြစ်ပါသည်။"
-    : "Website မှ Confirm ပြီးသော order ဖြစ်ပါသည်။";
+  const normalizedSource = String(source || "CUSTOMER_WEBSITE").trim().toUpperCase();
+  const sourceLabel = normalizedSource === "TELEGRAM"
+    ? "Order Source: Telegram"
+    : normalizedSource === "WEBSITE" || normalizedSource === "CUSTOMER_WEBSITE"
+      ? "Order Source: Customer Website"
+      : `Order Source: ${normalizedSource || "Customer Order"}`;
   return [
     batch ? "🕗 စက်ရုံရှေ့ လာချ/ကားတင်ရန် Order စုစည်းချက်" : `🟢 စက်ရုံရှေ့ လာချ/ကားတင်ရန် Order${factoryNumber}`,
     `Order ID: ${String(order.id).slice(0, 8)}`,
@@ -447,7 +450,7 @@ export function formatFactoryOrderMessage(order, { batch = false, source = "WEBS
     "အဖုံး:",
     ...(capLines.length ? capLines : ["မသတ်မှတ်ရသေး"]),
     "",
-    batch ? "Website မှ Batch ဖြင့် ပို့သော order ဖြစ်ပါသည်။" : sourceLabel,
+    batch ? "Order Source: Customer Website · မနက် Batch ဖြင့် ပို့သည်" : sourceLabel,
   ].filter((line) => line !== null).join("\n");
 }
 
