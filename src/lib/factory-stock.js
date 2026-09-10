@@ -172,15 +172,18 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
     if (!Array.isArray(row.saleItems)) continue;
     for (const item of row.saleItems) {
       if (isCapSaleItem(item)) continue;
+      const isTube = item?.productType === "tube" || item?.categoryKey === "TUBE";
       const bottleCount = positiveInteger(item?.bottleCount);
       const capacity = normalizeCapacity(item?.capacity || item?.bottlesPerCard);
       const cards = positiveInteger(item?.cardCount) || (capacity ? Math.floor(bottleCount / capacity) : 0);
       if (!bottleCount && !cards) continue;
-      const identity = normalizeBottleIdentity({ productName: item?.productName, productKey: item?.productKey, capacity });
+      const identity = isTube
+        ? normalizeTubeIdentity(item?.productName || item?.tubeType, capacity)
+        : normalizeBottleIdentity({ productName: item?.productName, productKey: item?.productKey, capacity });
       movements.push({
         movementDate: clean(row.date).slice(0, 10),
         movementType: MOVEMENT_TYPES.SALE_OUT,
-        stockType: STOCK_TYPES.BOTTLE,
+        stockType: isTube ? STOCK_TYPES.TUBE : STOCK_TYPES.BOTTLE,
         ...identity,
         quantityCards: -cards,
         quantityBottles: -(bottleCount || cards * identity.capacity),

@@ -87,7 +87,8 @@ export const CAP_ITEMS = [
   defaultPrice: CAP_GROUP.defaultPrice,
 }));
 
-export const PRICE_GROUPS = [...BOTTLE_GROUPS, CAP_GROUP];
+export const TUBE_GROUP = { key: "TUBE", label: "Tube", description: "Tube တစ်လုံးစျေး", productType: "tube" };
+export const PRICE_GROUPS = [...BOTTLE_GROUPS, CAP_GROUP, TUBE_GROUP];
 
 export function getBottleGroup(type) {
   const value = String(type || "");
@@ -146,7 +147,7 @@ export function buildCatalog() {
     bottlesPerCard: 1,
     defaultPrice: item.defaultPrice,
   }));
-  return [...bottles, ...caps];
+  return [...bottles, ...caps, ...TUBE_ITEMS];
 }
 
 export const TUBE_PRODUCT_TYPES = [
@@ -172,6 +173,17 @@ export const TUBE_BY_MACHINE = {
     { g: "13g", color: "S+S", pcsPerBag: 2500, label: "13g (S+S)" },
   ],
 };
+
+export const TUBE_ITEMS = Object.values(TUBE_BY_MACHINE).flat().map((item) => ({
+  scope: "ITEM",
+  productType: "tube",
+  productKey: `${item.label}::${item.pcsPerBag}`,
+  categoryKey: TUBE_GROUP.key,
+  categoryLabel: TUBE_GROUP.label,
+  productName: item.label,
+  capacity: item.pcsPerBag,
+  bottlesPerCard: item.pcsPerBag,
+})).filter((item, index, list) => list.findIndex((candidate) => candidate.productKey === item.productKey) === index);
 
 export const MACHINES = [
   { code: "BT1", name: "ဗူးစက်-၁", category: "bottle" },
