@@ -30,20 +30,22 @@ export async function GET(request) {
     let dataSource = "MOVEMENT_LEDGER";
     if (!productKey && !Object.keys(dateFilter(searchParams)).length) {
       const derived = await loadDerivedFactoryStockMovements({ actorName: getActorName(request) });
-      const hasTubeLedger = movements.some((movement) => movement.stockType === STOCK_TYPES.TUBE);
-      const hasBottleLedger = movements.some((movement) => movement.stockType !== STOCK_TYPES.TUBE);
+      const movementKey = (movement) => [
+        movement.sourceType,
+        movement.sourceId,
+        movement.movementType,
+        movement.productKey,
+        movement.quantityCards,
+        movement.quantityBottles,
+      ].map((value) => String(value ?? "")).join("|");
+      const existingKeys = new Set(movements.map(movementKey));
+      const missingMovements = derived.filter((movement) => !existingKeys.has(movementKey(movement)));
       if (!movements.length) {
         movements = derived;
         dataSource = "LIVE_DERIVED_FALLBACK";
-      } else {
-        const missingMovements = [
-          ...(hasBottleLedger ? [] : derived.filter((movement) => movement.stockType !== STOCK_TYPES.TUBE)),
-          ...(hasTubeLedger ? [] : derived.filter((movement) => movement.stockType === STOCK_TYPES.TUBE)),
-        ];
-        if (missingMovements.length) {
-          movements = [...movements, ...missingMovements];
-          dataSource = "MOVEMENT_LEDGER_PLUS_DERIVED_STOCK";
-        }
+      } else if (missingMovements.length) {
+        movements = [...movements, ...missingMovements];
+        dataSource = "MOVEMENT_LEDGER_PLUS_DERIVED_STOCK";
       }
     }
     const summary = aggregateStockMovements(movements);
