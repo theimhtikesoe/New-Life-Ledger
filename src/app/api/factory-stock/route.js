@@ -71,6 +71,10 @@ export async function GET(request) {
           usedCards: 0,
           adjustmentBottles: 0,
           wastedBottles: 0,
+          systemCurrentCards: 0,
+          systemCurrentBottles: 0,
+          openingStockCards: 0,
+          openingStockBottles: 0,
           currentBottles: 0,
         });
       }

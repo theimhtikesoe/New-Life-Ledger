@@ -240,7 +240,21 @@ export function aggregateStockMovements(movements = []) {
     }
     summary.set(movement.productKey, current);
   }
-  return [...summary.values()].sort((a, b) => a.productName.localeCompare(b.productName, "my"));
+  return [...summary.values()].map((item) => {
+    const systemCurrentCards = item.currentCards;
+    const systemCurrentBottles = item.currentBottles;
+    const openingStockCards = Math.max(0, -systemCurrentCards);
+    const openingStockBottles = Math.max(0, -systemCurrentBottles);
+    return {
+      ...item,
+      systemCurrentCards,
+      systemCurrentBottles,
+      openingStockCards,
+      openingStockBottles,
+      currentCards: systemCurrentCards + openingStockCards,
+      currentBottles: systemCurrentBottles + openingStockBottles,
+    };
+  }).sort((a, b) => a.productName.localeCompare(b.productName, "my"));
 }
 
 export function reversalMovementRows(movements = [], { actorName = "system", sourceVersion = "reversal-v1" } = {}) {

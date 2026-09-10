@@ -28,6 +28,13 @@ describe("Tube factory stock movements", () => {
     expect(summary[0]).toMatchObject({ stockType: "TUBE", productionCards: 5, productionBottles: 7500, usedBottles: 200, currentBottles: 7300 });
   });
 
+  it("moves a negative derived balance into separate opening stock", () => {
+    const summary = aggregateStockMovements([
+      { stockType: "BOTTLE", productKey: "ဗူး::100", productName: "ဗူး", capacity: 100, movementType: "SALE_OUT", quantityCards: -3, quantityBottles: -300 },
+    ]);
+    expect(summary[0]).toMatchObject({ systemCurrentCards: -3, openingStockCards: 3, currentCards: 0, systemCurrentBottles: -300, openingStockBottles: 300, currentBottles: 0 });
+  });
+
   it("deducts good output, bottle waste, and tube damage from linked Tube stock", () => {
     const rows = productionMovementRows([
       { category: "bottle", bottleType: "1 လီတာ ပြာ", outputQuantity: 2, outputCapacity: 100, wasteQuantity: 3, tubeDamageQuantity: 4, reportDate: "2026-09-03", submissionId: "bottle-2" },
