@@ -771,7 +771,7 @@ export default function Dashboard({ view = "overview" }) {
       // Start the small KPI aggregate and the main customer index together.
       // KPI can be slower on a cold serverless/database connection; it must not
       // block the customer list and the rest of the dashboard from rendering.
-      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`, { signal })
+      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`, { signal, cache: "no-store" })
         .then((kpi) => {
           setDashboardKpi(kpi);
           setDashboardKpiError("");
