@@ -46,14 +46,12 @@ function parseDate(value) {
 
 async function getSourceSnapshot(date) {
   const { range } = parseDate(date);
-  const [ledgers, cashSales] = await Promise.all([
-    prisma.ledger?.findMany
-      ? prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true, type: true } })
-      : Promise.resolve([]),
-    prisma.cashSale?.findMany
-      ? prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
-      : Promise.resolve([]),
-  ]);
+  const ledgers = prisma.ledger?.findMany
+    ? await prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true, type: true } })
+    : [];
+  const cashSales = prisma.cashSale?.findMany
+    ? await prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
+    : [];
   const includedLedgers = ledgers.filter((row) => row.type === "DEBIT");
   const amounts = [...includedLedgers, ...cashSales].map((row) => toAmount(row.amount));
   return {
@@ -164,16 +162,14 @@ async function captureFutureSourceLinks(summaryId, date) {
   // Keep tests and legacy deployments safe if the additive model has not been generated yet.
   if (!prisma.dailySalesSummarySource?.upsert) return;
   const { range } = parseDate(date);
-  const [ledgers, cashSales] = await Promise.all([
-    prisma.ledger.findMany({
-      where: { date: { gte: range.start, lt: range.end } },
-      select: { id: true, amount: true, paymentType: true, type: true },
-    }),
-    prisma.cashSale.findMany({
-      where: { date: { gte: range.start, lt: range.end } },
-      select: { id: true, amount: true, paymentType: true, paymentBreakdown: true, saleType: true },
-    }),
-  ]);
+  const ledgers = await prisma.ledger.findMany({
+    where: { date: { gte: range.start, lt: range.end } },
+    select: { id: true, amount: true, paymentType: true, type: true },
+  });
+  const cashSales = await prisma.cashSale.findMany({
+    where: { date: { gte: range.start, lt: range.end } },
+    select: { id: true, amount: true, paymentType: true, paymentBreakdown: true, saleType: true },
+  });
   const links = [
     ...ledgers.map((ledger) => ({
       sourceType: "LEDGER",
@@ -190,18 +186,20 @@ async function captureFutureSourceLinks(summaryId, date) {
       paymentType: hasPaymentBreakdownInput(sale.paymentBreakdown) ? "MIXED" : sale.paymentType || CASH_PAYMENT_TYPE,
     })),
   ];
-  await Promise.all(links.map((link) => prisma.dailySalesSummarySource.upsert({
-    where: {
-      summaryId_sourceType_sourceId_contributionType: {
-        summaryId,
-        sourceType: link.sourceType,
-        sourceId: link.sourceId,
-        contributionType: link.contributionType,
+  for (const link of links) {
+    await prisma.dailySalesSummarySource.upsert({
+      where: {
+        summaryId_sourceType_sourceId_contributionType: {
+          summaryId,
+          sourceType: link.sourceType,
+          sourceId: link.sourceId,
+          contributionType: link.contributionType,
+        },
       },
-    },
-    update: { amount: link.amount, paymentType: link.paymentType },
-    create: { summaryId, ...link },
-  })));
+      update: { amount: link.amount, paymentType: link.paymentType },
+      create: { summaryId, ...link },
+    });
+  }
 }
 
 function validateDailyInput(body) {
@@ -231,26 +229,24 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   const { range } = parseDate(date);
   const month = date.slice(0, 7);
   const monthStart = getMyanmarDayRange(`${month}-01`).start;
-  const [cashSales, ledgers, savedRows, opening] = await Promise.all([
-    prisma.cashSale.findMany({
-      where: { date: { gte: monthStart, lt: range.end } },
-      select: { id: true, date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
-      orderBy: [{ date: "asc" }, { id: "asc" }],
-    }),
-    prisma.ledger?.findMany
-      ? prisma.ledger.findMany({
-          where: { date: { gte: monthStart, lt: range.end } },
-          select: { id: true, date: true, type: true, paymentType: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
-          orderBy: [{ date: "asc" }, { id: "asc" }],
-        })
-      : Promise.resolve([]),
-    prisma.dailySalesSummary.findMany({
-      where: { date: { gte: `${month}-01`, lte: date } },
-      select: SUMMARY_SELECT,
-      orderBy: [{ date: "asc" }],
-    }),
-    prisma.dailySalesOpening.findUnique({ where: { month } }),
-  ]);
+  const cashSales = await prisma.cashSale.findMany({
+    where: { date: { gte: monthStart, lt: range.end } },
+    select: { id: true, date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
+    orderBy: [{ date: "asc" }, { id: "asc" }],
+  });
+  const ledgers = prisma.ledger?.findMany
+    ? await prisma.ledger.findMany({
+        where: { date: { gte: monthStart, lt: range.end } },
+        select: { id: true, date: true, type: true, paymentType: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
+        orderBy: [{ date: "asc" }, { id: "asc" }],
+      })
+    : [];
+  const savedRows = await prisma.dailySalesSummary.findMany({
+    where: { date: { gte: `${month}-01`, lte: date } },
+    select: SUMMARY_SELECT,
+    orderBy: [{ date: "asc" }],
+  });
+  const opening = await prisma.dailySalesOpening.findUnique({ where: { month } });
 
   const cashByDate = new Map();
   for (const sale of cashSales) {
