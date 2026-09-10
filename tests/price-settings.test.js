@@ -27,8 +27,16 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 import { POST } from "../src/app/api/price-settings/route.js";
+import fs from "node:fs";
+
+const priceRouteSource = fs.readFileSync(new URL("../src/app/api/price-settings/route.js", import.meta.url), "utf8");
 
 describe("POST /api/price-settings", () => {
+  it("does not let mapping-only zero-price rows hide category prices", () => {
+    expect(priceRouteSource).toContain("Number(itemPriceRow.pricePerBottle || 0) > 0");
+    expect(priceRouteSource).toContain("const effective = itemPrice || categoryPrice || null");
+  });
+
   it("saves category and item costs with only PriceSetting schema fields", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.upsert.mockResolvedValue({});

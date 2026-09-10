@@ -87,12 +87,15 @@ export async function GET(request) {
     }
 
     const catalog = buildCatalog().map((item) => {
-      const itemPrice = effectiveByKey.get(`ITEM:${item.productKey}`);
+      const itemPriceRow = effectiveByKey.get(`ITEM:${item.productKey}`);
       const categoryPrice = effectiveByKey.get(`CATEGORY:${item.categoryKey}`);
+      // A mapping-only ITEM row is intentionally stored with price 0. It must
+      // not hide a valid category price used by settlement sales.
+      const itemPrice = itemPriceRow && Number(itemPriceRow.pricePerBottle || 0) > 0 ? itemPriceRow : null;
       const effective = itemPrice || categoryPrice || null;
       return {
         ...item,
-        tubeType: effectiveByKey.get(`ITEM:${item.productKey}`)?.tubeType || "",
+        tubeType: itemPriceRow?.tubeType || "",
         effectivePrice: effective
           ? { ...effective, source: itemPrice ? "ITEM" : "CATEGORY" }
           : (item.defaultPrice !== undefined ? { pricePerBottle: item.defaultPrice, pricePerCard: item.defaultPrice, source: "DEFAULT" } : null),
