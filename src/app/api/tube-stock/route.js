@@ -5,6 +5,13 @@ import { loadDerivedFactoryStockMovements, normalizeTubeIdentity, STOCK_TYPES } 
 
 export const dynamic = "force-dynamic";
 
+function packEquivalent(pieces, capacity) {
+  const value = Number(pieces || 0);
+  const unit = Number(capacity || 0);
+  if (!unit) return 0;
+  return value < 0 ? -Math.ceil(Math.abs(value) / unit) : Math.floor(value / unit);
+}
+
 export async function GET(request) {
   try {
     await ensureDatabase();
@@ -55,7 +62,7 @@ export async function GET(request) {
         current.adjustmentPieces += pieces;
       }
       current.currentPieces += pieces;
-      current.currentPacks = current.capacity ? Math.floor(current.currentPieces / current.capacity) : 0;
+      current.currentPacks = packEquivalent(current.currentPieces, current.capacity);
       byType.set(movement.productKey, current);
     }
     const byTypeRows = [...byType.values()].sort((a, b) => b.currentPieces - a.currentPieces);

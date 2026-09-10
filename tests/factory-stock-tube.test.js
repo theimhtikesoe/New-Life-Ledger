@@ -24,4 +24,12 @@ describe("Tube factory stock movements", () => {
     ]);
     expect(summary[0]).toMatchObject({ stockType: "TUBE", productionCards: 5, productionBottles: 7500, usedBottles: 200, currentBottles: 7300 });
   });
+
+  it("deducts good output, bottle waste, and tube damage from linked Tube stock", () => {
+    const rows = productionMovementRows([
+      { category: "bottle", bottleType: "1 လီတာ ပြာ", outputQuantity: 2, outputCapacity: 100, wasteQuantity: 3, tubeDamageQuantity: 4, reportDate: "2026-09-03", submissionId: "bottle-2" },
+    ], { tubeMappings: new Map([["1 လီတာ ပြာ::100", "24g B (S+1)"]]) });
+    expect(rows.filter((row) => row.stockType === "TUBE")[0]).toMatchObject({ movementType: "PRODUCTION_USE_OUT", quantityBottles: -207 });
+    expect(rows.find((row) => row.stockType === "BOTTLE" && row.movementType === "PRODUCTION_WASTE_OUT")).toMatchObject({ quantityBottles: -3 });
+  });
 });

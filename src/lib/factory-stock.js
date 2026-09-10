@@ -11,6 +11,7 @@ export const MOVEMENT_TYPES = {
   PRODUCTION_IN: "PRODUCTION_IN",
   SALE_OUT: "SALE_OUT",
   PRODUCTION_USE_OUT: "PRODUCTION_USE_OUT",
+  PRODUCTION_WASTE_OUT: "PRODUCTION_WASTE_OUT",
   ADJUSTMENT_IN: "ADJUSTMENT_IN",
   ADJUSTMENT_OUT: "ADJUSTMENT_OUT",
   REVERSAL: "REVERSAL",
@@ -67,7 +68,7 @@ export async function loadTubeMappings() {
 export async function loadDerivedFactoryStockMovements({ actorName = "system" } = {}) {
   const [productionRows, ledgerRows, cashSales] = await Promise.all([
     prisma.productionReport.findMany({
-      select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true },
+      select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true, wasteQuantity: true, tubeDamageQuantity: true },
       orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }],
     }),
     prisma.ledger.findMany({
@@ -150,13 +151,17 @@ export function productionMovementRows(rows = [], { actorName = "system", source
     }
     if (row.category !== "tube" && clean(row.bottleType)) {
       const bottleIdentity = normalizeBottleIdentity({ productName: row.bottleType, capacity });
+      const wastePieces = positiveInteger(row.wasteQuantity);
       movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_IN, stockType: STOCK_TYPES.BOTTLE, ...bottleIdentity, quantityCards: cards, quantityBottles: cards * capacity, sourceType: "PRODUCTION", sourceId: reportId, sourceVersion, reason: "ထုတ်လုပ်မှုမှတ်တမ်း", note: clean(row.notes) || null, actorName: clean(actorName) || "system" });
       const mapped = tubeMappings.get(bottleIdentity.productKey);
       if (mapped) {
         const tubeIdentity = normalizeTubeIdentity(mapped, 0);
-        const piecesUsed = cards * capacity;
-        movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_USE_OUT, stockType: STOCK_TYPES.TUBE, ...tubeIdentity, quantityCards: 0, quantityBottles: -piecesUsed, sourceType: "BOTTLE_PRODUCTION", sourceId: reportId, sourceVersion, reason: "ဗူးထုတ်လုပ်ရာတွင် Tube သုံးစွဲ", note: `${bottleIdentity.productName} ${capacity} ဆံ့`, actorName: clean(actorName) || "system" });
+        const outputPieces = cards * capacity;
+        const tubeDamagePieces = positiveInteger(row.tubeDamageQuantity);
+        const totalTubeUse = outputPieces + wastePieces + tubeDamagePieces;
+        movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_USE_OUT, stockType: STOCK_TYPES.TUBE, ...tubeIdentity, quantityCards: 0, quantityBottles: -totalTubeUse, sourceType: "BOTTLE_PRODUCTION", sourceId: reportId, sourceVersion, reason: "ဗူးထုတ်လုပ်ရာတွင် Tube သုံးစွဲ (ကောင်း/ဗူးပျက်/Tube ပျက်)", note: `${bottleIdentity.productName} ${capacity} ဆံ့`, actorName: clean(actorName) || "system" });
       }
+      if (wastePieces) movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_WASTE_OUT, stockType: STOCK_TYPES.BOTTLE, ...bottleIdentity, quantityCards: 0, quantityBottles: -wastePieces, sourceType: "BOTTLE_PRODUCTION_WASTE", sourceId: reportId, sourceVersion, reason: "ဗူးပျက်/အရည်အသွေးမပြည့်မီ ဗူးနုတ်", note: clean(row.notes) || null, actorName: clean(actorName) || "system" });
     }
   }
   return movements;
@@ -208,6 +213,7 @@ export function aggregateStockMovements(movements = []) {
       usedBottles: 0,
       usedCards: 0,
       adjustmentBottles: 0,
+      wastedBottles: 0,
       currentBottles: 0,
     };
     const cards = Number(movement.quantityCards || 0);
@@ -223,6 +229,8 @@ export function aggregateStockMovements(movements = []) {
     } else if (movement.movementType === MOVEMENT_TYPES.PRODUCTION_USE_OUT) {
       current.usedCards += Math.abs(cards);
       current.usedBottles += Math.abs(bottles);
+    } else if (movement.movementType === MOVEMENT_TYPES.PRODUCTION_WASTE_OUT) {
+      current.wastedBottles += Math.abs(bottles);
     } else {
       current.adjustmentCards += cards;
       current.adjustmentBottles += bottles;
