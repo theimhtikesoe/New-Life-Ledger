@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { aggregateStockMovements, ensureFactoryStockTable, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows, STOCK_TYPES } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable, loadCanonicalFactoryStockMovements, productionMovementRows, saleMovementRows, STOCK_TYPES } from "@/lib/factory-stock";
 import { buildCatalog } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
@@ -23,31 +23,14 @@ export async function GET(request) {
     await ensureFactoryStockTable();
     const { searchParams } = new URL(request.url);
     const productKey = String(searchParams.get("productKey") || "").trim();
-    let movements = await prisma.factoryStockMovement.findMany({
-      where: { ...dateFilter(searchParams), ...(productKey ? { productKey } : {}) },
-      orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-    });
-    let dataSource = "MOVEMENT_LEDGER";
-    if (!productKey && !Object.keys(dateFilter(searchParams)).length) {
-      const derived = await loadDerivedFactoryStockMovements({ actorName: getActorName(request) });
-      const movementKey = (movement) => [
-        movement.sourceType,
-        movement.sourceId,
-        movement.movementType,
-        movement.productKey,
-        movement.quantityCards,
-        movement.quantityBottles,
-      ].map((value) => String(value ?? "")).join("|");
-      const existingKeys = new Set(movements.map(movementKey));
-      const missingMovements = derived.filter((movement) => !existingKeys.has(movementKey(movement)));
-      if (!movements.length) {
-        movements = derived;
-        dataSource = "LIVE_DERIVED_FALLBACK";
-      } else if (missingMovements.length) {
-        movements = [...movements, ...missingMovements];
-        dataSource = "MOVEMENT_LEDGER_PLUS_DERIVED_STOCK";
-      }
-    }
+    const canonical = !productKey && !Object.keys(dateFilter(searchParams)).length
+      ? await loadCanonicalFactoryStockMovements({ actorName: getActorName(request) })
+      : { movements: await prisma.factoryStockMovement.findMany({
+        where: { ...dateFilter(searchParams), ...(productKey ? { productKey } : {}) },
+        orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      }), dataSource: "MOVEMENT_LEDGER" };
+    let movements = canonical.movements;
+    const dataSource = canonical.dataSource;
     const summary = aggregateStockMovements(movements);
     const summaryByKey = new Map(summary.map((item) => [item.productKey, item]));
     // Factory Stock is an Item-level inventory view. Include every bottle Item

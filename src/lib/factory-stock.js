@@ -90,6 +90,32 @@ export async function loadDerivedFactoryStockMovements({ actorName = "system" } 
   ];
 }
 
+export async function loadCanonicalFactoryStockMovements({ actorName = "system" } = {}) {
+  const existing = typeof prisma.factoryStockMovement?.findMany === "function"
+    ? await prisma.factoryStockMovement.findMany({ orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }] })
+    : [];
+  const canLoadDerived = typeof prisma.productionReport?.findMany === "function"
+    && typeof prisma.ledger?.findMany === "function"
+    && typeof prisma.cashSale?.findMany === "function";
+  const derived = canLoadDerived ? await loadDerivedFactoryStockMovements({ actorName }) : [];
+  const movementKey = (movement) => [
+    movement.sourceType,
+    movement.sourceId,
+    movement.movementType,
+    movement.productKey,
+    movement.quantityCards,
+    movement.quantityBottles,
+  ].map((value) => String(value ?? "")).join("|");
+  const existingKeys = new Set(existing.map(movementKey));
+  const missingDerived = derived.filter((movement) => !existingKeys.has(movementKey(movement)));
+  return {
+    movements: existing.length ? [...existing, ...missingDerived] : derived,
+    dataSource: existing.length
+      ? (missingDerived.length ? "MOVEMENT_LEDGER_PLUS_DERIVED_STOCK" : "MOVEMENT_LEDGER")
+      : "LIVE_DERIVED_FALLBACK",
+  };
+}
+
 function clean(value) {
   if (value instanceof Date) return value.toISOString();
   return String(value || "").trim();

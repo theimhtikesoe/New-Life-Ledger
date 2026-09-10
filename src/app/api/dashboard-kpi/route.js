@@ -3,7 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { aggregateStockMovements, ensureFactoryStockTable, loadDerivedFactoryStockMovements } from "@/lib/factory-stock";
+import { ensureFactoryStockTable, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -35,22 +35,11 @@ export async function GET(request) {
     // Keep the dashboard KPI endpoint compatible with older generated clients
     // while the factory-stock table is being rolled out. A missing optional
     // model should show zero stock, not take down every dashboard KPI.
-    const derivedStockMovements = typeof prisma.productionReport?.findMany === "function"
-      ? await loadDerivedFactoryStockMovements()
-      : [];
-    let stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
-      ? await prisma.factoryStockMovement.findMany({ select: { stockType: true, quantityCards: true } })
-      : [];
-    if (typeof prisma.productionReport?.findMany === "function") {
-      const hasBottleMovements = stockMovements.some((movement) => movement.stockType !== "TUBE");
-      if (!stockMovements.length) {
-        stockMovements = derivedStockMovements;
-      } else if (!hasBottleMovements) {
-        stockMovements = [...stockMovements, ...derivedStockMovements.filter((movement) => movement.stockType !== "TUBE")];
-      }
-    }
+    const { movements: stockMovements } = typeof prisma.productionReport?.findMany === "function"
+      ? await loadCanonicalFactoryStockMovements()
+      : { movements: [] };
     const factoryStockCards = stockMovements.filter((movement) => movement.stockType !== "TUBE").reduce((sum, movement) => sum + Number(movement.quantityCards || 0), 0);
-    const factoryTubePieces = derivedStockMovements
+    const factoryTubePieces = stockMovements
       .filter((movement) => movement.stockType === "TUBE")
       .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);
     const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");

@@ -19,8 +19,9 @@ describe("factory stock and dashboard loading contract", () => {
 
   it("derives stock from existing source records when the movement ledger is empty", () => {
     expect(factoryHelperSource).toContain("export async function loadDerivedFactoryStockMovements");
-    expect(factoryRouteSource).toContain('dataSource = "LIVE_DERIVED_FALLBACK"');
-    expect(dashboardRouteSource).toContain("loadDerivedFactoryStockMovements");
+    expect(factoryHelperSource).toContain("export async function loadCanonicalFactoryStockMovements");
+    expect(factoryRouteSource).toContain("loadCanonicalFactoryStockMovements");
+    expect(dashboardRouteSource).toContain("loadCanonicalFactoryStockMovements");
     expect(dashboardRouteSource).toContain("factoryTubePieces");
     expect(dashboardRouteSource).toContain('movement.stockType === "TUBE"');
     expect(dashboardSource).toContain("စက်ရုံ Tube လက်ကျန်");
