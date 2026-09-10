@@ -312,6 +312,37 @@ canvas {
 .neon-card-indigo { --neon-border-color: rgba(99, 102, 241, 0.82); box-shadow: 0 10px 26px rgba(99, 102, 241, 0.11), 0 0 18px rgba(129, 140, 248, 0.15); }
 .neon-card-orange { --neon-border-color: rgba(234, 88, 12, 0.82); box-shadow: 0 10px 26px rgba(234, 88, 12, 0.11), 0 0 18px rgba(251, 146, 60, 0.14); }
 
+.blossom-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.blossom-petal {
+  position: absolute;
+  top: -24px;
+  left: var(--blossom-left);
+  width: var(--blossom-size);
+  height: calc(var(--blossom-size) * 0.72);
+  border-radius: 70% 30% 70% 30%;
+  background: linear-gradient(135deg, #fff7fb 0%, #f9a8d4 52%, #f472b6 100%);
+  box-shadow: 0 1px 5px rgba(190, 24, 93, 0.16);
+  opacity: 0.78;
+  transform: rotate(var(--blossom-rotate));
+  animation: blossomFall var(--blossom-duration) linear var(--blossom-delay) infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes blossomFall {
+  0% { transform: translate3d(0, -30px, 0) rotate(var(--blossom-rotate)); opacity: 0; }
+  10% { opacity: 0.78; }
+  50% { transform: translate3d(var(--blossom-drift), 52vh, 0) rotate(calc(var(--blossom-rotate) + 180deg)); }
+  90% { opacity: 0.66; }
+  100% { transform: translate3d(calc(var(--blossom-drift) * -0.7), 110vh, 0) rotate(calc(var(--blossom-rotate) + 360deg)); opacity: 0; }
+}
+
 @keyframes neonSweep {
   0%, 62%, 100% { opacity: 0; transform: translateX(-120%); }
   72% { opacity: 0.75; }
@@ -334,6 +365,10 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .blossom-overlay {
+    display: none;
+  }
+
   .neon-app-shell::before,
   .neon-sweep::after,
   .neon-card::before,

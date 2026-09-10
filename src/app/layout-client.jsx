@@ -11,6 +11,35 @@ const APP_ZOOM_KEY = 'new-life-ledger:app-zoom-v1';
 const MIN_APP_ZOOM = 0.85;
 const MAX_APP_ZOOM = 1.15;
 const APP_ZOOM_STEP = 0.05;
+const BLOSSOM_PETALS = Array.from({ length: 18 }, (_, index) => ({
+  left: `${(index * 17 + 7) % 100}%`,
+  delay: `${(index % 9) * -1.9}s`,
+  duration: `${13 + (index % 6) * 2}s`,
+  size: `${9 + (index % 4) * 2}px`,
+  drift: `${-80 + (index % 7) * 28}px`,
+  rotate: `${(index * 31) % 180}deg`,
+}));
+
+function BlossomOverlay() {
+  return (
+    <div className="blossom-overlay" aria-hidden="true">
+      {BLOSSOM_PETALS.map((petal, index) => (
+        <span
+          key={index}
+          className="blossom-petal"
+          style={{
+            '--blossom-left': petal.left,
+            '--blossom-delay': petal.delay,
+            '--blossom-duration': petal.duration,
+            '--blossom-size': petal.size,
+            '--blossom-drift': petal.drift,
+            '--blossom-rotate': petal.rotate,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 function clampAppZoom(value) {
   return Math.min(MAX_APP_ZOOM, Math.max(MIN_APP_ZOOM, Number(value.toFixed(2))));
@@ -333,6 +362,7 @@ export default function RootLayoutClient({ children }) {
 
   return (
     <>
+      <BlossomOverlay />
       <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} />
       {canRenderCurrentPage && (
         <ActorSwitcher actorName={actorName} />
