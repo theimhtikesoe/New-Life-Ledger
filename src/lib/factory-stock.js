@@ -269,16 +269,18 @@ export function aggregateStockMovements(movements = []) {
   return [...summary.values()].map((item) => {
     const systemCurrentCards = item.currentCards;
     const systemCurrentBottles = item.currentBottles;
-    const openingStockCards = Math.max(0, -systemCurrentCards);
-    const openingStockBottles = Math.max(0, -systemCurrentBottles);
+    const unrecordedOpeningStockCards = Math.max(0, -systemCurrentCards);
+    const unrecordedOpeningStockBottles = Math.max(0, -systemCurrentBottles);
     return {
       ...item,
       systemCurrentCards,
       systemCurrentBottles,
-      openingStockCards,
-      openingStockBottles,
-      currentCards: systemCurrentCards + openingStockCards,
-      currentBottles: systemCurrentBottles + openingStockBottles,
+      openingStockCards: 0,
+      openingStockBottles: 0,
+      unrecordedOpeningStockCards,
+      unrecordedOpeningStockBottles,
+      currentCards: systemCurrentCards,
+      currentBottles: systemCurrentBottles,
     };
   }).sort((a, b) => a.productName.localeCompare(b.productName, "my"));
 }

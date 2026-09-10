@@ -32,7 +32,7 @@ describe("Tube factory stock movements", () => {
     const summary = aggregateStockMovements([
       { stockType: "BOTTLE", productKey: "ဗူး::100", productName: "ဗူး", capacity: 100, movementType: "SALE_OUT", quantityCards: -3, quantityBottles: -300 },
     ]);
-    expect(summary[0]).toMatchObject({ systemCurrentCards: -3, openingStockCards: 3, currentCards: 0, systemCurrentBottles: -300, openingStockBottles: 300, currentBottles: 0 });
+    expect(summary[0]).toMatchObject({ systemCurrentCards: -3, openingStockCards: 0, unrecordedOpeningStockCards: 3, currentCards: -3, systemCurrentBottles: -300, openingStockBottles: 0, unrecordedOpeningStockBottles: 300, currentBottles: -300 });
   });
 
   it("deducts good output, bottle waste, and tube damage from linked Tube stock", () => {

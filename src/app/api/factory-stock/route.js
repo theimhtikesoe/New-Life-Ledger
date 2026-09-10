@@ -58,6 +58,8 @@ export async function GET(request) {
           systemCurrentBottles: 0,
           openingStockCards: 0,
           openingStockBottles: 0,
+          unrecordedOpeningStockCards: 0,
+          unrecordedOpeningStockBottles: 0,
           currentBottles: 0,
         });
       }

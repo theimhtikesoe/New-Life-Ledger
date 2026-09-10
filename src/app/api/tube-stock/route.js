@@ -65,7 +65,11 @@ export async function GET(request) {
       current.currentPacks = packEquivalent(current.currentPieces, current.capacity);
       byType.set(movement.productKey, current);
     }
-    const byTypeRows = [...byType.values()].sort((a, b) => b.currentPieces - a.currentPieces);
+    const byTypeRows = [...byType.values()].map((item) => ({
+      ...item,
+      openingPieces: 0,
+      unrecordedOpeningPieces: Math.max(0, -item.currentPieces),
+    })).sort((a, b) => b.currentPieces - a.currentPieces);
     return NextResponse.json({
       data: {
         totalPacks,
