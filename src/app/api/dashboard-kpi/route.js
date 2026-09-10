@@ -14,18 +14,23 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
+    // Older form submissions stored a selected Myanmar date as 00:00 UTC.
+    // Include that exact legacy timestamp so existing activity records still
+    // appear in today's KPI after the date-storage fix is deployed.
+    const legacyDateStart = new Date(`${dateParam}T00:00:00.000Z`);
+    const dayWhere = { OR: [{ date: { gte: start, lt: end } }, { date: legacyDateStart }] };
 
     // The deployed database uses a small connection_limit. Keep this request
     // single-connection and sequential instead of making Promise.all contend
     // for a second connection during cold starts.
     const customerStats = await prisma.customer.aggregate({ where: { deletedAt: null }, _count: { _all: true }, _sum: { current_balance: true } });
-    const paymentStats = await prisma.ledger.aggregate({ where: { date: { gte: start, lt: end }, type: "DEBIT" }, _count: { _all: true }, _sum: { amount: true } });
-    const cashSaleGroups = await prisma.cashSale.groupBy({ by: ["saleType"], where: { date: { gte: start, lt: end } }, _count: { _all: true }, _sum: { amount: true } });
+    const paymentStats = await prisma.ledger.aggregate({ where: { ...dayWhere, type: "DEBIT" }, _count: { _all: true }, _sum: { amount: true } });
+    const cashSaleGroups = await prisma.cashSale.groupBy({ by: ["saleType"], where: dayWhere, _count: { _all: true }, _sum: { amount: true } });
     const ledgerRows = typeof prisma.ledger.findMany === "function"
-      ? await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, amount: true, saleItems: true } })
+      ? await prisma.ledger.findMany({ where: { ...dayWhere, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, amount: true, saleItems: true } })
       : [];
     const cashSalesForItems = typeof prisma.cashSale.findMany === "function"
-      ? await prisma.cashSale.findMany({ where: { date: { gte: start, lt: end } }, select: { amount: true, saleItems: true } })
+      ? await prisma.cashSale.findMany({ where: dayWhere, select: { amount: true, saleItems: true } })
       : [];
     // Keep the dashboard KPI endpoint compatible with older generated clients
     // while the factory-stock table is being rolled out. A missing optional

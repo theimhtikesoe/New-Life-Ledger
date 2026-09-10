@@ -6,6 +6,7 @@ import { customerDefaultCashSaleType, normalizeCashSaleType } from "@/lib/cash-s
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 import { hasPaymentBreakdownInput, paymentSplitForInput } from "@/lib/payment-split";
 import { saleMovementRows } from "@/lib/factory-stock";
+import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,7 @@ function parseDate(value) {
   if (!value) return new Date();
   const text = String(value).trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error("ရက်စွဲပုံစံ မမှန်ပါ။");
-  const date = new Date(`${text}T00:00:00.000Z`);
+  const date = getMyanmarDayRange(text).start;
   if (Number.isNaN(date.getTime())) throw new Error("ရက်စွဲပုံစံ မမှန်ပါ။");
   return date;
 }

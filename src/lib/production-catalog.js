@@ -124,6 +124,31 @@ export function getBottleDisplayName(type) {
   return String(type || "") === "သေးရှည်" ? "ဒိန်ဝိုင်းအလတ်" : String(type || "");
 }
 
+export function buildCatalog() {
+  const bottles = BOTTLE_ITEMS.flatMap((item) => item.capacities.map((capacity) => ({
+    scope: "ITEM",
+    productType: "bottle",
+    productKey: `${item.type}::${capacity}`,
+    categoryKey: getBottleGroup(item.type),
+    categoryLabel: BOTTLE_GROUPS.find((group) => group.key === getBottleGroup(item.type))?.label || getBottleGroup(item.type),
+    productName: item.type,
+    capacity,
+    bottlesPerCard: capacity,
+  })));
+  const caps = CAP_ITEMS.map((item) => ({
+    scope: "ITEM",
+    productType: item.productType,
+    productKey: item.productKey,
+    categoryKey: item.categoryKey,
+    categoryLabel: item.categoryLabel,
+    productName: item.productName,
+    capacity: 0,
+    bottlesPerCard: 1,
+    defaultPrice: item.defaultPrice,
+  }));
+  return [...bottles, ...caps];
+}
+
 export const TUBE_PRODUCT_TYPES = [
   "24g W (အဖြူ)",
   "24g B (S+1)",

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { BOTTLE_GROUPS, BOTTLE_ITEMS, CAP_ITEMS, PRICE_GROUPS, getBottleGroup } from "@/lib/production-catalog";
+import { PRICE_GROUPS, buildCatalog } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,35 +17,6 @@ function positiveInt(value, label) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 0) throw new Error(`${label} သည် ၀ သို့မဟုတ် အပေါင်းကိန်း ဖြစ်ရပါမည်။`);
   return parsed;
-}
-
-function productKey(productName, capacity) {
-  return `${productName}::${capacity}`;
-}
-
-function buildCatalog() {
-  const bottles = BOTTLE_ITEMS.flatMap((item) => item.capacities.map((capacity) => ({
-    scope: "ITEM",
-    productType: "bottle",
-    productKey: productKey(item.type, capacity),
-    categoryKey: getBottleGroup(item.type),
-    categoryLabel: BOTTLE_GROUPS.find((group) => group.key === getBottleGroup(item.type))?.label || getBottleGroup(item.type),
-    productName: item.type,
-    capacity,
-    bottlesPerCard: capacity,
-  })));
-  const caps = CAP_ITEMS.map((item) => ({
-    scope: "ITEM",
-    productType: item.productType,
-    productKey: item.productKey,
-    categoryKey: item.categoryKey,
-    categoryLabel: item.categoryLabel,
-    productName: item.productName,
-    capacity: 0,
-    bottlesPerCard: 1,
-    defaultPrice: item.defaultPrice,
-  }));
-  return [...bottles, ...caps];
 }
 
 function serialize(row) {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 import { saleMovementRows } from "@/lib/factory-stock";
+import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
@@ -121,7 +122,7 @@ export async function POST(request, { params }) {
           note: body.note?.trim() || null,
           paymentType: body.paymentType || null,
           saleItems,
-          date: body.date ? new Date(`${body.date}T00:00:00Z`) : new Date(),
+          date: body.date ? getMyanmarDayRange(body.date).start : new Date(),
         },
         select: {
           id: true,
