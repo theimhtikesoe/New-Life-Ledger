@@ -81,7 +81,9 @@ export async function GET(request) {
     const searchParams = new URL(request.url).searchParams;
     const date = parseDate(searchParams.get("date"), { allowFuture: true });
     const category = searchParams.get("category");
-    const categoryFilter = category === "bottle" || category === "tube" ? { category } : {};
+    const categoryFilter = category === "bottle"
+      ? { OR: [{ category: "bottle" }, { category: null, bottleType: { not: null } }] }
+      : category === "tube" ? { category: "tube" } : {};
     const rows = await prisma.productionReport.findMany({
       where: { reportDate: date, ...categoryFilter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],

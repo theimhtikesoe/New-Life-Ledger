@@ -35,7 +35,7 @@ describe("Production history page", () => {
   });
 
   it("keeps the bottle history view free of Tube summary fields", () => {
-    expect(pageSource).toContain('data.filter((row) => row.category === "bottle")');
+    expect(pageSource).toContain('row.category === "bottle" || (!row.category && row.bottleType)');
     expect(pageSource).not.toContain("Tube စုစုပေါင်း");
     expect(pageSource).not.toContain("Tube ပျက်");
     expect(pageSource).not.toContain("Tube {group.tubeMetrics");

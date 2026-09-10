@@ -49,7 +49,7 @@ export default function ProductionHistoryPage() {
         if (!response.ok) throw new Error(body.error || "ထုတ်လုပ်မှုမှတ်တမ်း ရယူ၍မရပါ။");
         return body.data;
       })
-      .then((data) => setRows(Array.isArray(data) ? data.filter((row) => row.category === "bottle") : []))
+      .then((data) => setRows(Array.isArray(data) ? data.filter((row) => row.category === "bottle" || (!row.category && row.bottleType)) : []))
       .catch((loadError) => {
         if (loadError.name !== "AbortError") {
           setRows([]);
