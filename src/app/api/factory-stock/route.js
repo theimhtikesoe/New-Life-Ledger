@@ -3,6 +3,7 @@ import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { aggregateStockMovements, ensureFactoryStockTable, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows, STOCK_TYPES } from "@/lib/factory-stock";
+import { buildCatalog } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,6 +47,33 @@ export async function GET(request) {
       }
     }
     const summary = aggregateStockMovements(movements);
+    const summaryByKey = new Map(summary.map((item) => [item.productKey, item]));
+    // Factory Stock is an Item-level inventory view. Include every bottle Item
+    // configured in Price Settings even when it has no production or sale
+    // movement yet, so the table is a complete catalog rather than a movement
+    // history filtered down to only active products.
+    for (const item of buildCatalog().filter((entry) => entry.productType === "bottle")) {
+      if (!summaryByKey.has(item.productKey)) {
+        summary.push({
+          productKey: item.productKey,
+          stockType: STOCK_TYPES.BOTTLE,
+          productName: item.productName,
+          capacity: Number(item.capacity || 0),
+          productionCards: 0,
+          soldCards: 0,
+          adjustmentCards: 0,
+          currentCards: 0,
+          productionBottles: 0,
+          soldBottles: 0,
+          usedBottles: 0,
+          usedCards: 0,
+          adjustmentBottles: 0,
+          wastedBottles: 0,
+          currentBottles: 0,
+        });
+      }
+    }
+    summary.sort((a, b) => a.productName.localeCompare(b.productName, "my") || Number(a.capacity || 0) - Number(b.capacity || 0));
     return NextResponse.json({ data: {
       calculationMode: "DATABASE_DERIVED",
       isPhysicalVerified: false,
