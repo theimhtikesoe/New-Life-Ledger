@@ -76,9 +76,11 @@ describe("Telegram daily report CashSale data", () => {
         tubeQuantityUnit: "ထုပ်",
       },
     }, "", "");
-    expect(html).toContain("ဗူးထွက်ရှိမှုစာရင်း");
+    expect(html).toContain("ဗူး နှင့် Tube ထွက်ရှိမှု စာရင်း");
     expect(html).toContain("စာအုပ်မှတ်တမ်းအကျဉ်းချုပ် — ဗူး");
     expect(html).toContain("ဒိန်ကြီး");
+    expect(html).toContain("Tube အကျဉ်းချုပ်");
+    expect(html).toContain("1 လီတာ ဖြူ");
     expect(html).toContain("စုစုပေါင်းထွက်ရှိမှု");
     expect(html).toContain("2,000 ဗူး");
     expect(html).toContain("ဗူးပျက်စုစုပေါင်း");
