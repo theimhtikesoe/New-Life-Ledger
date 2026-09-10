@@ -2026,9 +2026,9 @@ export default function Dashboard({ view = "overview" }) {
               className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-blue-300 bg-blue-50/95 p-4 text-left shadow-sm transition-all hover:border-blue-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 sm:min-h-[170px]"
             >
               <div>
-                <p className="text-sm font-black uppercase tracking-wide text-blue-800 sm:text-base">စက်ရုံ Tube လက်ကျန်</p>
+                <p className="text-sm font-black uppercase tracking-wide text-blue-800 sm:text-base">စက်ရုံ Tube Net Stock Change</p>
                 <p className="mt-2 text-2xl font-black text-blue-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePieces.toLocaleString()} pcs`}</p>
-                <p className="mt-1 text-sm font-bold text-blue-700">ကိုယ်တိုင်ထုတ်လုပ်ထားသမျှ</p>
+                <p className="mt-1 text-sm font-bold text-blue-700">Opening Stock မထည့်ရသေးသော မှတ်တမ်းအရ ပြောင်းလဲမှု</p>
               </div>
               <p className="pt-2 text-sm font-bold text-blue-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2038,9 +2038,9 @@ export default function Dashboard({ view = "overview" }) {
               className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-500 bg-amber-100/95 p-4 text-left shadow-sm transition-all hover:border-amber-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 sm:min-h-[170px]"
             >
               <div>
-                <p className="text-sm font-black uppercase tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူးလက်ကျန်</p>
+                <p className="text-sm font-black uppercase tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူး Net Stock Change</p>
                 <p className="mt-2 text-2xl font-black text-amber-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
-                <p className="mt-1 text-sm font-bold text-amber-800">Database စနစ်လက်ကျန်</p>
+                <p className="mt-1 text-sm font-bold text-amber-800">Opening Stock မထည့်ရသေးသော မှတ်တမ်းအရ ပြောင်းလဲမှု</p>
               </div>
               <p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
