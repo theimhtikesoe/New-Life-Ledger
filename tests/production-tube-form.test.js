@@ -24,9 +24,11 @@ describe("Tube production entry", () => {
     expect(page).toContain("Tube ပျက်");
     expect(page).toContain("ကော်ပျက်");
     expect(page).toContain("tubeMetrics");
-    expect(page).toContain('value=".3 အပြာ(S+S)"');
+    expect(page).toContain('value=".3 ပြာ (S+S)"');
     expect(page).toContain('value=".6 အဖြူ"');
     expect(page).toContain('value=".6 (S+1)"');
+    expect(page.indexOf('value="1 လီတာ ဖြူ"')).toBeLessThan(page.indexOf('value=".6 အဖြူ"'));
+    expect(page.indexOf('value=".6 အဖြူ"')).toBeLessThan(page.indexOf('value=".3 ဖြူ"'));
   });
 
   it("submits selected Tube workers and persists the metrics", () => {

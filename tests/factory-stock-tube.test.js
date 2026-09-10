@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { aggregateStockMovements, normalizeTubeIdentity, productionMovementRows } from "@/lib/factory-stock";
+import fs from "node:fs";
+
+const factoryStockPage = fs.readFileSync("src/app/factory-stock/page.js", "utf8");
 
 describe("Tube factory stock movements", () => {
   it("normalizes Tube production labels to the same stock identity", () => {
@@ -31,5 +34,11 @@ describe("Tube factory stock movements", () => {
     ], { tubeMappings: new Map([["1 လီတာ ပြာ::100", "24g B (S+1)"]]) });
     expect(rows.filter((row) => row.stockType === "TUBE")[0]).toMatchObject({ movementType: "PRODUCTION_USE_OUT", quantityBottles: -207 });
     expect(rows.find((row) => row.stockType === "BOTTLE" && row.movementType === "PRODUCTION_WASTE_OUT")).toMatchObject({ quantityBottles: -3 });
+  });
+  it("keeps the factory bottle KPI from counting Tube packs", () => {
+    const route = fs.readFileSync("src/app/api/dashboard-kpi/route.js", "utf8");
+    expect(route).toContain('filter((movement) => movement.stockType !== "TUBE")');
+    expect(factoryStockPage).toContain('filter((item) => item.stockType !== "TUBE")');
+    expect(factoryStockPage).toContain("ဗူးအမျိုးအစား");
   });
 });
