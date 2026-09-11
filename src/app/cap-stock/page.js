@@ -6,6 +6,8 @@ function number(value) { return Number(value || 0).toLocaleString(); }
 function movementLabel(type) {
   return ({ SALE_OUT: "ရောင်းထွက် / ဗူးတွင်သုံး", ADJUSTMENT_IN: "စာရင်းညှိဝင်", ADJUSTMENT_OUT: "စာရင်းညှိထွက်", REVERSAL: "ပြန်လှန်" })[type] || type;
 }
+const CAP_LOCATIONS = ["မန္တလေး", "အေးသာယာ", "Soe"];
+const CAP_COLORS = ["ပြာ", "ဝါ", "စိမ်း", "နီ", "ဖြူ", "ပန်း", "နက်/အမဲ"];
 
 export default function CapStockPage() {
   const [data, setData] = useState(null);
@@ -29,7 +31,14 @@ export default function CapStockPage() {
     return () => controller.abort();
   }, []);
 
-  const caps = useMemo(() => (data?.summary || []).filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0), [data]);
+  const caps = useMemo(() => {
+    const source = (data?.summary || []).filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0);
+    const byKey = new Map(source.map((item) => [item.productKey, item]));
+    return CAP_LOCATIONS.flatMap((location) => CAP_COLORS.map((color) => {
+      const key = `CAP::${location}::${color}::5000`;
+      return byKey.get(key) || { productKey: key, stockType: "CAP", productName: `${location} · ${color}`, capacity: 5000, soldCards: 0, adjustmentCards: 0, currentCards: 0, currentBottles: 0 };
+    }));
+  }, [data]);
   const selected = caps.find((item) => item.productKey === selectedKey);
   const selectedMovements = (data?.movements || []).filter((item) => item.productKey === selectedKey);
   const totalPacks = caps.reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
