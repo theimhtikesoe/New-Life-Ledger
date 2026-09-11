@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { aggregateStockMovements, ensureFactoryStockTable, loadCanonicalFactoryStockMovements, productionMovementRows, saleMovementRows, MOVEMENT_TYPES, STOCK_TYPES } from "@/lib/factory-stock";
 import { buildCatalog } from "@/lib/production-catalog";
+import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,7 +100,7 @@ export async function POST(request) {
         const packSize = Math.round(Number(row.packSize || 0));
         const packs = Math.round(Number(row.packs || 0));
         if (!location || !color || !Number.isFinite(packSize) || packSize <= 0 || !Number.isFinite(packs) || packs <= 0) return null;
-        return { movementDate: String(body.date || new Date().toISOString().slice(0, 10)), movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, stockType: STOCK_TYPES.CAP, productKey: `CAP::${location}::${color}::${packSize}`, productName: `${location} · ${color}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, sourceType: "CAP_OPENING", sourceId: batchId, sourceVersion: "cap-opening-v1", reason: "အဖုံး လက်ရှိ/အသစ်ဝင် Stock ထည့်ခြင်း", note: String(row.note || "").trim() || null, actorName };
+        return { movementDate: String(body.date || getMyanmarDateInputValue()), movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, stockType: STOCK_TYPES.CAP, productKey: `CAP::${location}::${color}::${packSize}`, productName: `${location} · ${color}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, sourceType: "CAP_OPENING", sourceId: batchId, sourceVersion: "cap-opening-v1", reason: "အဖုံး လက်ရှိ/အသစ်ဝင် Stock ထည့်ခြင်း", note: String(row.note || "").trim() || null, actorName };
       }).filter(Boolean);
       if (!movements.length) return NextResponse.json({ error: "နေရာ၊ အဖုံးအရောင်၊ တစ်အိတ်ဆံ့နှင့် အိတ်အရေအတွက် မှန်ကန်စွာထည့်ပါ။" }, { status: 400 });
       await prisma.factoryStockMovement.createMany({ data: movements });

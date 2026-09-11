@@ -56,8 +56,8 @@ export async function GET(request, { params }) {
     const requestedOffset = Number(searchParams.get("offset") || 0);
     const offset = Math.max(Number.isFinite(requestedOffset) ? Math.floor(requestedOffset) : 0, 0);
     const date = {};
-    if (searchParams.get("startDate")) date.gte = new Date(`${searchParams.get("startDate")}T00:00:00.000Z`);
-    if (searchParams.get("endDate")) date.lt = new Date(`${searchParams.get("endDate")}T00:00:00.000Z`);
+    if (searchParams.get("startDate")) date.gte = getMyanmarDayRange(searchParams.get("startDate")).start;
+    if (searchParams.get("endDate")) date.lt = getMyanmarDayRange(searchParams.get("endDate")).end;
     const where = { customerId: params.id, ...(Object.keys(date).length ? { date } : {}) };
     const [items, total] = await Promise.all([
       prisma.cashSale.findMany({ where, select: cashSaleSelect, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: limit }),

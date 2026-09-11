@@ -17,7 +17,7 @@ import BirthdayCelebration from "@/components/BirthdayCelebration";
 
 
 const money = new Intl.NumberFormat("en-US");
-const today = new Date().toISOString().slice(0, 10);
+const today = formatMyanmarDateInputValue();
 const AUTO_RETRY_DELAY_MS = 5000;
 const RESUME_REFRESH_AFTER_MS = 30000;
 const API_REQUEST_TIMEOUT_MS = 25000;

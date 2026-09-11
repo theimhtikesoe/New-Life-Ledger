@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
@@ -10,11 +11,8 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date");
-    const baseDate = dateParam ? new Date(`${dateParam}T00:00:00`) : new Date();
-    const start = new Date(baseDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
+    const requestedDate = dateParam || getMyanmarDateInputValue();
+    const { start, end } = getMyanmarDayRange(requestedDate);
 
     // Optimized: Only fetch what's needed for totals calculation
     const ledgers = await prisma.ledger.findMany({
@@ -56,7 +54,7 @@ export async function GET(request) {
 
     return NextResponse.json({
       data: {
-        date: start.toISOString().slice(0, 10),
+        date: getMyanmarDateInputValue(start),
         totals: {
           ...totals,
           grossSales: totals.retail + totals.wholesale,

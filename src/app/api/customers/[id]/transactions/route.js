@@ -21,8 +21,8 @@ export async function GET(request, { params }) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const date = {};
-    if (startDate) date.gte = new Date(`${startDate}T00:00:00.000Z`);
-    if (endDate) date.lt = new Date(`${endDate}T00:00:00.000Z`);
+    if (startDate) date.gte = getMyanmarDayRange(startDate).start;
+    if (endDate) date.lt = getMyanmarDayRange(endDate).end;
     const where = {
       customerId,
       ...(type === "CREDIT" || type === "DEBIT" ? { type } : {}),
