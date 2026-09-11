@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { loadDerivedFactoryStockMovements, normalizeTubeIdentity, STOCK_TYPES } from "@/lib/factory-stock";
+import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,14 @@ export async function GET(request) {
         note: movement.note,
       }))
       : [];
+    const usageByType = new Map();
+    const usageDate = validDate || getMyanmarDateInputValue();
+    for (const movement of allTubeMovements.filter((row) => row.movementDate === usageDate && row.movementType === "PRODUCTION_USE_OUT")) {
+      const row = usageByType.get(movement.productKey) || { tubeType: movement.productName, capacity: Number(movement.capacity || 0), pieces: 0 };
+      row.pieces += Math.abs(Number(movement.quantityBottles || 0));
+      usageByType.set(movement.productKey, row);
+    }
+    const dailyUsage = [...usageByType.values()];
     const byType = new Map();
     let totalPacks = 0;
     let totalPieces = 0;
@@ -80,6 +89,8 @@ export async function GET(request) {
         recentType: tubeType || null,
         recentLimit: validLimit,
         movements,
+        dailyUsage,
+        usageDate,
         recent: recentRows.map((row) => ({
           id: row.id,
           reportDate: row.reportDate,
