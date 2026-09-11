@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from "react";
+import { TUBE_WEIGHT_NOTE, TUBE_WEIGHT_REFERENCE } from "@/lib/tube-weight-reference";
 
 const TUBE_STOCK_CACHE_KEY = "new-life-ledger:tube-stock-v2";
 
@@ -93,6 +94,27 @@ export default function TubeStockDetailPage() {
   return (
     <main className="app-page-main">
       <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
+        <section className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-base font-black text-amber-950">Tube ခြင်းအလေးချိန် မှတ်တမ်း</h1>
+              <p className="mt-1 text-xs font-bold leading-5 text-amber-800">{TUBE_WEIGHT_NOTE}</p>
+            </div>
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">Reference</span>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {TUBE_WEIGHT_REFERENCE.map((item) => <article key={item.id} className="rounded-xl border border-amber-200 bg-white/90 p-3">
+              <h2 className="font-black text-slate-900">{item.tubeType} · {item.gramsPerTube}g</h2>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold text-slate-700">
+                <p className="rounded-lg bg-amber-50 p-2">Tube ပါပြီးသား<br /><strong>{item.filledSackKg} kg</strong></p>
+                <p className="rounded-lg bg-slate-100 p-2">ခြင်းအလွတ်<br /><strong>{item.emptySackKg} kg</strong></p>
+                <p className="rounded-lg bg-emerald-50 p-2">Tube သီးသန့် Net<br /><strong>{item.netTubeKg.toFixed(2)} kg</strong></p>
+                <p className="rounded-lg bg-blue-50 p-2">ခန့်မှန်းအရေအတွက်<br /><strong>≈ {number(item.estimatedPieces)} ခု</strong></p>
+              </div>
+              <p className="mt-2 text-[11px] font-bold text-slate-500">တွက်နည်း: ({item.filledSackKg} − {item.emptySackKg}) × 1000 ÷ {item.gramsPerTube} = {item.estimatedPieces} ခုခန့်</p>
+            </article>)}
+          </div>
+        </section>
         <button type="button" onClick={() => setUsageOpen(true)} className="flex w-full items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-left shadow-sm"><div><p className="text-sm font-black text-rose-800">ယနေ့ Tube သုံးစွဲမှု</p><p className="mt-1 text-2xl font-black text-rose-950">{number(dailyTubePieces)} pcs</p></div><span className="text-sm font-black text-rose-700">အသေးစိတ်ကြည့်ရန် →</span></button>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
         {loading ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">Tube လက်ကျန် ရယူနေသည်...</div> : null}
