@@ -53,6 +53,9 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryRouteSource).toContain("export async function PATCH(request)");
     expect(factoryRouteSource).toContain("export async function DELETE(request)");
     expect(factoryRouteSource).toContain('sourceType: "CAP_OPENING"');
+    expect(capPageSource).toContain("dailyCapAddedPieces");
+    expect(capPageSource).toContain("ယနေ့ အသစ်ထည့်သော အဖုံး");
+    expect(capPageSource).toContain("border-emerald-300 bg-emerald-50");
   });
 });
 
