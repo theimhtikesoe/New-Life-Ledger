@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 export const STOCK_TYPES = {
   BOTTLE: "BOTTLE",
@@ -221,7 +222,7 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
         const capCount = positiveInteger(item?.cardCount || item?.unitCount || item?.bottleCount);
         if (!capCount) continue;
         const identity = normalizeCapIdentity({ productName: item?.productName, productKey: item?.productKey, location: item?.capLocation, packSize: item?.capPackSize });
-        movements.push({ movementDate: clean(row.date).slice(0, 10), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...identity, quantityCards: -capCount, quantityBottles: 0, sourceType, sourceId: clean(row.id), sourceVersion, reason: "အဖုံးရောင်းစာရင်း", note: null, actorName: clean(actorName) || "system" });
+        movements.push({ movementDate: getMyanmarDateInputValue(row.date), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...identity, quantityCards: -capCount, quantityBottles: 0, sourceType, sourceId: clean(row.id), sourceVersion, reason: "အဖုံးရောင်းစာရင်း", note: null, actorName: clean(actorName) || "system" });
         continue;
       }
       const isTube = item?.productType === "tube" || item?.categoryKey === "TUBE";
@@ -233,7 +234,7 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
         ? normalizeTubeIdentity(item?.productName || item?.tubeType, capacity)
         : normalizeBottleIdentity({ productName: item?.productName, productKey: item?.productKey, capacity });
       movements.push({
-        movementDate: clean(row.date).slice(0, 10),
+        movementDate: getMyanmarDateInputValue(row.date),
         movementType: MOVEMENT_TYPES.SALE_OUT,
         stockType: isTube ? STOCK_TYPES.TUBE : STOCK_TYPES.BOTTLE,
         ...identity,
@@ -252,13 +253,13 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
           const capCount = positiveInteger(capEntry?.count);
           if (!capCount || !clean(capEntry?.capProductKey)) continue;
           const capIdentity = normalizeCapIdentity({ productName: capEntry?.capProductName, productKey: capEntry.capProductKey, location: capEntry?.capLocation || item?.capLocation, packSize: item?.capPackSize });
-          movements.push({ movementDate: clean(row.date).slice(0, 10), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...capIdentity, quantityCards: 0, quantityBottles: -capCount, sourceType, sourceId: clean(row.id), sourceVersion, reason: "ဗူးရောင်းရာတွင် အဖုံးသုံးစွဲ", note: "အရောင်အလိုက် ခွဲယူမှု", actorName: clean(actorName) || "system" });
+          movements.push({ movementDate: getMyanmarDateInputValue(row.date), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...capIdentity, quantityCards: 0, quantityBottles: -capCount, sourceType, sourceId: clean(row.id), sourceVersion, reason: "ဗူးရောင်းရာတွင် အဖုံးသုံးစွဲ", note: "အရောင်အလိုက် ခွဲယူမှု", actorName: clean(actorName) || "system" });
         }
       } else {
         const capCount = positiveInteger(item?.capNormalCount) + positiveInteger(item?.capExtraCount);
         if (capCount && clean(item?.capProductKey)) {
           const capIdentity = normalizeCapIdentity({ productName: item?.capProductName, productKey: item.capProductKey, location: item?.capLocation, packSize: item?.capPackSize });
-          movements.push({ movementDate: clean(row.date).slice(0, 10), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...capIdentity, quantityCards: 0, quantityBottles: -capCount, sourceType, sourceId: clean(row.id), sourceVersion, reason: "ဗူးရောင်းရာတွင် အဖုံးသုံးစွဲ", note: `ပုံမှန် ${positiveInteger(item?.capNormalCount)} + အပို ${positiveInteger(item?.capExtraCount)}`, actorName: clean(actorName) || "system" });
+          movements.push({ movementDate: getMyanmarDateInputValue(row.date), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...capIdentity, quantityCards: 0, quantityBottles: -capCount, sourceType, sourceId: clean(row.id), sourceVersion, reason: "ဗူးရောင်းရာတွင် အဖုံးသုံးစွဲ", note: `ပုံမှန် ${positiveInteger(item?.capNormalCount)} + အပို ${positiveInteger(item?.capExtraCount)}`, actorName: clean(actorName) || "system" });
         }
       }
     }
