@@ -32,6 +32,8 @@ describe("Production page enhancements", () => {
     expect(salesItemPickerSource).toContain('aria-labelledby="sale-item-edit-title"');
     expect(salesItemPickerSource).toContain("ပြင်ရန်");
     expect(salesItemPickerSource).toContain("editingItemId");
+    expect(salesItemPickerSource).toContain("ဗူးဆံ့ပမာဏ ရွေးပါ");
+    expect(salesItemPickerSource).not.toContain('currentCategory === "CAP" ? "အဖုံးအရောင် ရွေးပါ" : "ဗူးအမျိုးအစား ရွေးပါ"');
   });
 
   it("accepts decimal tube quantities and preserves the exact entered value", () => {
