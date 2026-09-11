@@ -231,7 +231,7 @@ function ActorSwitcher({ actorName }) {
 function SharedPageHeader({ pathname, actorName }) {
   const title = PAGE_HEADERS[pathname];
   const normalizedActorName = String(actorName || '').trim();
-  const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail');
+  const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'သက်မွန်နှင်း' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail');
   const [currentTime, setCurrentTime] = useState(() => new Date());
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
@@ -323,6 +323,7 @@ export default function RootLayoutClient({ children }) {
   const router = useRouter();
   const isProductionOnlyActor = actorName === 'ဇွဲဇွဲ' || actorName === 'ဖြိုးကို';
   const isLedgerOnlyActor = actorName === 'ဆောင်းဦး';
+  const isCapStockOnlyActor = actorName === 'သက်မွန်နှင်း';
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
@@ -347,8 +348,12 @@ export default function RootLayoutClient({ children }) {
     }
     if (isLedgerOnlyActor && pathname !== '/' && pathname !== '/ledger' && pathname !== '/balance-detail') {
       router.replace('/');
+      return;
     }
-  }, [isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
+    if (isCapStockOnlyActor && pathname !== '/cap-stock') {
+      router.replace('/cap-stock');
+    }
+  }, [isCapStockOnlyActor, isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
 
   const handleLoginSuccess = (nextActorName) => {
     setActorName(nextActorName || '');
@@ -360,7 +365,7 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   };
 
-  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor) || pathname === '/production' || pathname === '/ledger' || (isLedgerOnlyActor && (pathname === '/' || pathname === '/balance-detail')));
+  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor) || pathname === '/production' || pathname === '/ledger' || (isLedgerOnlyActor && (pathname === '/' || pathname === '/balance-detail')) || (isCapStockOnlyActor && pathname === '/cap-stock'));
 
   return (
     <>

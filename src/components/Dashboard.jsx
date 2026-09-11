@@ -1846,7 +1846,7 @@ export default function Dashboard({ view = "overview" }) {
 
               <Link
                 href="/production"
-                className="neon-menu-button neon-card-orange flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-3 text-center text-base font-black leading-5 text-orange-700 shadow-sm transition-colors hover:bg-orange-100"
+                className="neon-menu-button flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-3 text-center text-base font-black leading-5 text-red-700 shadow-sm transition-colors hover:bg-red-100"
                 title="ထုတ်လုပ်မှု မှတ်တမ်း"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🏭</span>
@@ -1854,7 +1854,7 @@ export default function Dashboard({ view = "overview" }) {
               </Link>
               <Link
                 href="/ledger"
-                className="neon-menu-button neon-card-cyan flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                className="neon-menu-button flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-teal-300 bg-teal-50 px-3 py-3 text-center text-base font-black leading-5 text-teal-700 shadow-sm transition-colors hover:bg-teal-100"
                 title="ငွေရှင်းတမ်း"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💳</span>
@@ -1862,7 +1862,7 @@ export default function Dashboard({ view = "overview" }) {
               </Link>
               <Link
                 href="/daily-summary"
-                className="neon-menu-button neon-card-fuchsia flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-3 text-center text-base font-black leading-5 text-fuchsia-700 shadow-sm transition-colors hover:bg-fuchsia-100"
+                className="neon-menu-button flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-3 py-3 text-center text-base font-black leading-5 text-purple-700 shadow-sm transition-colors hover:bg-purple-100"
                 title="နေ့စဉ်စာရင်းချုပ်"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📋</span>
@@ -1870,17 +1870,17 @@ export default function Dashboard({ view = "overview" }) {
               </Link>
               <Link
                 href="/activity"
-                className="neon-menu-button neon-card-amber flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-center text-base font-black leading-5 text-amber-700 shadow-sm transition-colors hover:bg-amber-100"
+                className="neon-menu-button flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-yellow-300 bg-yellow-50 px-3 py-3 text-center text-base font-black leading-5 text-yellow-700 shadow-sm transition-colors hover:bg-yellow-100"
                 title="လုပ်ဆောင်ချက်မှတ်တမ်း"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🧾</span>
                 <span>လုပ်ဆောင်ချက်မှတ်တမ်း</span>
               </Link>
-              <Link href="/discounts" className="neon-menu-button neon-card-orange flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-orange-300 bg-orange-50 px-3 py-3 text-center text-base font-black leading-5 text-orange-700 shadow-sm transition-colors hover:bg-orange-100" title="Customer လျှော့စျေးမှတ်တမ်း">
+              <Link href="/discounts" className="neon-menu-button neon-card-lime flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-lime-300 bg-lime-50 px-3 py-3 text-center text-base font-black leading-5 text-lime-700 shadow-sm transition-colors hover:bg-lime-100" title="Customer လျှော့စျေးမှတ်တမ်း">
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💰</span>
                 <span>လျှော့စျေး</span>
               </Link>
-              <Link href="/price-settings" className="neon-menu-button neon-card-indigo flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-3 text-center text-base font-black leading-5 text-indigo-700 shadow-sm transition-colors hover:bg-indigo-100">
+              <Link href="/price-settings" className="neon-menu-button flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100">
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💰</span>
                 <span>ဗူး Category / Item Cost</span>
               </Link>
