@@ -50,6 +50,7 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("onClick={() => setShowTodayPaymentsModal(true)}");
     expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
     expect(dashboardSource).toContain('href={`/production-history?date=${encodeURIComponent(selectedKpiDate)}`}');
+    expect(dashboardSource).toContain("dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4");
   });
 
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
