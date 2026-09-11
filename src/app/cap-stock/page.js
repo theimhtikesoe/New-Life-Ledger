@@ -15,7 +15,7 @@ export default function CapStockPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/factory-stock?capRefresh=${Date.now()}`, { cache: "no-store", signal: controller.signal })
+    fetch(`/api/factory-stock?stockType=CAP&capRefresh=${Date.now()}`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "အဖုံးလက်ကျန် ရယူ၍မရပါ။");
