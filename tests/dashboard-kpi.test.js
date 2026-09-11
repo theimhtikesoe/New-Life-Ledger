@@ -41,7 +41,9 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain('id="dashboard-kpi-date"');
     expect(dashboardSource).toContain('type="date"');
     expect(dashboardSource).toContain("{!isLedgerView ? (");
-    expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`');
+    expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`');
+    expect(dashboardSource).toContain('new-life-ledger:cap-stock-updated-at');
+    expect(dashboardSource).toContain('new-life-ledger:cap-stock-updated');
     expect(dashboardSource).toContain("DASHBOARD_LOADING_WATCHDOG_MS = 12000");
     expect(dashboardSource).toContain("category=bottle");
     expect(dashboardSource).toContain('const bottleRows = rows.filter((row) => row.category !== "tube");');

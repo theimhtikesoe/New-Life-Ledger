@@ -775,7 +775,7 @@ export default function Dashboard({ view = "overview" }) {
       // Start the small KPI aggregate and the main customer index together.
       // KPI can be slower on a cold serverless/database connection; it must not
       // block the customer list and the rest of the dashboard from rendering.
-      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}`, { signal, cache: "no-store" })
+      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`, { signal, cache: "no-store" })
         .then((kpi) => {
           setDashboardKpi(kpi);
           setDashboardKpiError("");
@@ -903,6 +903,20 @@ export default function Dashboard({ view = "overview" }) {
     };
   }, []);
 
+  useEffect(() => {
+    const refreshAfterCapStockChange = () => {
+      if (document.visibilityState !== "hidden") loadDashboard();
+    };
+    const handleStorage = (event) => {
+      if (event.key === "new-life-ledger:cap-stock-updated-at") refreshAfterCapStockChange();
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("new-life-ledger:cap-stock-updated", refreshAfterCapStockChange);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("new-life-ledger:cap-stock-updated", refreshAfterCapStockChange);
+    };
+  }, [loadDashboard]);
   useEffect(() => {
     const refreshOnResume = () => {
       if (document.visibilityState === "hidden" || navigator.onLine === false) return;

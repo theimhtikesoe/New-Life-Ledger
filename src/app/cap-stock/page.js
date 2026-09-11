@@ -7,6 +7,7 @@ function number(value) { return Number(value || 0).toLocaleString(undefined, { m
 function todayValue() { const now = new Date(); const local = new Date(now.getTime() + (6 * 60 + 30) * 60 * 1000); return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`; }
 function movementLabel(type) { return ({ SALE_OUT: "ရောင်းထွက် / ဗူးတွင်သုံး", ADJUSTMENT_IN: "စာရင်းညှိဝင်", ADJUSTMENT_OUT: "စာရင်းညှိထွက်", REVERSAL: "ပြန်လှန်" })[type] || type; }
 function actorHeaders(headers = {}) { const actorName = typeof window !== "undefined" ? window.localStorage.getItem("actorName") || "" : ""; return { ...headers, "x-actor-name": encodeActorHeader(actorName) }; }
+function notifyCapStockChanged() { if (typeof window !== "undefined") { localStorage.setItem("new-life-ledger:cap-stock-updated-at", String(Date.now())); window.dispatchEvent(new Event("new-life-ledger:cap-stock-updated")); } }
 const CAP_LOCATIONS = ["မန္တလေး", "အေးသာယာ", "Soe"];
 const CAP_COLORS = ["ပြာ", "ဝါ", "စိမ်း", "နီ", "ဖြူ", "ပန်း", "နက်/အမဲ"];
 const EMPTY_FORM = { location: "မန္တလေး", color: "ပြာ", packSize: "5000", packs: "", note: "", movementDate: todayValue() };
@@ -77,7 +78,7 @@ export default function CapStockPage() {
       const response = await fetch("/api/factory-stock", { method: "POST", headers: actorHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ action: "addCapStock", rows: [capForm], date: capForm.movementDate }) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "အဖုံး Stock သိမ်း၍မရပါ။");
-      setSaveMessage("အဖုံး Stock ထည့်သိမ်းပြီးပါပြီ။"); setCapForm({ ...EMPTY_FORM, movementDate: todayValue() }); await loadStock();
+      setSaveMessage("အဖုံး Stock ထည့်သိမ်းပြီးပါပြီ။"); setCapForm({ ...EMPTY_FORM, movementDate: todayValue() }); notifyCapStockChanged(); await loadStock();
     } catch (saveError) { setError(saveError.message); } finally { setSaving(false); }
   }
 
@@ -92,7 +93,7 @@ export default function CapStockPage() {
       const response = await fetch("/api/factory-stock", { method: "PATCH", headers: actorHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: editingMovement.id, ...editForm }) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "အဖုံး Stock ပြင်၍မရပါ။");
-      setEditingMovement(null); setSaveMessage("အဖုံး Stock မှတ်တမ်း ပြင်ပြီးပါပြီ။"); await loadStock();
+      setEditingMovement(null); setSaveMessage("အဖုံး Stock မှတ်တမ်း ပြင်ပြီးပါပြီ။"); notifyCapStockChanged(); await loadStock();
     } catch (saveError) { setError(saveError.message); } finally { setSaving(false); }
   }
 
@@ -103,7 +104,7 @@ export default function CapStockPage() {
       const response = await fetch(`/api/factory-stock?id=${encodeURIComponent(movement.id)}`, { method: "DELETE", headers: actorHeaders() });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "အဖုံး Stock မှတ်တမ်း ဖျက်၍မရပါ။");
-      setSaveMessage("အဖုံး Stock မှတ်တမ်း ဖျက်ပြီးပါပြီ။"); await loadStock();
+      setSaveMessage("အဖုံး Stock မှတ်တမ်း ဖျက်ပြီးပါပြီ။"); notifyCapStockChanged(); await loadStock();
     } catch (deleteError) { setError(deleteError.message); } finally { setSaving(false); }
   }
 
