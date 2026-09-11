@@ -193,6 +193,7 @@ const PAGE_HEADERS = {
   '/daily-bottle-sales': 'တစ်နေ့တာ ဗူးရောင်းစာရင်း',
   '/daily-summary': 'Daily Summary',
   '/data-management': 'Data Management',
+  '/discounts': 'Customer လျှော့စျေးမှတ်တမ်း',
   '/factory-stock': 'စက်ရုံဗူးလက်ကျန်',
   '/orders': 'Customer Orders',
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
