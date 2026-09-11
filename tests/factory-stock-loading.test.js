@@ -57,7 +57,7 @@ describe("cap stock unit accounting", () => {
   it("treats one bottle as one cap and converts 5000 caps to one bag", () => {
     const rows = saleMovementRows([{ id: "sale-1", date: "2026-09-11", saleItems: [{ productType: "bottle", productName: ".3 ဖြူ", productKey: ".3 ဖြူ::100", capacity: 100, bottleCount: 200, cardCount: 2, capNormalCount: 200, capExtraCount: 0, capProductKey: "ပြာ", capProductName: "ပြာ", capLocation: "မန္တလေး", capPackSize: 5000 }] }]);
     const cap = rows.find((row) => row.stockType === "CAP");
-    expect(cap).toMatchObject({ quantityCards: 0, quantityBottles: -200, capacity: 5000 });
+    expect(cap).toMatchObject({ productKey: "CAP::မန္တလေး::ပြာ::5000", quantityCards: 0, quantityBottles: -200, capacity: 5000 });
     const summary = aggregateStockMovements([{ ...cap, movementType: "ADJUSTMENT_IN", quantityCards: 1, quantityBottles: 5000 }, cap]);
     expect(summary[0].currentBottles).toBe(4800);
     expect(summary[0].currentCards).toBeCloseTo(0.96);

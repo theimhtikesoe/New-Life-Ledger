@@ -144,17 +144,21 @@ export function normalizeBottleIdentity({ productName, productKey, capacity }) {
 }
 
 export function normalizeCapIdentity({ productName, productKey, location, packSize }) {
-  const rawName = clean(productName) || clean(productKey).split("::").pop() || "အဖုံး မသတ်မှတ်ရသေး";
-  const rawKey = clean(productKey) || `CAP::${rawName}`;
+  const rawKey = clean(productKey);
+  const rawName = clean(productName) || rawKey.split("::").pop() || "အဖုံး မသတ်မှတ်ရသေး";
+  const capAliases = { CAP_WHITE: "ဖြူ", CAP_BLUE: "ပြာ", CAP_YELLOW: "ဝါ", CAP_GREEN: "စိမ်း", CAP_RED: "နီ", CAP_PINK: "ပန်း", CAP_BLACK: "နက်/အမဲ" };
+  const aliasColor = capAliases[rawKey.toUpperCase()];
+  const namedColor = rawName.replace(/^အဖုံး\s*[-·:]\s*/, "").trim();
+  const color = aliasColor || namedColor || rawKey;
   const normalizedLocation = clean(location);
   const normalizedPackSize = positiveInteger(packSize);
   if (normalizedLocation && normalizedPackSize) {
-    return { productName: `${normalizedLocation} · ${rawName}`, capacity: normalizedPackSize, productKey: `CAP::${normalizedLocation}::${rawKey}::${normalizedPackSize}` };
+    return { productName: `${normalizedLocation} · ${color}`, capacity: normalizedPackSize, productKey: `CAP::${normalizedLocation}::${color}::${normalizedPackSize}` };
   }
   return {
-    productName: rawName,
+    productName: color,
     capacity: 0,
-    productKey: rawKey.startsWith("CAP_") || rawKey.startsWith("CAP::") ? rawKey : `CAP::${rawKey}`,
+    productKey: `CAP::${color}`,
   };
 }
 
