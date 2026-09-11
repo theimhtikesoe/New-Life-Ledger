@@ -39,7 +39,8 @@ export async function GET(request) {
       ? await loadCanonicalFactoryStockMovements()
       : { movements: [] };
     const factoryStockSummary = aggregateStockMovements(stockMovements);
-    const factoryStockCards = factoryStockSummary.filter((item) => item.stockType !== "TUBE").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
+    const factoryStockCards = factoryStockSummary.filter((item) => item.stockType === "BOTTLE").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
+    const factoryCapPieces = factoryStockSummary.filter((item) => item.stockType === "CAP").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
     const factoryTubePieces = stockMovements
       .filter((movement) => movement.stockType === "TUBE")
       .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);
@@ -105,6 +106,7 @@ export async function GET(request) {
         bottleSales,
         creditBottleSales,
         factoryStockCards,
+        factoryCapPieces,
         factoryTubePieces,
       },
     });

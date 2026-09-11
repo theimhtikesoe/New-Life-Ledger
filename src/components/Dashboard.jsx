@@ -70,7 +70,8 @@ function saleItemsSummary(items = []) {
     if (item?.productType === "tube" || item?.categoryKey === "TUBE") {
       return `${item.productName || "Tube"} × ${item.cardCount || 0} အိတ် = ${Number(item.bottleCount || 0).toLocaleString()} Tube = ${formatMoney(item.totalAmount)}`;
     }
-    return `${item.productName || "ဗူး"} ${item.capacity || 0} ဆံ့ × ${item.cardCount || 0} ကဒ် = ${Number(item.bottleCount || 0).toLocaleString()} ဗူး`;
+    const capText = item.capProductName ? ` · ${item.capProductName} ${Number(item.capTotalCount || item.capNormalCount || 0).toLocaleString()} ဖုံး` : "";
+    return `${item.productName || "ဗူး"} ${item.capacity || 0} ဆံ့ × ${item.cardCount || 0} ကဒ် = ${Number(item.bottleCount || 0).toLocaleString()} ဗူး${capText}`;
   }).join("၊ ");
 }
 
@@ -1054,6 +1055,7 @@ export default function Dashboard({ view = "overview" }) {
     [dashboardKpi, factoryStock],
   );
   const factoryTubePieces = Number(dashboardKpi?.factoryTubePieces || 0);
+  const factoryCapPieces = Number(dashboardKpi?.factoryCapPieces || 0);
 
     const hasKpiSnapshot = Boolean(dashboardKpi);
   const currentMyanmarDate = formatMyanmarDateInputValue(currentTime);
@@ -2055,6 +2057,18 @@ export default function Dashboard({ view = "overview" }) {
                 <p className="mt-1 text-sm font-bold text-amber-800">Opening Stock မထည့်ရသေးသော မှတ်တမ်းအရ ပြောင်းလဲမှု</p>
               </div>
               <p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p>
+            </Link>
+            <Link
+              href="/cap-stock"
+              aria-label="စက်ရုံအဖုံးလက်ကျန် အသေးစိတ်ကြည့်ရန်"
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-pink-300 bg-pink-50/95 p-4 text-left shadow-sm transition-all hover:border-pink-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-300 sm:min-h-[170px]"
+            >
+              <div>
+                <p className="text-sm font-black uppercase tracking-wide text-pink-800 sm:text-base">စက်ရုံအဖုံး Net Stock Change</p>
+                <p className="mt-2 text-2xl font-black text-pink-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryCapPieces.toLocaleString()} ဖုံး`}</p>
+                <p className="mt-1 text-sm font-bold text-pink-700">ဗူးရောင်းရာတွင်သုံးသော အဖုံးအရောင်အလိုက် လက်ကျန်</p>
+              </div>
+              <p className="pt-2 text-sm font-bold text-pink-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
             </>}
           </div>

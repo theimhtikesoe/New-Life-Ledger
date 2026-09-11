@@ -64,6 +64,11 @@ export async function GET(request) {
         });
       }
     }
+    for (const item of buildCatalog().filter((entry) => entry.productType === "cap")) {
+      if (!summaryByKey.has(item.productKey)) {
+        summary.push({ productKey: item.productKey, stockType: STOCK_TYPES.CAP, productName: item.productName, capacity: 0, productionCards: 0, soldCards: 0, adjustmentCards: 0, currentCards: 0, productionBottles: 0, soldBottles: 0, usedBottles: 0, usedCards: 0, adjustmentBottles: 0, wastedBottles: 0, systemCurrentCards: 0, systemCurrentBottles: 0, openingStockCards: 0, openingStockBottles: 0, unrecordedOpeningStockCards: 0, unrecordedOpeningStockBottles: 0, currentBottles: 0 });
+      }
+    }
     summary.sort((a, b) => a.productName.localeCompare(b.productName, "my") || Number(a.capacity || 0) - Number(b.capacity || 0));
     return NextResponse.json({ data: {
       calculationMode: "DATABASE_DERIVED",

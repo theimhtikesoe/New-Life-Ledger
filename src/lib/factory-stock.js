@@ -142,6 +142,16 @@ export function normalizeBottleIdentity({ productName, productKey, capacity }) {
   };
 }
 
+export function normalizeCapIdentity({ productName, productKey }) {
+  const rawName = clean(productName) || clean(productKey).split("::").pop() || "အဖုံး မသတ်မှတ်ရသေး";
+  const rawKey = clean(productKey) || `CAP::${rawName}`;
+  return {
+    productName: rawName,
+    capacity: 0,
+    productKey: rawKey.startsWith("CAP_") || rawKey.startsWith("CAP::") ? rawKey : `CAP::${rawKey}`,
+  };
+}
+
 function positiveInteger(value) {
   const number = Math.round(Number(value || 0));
   return Number.isFinite(number) && number > 0 ? number : 0;
@@ -197,7 +207,13 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
   for (const row of rows) {
     if (!Array.isArray(row.saleItems)) continue;
     for (const item of row.saleItems) {
-      if (isCapSaleItem(item)) continue;
+      if (isCapSaleItem(item)) {
+        const capCount = positiveInteger(item?.cardCount || item?.unitCount || item?.bottleCount);
+        if (!capCount) continue;
+        const identity = normalizeCapIdentity({ productName: item?.productName, productKey: item?.productKey });
+        movements.push({ movementDate: clean(row.date).slice(0, 10), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...identity, quantityCards: -capCount, quantityBottles: 0, sourceType, sourceId: clean(row.id), sourceVersion, reason: "အဖုံးရောင်းစာရင်း", note: null, actorName: clean(actorName) || "system" });
+        continue;
+      }
       const isTube = item?.productType === "tube" || item?.categoryKey === "TUBE";
       const bottleCount = positiveInteger(item?.bottleCount);
       const capacity = normalizeCapacity(item?.capacity || item?.bottlesPerCard);
@@ -220,6 +236,11 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
         note: null,
         actorName: clean(actorName) || "system",
       });
+      const capCount = positiveInteger(item?.capNormalCount) + positiveInteger(item?.capExtraCount);
+      if (capCount && clean(item?.capProductKey)) {
+        const capIdentity = normalizeCapIdentity({ productName: item?.capProductName, productKey: item.capProductKey });
+        movements.push({ movementDate: clean(row.date).slice(0, 10), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...capIdentity, quantityCards: -capCount, quantityBottles: 0, sourceType, sourceId: clean(row.id), sourceVersion, reason: "ဗူးရောင်းရာတွင် အဖုံးသုံးစွဲ", note: `ပုံမှန် ${positiveInteger(item?.capNormalCount)} + အပို ${positiveInteger(item?.capExtraCount)}`, actorName: clean(actorName) || "system" });
+      }
     }
   }
   return movements.filter((row) => row.sourceId && row.quantityCards < 0);
