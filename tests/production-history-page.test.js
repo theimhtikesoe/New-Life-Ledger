@@ -34,10 +34,13 @@ describe("Production history page", () => {
     expect(pageSource).not.toContain("window.print()");
   });
 
-  it("keeps the bottle history view free of Tube summary fields", () => {
+  it("shows Production-style KPIs with good bottles separated from damage", () => {
     expect(pageSource).toContain('row.category === "bottle" || (!row.category && row.bottleType)');
-    expect(pageSource).not.toContain("Tube စုစုပေါင်း");
-    expect(pageSource).not.toContain("Tube ပျက်");
-    expect(pageSource).not.toContain("Tube {group.tubeMetrics");
+    expect(pageSource).toContain("ကောင်းမွန်ဗူး");
+    expect(pageSource).toContain("ဗူးပျက်");
+    expect(pageSource).toContain("Tube ပျက်");
+    expect(pageSource).toContain("Tube လက်ကျန်မှ နုတ်ထား");
+    expect(pageSource).toContain("grid grid-cols-2 gap-2 sm:grid-cols-4");
+    expect(pageSource).toContain("group.tubeDamageQuantity");
   });
 });
