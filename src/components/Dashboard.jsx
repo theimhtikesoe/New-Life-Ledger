@@ -3297,7 +3297,7 @@ export default function Dashboard({ view = "overview" }) {
       )}
 
       {/* Transaction Delete Confirmation Modal */}
-      {deletingTransaction && (
+      {deletingTransaction && !showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl border border-rose-200 bg-white p-6 shadow-2xl">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
