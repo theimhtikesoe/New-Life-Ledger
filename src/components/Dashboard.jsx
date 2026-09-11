@@ -1212,6 +1212,10 @@ export default function Dashboard({ view = "overview" }) {
         setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } : c));
         setAllCustomersForKPI(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } : c));
       }
+
+      // Re-fetch the server-derived KPI immediately so cap stock changes from
+      // this sale are reflected on the Dashboard without a refresh/navigation.
+      await loadDashboard();
       
       // Clear form immediately after successful submission
       setLedgerForm({

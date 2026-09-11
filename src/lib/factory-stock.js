@@ -106,13 +106,14 @@ export async function loadCanonicalFactoryStockMovements({ actorName = "system" 
     movement.quantityCards,
     movement.quantityBottles,
   ].map((value) => String(value ?? "")).join("|");
-  const existingKeys = new Set(existing.map(movementKey));
-  const missingDerived = derived.filter((movement) => !existingKeys.has(movementKey(movement)));
+  // Derived records are the source of truth for production and sales. Do not
+  // retain stale persisted sale rows after a transaction is edited/deleted or
+  // after the cap-unit calculation changes. Manual stock adjustments remain.
+  const derivedSourceTypes = new Set(["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION", "LEDGER", "CASH_SALE"]);
+  const manualExisting = existing.filter((movement) => !derivedSourceTypes.has(movement.sourceType));
   return {
-    movements: existing.length ? [...existing, ...missingDerived] : derived,
-    dataSource: existing.length
-      ? (missingDerived.length ? "MOVEMENT_LEDGER_PLUS_DERIVED_STOCK" : "MOVEMENT_LEDGER")
-      : "LIVE_DERIVED_FALLBACK",
+    movements: [...manualExisting, ...derived],
+    dataSource: existing.length ? "MOVEMENT_LEDGER_PLUS_LIVE_DERIVED_STOCK" : "LIVE_DERIVED_FALLBACK",
   };
 }
 
@@ -244,11 +245,11 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
       const capCount = positiveInteger(item?.capNormalCount) + positiveInteger(item?.capExtraCount);
       if (capCount && clean(item?.capProductKey)) {
         const capIdentity = normalizeCapIdentity({ productName: item?.capProductName, productKey: item.capProductKey, location: item?.capLocation, packSize: item?.capPackSize });
-        movements.push({ movementDate: clean(row.date).slice(0, 10), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...capIdentity, quantityCards: -capCount, quantityBottles: 0, sourceType, sourceId: clean(row.id), sourceVersion, reason: "ဗူးရောင်းရာတွင် အဖုံးသုံးစွဲ", note: `ပုံမှန် ${positiveInteger(item?.capNormalCount)} + အပို ${positiveInteger(item?.capExtraCount)}`, actorName: clean(actorName) || "system" });
+        movements.push({ movementDate: clean(row.date).slice(0, 10), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...capIdentity, quantityCards: 0, quantityBottles: -capCount, sourceType, sourceId: clean(row.id), sourceVersion, reason: "ဗူးရောင်းရာတွင် အဖုံးသုံးစွဲ", note: `ပုံမှန် ${positiveInteger(item?.capNormalCount)} + အပို ${positiveInteger(item?.capExtraCount)}`, actorName: clean(actorName) || "system" });
       }
     }
   }
-  return movements.filter((row) => row.sourceId && row.quantityCards < 0);
+  return movements.filter((row) => row.sourceId && (row.quantityCards < 0 || (row.stockType === STOCK_TYPES.CAP && row.quantityBottles < 0)));
 }
 
 export function aggregateStockMovements(movements = []) {
@@ -293,14 +294,21 @@ export function aggregateStockMovements(movements = []) {
     summary.set(movement.productKey, current);
   }
   return [...summary.values()].map((item) => {
-    const systemCurrentCards = item.currentCards;
     const systemCurrentBottles = item.currentBottles;
+    // Cap quantities are stored as individual pieces. Convert to bags only
+    // for display/aggregation using the configured pack size (e.g. 5000).
+    const capUnit = item.stockType === STOCK_TYPES.CAP && Number(item.capacity || 0) > 0 ? Number(item.capacity) : 1;
+    const systemCurrentCards = item.stockType === STOCK_TYPES.CAP ? systemCurrentBottles / capUnit : item.currentCards;
+    const soldCards = item.stockType === STOCK_TYPES.CAP ? item.soldBottles / capUnit : item.soldCards;
+    const adjustmentCards = item.stockType === STOCK_TYPES.CAP ? item.adjustmentBottles / capUnit : item.adjustmentCards;
     const unrecordedOpeningStockCards = Math.max(0, -systemCurrentCards);
     const unrecordedOpeningStockBottles = Math.max(0, -systemCurrentBottles);
     return {
       ...item,
       systemCurrentCards,
       systemCurrentBottles,
+      soldCards,
+      adjustmentCards,
       openingStockCards: 0,
       openingStockBottles: 0,
       unrecordedOpeningStockCards,
