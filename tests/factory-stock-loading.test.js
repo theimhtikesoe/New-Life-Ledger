@@ -62,4 +62,13 @@ describe("cap stock unit accounting", () => {
     expect(summary[0].currentBottles).toBe(4800);
     expect(summary[0].currentCards).toBeCloseTo(0.96);
   });
+
+  it("reduces bottle stock for a Ledger sale and restores it when that sale is absent", () => {
+    const sale = saleMovementRows([{ id: "ledger-sale-1", date: "2026-09-11", saleItems: [{ productType: "bottle", productName: ".3 ဖြူ", productKey: ".3 ဖြူ::100", capacity: 100, bottleCount: 200, cardCount: 2 }] }]);
+    const production = { stockType: "BOTTLE", productKey: ".3 ဖြူ::100", productName: ".3 ဖြူ", capacity: 100, movementType: "PRODUCTION_IN", quantityCards: 10, quantityBottles: 1000 };
+    const afterSale = aggregateStockMovements([production, ...sale])[0];
+    const afterDeletion = aggregateStockMovements([production])[0];
+    expect(afterSale).toMatchObject({ currentCards: 8, currentBottles: 800, soldCards: 2, soldBottles: 200 });
+    expect(afterDeletion).toMatchObject({ currentCards: 10, currentBottles: 1000, soldCards: 0, soldBottles: 0 });
+  });
 });
