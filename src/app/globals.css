@@ -478,6 +478,128 @@ textarea {
   transition: all 0.2s ease-out;
 }
 
+.birthday-celebration {
+  position: fixed;
+  z-index: 400;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 1rem;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.86), rgba(15, 23, 42, 0.64));
+  backdrop-filter: blur(3px);
+}
+.birthday-alert {
+  position: relative;
+  z-index: 3;
+  width: min(100%, 25rem);
+  border: 2px solid rgba(251, 191, 36, 0.7);
+  border-radius: 1.5rem;
+  padding: 2rem 1.25rem 1.25rem;
+  text-align: center;
+  background: linear-gradient(145deg, #fff 0%, #fff7ed 48%, #fdf2f8 100%);
+  box-shadow: 0 24px 80px rgba(30, 41, 59, 0.32), 0 0 35px rgba(251, 191, 36, 0.28);
+  animation: birthdayPop 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.birthday-cake {
+  margin: -3.4rem auto 0.2rem;
+  font-size: 3.7rem;
+  line-height: 1;
+  filter: drop-shadow(0 5px 5px rgba(190, 24, 93, 0.2));
+  animation: birthdayCakeBounce 1.3s ease-in-out 650ms infinite alternate;
+}
+.birthday-kicker {
+  margin-top: 0.75rem;
+  color: #db2777;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.birthday-alert h2 {
+  margin-top: 0.4rem;
+  color: #be185d;
+  font-size: clamp(1.55rem, 8vw, 2.15rem);
+  font-weight: 950;
+  line-height: 1.15;
+}
+.birthday-message {
+  margin-top: 0.7rem;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.7;
+}
+.birthday-close {
+  margin-top: 1.15rem;
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 0.85rem;
+  background: linear-gradient(90deg, #ec4899, #f59e0b);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(236, 72, 153, 0.25);
+}
+.birthday-confetti,
+.birthday-fireworks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.birthday-confetti i {
+  position: absolute;
+  top: -1.5rem;
+  width: 0.48rem;
+  height: 1.2rem;
+  border-radius: 999px 999px 0.15rem 0.15rem;
+  opacity: 0.9;
+  animation: birthdayFall linear infinite;
+}
+.birthday-burst {
+  position: absolute;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #fbbf24;
+  box-shadow: 0 0 16px 4px rgba(251, 191, 36, 0.75);
+  animation: birthdayBurst 1.7s ease-out infinite;
+}
+.birthday-burst i {
+  position: absolute;
+  left: 0.1rem;
+  top: 0.1rem;
+  width: 0.24rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  transform-origin: 50% 0;
+  background: linear-gradient(#fef08a, #fb7185, transparent);
+}
+@keyframes birthdayFall {
+  0% { transform: translate3d(0, -2rem, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.95; }
+  100% { transform: translate3d(2rem, 110vh, 0) rotate(720deg); opacity: 0.1; }
+}
+@keyframes birthdayBurst {
+  0%, 100% { transform: scale(0.25); opacity: 0; }
+  18% { transform: scale(1); opacity: 1; }
+  70% { transform: scale(1.12); opacity: 0.55; }
+}
+@keyframes birthdayPop {
+  from { opacity: 0; transform: translateY(1.5rem) scale(0.82); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes birthdayCakeBounce {
+  from { transform: translateY(0) rotate(-3deg); }
+  to { transform: translateY(-0.35rem) rotate(3deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .birthday-confetti i,
+  .birthday-burst,
+  .birthday-alert,
+  .birthday-cake { animation: none; }
+}
+
 /* Dashboard KPI cards: fit the complete KPI overview on a phone without
    making the primary numbers unreadable. Desktop sizing remains unchanged. */
 @media (max-width: 639px) {

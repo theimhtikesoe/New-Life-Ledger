@@ -13,6 +13,7 @@ import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
+import BirthdayCelebration from "@/components/BirthdayCelebration";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -371,6 +372,7 @@ export default function Dashboard({ view = "overview" }) {
   const [isSendingTelegramReport, setIsSendingTelegramReport] = useState(false);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [expandedDashboardMenu, setExpandedDashboardMenu] = useState(null);
+  const [birthdayTestTrigger, setBirthdayTestTrigger] = useState(0);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
   const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
@@ -1819,6 +1821,15 @@ export default function Dashboard({ view = "overview" }) {
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💳</span>
                 <span>ငွေရှင်းတမ်း</span>
               </Link>
+              <button
+                type="button"
+                onClick={() => setBirthdayTestTrigger((current) => current + 1)}
+                className="neon-menu-button flex min-h-12 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-pink-300 bg-gradient-to-r from-pink-50 to-amber-50 px-3 py-2 text-center text-sm font-black leading-5 text-pink-700 shadow-sm transition-colors hover:bg-pink-100"
+                title="Hnin Oo Birthday effect စမ်းရန်"
+              >
+                <span aria-hidden="true">🎉</span>
+                <span>Birthday Test</span>
+              </button>
             </div> : null}
             {!isLedgerView && !isSangEulDashboard ? (
             <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
@@ -1888,11 +1899,21 @@ export default function Dashboard({ view = "overview" }) {
                 onClick={() => setExpandedDashboardMenu((current) => current === "settings" ? null : "settings")}
                 aria-expanded={expandedDashboardMenu === "settings"}
                 aria-controls="dashboard-settings-menu"
-                className="neon-menu-button neon-card-violet flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
+                className="neon-menu-button neon-card-violet flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-violet-300 bg-violet-50/90 px-3 py-3 text-center text-base font-black leading-5 text-violet-700 shadow-sm transition-colors hover:bg-violet-100"
               >
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">📊</span>
                 <span>Settings</span>
                 <span className="shrink-0" aria-hidden="true">{expandedDashboardMenu === "settings" ? "⌃" : "⌄"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBirthdayTestTrigger((current) => current + 1)}
+                className="neon-menu-button col-span-2 flex min-h-12 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-pink-300 bg-gradient-to-r from-pink-50 to-amber-50 px-3 py-2 text-center text-sm font-black leading-5 text-pink-700 shadow-sm transition-colors hover:bg-pink-100"
+                title="Hnin Oo Birthday effect စမ်းရန်"
+              >
+                <span aria-hidden="true">🎉</span>
+                <span>Birthday Test</span>
               </button>
 
               {expandedDashboardMenu === "settings" ? (
@@ -3443,6 +3464,7 @@ export default function Dashboard({ view = "overview" }) {
           </div>
         </div>
       )}
+      <BirthdayCelebration testTrigger={birthdayTestTrigger} />
     </main>
   );
 }
