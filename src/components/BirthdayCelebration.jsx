@@ -17,7 +17,7 @@ function makeConfetti() {
   }));
 }
 
-export default function BirthdayCelebration({ testTrigger = 0 }) {
+export default function BirthdayCelebration() {
   const [open, setOpen] = useState(false);
   const confetti = useMemo(makeConfetti, []);
 
@@ -33,8 +33,12 @@ export default function BirthdayCelebration({ testTrigger = 0 }) {
   }, []);
 
   useEffect(() => {
-    if (testTrigger > 0) setOpen(true);
-  }, [testTrigger]);
+    if (!open) return undefined;
+    const timer = window.setInterval(() => {
+      if (getMyanmarDateInputValue() !== BIRTHDAY_DATE) setOpen(false);
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [open]);
 
   if (!open) return null;
   return (
