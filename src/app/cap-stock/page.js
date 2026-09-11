@@ -61,7 +61,7 @@ export default function CapStockPage() {
   const dailyCapPieces = dailyCapUsage.reduce((sum, row) => sum + row.pieces, 0);
   const dailyCapAdded = useMemo(() => {
     const grouped = new Map();
-    (data?.movements || []).filter((movement) => movement.movementDate === todayValue() && movement.sourceType === "CAP_OPENING" && movement.movementType === "ADJUSTMENT_IN" && Number(movement.quantityBottles || 0) > 0).forEach((movement) => {
+    (data?.movements || []).filter((movement) => movement.movementDate === todayValue() && movement.sourceType === "CAP_OPENING" && movement.movementType === "ADJUSTMENT_IN" && movement.note === "အသစ်ရောက်" && Number(movement.quantityBottles || 0) > 0).forEach((movement) => {
       const key = `${movement.productName}::${movement.capacity}`;
       const row = grouped.get(key) || { name: movement.productName, capacity: Number(movement.capacity || 0), pieces: 0 };
       row.pieces += Number(movement.quantityBottles || 0);
