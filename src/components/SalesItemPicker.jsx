@@ -14,7 +14,7 @@ function isTubeItem(item) {
   return item?.productType === "tube" || item?.categoryKey === "TUBE";
 }
 
-function makeLine(item, cardCount, capItem = null) {
+function makeLine(item, cardCount, capItem = null, capLocation = "မန္တလေး", capPackSize = 5000) {
   const quantity = Math.max(1, Math.round(Number(cardCount || 0)));
   const isCap = isCapItem(item);
   const isTube = isTubeItem(item);
@@ -42,6 +42,8 @@ function makeLine(item, cardCount, capItem = null) {
     totalAmount: pricePerUnit * (isCap ? quantity : bottleCount),
     capProductKey: !isCap && !isTube && capItem ? capItem.productKey : null,
     capProductName: !isCap && !isTube && capItem ? capItem.productName : null,
+    capLocation: !isCap && !isTube && capItem ? capLocation : null,
+    capPackSize: !isCap && !isTube && capItem ? Number(capPackSize || 5000) : 0,
     capNormalCount: !isCap && !isTube ? bottleCount : 0,
     capExtraCount: 0,
     capTotalCount: !isCap && !isTube ? bottleCount : 0,
@@ -55,6 +57,8 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
   const [selectedKey, setSelectedKey] = useState("");
   const [cardCount, setCardCount] = useState("");
   const [defaultCapKey, setDefaultCapKey] = useState("");
+  const [defaultCapLocation, setDefaultCapLocation] = useState("မန္တလေး");
+  const [defaultCapPackSize, setDefaultCapPackSize] = useState("5000");
   const [error, setError] = useState("");
 
   const pickerCatalog = useMemo(() => catalog.filter((item) => pickerMode === "tube" ? isTubeItem(item) : !isTubeItem(item)), [catalog, pickerMode]);
@@ -101,11 +105,11 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
     if (!selectedItem) return setError("အမျိုးအစား ရွေးပါ။");
     if (!selectedPrice) return setError("ဒီပစ္စည်းအတွက် စျေးနှုန်း မသတ်မှတ်ရသေးပါ။");
     if (!Number(cardCount)) return setError(isCapItem(selectedItem) ? "အဖုံးအရေအတွက် ထည့်ပါ။" : "ကဒ်အရေအတွက် ထည့်ပါ။");
-    const line = makeLine(selectedItem, cardCount, selectedCap);
+    const line = makeLine(selectedItem, cardCount, selectedCap, defaultCapLocation, defaultCapPackSize);
     const existing = saleItems.find((item) => item.productKey === line.productKey && item.pricePerBottle === line.pricePerBottle);
     if (existing) {
       onChange(saleItems.map((item) => item.id === existing.id
-        ? { ...makeLine({ ...selectedItem, effectivePrice: { pricePerBottle: line.pricePerBottle, source: line.priceSource } }, Number(item.cardCount || 0) + line.cardCount, selectedCap), capExtraCount: Number(item.capExtraCount || 0) }
+        ? { ...makeLine({ ...selectedItem, effectivePrice: { pricePerBottle: line.pricePerBottle, source: line.priceSource } }, Number(item.cardCount || 0) + line.cardCount, selectedCap, defaultCapLocation, defaultCapPackSize), capExtraCount: Number(item.capExtraCount || 0) }
         : item));
     } else {
       onChange([...saleItems, line]);
@@ -159,6 +163,8 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
         const cap = capItems.find((entry) => entry.productKey === value);
         return { ...item, capProductKey: value || null, capProductName: cap?.productName || null };
       }
+      if (field === "capLocation") return { ...item, capLocation: value };
+      if (field === "capPackSize") return { ...item, capPackSize: Number(value || 5000) };
       const extra = Math.max(0, Math.round(Number(value || 0)));
       return { ...item, capExtraCount: extra, capTotalCount: Number(item.capNormalCount || item.bottleCount || 0) + extra };
     }));
@@ -178,7 +184,7 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
           <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-black text-slate-900">{item.productName}{isCap || isTubeItem(item) ? ` · ${isTubeItem(item) ? `${item.capacity} pcs/အိတ်` : ""}` : ` · ${item.capacity} ဆံ့`}</p><p className="mt-1 text-xs font-bold text-slate-600">{count.toLocaleString()} {isCap ? "အဖုံး" : isTubeItem(item) ? "Tube" : "ဗူး"} · {formatMoney(item.pricePerBottle)}/{isCap ? "ဖုံး" : "ဗူး"} · {formatMoney(item.totalAmount)}</p></div><button type="button" onClick={() => onChange(saleItems.filter((line) => line.id !== item.id))} disabled={disabled} className="rounded-lg border border-rose-200 px-2 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50">ဖျက်</button></div>
           <div className="mt-3 grid grid-cols-2 gap-3 border-t border-violet-100 pt-3"><label className="text-xs font-bold text-slate-600">{isCap ? "အရေအတွက်" : "ကဒ်"}<input type="number" min="1" step="1" value={item.cardCount} onChange={(event) => updateCards(item.id, event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 px-2 text-center text-base font-black text-slate-900" /></label><label className="text-xs font-bold text-slate-600">Customer စျေး/{isCap ? "ဖုံး" : "ဗူး"}<input type="number" min="0" step="1" value={item.customerPricePerBottle ?? item.pricePerBottle} onChange={(event) => updatePrice(item.id, event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 px-2 text-right text-base font-black text-slate-900" /></label></div>
           <p className="mt-2 border-t border-violet-100 pt-2 text-xs font-bold text-slate-500">{isCap ? `${item.cardCount} အဖုံး × ${formatMoney(item.pricePerBottle)} = ${formatMoney(item.totalAmount)}` : `${item.cardCount} ကဒ် × ${item.capacity} = ${count.toLocaleString()} ဗူး`}</p>
-          {!isCap && !isTubeItem(item) && capItems.length ? <div className="mt-3 grid grid-cols-2 gap-3 border-t border-violet-100 pt-3"><label className="text-xs font-bold text-slate-600">အဖုံးအရောင်<select value={item.capProductKey || ""} onChange={(event) => updateCapConfig(item.id, "capProductKey", event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 bg-white px-2 text-sm font-black text-slate-900"><option value="">အဖုံး မသတ်မှတ်ရသေး</option>{capItems.map((cap) => <option key={cap.productKey} value={cap.productKey}>{cap.productName}</option>)}</select></label><label className="text-xs font-bold text-slate-600">အဖုံးအပို<input type="number" min="0" step="1" value={item.capExtraCount || ""} onChange={(event) => updateCapConfig(item.id, "capExtraCount", event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 px-2 text-center text-base font-black text-slate-900" /><span className="mt-1 block text-[11px] text-slate-500">ပုံမှန် {Number(item.capNormalCount || item.bottleCount || 0).toLocaleString()} + အပို = {Number(item.capTotalCount || item.bottleCount || 0).toLocaleString()} ဖုံး</span></label></div> : null}
+          {!isCap && !isTubeItem(item) && capItems.length ? <div className="mt-3 grid grid-cols-2 gap-3 border-t border-violet-100 pt-3"><label className="text-xs font-bold text-slate-600">အဖုံးအရောင်<select value={item.capProductKey || ""} onChange={(event) => updateCapConfig(item.id, "capProductKey", event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 bg-white px-2 text-sm font-black text-slate-900"><option value="">အဖုံး မသတ်မှတ်ရသေး</option>{capItems.map((cap) => <option key={cap.productKey} value={cap.productKey}>{cap.productName}</option>)}</select></label><label className="text-xs font-bold text-slate-600">နေရာ<select value={item.capLocation || "မန္တလေး"} onChange={(event) => updateCapConfig(item.id, "capLocation", event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 bg-white px-2 text-sm font-black text-slate-900"><option>မန္တလေး</option><option>အေးသာယာ</option><option>Soe</option><option>အခြား</option></select></label><label className="text-xs font-bold text-slate-600">တစ်အိတ်ဆံ့<select value={item.capPackSize || 5000} onChange={(event) => updateCapConfig(item.id, "capPackSize", event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 bg-white px-2 text-sm font-black text-slate-900"><option value="5000">5000</option><option value="100">100</option></select></label><label className="text-xs font-bold text-slate-600">အဖုံးအပို<input type="number" min="0" step="1" value={item.capExtraCount || ""} onChange={(event) => updateCapConfig(item.id, "capExtraCount", event.target.value)} disabled={disabled} className="mt-1 h-10 w-full rounded-lg border-2 border-violet-200 px-2 text-center text-base font-black text-slate-900" /><span className="mt-1 block text-[11px] text-slate-500">ပုံမှန် {Number(item.capNormalCount || item.bottleCount || 0).toLocaleString()} + အပို = {Number(item.capTotalCount || item.bottleCount || 0).toLocaleString()} ဖုံး</span></label></div> : null}
         </div>;
       })}</div> : null}
 
