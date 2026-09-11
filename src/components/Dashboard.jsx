@@ -1960,7 +1960,7 @@ export default function Dashboard({ view = "overview" }) {
           <>
             {/* Compact Summary Box */}
             <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {/* Customer and balance overview */}
             {isSangEulDashboard ? <Link
               href="/balance-detail"

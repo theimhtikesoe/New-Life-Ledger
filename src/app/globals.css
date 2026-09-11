@@ -478,6 +478,45 @@ textarea {
   transition: all 0.2s ease-out;
 }
 
+/* Dashboard KPI cards: fit the complete KPI overview on a phone without
+   making the primary numbers unreadable. Desktop sizing remains unchanged. */
+@media (max-width: 639px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+  .dashboard-kpi-grid > * {
+    min-height: 6.25rem !important;
+    padding: 0.625rem !important;
+  }
+  .dashboard-kpi-grid > * .text-2xl {
+    font-size: 1.1rem !important;
+    line-height: 1.2;
+  }
+  .dashboard-kpi-grid > * .text-xl {
+    font-size: 0.98rem !important;
+    line-height: 1.2;
+  }
+  .dashboard-kpi-grid > * .text-base {
+    font-size: 0.78rem !important;
+    line-height: 1.2;
+  }
+  .dashboard-kpi-grid > * .text-sm {
+    font-size: 0.68rem !important;
+    line-height: 1.2;
+  }
+  .dashboard-kpi-grid > * .text-xs {
+    font-size: 0.62rem !important;
+    line-height: 1.15;
+  }
+  .dashboard-kpi-grid > * .mt-2 {
+    margin-top: 0.35rem;
+  }
+  .dashboard-kpi-grid > * .mt-3 {
+    margin-top: 0.5rem;
+  }
+}
+
 
 /* Keep the single Refresh control in a predictable empty rail beside the
    centered app shell. It stays below the browser/PWA safe area without using
