@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { encodeActorHeader } from "@/lib/actor-header";
 
 function number(value) { return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
 function todayValue() { const now = new Date(); const local = new Date(now.getTime() + (6 * 60 + 30) * 60 * 1000); return `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, "0")}-${String(local.getUTCDate()).padStart(2, "0")}`; }
 function movementLabel(type) { return ({ SALE_OUT: "ရောင်းထွက် / ဗူးတွင်သုံး", ADJUSTMENT_IN: "စာရင်းညှိဝင်", ADJUSTMENT_OUT: "စာရင်းညှိထွက်", REVERSAL: "ပြန်လှန်" })[type] || type; }
+function actorHeaders(headers = {}) { const actorName = typeof window !== "undefined" ? window.localStorage.getItem("actorName") || "" : ""; return { ...headers, "x-actor-name": encodeActorHeader(actorName) }; }
 const CAP_LOCATIONS = ["မန္တလေး", "အေးသာယာ", "Soe"];
 const CAP_COLORS = ["ပြာ", "ဝါ", "စိမ်း", "နီ", "ဖြူ", "ပန်း", "နက်/အမဲ"];
 const EMPTY_FORM = { location: "မန္တလေး", color: "ပြာ", packSize: "5000", packs: "", note: "", movementDate: todayValue() };
@@ -72,7 +74,7 @@ export default function CapStockPage() {
   async function saveCapStock(event) {
     event.preventDefault(); setSaving(true); setError(""); setSaveMessage("");
     try {
-      const response = await fetch("/api/factory-stock", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "addCapStock", rows: [capForm], date: capForm.movementDate }) });
+      const response = await fetch("/api/factory-stock", { method: "POST", headers: actorHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ action: "addCapStock", rows: [capForm], date: capForm.movementDate }) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "အဖုံး Stock သိမ်း၍မရပါ။");
       setSaveMessage("အဖုံး Stock ထည့်သိမ်းပြီးပါပြီ။"); setCapForm({ ...EMPTY_FORM, movementDate: todayValue() }); await loadStock();
@@ -87,7 +89,7 @@ export default function CapStockPage() {
   async function updateMovement(event) {
     event.preventDefault(); setSaving(true); setError("");
     try {
-      const response = await fetch("/api/factory-stock", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editingMovement.id, ...editForm }) });
+      const response = await fetch("/api/factory-stock", { method: "PATCH", headers: actorHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: editingMovement.id, ...editForm }) });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "အဖုံး Stock ပြင်၍မရပါ။");
       setEditingMovement(null); setSaveMessage("အဖုံး Stock မှတ်တမ်း ပြင်ပြီးပါပြီ။"); await loadStock();
@@ -98,7 +100,7 @@ export default function CapStockPage() {
     if (!window.confirm(`${movement.productName} ${number(movement.quantityCards || 0)} အိတ် မှတ်တမ်းကို ဖျက်မှာ သေချာပါသလား?`)) return;
     setSaving(true); setError("");
     try {
-      const response = await fetch(`/api/factory-stock?id=${encodeURIComponent(movement.id)}`, { method: "DELETE" });
+      const response = await fetch(`/api/factory-stock?id=${encodeURIComponent(movement.id)}`, { method: "DELETE", headers: actorHeaders() });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "အဖုံး Stock မှတ်တမ်း ဖျက်၍မရပါ။");
       setSaveMessage("အဖုံး Stock မှတ်တမ်း ဖျက်ပြီးပါပြီ။"); await loadStock();

@@ -56,6 +56,8 @@ describe("factory stock and dashboard loading contract", () => {
     expect(capPageSource).toContain("dailyCapAddedPieces");
     expect(capPageSource).toContain("ယနေ့ အသစ်ထည့်သော အဖုံး");
     expect(capPageSource).toContain("border-emerald-300 bg-emerald-50");
+    expect(capPageSource).toContain('"x-actor-name": encodeActorHeader(actorName)');
+    expect(fs.readFileSync(path.join(root, "src/lib/audit.js"), "utf8")).toContain("သက်မွန်နှင်း");
   });
 });
 
