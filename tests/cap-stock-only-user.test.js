@@ -13,6 +13,7 @@ describe("သက်မွန်နှင်း Cap Stock-only access", () => {
     expect(layoutSource).toContain("const isCapStockOnlyActor = actorName === 'သက်မွန်နှင်း';");
     expect(layoutSource).toContain("isCapStockOnlyActor && pathname !== '/cap-stock'");
     expect(layoutSource).toContain("isCapStockOnlyActor && pathname === '/cap-stock'");
+    expect(layoutSource).toContain("(isCapStockOnlyActor && pathname === '/cap-stock')");
     expect(layoutSource).toContain("normalizedActorName !== 'သက်မွန်နှင်း'");
   });
 

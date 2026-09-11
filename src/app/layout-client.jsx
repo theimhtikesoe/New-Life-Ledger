@@ -365,7 +365,12 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   };
 
-  const canRenderCurrentPage = authenticated && ((!isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor) || pathname === '/production' || pathname === '/ledger' || (isLedgerOnlyActor && (pathname === '/' || pathname === '/balance-detail')) || (isCapStockOnlyActor && pathname === '/cap-stock'));
+  const canRenderCurrentPage = authenticated && (
+    (!isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor)
+    || (isProductionOnlyActor && pathname === '/production')
+    || (isLedgerOnlyActor && (pathname === '/' || pathname === '/ledger' || pathname === '/balance-detail'))
+    || (isCapStockOnlyActor && pathname === '/cap-stock')
+  );
 
   return (
     <>
