@@ -13,3 +13,15 @@ describe("Transaction delete UI cleanup", () => {
 });
 
 export {};
+
+const ledgerDeleteSource = readFileSync(resolve(process.cwd(), "src/app/api/transactions/[id]/route.js"), "utf8");
+const cashSaleDeleteSource = readFileSync(resolve(process.cwd(), "src/app/api/customers/[id]/cash-sales/[saleId]/route.js"), "utf8");
+
+describe("Sale stock movement cleanup", () => {
+  it("removes Ledger and Cash Sale stock movements when deleting a sale", () => {
+    expect(ledgerDeleteSource).toContain('sourceType: "LEDGER", sourceId: ledger.id');
+    expect(cashSaleDeleteSource).toContain('sourceType: "CASH_SALE", sourceId: cashSale.id');
+    expect(ledgerDeleteSource).toContain("tx.factoryStockMovement.deleteMany");
+    expect(cashSaleDeleteSource).toContain("tx.factoryStockMovement.deleteMany");
+  });
+});

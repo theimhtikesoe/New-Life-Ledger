@@ -52,6 +52,9 @@ export async function DELETE(request, { params }) {
         },
       });
 
+      // Remove the sale-derived stock movements together with the Cash Sale row.
+      // Otherwise deleted bottle/cap sales would continue reducing Factory Stock.
+      await tx.factoryStockMovement.deleteMany({ where: { sourceType: "CASH_SALE", sourceId: cashSale.id } });
       await tx.cashSale.delete({ where: { id: cashSale.id } });
 
       // CashSale is intentionally outside receivable arithmetic.

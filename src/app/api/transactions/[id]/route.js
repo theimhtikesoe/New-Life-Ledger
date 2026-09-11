@@ -60,6 +60,9 @@ export async function DELETE(request, { params }) {
         },
       });
 
+      // Remove the sale-derived stock movements together with the Ledger row.
+      // Otherwise deleted bottle/cap sales would continue reducing Factory Stock.
+      await tx.factoryStockMovement.deleteMany({ where: { sourceType: "LEDGER", sourceId: ledger.id } });
       // Keep the original delete behavior; the audit snapshot is written first.
       await tx.ledger.delete({
         where: { id: transactionId },
