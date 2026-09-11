@@ -38,4 +38,14 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryPageSource).toContain('role="dialog"');
     expect(factoryPageSource).toContain("အသေးစိတ်မှတ်တမ်း");
   });
+
+  it("keeps cap stock guidance visible and uses a popup for details", () => {
+    const capPageSource = fs.readFileSync(path.join(root, "src/app/cap-stock/page.js"), "utf8");
+    expect(capPageSource).toContain("အဖုံးအရောင်အလိုက် စက်ရုံလက်ကျန်");
+    expect(capPageSource).toContain("ဗူးရောင်းတိုင်း ပုံမှန်အဖုံးနှင့် အပိုအဖုံးကို အရောင်အလိုက် အလိုအလျောက်နုတ်တွက်ထားသည်။");
+    expect(capPageSource).toContain('role="dialog"');
+    expect(capPageSource).toContain('aria-labelledby="cap-stock-detail-title"');
+    expect(capPageSource).toContain("max-h-[65dvh]");
+    expect(dashboardSource).toContain("factoryCapPieces.toLocaleString()} အိတ်");
+  });
 });

@@ -2065,7 +2065,7 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-pink-800 sm:text-base">စက်ရုံအဖုံး Net Stock Change</p>
-                <p className="mt-2 text-2xl font-black text-pink-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryCapPieces.toLocaleString()} ဖုံး`}</p>
+                <p className="mt-2 text-2xl font-black text-pink-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryCapPieces.toLocaleString()} အိတ်`}</p>
                 <p className="mt-1 text-sm font-bold text-pink-700">ဗူးရောင်းရာတွင်သုံးသော အဖုံးအရောင်အလိုက် လက်ကျန်</p>
               </div>
               <p className="pt-2 text-sm font-bold text-pink-700">အသေးစိတ်ကြည့်ရန် →</p>
