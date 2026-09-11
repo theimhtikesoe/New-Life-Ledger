@@ -27,8 +27,11 @@ describe("Production page enhancements", () => {
 
   it("makes Ledger cap color selection location-aware", () => {
     expect(salesItemPickerSource).toContain('const capLocations = ["မန္တလေး", "အေးသာယာ", "Soe", "အခြား"]');
-    expect(salesItemPickerSource).toContain("အဖုံးအရောင် · {item.capLocation || \"မန္တလေး\"}");
-    expect(salesItemPickerSource).toContain("{item.capLocation || \"မန္တလေး\"} · {cap.productName}");
+    expect(salesItemPickerSource).toContain("const capSummary = !isCap && !isTube ?");
+    expect(salesItemPickerSource).toContain("{editingItem.capLocation || \"မန္တလေး\"} · {cap.productName}");
+    expect(salesItemPickerSource).toContain('aria-labelledby="sale-item-edit-title"');
+    expect(salesItemPickerSource).toContain("ပြင်ရန်");
+    expect(salesItemPickerSource).toContain("editingItemId");
   });
 
   it("accepts decimal tube quantities and preserves the exact entered value", () => {
