@@ -215,6 +215,12 @@ export default function PINLogin({ onSuccess, onLogout }) {
         completeActorSelection(actorName);
         return;
       }
+      if (CAP_STOCK_ONLY_ACTORS.includes(actorName)) {
+        // Cap Stock staff use the shared authenticated session and do not need
+        // a second PIN when switching to their restricted workspace.
+        completeActorSelection(actorName);
+        return;
+      }
       if (PRODUCTION_ONLY_ACTORS.includes(actorName)) {
         await fetchAuthJson("/api/auth/actor-session", {
           method: "POST",

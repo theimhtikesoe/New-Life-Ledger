@@ -10,6 +10,8 @@ const dashboardSource = fs.readFileSync(path.join(root, "src/components/Dashboar
 describe("သက်မွန်နှင်း Cap Stock-only access", () => {
   it("registers the actor and restricts the shell to Cap Stock", () => {
     expect(pinSource).toContain("သက်မွန်နှင်း");
+    expect(pinSource).toContain("if (CAP_STOCK_ONLY_ACTORS.includes(actorName))");
+    expect(pinSource).toContain("completeActorSelection(actorName);");
     expect(layoutSource).toContain("const isCapStockOnlyActor = actorName === 'သက်မွန်နှင်း';");
     expect(layoutSource).toContain("isCapStockOnlyActor && pathname !== '/cap-stock'");
     expect(layoutSource).toContain("isCapStockOnlyActor && pathname === '/cap-stock'");
