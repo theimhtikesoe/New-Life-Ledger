@@ -277,7 +277,12 @@ export function aggregateStockMovements(movements = []) {
       currentBottles: 0,
     };
     const cards = Number(movement.quantityCards || 0);
-    const bottles = Number(movement.quantityBottles || 0);
+    const storedBottles = Number(movement.quantityBottles || 0);
+    // Legacy manual cap-opening rows stored only bag count. Reconstruct their
+    // piece count from the pack size so Dashboard and Cap Stock stay aligned.
+    const bottles = movement.stockType === STOCK_TYPES.CAP && storedBottles === 0 && cards !== 0
+      ? cards * Number(movement.capacity || 1)
+      : storedBottles;
     current.currentCards += cards;
     current.currentBottles += bottles;
     if (movement.movementType === MOVEMENT_TYPES.PRODUCTION_IN) {

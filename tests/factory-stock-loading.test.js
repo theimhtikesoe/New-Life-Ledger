@@ -63,6 +63,19 @@ describe("cap stock unit accounting", () => {
     expect(summary[0].currentCards).toBeCloseTo(0.96);
   });
 
+  it("reconstructs cap pieces from legacy bag-only opening rows", () => {
+    const summary = aggregateStockMovements([{
+      stockType: "CAP",
+      productKey: "CAP::မန္တလေး::ပြာ::5000",
+      productName: "မန္တလေး · ပြာ",
+      capacity: 5000,
+      movementType: "ADJUSTMENT_IN",
+      quantityCards: 240,
+      quantityBottles: 0,
+    }]);
+    expect(summary[0]).toMatchObject({ currentCards: 240, currentBottles: 1200000 });
+  });
+
   it("reduces bottle stock for a Ledger sale and restores it when that sale is absent", () => {
     const sale = saleMovementRows([{ id: "ledger-sale-1", date: "2026-09-11", saleItems: [{ productType: "bottle", productName: ".3 ဖြူ", productKey: ".3 ဖြူ::100", capacity: 100, bottleCount: 200, cardCount: 2 }] }]);
     const production = { stockType: "BOTTLE", productKey: ".3 ဖြူ::100", productName: ".3 ဖြူ", capacity: 100, movementType: "PRODUCTION_IN", quantityCards: 10, quantityBottles: 1000 };
