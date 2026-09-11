@@ -57,6 +57,8 @@ describe("factory stock and dashboard loading contract", () => {
     expect(capPageSource).toContain("ယနေ့ အသစ်ထည့်သော အဖုံး");
     expect(capPageSource).toContain("border-emerald-300 bg-emerald-50");
     expect(capPageSource).toContain('"x-actor-name": encodeActorHeader(actorName)');
+    expect(capPageSource).toContain('value="500">500 ဆံ့ / အိတ်');
+    expect(fs.readFileSync(path.join(root, "src/components/SalesItemPicker.jsx"), "utf8")).toContain('value="500">500 ဆံ့ / အိတ်');
     expect(fs.readFileSync(path.join(root, "src/lib/audit.js"), "utf8")).toContain("သက်မွန်နှင်း");
   });
 });
@@ -84,6 +86,15 @@ describe("cap stock unit accounting", () => {
       quantityBottles: 0,
     }]);
     expect(summary[0]).toMatchObject({ currentCards: 240, currentBottles: 1200000 });
+  });
+
+  it("keeps 500-capacity cap stock separate and converts pieces by 500", () => {
+    const rows = saleMovementRows([{ id: "sale-500", date: "2026-09-11", saleItems: [{ productType: "bottle", productName: ".3 ဖြူ", productKey: ".3 ဖြူ::100", capacity: 100, bottleCount: 500, cardCount: 5, capNormalCount: 500, capProductKey: "ပြာ", capProductName: "ပြာ", capLocation: "မန္တလေး", capPackSize: 500 }] }]);
+    const cap = rows.find((row) => row.stockType === "CAP");
+    expect(cap).toMatchObject({ productKey: "CAP::မန္တလေး::ပြာ::500", quantityBottles: -500, capacity: 500 });
+    const summary = aggregateStockMovements([{ ...cap, movementType: "ADJUSTMENT_IN", quantityCards: 2, quantityBottles: 1000 }, cap]);
+    expect(summary[0].currentCards).toBeCloseTo(1);
+    expect(summary[0].currentBottles).toBe(500);
   });
 
   it("reduces bottle stock for a Ledger sale and restores it when that sale is absent", () => {
