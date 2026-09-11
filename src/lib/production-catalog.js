@@ -76,6 +76,7 @@ export const CAP_ITEMS = [
   ["အပန်း", "CAP_PINK"],
   ["အစိမ်း", "CAP_GREEN"],
   ["အမဲ", "CAP_BLACK"],
+  ["ရောင်စုံ", "CAP_MIXED"],
 ].map(([color, productKey]) => ({
   productKey,
   categoryKey: CAP_GROUP.key,
