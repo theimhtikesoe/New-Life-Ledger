@@ -5,11 +5,11 @@ import { getActorName, writeAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
-function balanceDelta(type, amount) {
+function balanceDelta(type, amount, discountAmount = 0) {
   // When deleting, we reverse the effect
   // CREDIT (အကြွေးတိုး) increased balance, so deleting it decreases balance
   // DEBIT (ငွေချေ) decreased balance, so deleting it increases balance
-  return type === "CREDIT" ? -amount : amount;
+  return type === "CREDIT" ? -amount : amount + discountAmount;
 }
 
 export async function DELETE(request, { params }) {
@@ -34,7 +34,7 @@ export async function DELETE(request, { params }) {
         where: { id: ledger.customerId },
         data: {
           current_balance: {
-            increment: balanceDelta(ledger.type, ledger.amount),
+            increment: balanceDelta(ledger.type, ledger.amount, ledger.discountAmount),
           },
         },
       });
@@ -51,6 +51,8 @@ export async function DELETE(request, { params }) {
           customerId: ledger.customerId,
           type: ledger.type,
           amount: ledger.amount,
+          discountAmount: ledger.discountAmount,
+          discountNote: ledger.discountNote,
           paymentType: ledger.paymentType,
           note: ledger.note,
           date: ledger.date.toISOString(),

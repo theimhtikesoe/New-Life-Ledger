@@ -15,6 +15,8 @@ const ledgerSelect = {
   rate: true,
   deductions: true,
   amount: true,
+  discountAmount: true,
+  discountNote: true,
   note: true,
   paymentType: true,
   saleItems: true,

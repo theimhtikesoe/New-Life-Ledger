@@ -44,6 +44,8 @@ export async function GET(request) {
           cartons: true,
           rate: true,
           amount: true,
+          discountAmount: true,
+          discountNote: true,
           note: true,
           paymentType: true,
         },

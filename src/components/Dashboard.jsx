@@ -316,6 +316,8 @@ export default function Dashboard({ view = "overview" }) {
     deductions: "",
     amount: "",
     manualAmount: "",
+    discountAmount: "",
+    discountNote: "",
     note: "",
     date: "",
     paymentType: "",
@@ -462,7 +464,7 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     const resetDraftState = () => {
       setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
-      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
+      setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
       setEditForm({ name: "", phone: "", routeTag: "" });
       setEditingCustomer(null);
       setSearch("");
@@ -1138,6 +1140,8 @@ export default function Dashboard({ view = "overview" }) {
       const manualAmountText = String(ledgerForm.manualAmount ?? "").trim();
       const hasManualAmount = !isCashSale && manualAmountText !== "";
       const amount = hasManualAmount ? Math.max(0, Math.round(Number(manualAmountText || 0))) : autoAmount;
+      const ledgerDiscountAmount = type === "DEBIT" ? Math.max(0, Math.round(Number(ledgerForm.discountAmount || 0))) : 0;
+      const ledgerDiscountNote = type === "DEBIT" ? String(ledgerForm.discountNote || "").trim() : "";
       const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
       const hasCashSaleBreakdown = isCashSale && hasPaymentBreakdownInput(ledgerForm.paymentBreakdown);
       const cashSaleBreakdownTotal = hasCashSaleBreakdown ? paymentSplitTotal(ledgerForm.paymentBreakdown) : 0;
@@ -1156,7 +1160,7 @@ export default function Dashboard({ view = "overview" }) {
       
       // Cash sales are stored outside Ledger and never change Customer.current_balance.
       if (!isCashSale) {
-        const balanceDelta = type === "CREDIT" ? amount : -amount;
+        const balanceDelta = type === "CREDIT" ? amount : -(amount + ledgerDiscountAmount);
         const newBalance = (selectedCustomer?.current_balance || 0) + balanceDelta;
         setSelectedCustomer(prev => ({ ...prev, current_balance: newBalance }));
         setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c));
@@ -1173,6 +1177,8 @@ export default function Dashboard({ view = "overview" }) {
           rate: Number(ledgerForm.rate || 0) || null,
           deductions: Number(ledgerForm.deductions || 0),
           amount: amountToSave,
+          discountAmount: isCashSale ? 0 : ledgerDiscountAmount,
+          discountNote: isCashSale ? null : ledgerDiscountNote,
           note: ledgerForm.note,
           saleItems: ledgerForm.saleItems?.length ? ledgerForm.saleItems : undefined,
           paymentType: hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType || (isCashSale ? "CASH" : null),
@@ -1215,6 +1221,8 @@ export default function Dashboard({ view = "overview" }) {
         deductions: "",
         amount: "",
         manualAmount: "",
+        discountAmount: "",
+        discountNote: "",
         note: "",
         date: "",
         paymentType: "",
@@ -2404,6 +2412,38 @@ export default function Dashboard({ view = "overview" }) {
                         </div>
                       </div>
 
+                      {ledgerForm.type === "DEBIT" ? (
+                        <div className="grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:grid-cols-2">
+                          <label className="space-y-1 text-xs font-bold text-amber-950">
+                            လျှော့စျေး (Ks)
+                            <input
+                              type="number"
+                              min="0"
+                              inputMode="numeric"
+                              placeholder="0"
+                              value={ledgerForm.discountAmount || ""}
+                              onChange={(event) => setLedgerForm({ ...ledgerForm, discountAmount: event.target.value })}
+                              className="mt-1 h-11 w-full rounded-lg border border-amber-200 bg-white px-3 text-right text-base font-black text-slate-900 outline-none focus:border-amber-500"
+                              disabled={isSubmitting}
+                            />
+                          </label>
+                          <label className="space-y-1 text-xs font-bold text-amber-950">
+                            လျှော့စျေးအကြောင်းပြချက်
+                            <input
+                              type="text"
+                              placeholder="ဥပမာ - ပုံမှန် Customer လျှော့စျေး"
+                              value={ledgerForm.discountNote || ""}
+                              onChange={(event) => setLedgerForm({ ...ledgerForm, discountNote: event.target.value })}
+                              className="mt-1 h-11 w-full rounded-lg border border-amber-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none focus:border-amber-500"
+                              disabled={isSubmitting}
+                            />
+                          </label>
+                          <p className="sm:col-span-2 text-[11px] leading-4 text-amber-800">
+                            ဒီပမာဏက Customer အကြွေးကို လျှော့ပေးမည့်ငွေ ဖြစ်ပြီး ငွေချေမှတ်တမ်းတွင် သီးခြားပြပါမည်။
+                          </p>
+                        </div>
+                      ) : null}
+
                       {salesCatalogError ? <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">{salesCatalogError}</p> : null}
                       <SalesItemPicker
                         catalog={salesCatalog}
@@ -2631,6 +2671,7 @@ export default function Dashboard({ view = "overview" }) {
                               </td>
                               <td className="px-4 py-3 text-xs text-slate-600 max-w-[200px]">
                                 <p className="truncate">{ledger.note || "-"}</p>
+                                {ledger.discountAmount > 0 ? <p className="mt-1 truncate font-semibold text-amber-700">လျှော့စျေး: {formatMoney(ledger.discountAmount)}{ledger.discountNote ? ` · ${ledger.discountNote}` : ""}</p> : null}
                                 {saleItemsSummary(ledger.saleItems) ? <p className="mt-1 max-w-[320px] truncate font-medium text-violet-800">ဗူး: {saleItemsSummary(ledger.saleItems)}</p> : null}
                               </td>
                               <td className="px-4 py-3 text-center">

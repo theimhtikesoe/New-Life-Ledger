@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 function signedLedgerAmount(transaction) {
-  return transaction.type === "CREDIT" ? transaction.amount : -transaction.amount;
+  return transaction.type === "CREDIT" ? transaction.amount : -(transaction.amount + (transaction.discountAmount || 0));
 }
 
 export async function GET() {
@@ -39,6 +39,8 @@ export async function GET() {
           rate: true,
           deductions: true,
           amount: true,
+          discountAmount: true,
+          discountNote: true,
           note: true,
           paymentType: true,
           saleItems: true,
@@ -166,7 +168,7 @@ export async function GET() {
           priceSettings: priceSettings.length,
         },
         integrity: {
-          algorithm: "Customer.current_balance = sum(CREDIT amounts) - sum(DEBIT amounts)",
+          algorithm: "Customer.current_balance = sum(CREDIT amounts) - sum(DEBIT amounts + discountAmount)",
           customerBalanceTotal,
           transactionNetBalance,
           totalDifference: customerBalanceTotal - transactionNetBalance,

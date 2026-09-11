@@ -8,14 +8,9 @@ import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
-function balanceDelta(type, amount) {
-  return type === "CREDIT" ? amount : -amount;
-}
-
 export async function GET(request, { params }) {
   try {
     await ensureDatabase();
-
     const customerId = params.id;
     const { searchParams } = new URL(request.url);
     const requestedLimit = Number(searchParams.get("limit") || 50);
@@ -25,52 +20,25 @@ export async function GET(request, { params }) {
     const type = searchParams.get("type");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-
     const date = {};
     if (startDate) date.gte = new Date(`${startDate}T00:00:00.000Z`);
     if (endDate) date.lt = new Date(`${endDate}T00:00:00.000Z`);
-
     const where = {
       customerId,
       ...(type === "CREDIT" || type === "DEBIT" ? { type } : {}),
       ...(Object.keys(date).length ? { date } : {}),
     };
-
+    const select = {
+      id: true, date: true, type: true, saleType: true, itemSize: true,
+      cartons: true, rate: true, deductions: true, amount: true,
+      discountAmount: true, discountNote: true, note: true,
+      paymentType: true, saleItems: true,
+    };
     const [items, total] = await Promise.all([
-      prisma.ledger.findMany({
-        where,
-        select: {
-          id: true,
-          date: true,
-          type: true,
-          saleType: true,
-          itemSize: true,
-          cartons: true,
-          rate: true,
-          deductions: true,
-          amount: true,
-          note: true,
-          paymentType: true,
-          saleItems: true,
-        },
-        orderBy: [{ date: "desc" }, { id: "desc" }],
-        skip: offset,
-        take: limit,
-      }),
+      prisma.ledger.findMany({ where, select, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: limit }),
       prisma.ledger.count({ where }),
     ]);
-
-    return NextResponse.json({
-      data: {
-        items,
-        pagination: {
-          offset,
-          limit,
-          total,
-          hasMore: offset + items.length < total,
-        },
-      },
-    });
+    return NextResponse.json({ data: { items, pagination: { offset, limit, total, hasMore: offset + items.length < total } } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }
@@ -79,94 +47,53 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   try {
     await ensureDatabase();
-
     const customerId = params.id;
     const body = await request.json();
     const type = body.type === "DEBIT" ? "DEBIT" : "CREDIT";
     const amount = Math.round(Number(body.amount || 0));
+    const discountAmount = type === "DEBIT" ? Math.max(0, Math.round(Number(body.discountAmount || 0))) : 0;
+    const discountNote = type === "DEBIT" ? body.discountNote?.trim() || null : null;
     const deductions = Math.round(Number(body.deductions || 0));
     const saleItems = Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
-
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "amount must be greater than zero" }, { status: 400 });
     }
-
     const result = await prisma.$transaction(async (tx) => {
       const customer = await tx.customer.update({
         where: { id: customerId },
-        data: {
-          current_balance: {
-            increment: balanceDelta(type, amount),
-          },
-        },
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          routeTag: true,
-          current_balance: true,
-          createdAt: true,
-        },
+        data: { current_balance: { increment: type === "CREDIT" ? amount : -(amount + discountAmount) } },
+        select: { id: true, name: true, phone: true, routeTag: true, current_balance: true, createdAt: true },
       });
-
       const ledger = await tx.ledger.create({
         data: {
-          customerId,
-          type,
-          saleType: body.saleType || "RETAIL",
+          customerId, type, saleType: body.saleType || "RETAIL",
           itemSize: body.itemSize?.trim() || null,
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
           rate: body.rate ? Math.round(Number(body.rate)) : null,
-          deductions,
-          amount,
+          deductions, amount, discountAmount, discountNote,
           note: body.note?.trim() || null,
-          paymentType: body.paymentType || null,
-          saleItems,
+          paymentType: body.paymentType || null, saleItems,
           date: body.date ? getMyanmarDayRange(body.date).start : new Date(),
         },
         select: {
-          id: true,
-          date: true,
-          type: true,
-          saleType: true,
-          itemSize: true,
-          cartons: true,
-          rate: true,
-          deductions: true,
-          amount: true,
-          note: true,
-          paymentType: true,
-          saleItems: true,
+          id: true, date: true, type: true, saleType: true, itemSize: true,
+          cartons: true, rate: true, deductions: true, amount: true,
+          discountAmount: true, discountNote: true, note: true,
+          paymentType: true, saleItems: true,
         },
       });
-
       const stockMovements = saleMovementRows([ledger], { actorName: getActorName(request), sourceType: "LEDGER" });
       if (stockMovements.length) await tx.factoryStockMovement.createMany({ data: stockMovements });
-
       await writeAuditLog({
-        db: tx,
-        actorName: getActorName(request),
-        action: type === "DEBIT" ? "PAYMENT" : "DEBT_INCREASE",
-        entityType: "Ledger",
-        entityId: ledger.id,
-        entityLabel: customer.name,
+        db: tx, actorName: getActorName(request), action: type === "DEBIT" ? "PAYMENT" : "DEBT_INCREASE",
+        entityType: "Ledger", entityId: ledger.id, entityLabel: customer.name,
         summary: type === "DEBIT"
-          ? `${customer.name} ထံမှ ငွေချေ ${amount.toLocaleString()} Ks`
+          ? `${customer.name} ထံမှ ငွေချေ ${amount.toLocaleString()} Ks${discountAmount ? ` (လျှော့ ${discountAmount.toLocaleString()} Ks)` : ""}`
           : `${customer.name} အကြွေးတိုး ${amount.toLocaleString()} Ks`,
-        metadata: {
-          customerId,
-          type,
-          amount,
-          paymentType: ledger.paymentType,
-          note: ledger.note,
-          saleItems: ledger.saleItems,
-          wholesaleTracking: getWholesaleTracking(amount),
-        },
+        metadata: { customerId, type, amount, discountAmount, discountNote, paymentType: ledger.paymentType, note: ledger.note, saleItems: ledger.saleItems, wholesaleTracking: getWholesaleTracking(amount) },
       });
-
       return { customer, ledger };
     });
-
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });

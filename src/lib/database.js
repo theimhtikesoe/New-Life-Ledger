@@ -29,7 +29,7 @@ const REQUIRED_TABLES = [
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
-const REQUIRED_LEDGER_COLUMNS = ["saleItems"];
+const REQUIRED_LEDGER_COLUMNS = ["saleItems", "discountAmount", "discountNote"];
 const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
 const REQUIRED_PRICE_SETTING_COLUMNS = ["tubeType"];
 const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit", "tubeMetrics"];
@@ -426,6 +426,8 @@ export async function ensureDatabase() {
           "rate" INTEGER,
           "deductions" INTEGER NOT NULL DEFAULT 0,
           "amount" INTEGER NOT NULL,
+          "discountAmount" INTEGER NOT NULL DEFAULT 0,
+          "discountNote" TEXT,
           "note" TEXT,
           "paymentType" TEXT,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -536,6 +538,8 @@ export async function ensureDatabase() {
       );
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "paymentType" TEXT`);
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "saleItems" JSONB`);
+      await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "discountAmount" INTEGER NOT NULL DEFAULT 0`);
+      await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "discountNote" TEXT`);
       await setupQuery(`ALTER TABLE "CashSale" ADD COLUMN IF NOT EXISTS "saleItems" JSONB`);
       await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)`);
 

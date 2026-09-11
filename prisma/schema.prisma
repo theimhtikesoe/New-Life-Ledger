@@ -168,6 +168,8 @@ model Ledger {
   rate        Int?
   deductions  Int      @default(0)
   amount      Int
+  discountAmount Int    @default(0)
+  discountNote String?
   note        String?
   paymentType String?
   saleItems   Json?
