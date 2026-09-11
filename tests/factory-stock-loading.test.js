@@ -48,6 +48,11 @@ describe("factory stock and dashboard loading contract", () => {
     expect(capPageSource).toContain('aria-labelledby="cap-stock-detail-title"');
     expect(capPageSource).toContain("max-h-[65dvh]");
     expect(dashboardSource).toContain("factoryCapPieces.toLocaleString()} အိတ်");
+    expect(capPageSource).toContain("Edit");
+    expect(capPageSource).toContain("Delete");
+    expect(factoryRouteSource).toContain("export async function PATCH(request)");
+    expect(factoryRouteSource).toContain("export async function DELETE(request)");
+    expect(factoryRouteSource).toContain('sourceType: "CAP_OPENING"');
   });
 });
 

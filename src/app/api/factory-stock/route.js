@@ -133,3 +133,43 @@ export async function POST(request) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }
 }
+
+export async function PATCH(request) {
+  try {
+    await ensureDatabase();
+    await ensureFactoryStockTable();
+    const actorName = getActorName(request);
+    const body = await request.json().catch(() => ({}));
+    const id = String(body.id || "").trim();
+    const location = String(body.location || "").trim();
+    const color = String(body.color || "").trim();
+    const packSize = Math.round(Number(body.packSize || 0));
+    const packs = Math.round(Number(body.packs || 0));
+    if (!id || !location || !color || packSize <= 0 || packs <= 0) return NextResponse.json({ error: "ပြင်ဆင်ရန် အချက်အလက် မပြည့်စုံပါ။" }, { status: 400 });
+    const existing = await prisma.factoryStockMovement.findFirst({ where: { id, stockType: STOCK_TYPES.CAP, movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, sourceType: "CAP_OPENING" } });
+    if (!existing) return NextResponse.json({ error: "Manual Cap Stock မှတ်တမ်း မတွေ့ပါ။ ရောင်းထွက်စာရင်းကို တိုက်ရိုက်မပြင်နိုင်ပါ။" }, { status: 404 });
+    const updated = await prisma.factoryStockMovement.update({ where: { id }, data: { movementDate: String(body.movementDate || existing.movementDate), productKey: `CAP::${location}::${color}::${packSize}`, productName: `${location} · ${color}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, note: String(body.note || "").trim() || null, actorName } });
+    await writeAuditLog({ db: prisma, actorName, action: "CAP_STOCK_UPDATE", entityType: "FactoryStockMovement", entityId: id, entityLabel: "Cap Stock", summary: "အဖုံး Stock မှတ်တမ်း ပြင်ဆင်", metadata: { productKey: updated.productKey, packs } });
+    return NextResponse.json({ data: { id, updated: true } });
+  } catch (error) {
+    return NextResponse.json(databaseErrorResponse(error), { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    await ensureDatabase();
+    await ensureFactoryStockTable();
+    const actorName = getActorName(request);
+    const { searchParams } = new URL(request.url);
+    const id = String(searchParams.get("id") || "").trim();
+    if (!id) return NextResponse.json({ error: "ဖျက်ရန် မှတ်တမ်း ID မရှိပါ။" }, { status: 400 });
+    const existing = await prisma.factoryStockMovement.findFirst({ where: { id, stockType: STOCK_TYPES.CAP, movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, sourceType: "CAP_OPENING" } });
+    if (!existing) return NextResponse.json({ error: "Manual Cap Stock မှတ်တမ်း မတွေ့ပါ။ ရောင်းထွက်စာရင်းကို တိုက်ရိုက်မဖျက်နိုင်ပါ။" }, { status: 404 });
+    await prisma.factoryStockMovement.delete({ where: { id } });
+    await writeAuditLog({ db: prisma, actorName, action: "CAP_STOCK_DELETE", entityType: "FactoryStockMovement", entityId: id, entityLabel: "Cap Stock", summary: "အဖုံး Stock မှတ်တမ်း ဖျက်", metadata: { productKey: existing.productKey, quantityCards: existing.quantityCards } });
+    return NextResponse.json({ data: { id, deleted: true } });
+  } catch (error) {
+    return NextResponse.json(databaseErrorResponse(error), { status: 500 });
+  }
+}
