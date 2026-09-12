@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
+import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { saleMovementRows } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -85,47 +87,74 @@ export async function PATCH(request, { params }) {
     await ensureDatabase();
     const transactionId = params.id;
     const body = await request.json();
-    const discountAmount = Math.max(0, Math.round(Number(body.discountAmount || 0)));
-    const discountNote = body.discountNote?.trim() || null;
-
     const result = await prisma.$transaction(async (tx) => {
       const ledger = await tx.ledger.findUnique({
         where: { id: transactionId },
         include: { customer: { select: { name: true } } },
       });
       if (!ledger) throw new Error("Transaction not found");
-      if (ledger.type !== "DEBIT") throw new Error("Only payment transactions can receive discounts");
-
-      const previousDiscount = ledger.discountAmount || 0;
-      const balanceAdjustment = -(discountAmount - previousDiscount);
+      const type = body.type === "DEBIT" || body.type === "CREDIT" ? body.type : ledger.type;
+      const amount = Math.round(Number(body.amount));
+      const discountAmount = type === "DEBIT" ? Math.max(0, Math.round(Number(body.discountAmount || 0))) : 0;
+      const discountNote = type === "DEBIT" ? body.discountNote?.trim() || null : null;
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error("amount must be greater than zero");
+      const saleItems = Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
+      const date = body.date ? getMyanmarDayRange(body.date).start : ledger.date;
+      const previousEffect = ledger.type === "CREDIT" ? ledger.amount : -(ledger.amount + (ledger.discountAmount || 0));
+      const nextEffect = type === "CREDIT" ? amount : -(amount + discountAmount);
+      const balanceAdjustment = nextEffect - previousEffect;
       const customer = await tx.customer.update({
         where: { id: ledger.customerId },
         data: { current_balance: { increment: balanceAdjustment } },
-        select: { current_balance: true },
+        select: { current_balance: true, name: true },
       });
       const updated = await tx.ledger.update({
         where: { id: transactionId },
-        data: { discountAmount, discountNote },
+        data: {
+          type,
+          saleType: body.saleType || ledger.saleType || "RETAIL",
+          itemSize: body.itemSize?.trim() || null,
+          cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
+          rate: body.rate ? Math.round(Number(body.rate)) : null,
+          deductions: Math.round(Number(body.deductions || 0)),
+          amount,
+          discountAmount,
+          discountNote,
+          note: body.note?.trim() || null,
+          paymentType: body.paymentType || null,
+          saleItems,
+          date,
+        },
         select: {
-          id: true, customerId: true, date: true, type: true, amount: true,
-          discountAmount: true, discountNote: true, note: true, paymentType: true,
+          id: true, customerId: true, date: true, type: true, saleType: true, itemSize: true,
+          cartons: true, rate: true, deductions: true, amount: true, discountAmount: true,
+          discountNote: true, note: true, paymentType: true, saleItems: true,
         },
       });
+      await tx.factoryStockMovement.deleteMany({ where: { sourceType: "LEDGER", sourceId: ledger.id } });
+      const stockMovements = saleMovementRows([updated], { actorName: getActorName(request), sourceType: "LEDGER" });
+      if (stockMovements.length) await tx.factoryStockMovement.createMany({ data: stockMovements });
       await writeAuditLog({
         db: tx,
         actorName: getActorName(request),
-        action: "PAYMENT_DISCOUNT",
+        action: "UPDATE",
         entityType: "Ledger",
         entityId: ledger.id,
-        entityLabel: ledger.customer.name,
-        summary: `${ledger.customer.name} ငွေချေ ${ledger.amount.toLocaleString()} Ks တွင် လျှော့စျေး ${discountAmount.toLocaleString()} Ks သတ်မှတ်`,
-        metadata: { customerId: ledger.customerId, transactionId, previousDiscount, discountAmount, discountNote, balanceAdjustment },
+        entityLabel: customer.name,
+        summary: `${customer.name} ၏ ${type === "CREDIT" ? "အကြွေးတိုး" : "ငွေချေ"} မှတ်တမ်းကို ပြင်ဆင်`,
+        metadata: {
+          customerId: ledger.customerId,
+          transactionId,
+          previous: { type: ledger.type, amount: ledger.amount, discountAmount: ledger.discountAmount, date: ledger.date.toISOString(), saleItems: ledger.saleItems },
+          updated: { type, amount, discountAmount, discountNote, date: updated.date.toISOString(), saleItems: updated.saleItems },
+          balanceAdjustment,
+        },
       });
       return { ledger: updated, current_balance: customer.current_balance };
     });
     return NextResponse.json({ data: result });
   } catch (error) {
-    if (error.message === "Transaction not found" || error.message === "Only payment transactions can receive discounts") {
+    if (error.message === "Transaction not found" || error.message === "amount must be greater than zero") {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
