@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
 import { normalizeTubeIdentity, saleMovementRows } from "@/lib/factory-stock";
 import { TUBE_BY_MACHINE } from "@/lib/production-catalog";
 
 describe("Tube .3 ပြာ (S+1) and no-cap sales", () => {
-  it("includes the .3 ပြာ (S+1) Tube option on TB2", () => {
-    expect(TUBE_BY_MACHINE.TB2).toContainEqual({ g: ".3", color: "B (S+1)", pcsPerBag: 2500, label: ".3 ပြာ (S+1)" });
+  it("keeps .3 ပြာ (S+1) in Production Tube metrics, not the ledger Tube catalog", () => {
+    expect(TUBE_BY_MACHINE.TB2.some((item) => item.label === ".3 ပြာ (S+1)")).toBe(false);
+    const productionSource = fs.readFileSync("src/components/ProductionEntryPage.jsx", "utf8");
+    expect(productionSource).toContain('<option value=".3 ပြာ (S+1)">.3 ပြာ (S+1)</option>');
     expect(normalizeTubeIdentity(".3 B (S+1)")).toMatchObject({ productName: ".3 ပြာ (S+1)", capacity: 2500, productKey: ".3 ပြာ (S+1)::2500" });
   });
 
