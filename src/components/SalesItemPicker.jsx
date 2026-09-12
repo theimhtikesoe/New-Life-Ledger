@@ -164,8 +164,8 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
         totalAmount: Number(item.pricePerBottle || 0) * unitCount,
         capNormalCount: !isCap && !isTubeItem(item) ? (item.capDeliveryMode === "PARTIAL" ? Number(item.capActualCount || 0) : bottleCount) : 0,
         capTotalCount: !isCap && !isTubeItem(item) ? (item.capDeliveryMode === "PARTIAL" ? Number(item.capActualCount || 0) : bottleCount) + Number(item.capExtraCount || 0) : 0,
-        capBreakdown: !isCap && !isTubeItem(item) && Array.isArray(item.capBreakdown) && item.capBreakdown.length
-          ? item.capBreakdown.map((entry, index) => index === 0 ? { ...entry, count: item.capDeliveryMode === "PARTIAL" ? Number(item.capActualCount || 0) : bottleCount } : entry)
+        capBreakdown: !isCap && !isTubeItem(item) && Array.isArray(item.capBreakdown) && item.capBreakdown.length === 1
+          ? item.capBreakdown.map((entry) => ({ ...entry, count: item.capDeliveryMode === "PARTIAL" ? Number(item.capActualCount || 0) : bottleCount }))
           : item.capBreakdown,
       };
     }));
