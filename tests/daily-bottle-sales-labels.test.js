@@ -1,0 +1,25 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const root = process.cwd();
+const page = fs.readFileSync(path.join(root, "src/app/daily-bottle-sales/page.js"), "utf8");
+const route = fs.readFileSync(path.join(root, "src/app/api/daily-bottle-sales/route.js"), "utf8");
+
+describe("Daily Bottle Sales combined totals", () => {
+  it("uses a combined summary for the headline totals", () => {
+    expect(route).toContain("const overallSummary = summarizeRows([...customers, ...creditCustomers]);");
+    expect(route).toContain("totalBottles: overallSummary.totalBottles");
+    expect(route).toContain("totalAmount: overallSummary.totalAmount");
+  });
+
+  it("explains that the headline includes cash, payment, and debt increase", () => {
+    expect(page).toContain("စုစုပေါင်း ရောင်းဗူး");
+    expect(page).toContain("လက်ငင်း + ငွေချေ + အကြွေးတိုး");
+    expect(page).toContain("စုစုပေါင်း ရောင်းတန်ဖိုး");
+    expect(page).toContain("တကယ်ရရှိငွေ");
+    expect(page).toContain("လက်ငင်း + ငွေချေ သာ");
+  });
+});
+
+export {};

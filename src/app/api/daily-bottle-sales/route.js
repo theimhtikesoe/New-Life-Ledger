@@ -113,12 +113,15 @@ export async function GET(request) {
     const paidSummary = summarizeRows(paidCustomers);
     const cashSummary = summarizeRows(cashCustomers);
     const summary = summarizeRows(customers);
+    const overallSummary = summarizeRows([...customers, ...creditCustomers]);
 
     return NextResponse.json({ data: {
       date,
-      totalCustomers: customers.length,
-      totalBottles: summary.totalBottles,
-      totalAmount: summary.totalAmount,
+      // Headline physical sales include cash, payment-linked, and debt-increase
+      // rows. Debt-increase rows remain separated below for reconciliation.
+      totalCustomers: new Set([...customers, ...creditCustomers].map((row) => row.customer.id)).size,
+      totalBottles: overallSummary.totalBottles,
+      totalAmount: overallSummary.totalAmount,
       totalPaidAmount: summary.totalPaidAmount,
       totalDifference: customers.reduce((sum, row) => sum + (row.totalAmount - row.totalPaidAmount), 0),
       customers,
