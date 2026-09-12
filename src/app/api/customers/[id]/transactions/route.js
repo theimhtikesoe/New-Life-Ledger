@@ -3,7 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
-import { saleMovementRows } from "@/lib/factory-stock";
+import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
@@ -94,6 +94,7 @@ export async function POST(request, { params }) {
       });
       return { customer, ledger };
     });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });

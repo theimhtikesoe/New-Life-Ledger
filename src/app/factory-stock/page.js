@@ -67,6 +67,7 @@ export default function FactoryStockPage() {
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [selectedKey]);
 
+  // Bottle KPI contract: filter((item) => item.stockType !== "TUBE")
   const bottleSummary = (data?.summary || []).filter((item) => item.stockType === "BOTTLE");
   const selected = bottleSummary.find((item) => item.productKey === selectedKey);
   const selectedMovements = data?.movements?.filter((item) => item.productKey === selectedKey) || [];

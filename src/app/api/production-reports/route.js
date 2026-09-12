@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 import { getBottleUnit, getMachine, MACHINES } from "@/lib/production-catalog";
-import { loadTubeMappings, productionMovementRows, reversalMovementRows } from "@/lib/factory-stock";
+import { invalidateFactoryStockCache, loadTubeMappings, productionMovementRows, reversalMovementRows } from "@/lib/factory-stock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -156,6 +156,7 @@ export async function POST(request) {
       summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း တင်သွင်း (${totalPieces.toLocaleString()} ဗူး)`,
       metadata: { submissionId, reportDate, machineCode: machine.code, category: requestedCategory, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers },
     });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: created.count, totalPieces, wasteQuantity } }, { status: 201 });
   } catch (error) {
     console.error("Production report write failed", error);
@@ -212,6 +213,7 @@ export async function PATCH(request) {
     }, { maxWait: 10000, timeout: 15000 });
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ဗူး)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers } });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: result.count, totalPieces, wasteQuantity } });
   } catch (error) {
     console.error("Production report update failed", error);
@@ -235,6 +237,7 @@ export async function DELETE(request) {
     }, { maxWait: 10000, timeout: 15000 });
     if (!result.count) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_DELETE", entityType: "ProductionReport", entityId: submissionId, entityLabel: submissionId, summary: "ထုတ်လုပ်မှုမှတ်တမ်း ဖျက်လိုက်သည်", metadata: { submissionId, deletedRows: result.count } });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: { submissionId, deletedRows: result.count } });
   } catch (error) {
     console.error("Production report delete failed", error);

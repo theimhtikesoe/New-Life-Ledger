@@ -174,6 +174,12 @@ export async function ensureDatabase() {
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountAmount" INTEGER NOT NULL DEFAULT 0`);
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountNote" TEXT`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Customer_deletedAt_name_idx" ON "Customer"("deletedAt", "name")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_customerId_date_idx" ON "Ledger"("customerId", "date")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_date_type_idx" ON "Ledger"("date", "type")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_customerId_date_idx" ON "CashSale"("customerId", "date")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_date_saleType_idx" ON "CashSale"("date", "saleType")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_entityType_idx" ON "AuditLog"("createdAt", "entityType")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_category_idx" ON "ProductionReport"("reportDate", "category")`);
 
       // Production requests normally arrive after migrations have already
       // created the complete schema. Avoid repeating many CREATE/ALTER/index

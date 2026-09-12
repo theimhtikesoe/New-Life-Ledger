@@ -39,6 +39,7 @@ export async function GET(request) {
       ? await loadCanonicalFactoryStockMovements()
       : { movements: [] };
     const factoryStockSummary = aggregateStockMovements(stockMovements);
+    // Keep Tube stock out of the bottle KPI: factoryStockSummary.filter((item) => item.stockType !== "TUBE")
     const factoryStockCards = factoryStockSummary.filter((item) => item.stockType === "BOTTLE").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
     const factoryCapPieces = factoryStockSummary.filter((item) => item.stockType === "CAP").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
     const factoryTubePieces = stockMovements

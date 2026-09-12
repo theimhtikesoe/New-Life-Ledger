@@ -19,6 +19,14 @@ export const MOVEMENT_TYPES = {
 };
 
 let factoryStockTablePromise;
+let canonicalFactoryStockCache = null;
+let canonicalFactoryStockCachePromise = null;
+const CANONICAL_FACTORY_STOCK_CACHE_TTL_MS = 15000;
+
+export function invalidateFactoryStockCache() {
+  canonicalFactoryStockCache = null;
+  canonicalFactoryStockCachePromise = null;
+}
 
 export async function ensureFactoryStockTable() {
   if (typeof prisma.$executeRawUnsafe !== "function") return;
@@ -45,6 +53,7 @@ export async function ensureFactoryStockTable() {
         )
       `);
       await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementDate_idx" ON "FactoryStockMovement"("movementDate")`);
+      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_stockType_movementDate_idx" ON "FactoryStockMovement"("stockType", "movementDate")`);
       await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_productKey_idx" ON "FactoryStockMovement"("productKey")`);
       await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementType_idx" ON "FactoryStockMovement"("movementType")`);
       await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_source_idx" ON "FactoryStockMovement"("sourceType", "sourceId")`);
@@ -91,6 +100,13 @@ export async function loadDerivedFactoryStockMovements({ actorName = "system" } 
 }
 
 export async function loadCanonicalFactoryStockMovements({ actorName = "system" } = {}) {
+  const now = Date.now();
+  if (canonicalFactoryStockCache && now - canonicalFactoryStockCache.savedAt < CANONICAL_FACTORY_STOCK_CACHE_TTL_MS) {
+    return canonicalFactoryStockCache.value;
+  }
+  if (canonicalFactoryStockCachePromise) return canonicalFactoryStockCachePromise;
+
+  canonicalFactoryStockCachePromise = (async () => {
   const existing = typeof prisma.factoryStockMovement?.findMany === "function"
     ? await prisma.factoryStockMovement.findMany({ orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }] })
     : [];
@@ -111,10 +127,19 @@ export async function loadCanonicalFactoryStockMovements({ actorName = "system" 
   // after the cap-unit calculation changes. Manual stock adjustments remain.
   const derivedSourceTypes = new Set(["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION", "LEDGER", "CASH_SALE"]);
   const manualExisting = existing.filter((movement) => !derivedSourceTypes.has(movement.sourceType));
-  return {
+  const value = {
     movements: [...manualExisting, ...derived],
     dataSource: existing.length ? "MOVEMENT_LEDGER_PLUS_LIVE_DERIVED_STOCK" : "LIVE_DERIVED_FALLBACK",
   };
+  canonicalFactoryStockCache = { savedAt: Date.now(), value };
+  return value;
+  })();
+
+  try {
+    return await canonicalFactoryStockCachePromise;
+  } finally {
+    canonicalFactoryStockCachePromise = null;
+  }
 }
 
 function clean(value) {

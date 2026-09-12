@@ -3,7 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
-import { saleMovementRows } from "@/lib/factory-stock";
+import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +73,7 @@ export async function DELETE(request, { params }) {
       return { customerId: ledger.customerId, newBalance: customer.current_balance };
     });
 
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: result }, { status: 200 });
   } catch (error) {
     if (error.message === "Transaction not found") {
@@ -152,6 +153,7 @@ export async function PATCH(request, { params }) {
       });
       return { ledger: updated, current_balance: customer.current_balance };
     });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: result });
   } catch (error) {
     if (error.message === "Transaction not found" || error.message === "amount must be greater than zero") {

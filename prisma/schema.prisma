@@ -160,26 +160,28 @@ model KpayAlias {
 }
 
 model Ledger {
-  id          String   @id @default(uuid()) @db.Uuid
-  customerId  String   @db.Uuid
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  type        String
-  saleType    String
-  itemSize    String?
-  cartons     Int?
-  rate        Int?
-  deductions  Int      @default(0)
-  amount      Int
-  discountAmount Int    @default(0)
-  discountNote String?
-  note        String?
-  paymentType String?
-  saleItems   Json?
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
+  id             String   @id @default(uuid()) @db.Uuid
+  customerId     String   @db.Uuid
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type           String
+  saleType       String
+  itemSize       String?
+  cartons        Int?
+  rate           Int?
+  deductions     Int      @default(0)
+  amount         Int
+  discountAmount Int      @default(0)
+  discountNote   String?
+  note           String?
+  paymentType    String?
+  saleItems      Json?
+  date           DateTime @default(now())
+  createdAt      DateTime @default(now())
 
   @@index([customerId])
   @@index([date])
+  @@index([customerId, date])
+  @@index([date, type])
 }
 
 model CashSale {
@@ -201,6 +203,8 @@ model CashSale {
 
   @@index([customerId])
   @@index([date])
+  @@index([customerId, date])
+  @@index([date, saleType])
 }
 
 model AuditLog {
@@ -221,6 +225,7 @@ model AuditLog {
   @@index([action])
   @@index([entityType])
   @@index([hiddenAt])
+  @@index([createdAt, entityType])
 }
 
 model AiExplanationCache {
@@ -325,19 +330,19 @@ model DailySalesOpening {
 }
 
 model ProductionReport {
-  id              String   @id @default(uuid()) @db.Uuid
-  submissionId    String
-  reportDate      String
-  actorName       String
-  machineCode     String
-  machineName     String?
-  category        String
-  outputQuantity  Int
-  outputUnit      String
-  outputCapacity  String?
-  bottleType      String?
-  tubeG           String?
-  tubeColor       String?
+  id                 String   @id @default(uuid()) @db.Uuid
+  submissionId       String
+  reportDate         String
+  actorName          String
+  machineCode        String
+  machineName        String?
+  category           String
+  outputQuantity     Int
+  outputUnit         String
+  outputCapacity     String?
+  bottleType         String?
+  tubeG              String?
+  tubeColor          String?
   wasteQuantity      Int      @default(0)
   wasteNote          String?
   damagedPieces      Int      @default(0)
@@ -347,12 +352,13 @@ model ProductionReport {
   tubeQuantityUnit   String   @default("အိတ်")
   tubeMetrics        Json?
   involvedWorkers    Json?
-  notes           String?
-  createdAt       DateTime @default(now())
+  notes              String?
+  createdAt          DateTime @default(now())
 
   @@index([reportDate])
   @@index([submissionId])
   @@index([machineCode])
+  @@index([reportDate, category])
 }
 
 model FactoryStockMovement {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
+import { invalidateFactoryStockCache } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,7 @@ export async function DELETE(request, { params }) {
       };
     });
 
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: result }, { status: 200 });
   } catch (error) {
     if (error.message === "CashSale မတွေ့ပါ။") {
