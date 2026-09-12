@@ -20,6 +20,12 @@ describe("Daily Bottle Sales combined totals", () => {
     expect(page).toContain("တကယ်ရရှိငွေ");
     expect(page).toContain("လက်ငင်း + ငွေချေ သာ");
   });
+
+  it("shows paid bottles as a separate KPI from debt-increase bottles", () => {
+    expect(page).toContain("ငွေချေဗူး (သီးသန့်)");
+    expect(page).toContain("data?.paidBottleSales?.totalBottles");
+    expect(page).toContain("အကြွေးစာရင်းမှ ငွေချေ");
+  });
 });
 
 export {};
