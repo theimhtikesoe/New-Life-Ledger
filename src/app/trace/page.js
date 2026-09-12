@@ -77,8 +77,8 @@ export default function TracePage() {
       </div>
       <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_170px_170px_auto]">
         <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') load(); }} placeholder="ဗူး / Tube / အဖုံး / Customer / Transaction ရှာရန်" className="h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-900 outline-none ring-cyan-300 focus:ring-2" />
-        <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-900" aria-label="စတင်ရက်" />
-        <input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="h-12 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-900" aria-label="ပြီးဆုံးရက်" />
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-black text-slate-600"><span>စတင်ရက်</span><input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-900" aria-label="စတင်ရက်" /></label>
+        <label className="flex min-w-0 flex-col gap-1 text-xs font-black text-slate-600"><span>ပြီးဆုံးရက်</span><input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-900" aria-label="ပြီးဆုံးရက်" /></label>
         <button type="button" onClick={load} disabled={loading} className="h-12 rounded-xl bg-cyan-700 px-5 text-sm font-black text-white hover:bg-cyan-800 disabled:opacity-50">{loading ? 'ရှာနေသည်…' : 'Trace ရှာမည်'}</button>
       </div>
       {error ? <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-sm font-bold text-rose-700">{error}</p> : null}

@@ -88,6 +88,27 @@ body {
   font-family: "Noto Sans Myanmar", "Myanmar Text", Padauk, system-ui, sans-serif;
 }
 
+input[type="date"] {
+  color: #0f172a;
+  color-scheme: light;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -webkit-text-fill-color: #0f172a;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-left: 0.35rem;
+  opacity: 0.8;
+}
+
 .ui-icon {
   display: inline-flex;
   width: 1.5rem;
