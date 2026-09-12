@@ -7,6 +7,20 @@ import { PRICE_GROUPS, buildCatalog } from "@/lib/production-catalog";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// The production database is configured with connection_limit=1. A canceled
+// browser request can still be finishing on the server, so serialize the
+// whole read handler instead of allowing a second priceSetting query to time
+// out while waiting for the only connection.
+let priceSettingsReadQueue = Promise.resolve();
+
+async function acquirePriceSettingsRead() {
+  const previous = priceSettingsReadQueue;
+  let release;
+  priceSettingsReadQueue = new Promise((resolve) => { release = resolve; });
+  await previous;
+  return release;
+}
+
 function parseDate(value) {
   const date = String(value || "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("စျေးနှုန်းသတ်မှတ်မည့် Date မမှန်ပါ။");
@@ -37,6 +51,7 @@ function serialize(row) {
 }
 
 export async function GET(request) {
+  const release = await acquirePriceSettingsRead();
   try {
     await ensureDatabase();
     const date = parseDate(new URL(request.url).searchParams.get("date"));
@@ -78,7 +93,12 @@ export async function GET(request) {
     return NextResponse.json({ data: { date, categories: PRICE_GROUPS, catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices, tubeMappings } });
   } catch (error) {
     console.error("Price settings read failed", error);
+    if (/connection pool|Timed out fetching a new connection/i.test(String(error?.message || ""))) {
+      return NextResponse.json({ error: "Database လက်ရှိအလုပ်များနေပါသည်။ စျေးနှုန်းစာရင်းကို ခဏစောင့်ပြီး ပြန်ဖွင့်ပါ။" }, { status: 503 });
+    }
     return NextResponse.json({ error: error.message || "စျေးနှုန်းစာရင်း ရယူ၍မရပါ။" }, { status: 400 });
+  } finally {
+    release();
   }
 }
 
