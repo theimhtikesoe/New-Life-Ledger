@@ -44,12 +44,10 @@ export async function ensureFactoryStockTable() {
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      await Promise.all([
-        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementDate_idx" ON "FactoryStockMovement"("movementDate")`),
-        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_productKey_idx" ON "FactoryStockMovement"("productKey")`),
-        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementType_idx" ON "FactoryStockMovement"("movementType")`),
-        prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_source_idx" ON "FactoryStockMovement"("sourceType", "sourceId")`),
-      ]);
+      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementDate_idx" ON "FactoryStockMovement"("movementDate")`);
+      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_productKey_idx" ON "FactoryStockMovement"("productKey")`);
+      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_movementType_idx" ON "FactoryStockMovement"("movementType")`);
+      await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "FactoryStockMovement_source_idx" ON "FactoryStockMovement"("sourceType", "sourceId")`);
     })().catch((error) => {
       factoryStockTablePromise = undefined;
       throw error;
@@ -67,22 +65,23 @@ export async function loadTubeMappings() {
 }
 
 export async function loadDerivedFactoryStockMovements({ actorName = "system" } = {}) {
-  const [productionRows, ledgerRows, cashSales] = await Promise.all([
-    prisma.productionReport.findMany({
-      select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true, wasteQuantity: true, tubeDamageQuantity: true },
-      orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }],
-    }),
-    prisma.ledger.findMany({
-      where: { saleItems: { not: null } },
-      select: { id: true, date: true, saleItems: true },
-      orderBy: [{ date: "asc" }, { id: "asc" }],
-    }),
-    prisma.cashSale.findMany({
-      where: { saleItems: { not: null } },
-      select: { id: true, date: true, saleItems: true },
-      orderBy: [{ date: "asc" }, { id: "asc" }],
-    }),
-  ]);
+  // Some deployments intentionally use connection_limit=1. Keep these reads
+  // sequential so stock pages and Trace Center do not queue competing pool
+  // connections and time out while rebuilding derived movements.
+  const productionRows = await prisma.productionReport.findMany({
+    select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true, wasteQuantity: true, tubeDamageQuantity: true },
+    orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }],
+  });
+  const ledgerRows = await prisma.ledger.findMany({
+    where: { saleItems: { not: null } },
+    select: { id: true, date: true, saleItems: true },
+    orderBy: [{ date: "asc" }, { id: "asc" }],
+  });
+  const cashSales = await prisma.cashSale.findMany({
+    where: { saleItems: { not: null } },
+    select: { id: true, date: true, saleItems: true },
+    orderBy: [{ date: "asc" }, { id: "asc" }],
+  });
   const tubeMappings = await loadTubeMappings();
   return [
     ...productionMovementRows(productionRows, { actorName, tubeMappings }),

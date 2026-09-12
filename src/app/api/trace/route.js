@@ -67,31 +67,30 @@ export async function GET(request) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(from)) movementDateWhere.gte = from;
     if (/^\d{4}-\d{2}-\d{2}$/.test(to)) movementDateWhere.lte = to;
 
-    const [movementsResult, productions, ledgers, cashSales, auditLogs] = await Promise.all([
-      loadCanonicalFactoryStockMovements({ actorName: "trace" }),
-      prisma.productionReport.findMany({
-        where: Object.keys(movementDateWhere).length ? { reportDate: movementDateWhere } : {},
-        orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
-        take: limit,
-      }),
-      prisma.ledger.findMany({
-        where: dateWhere,
-        select: { id: true, date: true, type: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
-        orderBy: [{ date: "desc" }, { id: "desc" }],
-        take: limit,
-      }),
-      prisma.cashSale.findMany({
-        where: dateWhere,
-        select: { id: true, date: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
-        orderBy: [{ date: "desc" }, { id: "desc" }],
-        take: limit,
-      }),
-      prisma.auditLog.findMany({
-        where: Object.keys(date).length ? { createdAt: date } : {},
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: limit,
-      }),
-    ]);
+    // Production uses connection_limit=1. Do not Promise.all these reads.
+    const movementsResult = await loadCanonicalFactoryStockMovements({ actorName: "trace" });
+    const productions = await prisma.productionReport.findMany({
+      where: Object.keys(movementDateWhere).length ? { reportDate: movementDateWhere } : {},
+      orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
+      take: limit,
+    });
+    const ledgers = await prisma.ledger.findMany({
+      where: dateWhere,
+      select: { id: true, date: true, type: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      take: limit,
+    });
+    const cashSales = await prisma.cashSale.findMany({
+      where: dateWhere,
+      select: { id: true, date: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      take: limit,
+    });
+    const auditLogs = await prisma.auditLog.findMany({
+      where: Object.keys(date).length ? { createdAt: date } : {},
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit,
+    });
 
     const movementEvents = movementsResult.movements.map(movementEvent);
     const productionEvents = productions.map((row) => ({
