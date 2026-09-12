@@ -10,7 +10,7 @@ const layoutSource = fs.readFileSync(path.join(root, 'src/app/layout-client.jsx'
 
 describe('Trace Center', () => {
   it('reads existing sources without exposing mutation handlers', () => {
-    expect(apiSource).toContain('loadCanonicalFactoryStockMovements');
+    expect(apiSource).toContain('TARGETED_TRACE_SEARCH');
     expect(apiSource).toContain('prisma.productionReport.findMany');
     expect(apiSource).toContain('prisma.ledger.findMany');
     expect(apiSource).toContain('prisma.cashSale.findMany');

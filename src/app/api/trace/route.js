@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
-import { loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,29 +67,63 @@ export async function GET(request) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(to)) movementDateWhere.lte = to;
 
     // Production uses connection_limit=1. Do not Promise.all these reads.
-    const movementsResult = await loadCanonicalFactoryStockMovements({ actorName: "trace" });
-    const productions = await prisma.productionReport.findMany({
-      where: Object.keys(movementDateWhere).length ? { reportDate: movementDateWhere } : {},
-      orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
-      take: limit,
-    });
-    const ledgers = await prisma.ledger.findMany({
-      where: dateWhere,
-      select: { id: true, date: true, type: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
-      orderBy: [{ date: "desc" }, { id: "desc" }],
-      take: limit,
-    });
-    const cashSales = await prisma.cashSale.findMany({
-      where: dateWhere,
-      select: { id: true, date: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
-      orderBy: [{ date: "desc" }, { id: "desc" }],
-      take: limit,
-    });
-    const auditLogs = await prisma.auditLog.findMany({
-      where: Object.keys(date).length ? { createdAt: date } : {},
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: limit,
-    });
+    // A targeted search must not rebuild every stock movement first: customer
+    // lookups should stay fast even when the historical ledger is large.
+    let movementsResult;
+    let productions;
+    let ledgers;
+    let cashSales;
+    let auditLogs;
+    if (query) {
+      const customerMatches = await prisma.customer.findMany({
+        where: { name: { contains: query, mode: "insensitive" } },
+        select: { id: true },
+        take: 50,
+      });
+      const customerIds = customerMatches.map((customer) => customer.id);
+      const sourceIds = [];
+      ledgers = await prisma.ledger.findMany({
+        where: { ...dateWhere, ...(customerIds.length ? { customerId: { in: customerIds } } : /^[-\w-]{20,}$/.test(query) ? { id: query } : { customerId: { in: [] } }) },
+        select: { id: true, date: true, type: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+        take: limit,
+      });
+      sourceIds.push(...ledgers.map((row) => row.id));
+      cashSales = await prisma.cashSale.findMany({
+        where: { ...dateWhere, ...(customerIds.length ? { customerId: { in: customerIds } } : /^[-\w-]{20,}$/.test(query) ? { id: query } : { customerId: { in: [] } }) },
+        select: { id: true, date: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+        take: limit,
+      });
+      sourceIds.push(...cashSales.map((row) => row.id));
+      const movementWhere = { OR: [{ productName: { contains: query, mode: "insensitive" } }, { productKey: { contains: query, mode: "insensitive" } }, ...(sourceIds.length ? [{ sourceId: { in: sourceIds } }] : [])] };
+      const targetedMovements = await prisma.factoryStockMovement.findMany({
+        where: Object.keys(movementDateWhere).length ? { ...movementWhere, movementDate: movementDateWhere } : movementWhere,
+        orderBy: [{ movementDate: "desc" }, { createdAt: "desc" }],
+        take: limit * 4,
+      });
+      movementsResult = { movements: targetedMovements, dataSource: "TARGETED_TRACE_SEARCH" };
+      productions = await prisma.productionReport.findMany({
+        where: { ...(Object.keys(movementDateWhere).length ? { reportDate: movementDateWhere } : {}), OR: [{ bottleType: { contains: query, mode: "insensitive" } }, { tubeG: { contains: query, mode: "insensitive" } }, ...(sourceIds.length ? [{ submissionId: { in: sourceIds } }] : [])] },
+        orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
+        take: limit,
+      });
+      auditLogs = await prisma.auditLog.findMany({
+        where: { ...(Object.keys(date).length ? { createdAt: date } : {}), OR: [{ entityLabel: { contains: query, mode: "insensitive" } }, { summary: { contains: query, mode: "insensitive" } }, ...(sourceIds.length ? [{ entityId: { in: sourceIds } }] : [])] },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: limit,
+      });
+    } else {
+      const movementWhere = Object.keys(movementDateWhere).length ? { movementDate: movementDateWhere } : {};
+      const movements = Object.keys(movementWhere).length
+        ? await prisma.factoryStockMovement.findMany({ where: movementWhere, orderBy: [{ movementDate: "desc" }, { createdAt: "desc" }], take: limit * 4 })
+        : [];
+      movementsResult = { movements, dataSource: Object.keys(movementWhere).length ? "DATE_FILTERED_MOVEMENT_LEDGER" : "SEARCH_REQUIRED" };
+      productions = await prisma.productionReport.findMany({ where: Object.keys(movementDateWhere).length ? { reportDate: movementDateWhere } : {}, orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }], take: limit });
+      ledgers = await prisma.ledger.findMany({ where: dateWhere, select: { id: true, date: true, type: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } }, orderBy: [{ date: "desc" }, { id: "desc" }], take: limit });
+      cashSales = await prisma.cashSale.findMany({ where: dateWhere, select: { id: true, date: true, amount: true, paymentType: true, note: true, saleItems: true, customer: { select: { id: true, name: true } } }, orderBy: [{ date: "desc" }, { id: "desc" }], take: limit });
+      auditLogs = await prisma.auditLog.findMany({ where: Object.keys(date).length ? { createdAt: date } : {}, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: limit });
+    }
 
     const movementEvents = movementsResult.movements.map(movementEvent);
     const productionEvents = productions.map((row) => ({
@@ -152,6 +185,9 @@ export async function GET(request) {
       .slice(0, limit);
     return NextResponse.json({ data: { items: all, counts: { total: all.length, movements: movementEvents.filter((row) => matchesQuery(row, query)).length, productions: productionEvents.filter((row) => matchesQuery(row, query)).length, transactions: [...ledgerEvents, ...cashEvents].filter((row) => matchesQuery(row, query)).length, activities: auditEvents.filter((row) => matchesQuery(row, query)).length }, dataSource: movementsResult.dataSource, filters: { q: query || null, from: from || null, to: to || null } } });
   } catch (error) {
+    if (/connection pool|Timed out fetching a new connection/i.test(String(error?.message || ""))) {
+      return NextResponse.json({ error: "Database လက်ရှိအလုပ်များနေပါသည်။ Trace ရှာဖွေမှုကို ခဏစောင့်ပြီး ပြန်နှိပ်ပါ။" }, { status: 503 });
+    }
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }
 }
