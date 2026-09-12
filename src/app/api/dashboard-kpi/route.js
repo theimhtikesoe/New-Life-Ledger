@@ -77,8 +77,16 @@ export async function GET(request) {
       });
       return { totalBottles, totalAmount: totalBottleAmount, totalPaidAmount, items: [...bottleItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount) };
     };
+    const paidBottleSales = collectSaleItems(paidLedgers);
+    const cashBottleSales = collectSaleItems(cashSalesForItems);
     const bottleSales = collectSaleItems([...paidLedgers, ...cashSalesForItems]);
     const creditBottleSales = collectSaleItems(creditLedgers);
+    const totalBottleSales = {
+      totalBottles: bottleSales.totalBottles + creditBottleSales.totalBottles,
+      totalAmount: bottleSales.totalAmount + creditBottleSales.totalAmount,
+      totalPaidAmount: bottleSales.totalPaidAmount,
+      items: [...bottleSales.items, ...creditBottleSales.items],
+    };
 
     const cashSales = cashSaleGroups.reduce((summary, group) => {
       const count = Number(group._count?._all || 0);
@@ -103,7 +111,10 @@ export async function GET(request) {
         todayPaidCount: Number(paymentStats._count?._all || 0),
         todayPaidAmount: Number(paymentStats._sum?.amount || 0),
         ...cashSales,
+        paidBottleSales,
+        cashBottleSales,
         bottleSales,
+        totalBottleSales,
         creditBottleSales,
         factoryStockCards,
         factoryCapPieces,

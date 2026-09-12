@@ -47,7 +47,7 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("DASHBOARD_LOADING_WATCHDOG_MS = 12000");
     expect(dashboardSource).toContain("category=bottle");
     expect(dashboardSource).toContain('const bottleRows = rows.filter((row) => row.category !== "tube");');
-    expect(dashboardSource).toContain("Keep the last successful KPI snapshot visible");
+    expect(dashboardSource).toContain("The write has already succeeded at this point");
     expect(dashboardSource).toContain("const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;");
     expect(dashboardSource).toContain("onClick={() => setShowTodayPaymentsModal(true)}");
     expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
@@ -92,6 +92,9 @@ describe("Dashboard KPI aggregate route", () => {
         totalPaidAmount: 34000,
         items: [{ productKey: "water-1l", bottleCount: 20, totalAmount: 40000 }],
       },
+      paidBottleSales: { totalBottles: 12 },
+      cashBottleSales: { totalBottles: 8 },
+      totalBottleSales: { totalBottles: 20, totalAmount: 40000, totalPaidAmount: 34000 },
       creditBottleSales: { totalBottles: 0, totalAmount: 0, items: [] },
     });
     expect(mocks.customerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: { deletedAt: null } }));
