@@ -2127,7 +2127,7 @@ export default function Dashboard({ view = "overview" }) {
                 <div className="mt-1 space-y-0.5 text-sm font-bold text-slate-600">
                   <p>စုစုပေါင်း ရောင်းဗူး</p>
                   <p className="text-teal-700">ငွေရပြီး {Number(todayPaidBottleSales.totalBottles || 0) + Number(todayCashBottleSales.totalBottles || 0)} ဗူး</p>
-                  <p className="text-violet-700">အကြွေးရောင်းဗူး {Number(todayCreditBottleSales.totalBottles || 0).toLocaleString()} ဗူး</p>
+                  <p className="text-violet-700">အကြွေးရောင်း {Number(todayCreditBottleSales.totalBottles || 0).toLocaleString()} ဗူး</p>
                 </div>
               </div>
               <p className="pt-2 text-sm font-bold text-slate-600">အသေးစိတ် →</p>
