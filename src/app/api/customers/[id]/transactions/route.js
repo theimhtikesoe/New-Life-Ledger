@@ -34,10 +34,10 @@ export async function GET(request, { params }) {
       discountAmount: true, discountNote: true, note: true,
       paymentType: true, saleItems: true,
     };
-    const [items, total] = await Promise.all([
-      prisma.ledger.findMany({ where, select, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: limit }),
-      prisma.ledger.count({ where }),
-    ]);
+    // Production uses connection_limit=1; do not request the list and count
+    // connections concurrently when another device is saving a transaction.
+    const items = await prisma.ledger.findMany({ where, select, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: limit });
+    const total = await prisma.ledger.count({ where });
     return NextResponse.json({ data: { items, pagination: { offset, limit, total, hasMore: offset + items.length < total } } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });

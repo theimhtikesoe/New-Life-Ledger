@@ -1016,10 +1016,11 @@ export default function Dashboard({ view = "overview" }) {
 
     setLoadingCustomer(true);
     try {
-      const [customer, transactionPage] = await Promise.all([
-        api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`),
-        api(`/api/customers/${id}/transactions?limit=50&offset=0`),
-      ]);
+      // Production uses connection_limit=1. Fetch the customer snapshot first
+      // and then its transactions so a refresh cannot lose one half of the
+      // update to a pool timeout.
+      const customer = await api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`);
+      const transactionPage = await api(`/api/customers/${id}/transactions?limit=50&offset=0`);
       setSelectedCustomer({ ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] });
       setTransactionPagination(transactionPage.pagination || { offset: 0, limit: 50, total: 0, hasMore: false });
       setSelectedCustomerId(customer.id);
