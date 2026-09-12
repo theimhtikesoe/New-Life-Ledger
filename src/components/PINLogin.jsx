@@ -215,35 +215,14 @@ export default function PINLogin({ onSuccess, onLogout }) {
         completeActorSelection(actorName);
         return;
       }
-      if (CAP_STOCK_ONLY_ACTORS.includes(actorName)) {
-        // Refresh the session access as well as the local actor. Without this,
-        // switching from a production-only user kept the old production cookie
-        // and middleware redirected the Cap Stock user back to /production.
-        await fetchAuthJson("/api/auth/actor-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ actorName }),
-        });
-        completeActorSelection(actorName);
-        return;
-      }
-      if (PRODUCTION_ONLY_ACTORS.includes(actorName)) {
-        await fetchAuthJson("/api/auth/actor-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ actorName }),
-        });
-      }
-      if (!PRODUCTION_ONLY_ACTORS.includes(actorName)) {
-        // Every manual switch must re-confirm the selected user with the PIN.
-        // Do not auto-complete from the browser's previously authorized list:
-        // that made switching back to an earlier user appear to do nothing.
-        setSelectingActor(false);
-        setActorLocked(false);
-        setIsAuthenticated(false);
-        setPin("");
-        return;
-      }
+      // Refresh both the actor name and session access for every configured
+      // user. This keeps switching consistent in every direction, including
+      // standard users such as ဖေဖေ/မေမေ and Rhyzoe.
+      await fetchAuthJson("/api/auth/actor-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actorName }),
+      });
       completeActorSelection(actorName);
     } catch (selectionError) {
       setError(selectionError.message || `${actorName} အသုံးပြုသူအဖြစ် ဝင်ရောက်၍ မရပါ။`);

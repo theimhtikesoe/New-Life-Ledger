@@ -32,11 +32,11 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain("body: JSON.stringify({ actorName })");
   });
 
-  it("refreshes session access when switching from production users to သက်မွန်နှင်း", () => {
-    expect(pinLoginSource).toContain("CAP_STOCK_ONLY_ACTORS.includes(actorName)");
+  it("refreshes session access when switching between every configured user", () => {
+    expect(actorSessionSource).toContain('const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "ဖြိုးကို", "Rhyzoe", "သက်မွန်နှင်း"];');
     expect(pinLoginSource).toContain('await fetchAuthJson("/api/auth/actor-session"');
-    expect(actorSessionSource).toContain('const CAP_STOCK_ONLY_ACTORS = ["သက်မွန်နှင်း"];');
     expect(actorSessionSource).toContain('const access = PRODUCTION_ONLY_ACTORS.includes(actorName) ? "production-only" : "standard";');
+    expect(pinLoginSource).toContain("standard users such as ဖေဖေ/မေမေ and Rhyzoe");
   });
 
   it("remembers PIN-authorized users for the browser session and exposes the user switcher", () => {
