@@ -720,7 +720,15 @@ export async function ensureDatabase() {
 
 export function databaseErrorResponse(error) {
   console.error(error);
+  const message = String(error?.message || "");
+  if (/connection pool|Timed out fetching a new connection|Can't reach database server|connection.*timeout/i.test(message)) {
+    return {
+      error: "Database လက်ရှိအလုပ်များနေပါသည်။ စာရင်းမဝင်သေးပါက ခဏစောင့်ပြီး တစ်ကြိမ်သာ ပြန်စမ်းပါ။",
+      code: "DATABASE_BUSY",
+      retryable: true,
+    };
+  }
   return {
-    error: error.message || "Database request failed",
+    error: message || "Database request failed",
   };
 }

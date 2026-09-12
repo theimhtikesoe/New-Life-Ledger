@@ -1200,8 +1200,14 @@ export default function Dashboard({ view = "overview" }) {
           }),
         });
         if (result?.ledger) {
-          await loadCustomer(selectedCustomerId);
-          await loadDashboard();
+          // PATCH has succeeded; do not turn a later refresh timeout into a
+          // false edit failure or make the user save the same edit again.
+          void loadCustomer(selectedCustomerId).catch((refreshError) => {
+            console.warn("Customer refresh after edit was not completed:", refreshError);
+          });
+          void loadDashboard().catch((refreshError) => {
+            console.warn("Dashboard refresh after edit was not completed:", refreshError);
+          });
         }
         setEditingTransaction(null);
         setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
@@ -1263,9 +1269,12 @@ export default function Dashboard({ view = "overview" }) {
         setAllCustomersForKPI(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } : c));
       }
 
-      // Re-fetch the server-derived KPI immediately so cap stock changes from
-      // this sale are reflected on the Dashboard without a refresh/navigation.
-      await loadDashboard();
+      // The write has already succeeded at this point. Refresh the dashboard
+      // in the background so a slow KPI/stock query cannot make a successful
+      // save look like a failed save and cause the user to submit it again.
+      void loadDashboard().catch((refreshError) => {
+        console.warn("Dashboard refresh after save was not completed:", refreshError);
+      });
       
       // Clear form immediately after successful submission
       setLedgerForm({
