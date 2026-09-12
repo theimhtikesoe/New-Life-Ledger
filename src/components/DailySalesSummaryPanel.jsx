@@ -281,7 +281,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
           <section className="relative max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl sm:max-h-[94vh] sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-600">Daily Sales Summary</p>
+                <p className="text-xs font-semibold tracking-[0.16em] text-indigo-600">နေ့စဉ် ရောင်းရငွေ အနှစ်ချုပ်</p>
                 <h2 id="daily-sales-summary-title" className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-600">နေ့စဉ် ၄ ခုကို သိမ်းထားနိုင်ပြီး တစ်လစာစုစုပေါင်းကို auto တွက်ပေးပါသည်။</p>
               </div>
@@ -295,7 +295,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
               </label>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-indigo-700">{currentLabel}</span>
-                <button type="button" onClick={() => setShowOpeningForm(!showOpeningForm)} className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] font-black text-indigo-700 shadow-sm hover:bg-indigo-50" aria-expanded={showOpeningForm}>Opening</button>
+                <button type="button" onClick={() => setShowOpeningForm(!showOpeningForm)} className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] font-black text-indigo-700 shadow-sm hover:bg-indigo-50" aria-expanded={showOpeningForm}>လအစလက်ကျန်</button>
               </div>
             </div>
 
@@ -308,18 +308,18 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                     <input type="number" value={openingDraft.amount} onChange={(e) => setOpeningForm({ ...openingDraft, amount: e.target.value })} className="h-10 w-full rounded-lg border border-indigo-200 px-3 text-sm font-bold" placeholder="0" />
                   </label>
                   <label className="space-y-1">
-                    <span className="text-[11px] font-bold text-indigo-700">ဘယ်ရက်အထိ (As of)</span>
+                    <span className="text-[11px] font-bold text-indigo-700">ဘယ်ရက်အထိ</span>
                     <input type="date" value={openingDraft.asOfDate} onChange={(e) => setOpeningForm({ ...openingDraft, asOfDate: e.target.value })} className="h-10 w-full rounded-lg border border-indigo-200 px-3 text-sm" />
                   </label>
                   <div className="flex items-end">
-                    <button type="button" onClick={saveOpening} disabled={saving} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "Opening သိမ်းမည်"}</button>
+                    <button type="button" onClick={saveOpening} disabled={saving} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "လအစလက်ကျန် သိမ်းမည်"}</button>
                   </div>
                 </div>
-                <p className="mt-2 text-[10px] leading-4 text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,950 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `Opening သိမ်းမည်` နှိပ်မှသာ database ထဲ သိမ်းပါမည်။</p>
+                <p className="mt-2 text-[10px] leading-4 text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,950 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `လအစလက်ကျန် သိမ်းမည်` နှိပ်မှသာ စနစ်ထဲ သိမ်းပါမည်။</p>
               </div>
             )}
 
-            {loading ? <p className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center text-sm text-indigo-800">Data ရယူနေပါသည်...</p> : null}
+            {loading ? <p className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center text-sm text-indigo-800">အချက်အလက် ရယူနေပါသည်...</p> : null}
             {error ? <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p> : null}
             {saveNotice ? <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{saveNotice}</p> : null}
 
@@ -336,7 +336,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
               <div className="flex h-full flex-col rounded-xl border border-rose-200 bg-rose-50 p-3.5">
                 <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ လက်လီ + လက်ကား</p>
                 <p className="mt-1 text-xl font-bold text-rose-900">{formatMoney(dailyTotal)}</p>
-                <p className="mt-1 text-[11px] text-rose-700">Row ၁ ရဲ့ ခရမ်း + အဝါ</p>
+                <p className="mt-1 text-[11px] text-rose-700">လက်လီရောင်းရငွေ + လက်ကားရောင်းရငွေ</p>
               </div>
               <div className="flex h-full flex-col rounded-xl border border-rose-200 bg-rose-50 p-3.5">
                 <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ ငွေသား</p>
@@ -351,9 +351,9 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
             </div>
 
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs leading-5 text-slate-700 sm:flex-row sm:items-center sm:justify-between">
-              <p>{saving ? "နေ့စဉ်စာရင်းကို သိမ်းနေပါသည်..." : hasManualDifference ? "Preview တန်ဖိုးကို ပြင်ထားပါသည်။ Live row ကို မပြင်သေးပါ။" : "အခုတန်ဖိုးများသည် ရှိပြီးသား CashSale/Ledger data မှ auto preview တွက်ထားခြင်းဖြစ်ပါသည်။"}</p>
+                <p>{saving ? "နေ့စဉ်စာရင်းကို သိမ်းနေပါသည်..." : hasManualDifference ? "ကြိုတင်ကြည့်ရှုတန်ဖိုးကို ပြင်ထားပါသည်။ မူရင်းစာရင်းကို မပြင်သေးပါ။" : "အခုတန်ဖိုးများကို ရှိပြီးသား ငွေချေ/လက်ငင်းစာရင်းများမှ အလိုအလျောက် တွက်ထားပါသည်။"}</p>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-                <button type="button" onClick={resetToAutomatic} disabled={!summary || saving} className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 font-semibold text-indigo-800 hover:bg-indigo-50 disabled:opacity-50 sm:w-auto">Auto data ပြန်ထားရန်</button>
+                <button type="button" onClick={resetToAutomatic} disabled={!summary || saving} className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 font-semibold text-indigo-800 hover:bg-indigo-50 disabled:opacity-50 sm:w-auto">အလိုအလျောက်တွက်ထားသည့်တန်ဖိုး ပြန်ထားရန်</button>
                 <button type="button" onClick={saveDaily} disabled={saving || invalidCashInput} className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto">{saving ? "သိမ်းနေသည်..." : "နေ့စဉ်စာရင်း သိမ်းမည်"}</button>
               </div>
             </div>
