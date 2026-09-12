@@ -28,6 +28,13 @@ describe("Daily Bottle Sales combined totals", () => {
     expect(page).toContain("ငွေချေ + လက်ငင်း");
     expect(page).toContain("အကြွေးတိုးဗူး");
   });
+
+  it("keeps payment-only ledger rows visible even without saved bottle items", () => {
+    expect(route).toContain("function buildCustomerRows(rows, { includeEmpty = false } = {})");
+    expect(route).toContain("const paidCustomers = buildCustomerRows(ledgers, { includeEmpty: true });");
+    expect(page).toContain("data?.paidBottleSales?.totalPaidAmount");
+    expect(page).toContain("data?.paidBottleSales?.customers?.length > 0");
+  });
 });
 
 export {};

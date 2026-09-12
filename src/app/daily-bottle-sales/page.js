@@ -67,7 +67,7 @@ export default function DailyBottleSalesPage() {
 
         {loading ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">ဗူးရောင်းစာရင်း ရယူနေသည်...</div> : null}
         {!loading && !data?.customers?.length ? <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center font-bold text-slate-500">ဒီရက်အတွက် ဗူးရောင်းစာရင်း မရှိသေးပါ။</div> : null}
-        {!loading && Number(data?.paidBottleSales?.totalBottles || 0) > 0 ? (
+        {!loading && (Number(data?.paidBottleSales?.totalBottles || 0) > 0 || Number(data?.paidBottleSales?.totalPaidAmount || 0) > 0 || data?.paidBottleSales?.customers?.length > 0) ? (
         <section className="space-y-3">
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm"><div className="flex flex-col gap-1 border-b border-emerald-100 pb-3 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="text-lg font-black text-emerald-950">ငွေချေထားသော ဗူးများ</h3><p className="text-xs text-emerald-700">အကြွေးစာရင်းမှ ပြန်လည်ငွေချေထားသော ဗူးရောင်းစာရင်း</p></div><div className="text-left sm:text-right"><p className="text-sm font-black text-emerald-800">{Number(data?.paidBottleSales?.totalBottles || 0).toLocaleString()} ဗူး</p><p className="text-xs font-bold text-emerald-700">သတ်မှတ်ငွေ {money(data?.paidBottleSales?.totalAmount)}</p><p className="text-sm font-black text-emerald-800">တကယ်ရှင်းငွေ {money(data?.paidBottleSales?.totalPaidAmount)}</p></div></div>
           <div className="mt-3">
