@@ -28,7 +28,7 @@ const REQUIRED_TABLES = [
   "AiExplanationCache",
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
-const REQUIRED_CUSTOMER_COLUMNS = ["customerType"];
+const REQUIRED_CUSTOMER_COLUMNS = ["customerType", "settledOutsideLedgerAt", "settledOutsideLedgerBy"];
 const REQUIRED_LEDGER_COLUMNS = ["saleItems", "discountAmount", "discountNote"];
 const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
 const REQUIRED_PRICE_SETTING_COLUMNS = ["tubeType"];
@@ -168,6 +168,8 @@ export async function ensureDatabase() {
       // Additive migration must run before the readiness fast-path and before
       // any Prisma PriceSetting query. IF EXISTS also keeps fresh databases safe.
       await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "tubeType" TEXT`);
+      await setupQuery(`ALTER TABLE IF EXISTS "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerAt" TIMESTAMP(3)`);
+      await setupQuery(`ALTER TABLE IF EXISTS "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerBy" TEXT`);
       // Ledger discount fields must also exist before any Prisma relation query
       // selects Ledger rows. Keeping these before the readiness probe prevents
       // an older production database from returning a Prisma missing-column error.
@@ -544,6 +546,8 @@ export async function ensureDatabase() {
       await setupQuery(
         `ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "current_balance" INTEGER NOT NULL DEFAULT 0`,
       );
+      await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerAt" TIMESTAMP(3)`);
+      await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerBy" TEXT`);
       await setupQuery(`ALTER TABLE "UnverifiedKpay" ADD COLUMN IF NOT EXISTS "kpayName" TEXT`);
       await setupQuery(
         `ALTER TABLE "UnverifiedKpay" ADD COLUMN IF NOT EXISTS "suggestedCustomerId" UUID`,

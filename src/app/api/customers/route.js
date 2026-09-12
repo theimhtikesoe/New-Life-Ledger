@@ -32,6 +32,8 @@ export async function GET(request) {
       routeTag: true,
       customerType: true,
       current_balance: true,
+      settledOutsideLedgerAt: true,
+      settledOutsideLedgerBy: true,
       deletedAt: true,
     };
     if (includeLedgers) {

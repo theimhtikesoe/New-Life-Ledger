@@ -106,7 +106,11 @@ export async function PATCH(request, { params }) {
       const balanceAdjustment = nextEffect - previousEffect;
       const customer = await tx.customer.update({
         where: { id: ledger.customerId },
-        data: { current_balance: { increment: balanceAdjustment } },
+        data: {
+          current_balance: { increment: balanceAdjustment },
+          settledOutsideLedgerAt: null,
+          settledOutsideLedgerBy: null,
+        },
         select: { current_balance: true, name: true },
       });
       const updated = await tx.ledger.update({

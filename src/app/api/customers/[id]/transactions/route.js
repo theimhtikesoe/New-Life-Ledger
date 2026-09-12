@@ -61,7 +61,11 @@ export async function POST(request, { params }) {
     const result = await prisma.$transaction(async (tx) => {
       const customer = await tx.customer.update({
         where: { id: customerId },
-        data: { current_balance: { increment: type === "CREDIT" ? amount : -(amount + discountAmount) } },
+        data: {
+          current_balance: { increment: type === "CREDIT" ? amount : -(amount + discountAmount) },
+          settledOutsideLedgerAt: null,
+          settledOutsideLedgerBy: null,
+        },
         select: { id: true, name: true, phone: true, routeTag: true, current_balance: true, createdAt: true },
       });
       const ledger = await tx.ledger.create({

@@ -86,6 +86,18 @@ async function fetchCustomers() {
   return Array.isArray(rows) ? rows.filter((customer) => !customer.deletedAt) : [];
 }
 
+async function updateOutsideLedgerReminder(customerId, marked) {
+  const actorName = localStorage.getItem("actorName") || "";
+  const response = await fetch(`/api/customers/${encodeURIComponent(customerId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "x-actor-name": encodeActorHeader(actorName) },
+    body: JSON.stringify({ settledOutsideLedger: marked }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || "ငွေချေ reminder ပြောင်း၍ မရပါ။");
+  return body.data;
+}
+
 function SummaryCard({ title, subtitle, value, count, countLabel = "ယောက်", tone }) {
   const tones = {
     rose: "border-rose-200 bg-rose-50 text-rose-800",
@@ -103,23 +115,21 @@ function SummaryCard({ title, subtitle, value, count, countLabel = "ယောက
   );
 }
 
-function CustomerRow({ customer }) {
+function CustomerRow({ customer, onToggleReminder, updating }) {
   const info = balanceInfo(customer.current_balance);
   const badgeClass = {
     debt: "bg-rose-100 text-rose-800",
     prepaid: "bg-emerald-100 text-emerald-800",
     zero: "bg-slate-100 text-slate-700",
   }[info.key];
+  const marked = Boolean(customer.settledOutsideLedgerAt);
   return (
-    <Link
-      href={`/ledger?customerId=${encodeURIComponent(customer.id)}`}
-      className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-cyan-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-400"
-    >
+    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-cyan-300 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="min-w-0 focus:outline-none focus:ring-2 focus:ring-cyan-400">
           <p className="truncate font-semibold text-slate-900">{customer.name}</p>
           <p className="mt-1 truncate text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p>
-        </div>
+        </Link>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span>
       </div>
       <div className="mt-4 flex items-end justify-between gap-3 border-t border-slate-100 pt-3">
@@ -129,9 +139,12 @@ function CustomerRow({ customer }) {
             {info.amount ? formatMoney(info.amount) : "0 Ks"}
           </p>
         </div>
-        <span className="text-xs font-semibold text-cyan-700">Ledger အသေးစိတ် →</span>
+        <Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="text-xs font-semibold text-cyan-700">Ledger အသေးစိတ် →</Link>
       </div>
-    </Link>
+      {info.key === "debt" ? <button type="button" onClick={() => onToggleReminder(customer)} disabled={updating} className={`mt-3 w-full rounded-lg border px-3 py-2 text-xs font-bold transition ${marked ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-800"}`}>
+        {updating ? "သိမ်းနေသည်..." : marked ? "✓ မြေပြင်ငွေချေပြီး — ငွေချေစာရင်းထည့်ရန်ကျန်" : "မြေပြင်မှာ ငွေချေပြီးကြောင်း မှတ်ရန်"}
+      </button> : null}
+    </article>
   );
 }
 
@@ -149,6 +162,7 @@ export default function BalanceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showBalanceExplanation, setShowBalanceExplanation] = useState(false);
+  const [updatingReminderId, setUpdatingReminderId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -185,6 +199,21 @@ export default function BalanceDetailPage() {
 
     return () => { active = false; };
   }, []);
+
+  async function toggleOutsideLedgerReminder(customer) {
+    const marked = !customer.settledOutsideLedgerAt;
+    setUpdatingReminderId(customer.id);
+    setError("");
+    try {
+      const updated = await updateOutsideLedgerReminder(customer.id, marked);
+      setCustomers((current) => current.map((row) => row.id === customer.id ? { ...row, ...updated } : row));
+      saveBalanceSnapshot({ customers: customers.map((row) => row.id === customer.id ? { ...row, ...updated } : row) });
+    } catch (err) {
+      setError(err.message || "ငွေချေ reminder ပြောင်း၍ မရပါ။");
+    } finally {
+      setUpdatingReminderId(null);
+    }
+  }
 
   const totals = useMemo(() => customers.reduce((result, customer) => {
     const balance = Number(customer.current_balance || 0);
@@ -303,14 +332,14 @@ export default function BalanceDetailPage() {
 
           {loading ? <p className="py-12 text-center text-slate-500">Customer လက်ကျန်များ ရယူနေသည်...</p> : visibleCustomers.length ? (
             <>
-              <div className="mt-4 grid gap-3 md:hidden">{visibleCustomers.map((customer) => <CustomerRow key={customer.id} customer={customer} />)}</div>
+              <div className="mt-4 grid gap-3 md:hidden">{visibleCustomers.map((customer) => <CustomerRow key={customer.id} customer={customer} onToggleReminder={toggleOutsideLedgerReminder} updating={updatingReminderId === customer.id} />)}</div>
               <div className="mt-4 hidden overflow-x-auto md:block">
-                <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="border-b border-slate-200 text-xs uppercase text-slate-500"><tr><th className="px-3 py-3">Customer</th><th className="px-3 py-3">အခြေအနေ</th><th className="px-3 py-3 text-right">လက်ကျန်</th><th className="px-3 py-3 text-right">အသေးစိတ်</th></tr></thead>
+                <table className="w-full min-w-[980px] text-left text-sm">
+                  <thead className="border-b border-slate-200 text-xs uppercase text-slate-500"><tr><th className="px-3 py-3">Customer</th><th className="px-3 py-3">အခြေအနေ</th><th className="px-3 py-3 text-right">လက်ကျန်</th><th className="px-3 py-3">မြေပြင်ငွေချေမှတ်ချက်</th><th className="px-3 py-3 text-right">အသေးစိတ်</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">{visibleCustomers.map((customer) => {
                     const info = balanceInfo(customer.current_balance);
                     const badgeClass = info.key === "debt" ? "bg-rose-100 text-rose-800" : info.key === "prepaid" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700";
-                    return <tr key={customer.id} className="hover:bg-slate-50"><td className="px-3 py-3"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-800 hover:underline">{customer.name}</Link><p className="mt-1 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p></td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span></td><td className={`px-3 py-3 text-right font-bold ${info.key === "debt" ? "text-rose-700" : info.key === "prepaid" ? "text-emerald-700" : "text-slate-700"}`}>{info.amount ? formatMoney(info.amount) : "0 Ks"}</td><td className="px-3 py-3 text-right"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-700 hover:underline">Ledger →</Link></td></tr>;
+                    return <tr key={customer.id} className="hover:bg-slate-50"><td className="px-3 py-3"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-800 hover:underline">{customer.name}</Link><p className="mt-1 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p></td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span></td><td className={`px-3 py-3 text-right font-bold ${info.key === "debt" ? "text-rose-700" : info.key === "prepaid" ? "text-emerald-700" : "text-slate-700"}`}>{info.amount ? formatMoney(info.amount) : "0 Ks"}</td><td className="px-3 py-3">{info.key === "debt" ? <button type="button" onClick={() => toggleOutsideLedgerReminder(customer)} disabled={updatingReminderId === customer.id} className={`rounded-lg border px-3 py-2 text-xs font-bold ${customer.settledOutsideLedgerAt ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-800"}`}>{updatingReminderId === customer.id ? "သိမ်းနေသည်..." : customer.settledOutsideLedgerAt ? "✓ ငွေချေပြီး — စာရင်းထည့်ရန်ကျန်" : "မြေပြင်မှာ ငွေချေပြီးကြောင်း မှတ်ရန်"}</button> : <span className="text-xs text-slate-400">—</span>}</td><td className="px-3 py-3 text-right"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-700 hover:underline">Ledger →</Link></td></tr>;
                   })}</tbody>
                 </table>
               </div>

@@ -61,6 +61,8 @@ export async function GET(request, { params }) {
           select: { id: true, kpayName: true },
           orderBy: { kpayName: "asc" },
         },
+        settledOutsideLedgerAt: true,
+        settledOutsideLedgerBy: true,
           ...(includeLedgers
           ? {
               ledgers: {
@@ -103,6 +105,13 @@ export async function PATCH(request, { params }) {
     if (body.phone !== undefined) data.phone = body.phone?.trim() || null;
     if (body.routeTag !== undefined) data.routeTag = body.routeTag?.trim() || null;
     if (body.customerType !== undefined) data.customerType = String(body.customerType).toUpperCase() === "WHOLESALE" ? "WHOLESALE" : "RETAIL";
+    if (body.settledOutsideLedger === true) {
+      data.settledOutsideLedgerAt = new Date();
+      data.settledOutsideLedgerBy = getActorName(request);
+    } else if (body.settledOutsideLedger === false) {
+      data.settledOutsideLedgerAt = null;
+      data.settledOutsideLedgerBy = null;
+    }
     if (body.restore === true) data.deletedAt = null;
 
     const customer = await prisma.customer.update({
@@ -121,6 +130,8 @@ export async function PATCH(request, { params }) {
           select: { id: true, kpayName: true },
           orderBy: { kpayName: "asc" },
         },
+        settledOutsideLedgerAt: true,
+        settledOutsideLedgerBy: true,
         ledgers: {
           select: ledgerSelect,
           orderBy: [{ date: "desc" }, { id: "desc" }],
@@ -140,8 +151,12 @@ export async function PATCH(request, { params }) {
       entityType: "Customer",
       entityId: customer.id,
       entityLabel: customer.name,
-      summary: body.restore === true ? `Customer ပြန်ယူ: ${customer.name}` : `Customer ပြင်ဆင်: ${customer.name}`,
-      metadata: { changedFields: Object.keys(data), restore: body.restore === true },
+      summary: body.settledOutsideLedger === true
+        ? `${customer.name} မြေပြင်ငွေချေပြီး၊ ငွေချေစာရင်းထည့်ရန် မှတ်သား`
+        : body.settledOutsideLedger === false
+          ? `${customer.name} မြေပြင်ငွေချေ reminder ဖြုတ်`
+          : body.restore === true ? `Customer ပြန်ယူ: ${customer.name}` : `Customer ပြင်ဆင်: ${customer.name}`,
+      metadata: { changedFields: Object.keys(data), restore: body.restore === true, settledOutsideLedger: body.settledOutsideLedger },
     });
 
     return NextResponse.json({ data: customer });
