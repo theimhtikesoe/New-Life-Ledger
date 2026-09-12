@@ -2483,7 +2483,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-emerald-600 text-slate-900 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "DEBIT", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } })}
+                          onClick={() => setLedgerForm({ ...ledgerForm, type: "DEBIT", saleItems: [], paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } })}
                           disabled={isSubmitting}
                         >
                           ငွေချေ
@@ -2564,13 +2564,15 @@ export default function Dashboard({ view = "overview" }) {
                         </div>
                       ) : null}
 
-                      {salesCatalogError ? <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">{salesCatalogError}</p> : null}
-                      <SalesItemPicker
-                        catalog={salesCatalog}
-                        saleItems={ledgerForm.saleItems || []}
-                        onChange={(saleItems) => setLedgerForm((current) => ({ ...current, saleItems }))}
-                        disabled={isSubmitting}
-                      />
+                      {ledgerForm.type !== "DEBIT" ? <>
+                        {salesCatalogError ? <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">{salesCatalogError}</p> : null}
+                        <SalesItemPicker
+                          catalog={salesCatalog}
+                          saleItems={ledgerForm.saleItems || []}
+                          onChange={(saleItems) => setLedgerForm((current) => ({ ...current, saleItems }))}
+                          disabled={isSubmitting}
+                        />
+                      </> : null}
 
                       {ledgerForm.type === "CASH_SALE" && (
                         <div className="space-y-1">

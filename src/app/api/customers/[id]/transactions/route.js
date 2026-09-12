@@ -54,7 +54,7 @@ export async function POST(request, { params }) {
     const discountAmount = type === "DEBIT" ? Math.max(0, Math.round(Number(body.discountAmount || 0))) : 0;
     const discountNote = type === "DEBIT" ? body.discountNote?.trim() || null : null;
     const deductions = Math.round(Number(body.deductions || 0));
-    const saleItems = Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
+    const saleItems = type === "CREDIT" && Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "amount must be greater than zero" }, { status: 400 });
     }

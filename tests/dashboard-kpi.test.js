@@ -35,8 +35,15 @@ vi.mock("@/lib/myanmar-time", () => ({
 import { GET } from "@/app/api/dashboard-kpi/route";
 
 const dashboardSource = fs.readFileSync(path.join(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
+const transactionRouteSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/customers/[id]/transactions/route.js"), "utf8");
 
 describe("Dashboard KPI aggregate route", () => {
+  it("keeps bottle and cap sale forms for debt/cash sales only", () => {
+    expect(dashboardSource).toContain('ledgerForm.type !== "DEBIT" ? <>');
+    expect(dashboardSource).toContain('type: "DEBIT", saleItems: []');
+    expect(transactionRouteSource).toContain('type === "CREDIT" && Array.isArray(body.saleItems)');
+  });
+
   it("provides an isolated date selector for date-sensitive KPI cards", () => {
     expect(dashboardSource).toContain('id="dashboard-kpi-date"');
     expect(dashboardSource).toContain('type="date"');
