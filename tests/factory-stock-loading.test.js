@@ -27,7 +27,7 @@ describe("factory stock and dashboard loading contract", () => {
     expect(dashboardSource).toContain("စက်ရုံ Tube လက်ကျန်");
     expect(factoryRouteSource).toContain("buildCatalog().filter((entry) => entry.productType === \"bottle\" &&");
     expect(factoryRouteSource).toContain("Factory Stock is an Item-level inventory view");
-    expect(dashboardSource).toContain("Re-fetch the server-derived KPI immediately");
+    expect(dashboardSource).toContain("The write has already succeeded at this point");
   });
 
   it("shows the planned stock fields and status in the page table", () => {

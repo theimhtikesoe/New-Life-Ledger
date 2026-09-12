@@ -776,37 +776,10 @@ export default function Dashboard({ view = "overview" }) {
     // cards keep their dimensions and do not duplicate the global indicator.
     setLoadingStage("Data ရယူနေပါသည်");
     try {
-      // Start the small KPI aggregate and the main customer index together.
-      // KPI can be slower on a cold serverless/database connection; it must not
-      // block the customer list and the rest of the dashboard from rendering.
-      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`, { signal, cache: "no-store" })
-        .then((kpi) => {
-          setDashboardKpi(kpi);
-          setDashboardKpiError("");
-          saveDashboardSnapshot({ dashboardKpi: kpi });
-          return kpi;
-        })
-        .catch((error) => {
-          if (error.name !== "AbortError") {
-            console.warn("Dashboard KPI was not loaded:", error);
-            if (dashboardRequestIdRef.current === requestId) {
-              // Keep the last successful KPI snapshot visible during a transient
-              // date/API failure instead of replacing usable cards with blanks.
-              if (!dashboardKpi) setDashboardKpiError("KPI data မရသေးပါ");
-              setKpiDateError("KPI data ပြောင်းလဲရာတွင် အမှားရှိပါသည်။");
-            }
-          }
-          return null;
-        })
-        .finally(() => {
-          if (dashboardRequestIdRef.current === requestId) {
-            setDashboardKpiLoading(false);
-            setKpiDateLoading(false);
-          }
-        });
-
-      // Keep the previous snapshot visible while the lightweight customer
-      // index is loading so refreshes never create a false empty state.
+      // Customer data is the critical path for the Ledger. Do not start the
+      // expensive historical KPI/stock rebuild at the same time: production
+      // uses connection_limit=1, so KPI could otherwise occupy the only
+      // connection and make the customer screen appear stuck.
       const customerRequest = api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal });
       const allCustomersRequest = search ? api("/api/customers?includeLedgers=false", { signal }) : customerRequest;
       const [customerRows, allCustomersRows] = await Promise.all([
@@ -819,6 +792,29 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
+      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`, { signal, cache: "no-store", background: true })
+        .then((kpi) => {
+          setDashboardKpi(kpi);
+          setDashboardKpiError("");
+          saveDashboardSnapshot({ dashboardKpi: kpi });
+          return kpi;
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") {
+            console.warn("Dashboard KPI was not loaded:", error);
+            if (dashboardRequestIdRef.current === requestId) {
+              if (!dashboardKpi) setDashboardKpiError("KPI data မရသေးပါ");
+              setKpiDateError("KPI data ပြောင်းလဲရာတွင် အမှားရှိပါသည်။");
+            }
+          }
+          return null;
+        })
+        .finally(() => {
+          if (dashboardRequestIdRef.current === requestId) {
+            setDashboardKpiLoading(false);
+            setKpiDateLoading(false);
+          }
+        });
       void kpiRequest;
       void loadOverdueDebts();
 

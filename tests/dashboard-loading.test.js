@@ -16,7 +16,13 @@ describe("Dashboard loading recovery", () => {
   it("does not show the global data spinner over an already populated dashboard", () => {
     expect(source).toContain("loading && !loadingTimedOut && !dashboardKpi && customers.length === 0 && allCustomersForKPI.length === 0");
     expect(source).toContain("setLoading(false);");
-    expect(source).toContain("setLoadingStage(\"\");");
+    expect(source).toContain('setLoadingStage("");');
+  });
+
+  it("prioritizes the customer list before the expensive KPI stock rebuild", () => {
+    expect(source).toContain("Customer data is the critical path for the Ledger");
+    expect(source).toContain("const [customerRows, allCustomersRows] = await Promise.all");
+    expect(source.indexOf("const customerRequest = api(")).toBeLessThan(source.indexOf("const kpiRequest = api("));
   });
 
   it("calculates the cash-sale paid amount from listed total minus discount", () => {

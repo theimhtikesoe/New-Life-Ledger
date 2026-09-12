@@ -22,6 +22,8 @@ model Customer {
   cashSales       CashSale[]
   createdAt       DateTime         @default(now())
   deletedAt       DateTime?
+
+  @@index([deletedAt, name])
 }
 
 model Order {

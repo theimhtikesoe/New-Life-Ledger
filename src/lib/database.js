@@ -173,6 +173,7 @@ export async function ensureDatabase() {
       // an older production database from returning a Prisma missing-column error.
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountAmount" INTEGER NOT NULL DEFAULT 0`);
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountNote" TEXT`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "Customer_deletedAt_name_idx" ON "Customer"("deletedAt", "name")`);
 
       // Production requests normally arrive after migrations have already
       // created the complete schema. Avoid repeating many CREATE/ALTER/index
