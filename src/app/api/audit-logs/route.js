@@ -41,38 +41,38 @@ export async function GET(request) {
       isHiddenReportAction ? { action: "__HIDDEN_DAILY_REPORT_SENT__" } : action ? { action } : null,
       excludeCustomerEdits ? { NOT: { AND: [{ entityType: "Customer" }, { action: "UPDATE" }] } } : null,
     ].filter(Boolean);
-    const [allAuditLogs, legacyLedgers] = await Promise.all([
-      prisma.auditLog.findMany({
-        where: { AND: auditConditions },
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-        take: limit,
-      }),
-      includeLegacy
-        ? prisma.ledger.findMany({
-            where: {
-              ...(range ? { date: range } : {}),
-              ...(legacyAction || {}),
-            },
-            select: {
-              id: true,
-              date: true,
-              createdAt: true,
-              type: true,
-              saleType: true,
-              itemSize: true,
-              cartons: true,
-              rate: true,
-              deductions: true,
-              amount: true,
-              note: true,
-              paymentType: true,
-              customer: { select: { id: true, name: true } },
-            },
-            orderBy: [{ date: "desc" }, { id: "desc" }],
-            take: limit,
-          })
-        : [],
-    ]);
+    // Production uses connection_limit=1. These reads must not compete for
+    // a second connection when Activity is opened.
+    const allAuditLogs = await prisma.auditLog.findMany({
+      where: { AND: auditConditions },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: limit,
+    });
+    const legacyLedgers = includeLegacy
+      ? await prisma.ledger.findMany({
+          where: {
+            ...(range ? { date: range } : {}),
+            ...(legacyAction || {}),
+          },
+          select: {
+            id: true,
+            date: true,
+            createdAt: true,
+            type: true,
+            saleType: true,
+            itemSize: true,
+            cartons: true,
+            rate: true,
+            deductions: true,
+            amount: true,
+            note: true,
+            paymentType: true,
+            customer: { select: { id: true, name: true } },
+          },
+          orderBy: [{ date: "desc" }, { id: "desc" }],
+          take: limit,
+        })
+      : [];
 
     const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && (!excludeCustomerEdits || !isCustomerEditActivity(log)));
     const cashSaleIds = allAuditLogs
@@ -140,6 +140,9 @@ export async function GET(request) {
 
     return NextResponse.json({ data: logs });
   } catch (error) {
+    if (/connection pool|Timed out fetching a new connection/i.test(String(error?.message || ""))) {
+      return NextResponse.json({ error: "Database လက်ရှိအလုပ်များနေပါသည်။ လုပ်ဆောင်ချက်မှတ်တမ်းကို ခဏစောင့်ပြီး ပြန်ဖွင့်ပါ။" }, { status: 503 });
+    }
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }
 }
