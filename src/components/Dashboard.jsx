@@ -2110,7 +2110,7 @@ export default function Dashboard({ view = "overview" }) {
               className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/90 p-4 text-left shadow-sm transition-all hover:border-cyan-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"
             >
               <div>
-                <p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ပိုက်ဗူး (Tube) ထုတ်လုပ်မှု</p>
+                <p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုတ်လုပ်ပြီးသော Tube</p>
                 <p className="mt-2 text-2xl font-black text-cyan-900">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} လုံး`}</p>
                 <p className="mt-1 text-sm font-bold text-cyan-700">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ် · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p>
               </div>
