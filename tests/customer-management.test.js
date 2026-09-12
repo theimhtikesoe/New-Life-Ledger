@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const dashboardSource = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
 const pageSource = readFileSync(resolve(process.cwd(), "src/components/CustomerManagementPage.jsx"), "utf8");
 const balanceDetailSource = readFileSync(resolve(process.cwd(), "src/app/balance-detail/page.js"), "utf8");
+const layoutClientSource = readFileSync(resolve(process.cwd(), "src/app/layout-client.jsx"), "utf8");
 const customerManagementRouteSource = readFileSync(resolve(process.cwd(), "src/app/customer-management/page.js"), "utf8");
 const schemaSource = readFileSync(resolve(process.cwd(), "prisma/schema.prisma"), "utf8");
 const databaseSource = readFileSync(resolve(process.cwd(), "src/lib/database.js"), "utf8");
@@ -19,10 +20,17 @@ describe("Customer Management workflow", () => {
   });
 
   it("keeps Balance Detail and Customer Management as separate routes", () => {
-    expect(balanceDetailSource).toContain("Balance Detail");
+    expect(layoutClientSource).toContain("'/balance-detail': 'လက်ကျန်ငွေ အသေးစိတ်'");
     expect(balanceDetailSource).not.toContain("Customer Management");
     expect(customerManagementRouteSource).toContain("CustomerManagementPage");
     expect(customerManagementRouteSource).toContain('title: "Customer Management | New Life Ledger"');
+  });
+
+  it("lets the outside-ledger payment note be toggled off after an accidental click", () => {
+    expect(balanceDetailSource).toContain("body: JSON.stringify({ settledOutsideLedger: marked })");
+    expect(balanceDetailSource).toContain("const marked = !customer.settledOutsideLedgerAt;");
+    expect(balanceDetailSource).toContain("ပြန်ဖျက်ရန် နှိပ်ပါ");
+    expect(balanceDetailSource).toContain("aria-pressed={Boolean(customer.settledOutsideLedgerAt)}");
   });
 
   it("renders one customer per row with prepaid, debt, and editable customer type", () => {

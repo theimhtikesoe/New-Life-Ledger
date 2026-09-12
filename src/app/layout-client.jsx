@@ -188,7 +188,7 @@ function GlobalActionLoadingIndicator() {
 const PAGE_HEADERS = {
   '/activity': 'Activity History',
   '/auto-report-status': 'Auto Report အခြေအနေ',
-  '/balance-detail': 'Balance Detail',
+  '/balance-detail': 'လက်ကျန်ငွေ အသေးစိတ်',
   '/cap-stock': 'စက်ရုံအဖုံးလက်ကျန်',
   '/customer-management': 'Customer Management',
   '/daily-bottle-sales': 'တစ်နေ့တာ ဗူးရောင်းစာရင်း',
