@@ -1948,6 +1948,14 @@ export default function Dashboard({ view = "overview" }) {
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🧾</span>
                 <span>လုပ်ဆောင်ချက်မှတ်တမ်း</span>
               </Link>
+              <Link
+                href="/trace"
+                className="neon-menu-button flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
+                title="ကုန်ပစ္စည်း လမ်းကြောင်းလိုက်ကြည့်ရန်"
+              >
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🔗</span>
+                <span>Trace / Tracking</span>
+              </Link>
               <Link href="/discounts" className="neon-menu-button neon-card-lime flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-lime-300 bg-lime-50 px-3 py-3 text-center text-base font-black leading-5 text-lime-700 shadow-sm transition-colors hover:bg-lime-100" title="Customer လျှော့စျေးမှတ်တမ်း">
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💰</span>
                 <span>လျှော့စျေး</span>
