@@ -347,6 +347,10 @@ export default function RootLayoutClient({ children }) {
       router.replace('/production');
       return;
     }
+    if (actorName && !isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor && pathname === '/production') {
+      router.replace('/');
+      return;
+    }
     if (isLedgerOnlyActor && pathname !== '/' && pathname !== '/ledger' && pathname !== '/balance-detail') {
       router.replace('/');
       return;
@@ -354,7 +358,7 @@ export default function RootLayoutClient({ children }) {
     if (isCapStockOnlyActor && pathname !== '/cap-stock') {
       router.replace('/cap-stock');
     }
-  }, [isCapStockOnlyActor, isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
+  }, [actorName, isCapStockOnlyActor, isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
 
   const handleLoginSuccess = (nextActorName) => {
     setActorName(nextActorName || '');

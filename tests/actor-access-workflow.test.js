@@ -127,4 +127,10 @@ describe("Actor access workflow", () => {
     expect(globalStylesSource).toContain(".shared-page-header-route {");
     expect(globalStylesSource).toContain("margin-top: 9rem !important;");
   });
+
+  it("returns a standard user to Dashboard after switching away from Production", () => {
+    expect(layoutSource).toContain("pathname === '/production'");
+    expect(layoutSource).toContain("router.replace('/');");
+    expect(layoutSource).toContain("!isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor");
+  });
 });
