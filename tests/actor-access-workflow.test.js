@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const pinLoginSource = fs.readFileSync(path.join(root, "src/components/PINLogin.jsx"), "utf8");
+const actorSessionSource = fs.readFileSync(path.join(root, "src/app/api/auth/actor-session/route.js"), "utf8");
 const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"), "utf8");
 const productionSource = fs.readFileSync(path.join(root, "src/components/ProductionEntryPage.jsx"), "utf8");
 const middlewareSource = fs.readFileSync(path.join(root, "src/middleware.js"), "utf8");
@@ -29,6 +30,13 @@ describe("Actor access workflow", () => {
     expect(pinLoginSource).toContain('fetchAuthJson("/api/auth/actor-session"');
     expect(pinLoginSource).toContain("setPendingActor(actorName);");
     expect(pinLoginSource).toContain("body: JSON.stringify({ actorName })");
+  });
+
+  it("refreshes session access when switching from production users to သက်မွန်နှင်း", () => {
+    expect(pinLoginSource).toContain("CAP_STOCK_ONLY_ACTORS.includes(actorName)");
+    expect(pinLoginSource).toContain('await fetchAuthJson("/api/auth/actor-session"');
+    expect(actorSessionSource).toContain('const CAP_STOCK_ONLY_ACTORS = ["သက်မွန်နှင်း"];');
+    expect(actorSessionSource).toContain('const access = PRODUCTION_ONLY_ACTORS.includes(actorName) ? "production-only" : "standard";');
   });
 
   it("remembers PIN-authorized users for the browser session and exposes the user switcher", () => {
