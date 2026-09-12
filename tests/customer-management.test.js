@@ -33,6 +33,12 @@ describe("Customer Management workflow", () => {
     expect(balanceDetailSource).toContain("aria-pressed={Boolean(customer.settledOutsideLedgerAt)}");
   });
 
+  it("makes mobile customer cards and ledger links easy to open", () => {
+    expect(balanceDetailSource).toContain('role="link"');
+    expect(balanceDetailSource).toContain("router.push(`/ledger?customerId=${encodeURIComponent(customer.id)}`)");
+    expect(balanceDetailSource).toContain('className="min-h-11 rounded-lg px-3 py-2 text-base font-bold');
+  });
+
   it("renders one customer per row with prepaid, debt, and editable customer type", () => {
     expect(pageSource).toContain("<table className=\"w-full min-w-[900px]");
     expect(pageSource).not.toContain("လက်လီ လက်ရှိယူနေ");
