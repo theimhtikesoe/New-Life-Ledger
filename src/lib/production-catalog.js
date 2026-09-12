@@ -174,6 +174,7 @@ export const TUBE_BY_MACHINE = {
     { g: "13g", color: "W", pcsPerBag: 2500, label: "13g W (အဖြူ)" },
     { g: "13g", color: "S+1", pcsPerBag: 2500, label: "13g (S+1)" },
     { g: "13g", color: "S+S", pcsPerBag: 2500, label: "13g (S+S)" },
+    { g: ".3", color: "B (S+1)", pcsPerBag: 2500, label: ".3 ပြာ (S+1)" },
   ],
 };
 

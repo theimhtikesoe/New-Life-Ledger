@@ -174,11 +174,13 @@ export function normalizeTubeIdentity(value, capacity = 0) {
     "1 လီတာ ပြာ": "24g B (S+1)",
     ".3 ဖြူ": "13g W (အဖြူ)",
     ".3 ပြာ (S+S)": "13g (S+S)",
+    ".3 B (S+1)": ".3 ပြာ (S+1)",
+    "0.3 ပြာ (S+1)": ".3 ပြာ (S+1)",
   };
   const prefixAliases = [["24g W", "24g W (အဖြူ)"], ["24g B", "24g B (S+1)"], ["16g W", "16g W (အဖြူ)"], ["16g S+1", "16g (S+1)"], ["16g B", "16g B (S+S)"], ["13g W", "13g W (အဖြူ)"], ["13g S+1", "13g (S+1)"], ["13g S+S", "13g (S+S)"]];
   const fromPrefix = prefixAliases.find(([prefix]) => raw.startsWith(prefix))?.[1];
   const productName = aliases[raw] || fromPrefix || raw || "Tube မသတ်မှတ်ရသေး";
-  const inferredCapacity = productName.startsWith("24g") ? 1500 : productName.startsWith("16g") ? 2000 : productName.startsWith("13g") ? 2500 : 0;
+  const inferredCapacity = productName.startsWith("24g") ? 1500 : productName.startsWith("16g") ? 2000 : productName.startsWith("13g") || productName.startsWith(".3") ? 2500 : 0;
   const normalizedCapacity = normalizeCapacity(capacity) || inferredCapacity;
   return { productName, productKey: `${productName}::${normalizedCapacity}`, capacity: normalizedCapacity };
 }
@@ -225,6 +227,7 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
         continue;
       }
       const isTube = item?.productType === "tube" || item?.categoryKey === "TUBE";
+      const noCap = item?.capLocation === "အဖုံးမပါ" || item?.capDeliveryMode === "NONE";
       const bottleCount = positiveInteger(item?.bottleCount);
       const capacity = normalizeCapacity(item?.capacity || item?.bottlesPerCard);
       const cards = positiveInteger(item?.cardCount) || (capacity ? Math.floor(bottleCount / capacity) : 0);
@@ -246,6 +249,7 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
         note: null,
         actorName: clean(actorName) || "system",
       });
+      if (noCap) continue;
       const capBreakdown = Array.isArray(item?.capBreakdown) ? item.capBreakdown : [];
       if (capBreakdown.length) {
         for (const capEntry of capBreakdown) {
