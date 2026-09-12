@@ -39,10 +39,12 @@ export default function CapStockPage() {
   const caps = useMemo(() => {
     const source = (data?.summary || []).filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0);
     const byKey = new Map(source.map((item) => [item.productKey, item]));
-    return CAP_LOCATIONS.flatMap((location) => CAP_COLORS.map((color) => {
+    const standardRows = CAP_LOCATIONS.flatMap((location) => CAP_COLORS.map((color) => {
       const key = `CAP::${location}::${color}::5000`;
       return byKey.get(key) || { productKey: key, stockType: "CAP", productName: `${location} · ${color}`, capacity: 5000, soldCards: 0, adjustmentCards: 0, currentCards: 0, currentBottles: 0 };
     }));
+    const standardKeys = new Set(standardRows.map((item) => item.productKey));
+    return [...standardRows, ...source.filter((item) => !standardKeys.has(item.productKey))];
   }, [data]);
   const selected = caps.find((item) => item.productKey === selectedKey);
   const selectedMovements = (data?.movements || []).filter((item) => item.productKey === selectedKey);
