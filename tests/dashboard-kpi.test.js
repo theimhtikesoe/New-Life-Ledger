@@ -53,6 +53,10 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
     expect(dashboardSource).toContain('href={`/production-history?date=${encodeURIComponent(selectedKpiDate)}`}');
     expect(dashboardSource).toContain("dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4");
+    expect(dashboardSource).toContain("`${tubeProductionSummary.totalPieces.toLocaleString()} Pcs`");
+    expect(dashboardSource).toContain("`${factoryTubePieces.toLocaleString()} Pcs`");
+    expect(dashboardSource).not.toContain("`${tubeProductionSummary.totalPieces.toLocaleString()} လုံး`");
+    expect(dashboardSource).not.toContain("`${factoryTubePieces.toLocaleString()} လုံး`");
   });
 
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
