@@ -2126,8 +2126,8 @@ export default function Dashboard({ view = "overview" }) {
                 <p className="mt-2 text-2xl font-black text-slate-800">{bottleSalesLoading || kpiDateLoading ? "ရယူနေသည်..." : (dashboardKpiError || kpiDateError) ? "—" : `${Number(todayTotalBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
                 <div className="mt-1 space-y-0.5 text-sm font-bold text-slate-600">
                   <p>စုစုပေါင်း ရောင်းဗူး</p>
-                  <p className="text-teal-700">ငွေချေ {Number(todayPaidBottleSales.totalBottles || 0).toLocaleString()} ဗူး</p>
-                  <p className="text-cyan-700">လက်ငင်း {Number(todayCashBottleSales.totalBottles || 0).toLocaleString()} ဗူး</p>
+                  <p className="text-teal-700">ငွေရပြီး {Number(todayPaidBottleSales.totalBottles || 0) + Number(todayCashBottleSales.totalBottles || 0)} ဗူး</p>
+                  <p className="text-[11px] text-teal-600">ငွေချေ + လက်ငင်း</p>
                   <p className="text-violet-700">အကြွေးတိုး {Number(todayCreditBottleSales.totalBottles || 0).toLocaleString()} ဗူး</p>
                 </div>
               </div>
