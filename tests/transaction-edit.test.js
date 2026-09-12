@@ -29,3 +29,21 @@ describe("Ledger transaction editing", () => {
 });
 
 export {};
+
+const reportSource = readFileSync(resolve(process.cwd(), "src/lib/daily-report.js"), "utf8");
+const dailySummaryRouteSource = readFileSync(resolve(process.cwd(), "src/app/api/daily-summary/route.js"), "utf8");
+
+describe("Cap display and report date alignment", () => {
+  it("renders every cap color separately in ledger text and Telegram bottle rows", () => {
+    expect(dashboardSource).toContain("capBreakdown.map");
+    expect(reportSource).toContain("capSummary");
+    expect(reportSource).toContain("အဖုံးအရောင်အလိုက်");
+  });
+
+  it("uses the same Myanmar day range and transaction date field for both reports", () => {
+    expect(dailySummaryRouteSource).toContain("const { start, end } = getMyanmarDayRange(dateParam)");
+    expect(dailySummaryRouteSource).toContain("where: { date: { gte: start, lt: end } }");
+    expect(reportSource).toContain("where: { date: { gte: start, lt: end } }");
+    expect(reportSource).toContain("periodLabel: `${dateLabel} 00:00–23:59 (Myanmar time)`");
+  });
+});

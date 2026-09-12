@@ -71,7 +71,10 @@ function saleItemsSummary(items = []) {
     if (item?.productType === "tube" || item?.categoryKey === "TUBE") {
       return `${item.productName || "Tube"} × ${item.cardCount || 0} အိတ် = ${Number(item.bottleCount || 0).toLocaleString()} Tube = ${formatMoney(item.totalAmount)}`;
     }
-    const capText = item.capProductName ? ` · ${item.capProductName} ${Number(item.capTotalCount || item.capNormalCount || 0).toLocaleString()} ဖုံး` : "";
+    const capBreakdown = Array.isArray(item.capBreakdown) ? item.capBreakdown : [];
+    const capText = capBreakdown.length
+      ? ` · အဖုံး ${capBreakdown.map((entry) => `${entry.capProductName || entry.capProductKey || "အရောင်မသတ်မှတ်ရသေး"} ${Number(entry.count || 0).toLocaleString()} ဖုံး`).join(" + ")}`
+      : item.capProductName ? ` · အဖုံး ${item.capProductName} ${Number(item.capTotalCount || item.capNormalCount || 0).toLocaleString()} ဖုံး` : "";
     return `${item.productName || "ဗူး"} ${item.capacity || 0} ဆံ့ × ${item.cardCount || 0} ကဒ် = ${Number(item.bottleCount || 0).toLocaleString()} ဗူး${capText}`;
   }).join("၊ ");
 }
