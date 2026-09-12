@@ -57,6 +57,7 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("`${factoryTubePieces.toLocaleString()} Pcs`");
     expect(dashboardSource).not.toContain("`${tubeProductionSummary.totalPieces.toLocaleString()} လုံး`");
     expect(dashboardSource).not.toContain("`${factoryTubePieces.toLocaleString()} လုံး`");
+    expect(dashboardSource).toContain('Number(displayedTotalBalance) < 0 ? "text-green-700" : "text-rose-700"');
   });
 
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {

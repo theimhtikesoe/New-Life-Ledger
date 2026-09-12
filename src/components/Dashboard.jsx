@@ -2072,7 +2072,7 @@ export default function Dashboard({ view = "overview" }) {
               <p className="text-sm font-medium tracking-wide text-rose-600">ဖောက်သည်နှင့် အကြွေးအခြေအနေ</p>
               <div className="mt-3 grid grid-cols-2 gap-3">
                 <div><p className="text-sm text-rose-500">ဖောက်သည်</p><p className="mt-1 text-2xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : displayedCustomerCount}</p><p className="text-sm text-rose-500">ယောက်</p></div>
-                <div><p className="text-sm text-rose-500">ရရန်လက်ကျန်</p><p className="mt-1 break-words text-xl font-bold text-rose-700">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p><p className="text-sm text-rose-500">အသေးစိတ် →</p></div>
+                <div><p className="text-sm text-rose-500">ရရန်လက်ကျန်</p><p className={`mt-1 break-words text-xl font-bold ${Number(displayedTotalBalance) < 0 ? "text-green-700" : "text-rose-700"}`}>{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : dataLoadError && !hasKpiSnapshot ? "—" : formatMoney(displayedTotalBalance)}</p><p className="text-sm text-rose-500">အသေးစိတ် →</p></div>
               </div>
             </Link>
 
