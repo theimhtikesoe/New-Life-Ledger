@@ -44,6 +44,13 @@ describe("Dashboard KPI aggregate route", () => {
     expect(transactionRouteSource).toContain('type === "CREDIT" && Array.isArray(body.saleItems)');
   });
 
+  it("offers a target credit ledger when recording a payment", () => {
+    expect(dashboardSource).toContain('id="payment-target-ledger"');
+    expect(dashboardSource).toContain("paymentTargetLedgers");
+    expect(dashboardSource).toContain("__SETTLES_CREDIT_LEDGER__:");
+    expect(dashboardSource).toContain("ငွေချေမည့် အကြွေးအဟောင်း ရွေးပါ");
+  });
+
   it("provides an isolated date selector for date-sensitive KPI cards", () => {
     expect(dashboardSource).toContain('id="dashboard-kpi-date"');
     expect(dashboardSource).toContain('type="date"');

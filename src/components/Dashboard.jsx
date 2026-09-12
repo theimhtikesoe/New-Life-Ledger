@@ -331,6 +331,7 @@ export default function Dashboard({ view = "overview" }) {
     paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
     saleItems: [],
   });
+  const [paymentTargetLedgerId, setPaymentTargetLedgerId] = useState("");
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(() => !Array.isArray(initialDashboardSnapshot?.customers));
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
@@ -1155,6 +1156,9 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       const type = ledgerForm.type;
       const isCashSale = type === "CASH_SALE";
+      if (type === "DEBIT" && paymentTargetLedgers.length > 0 && !paymentTargetLedgerId) {
+        throw new Error("ငွေချေမည့် အကြွေးအဟောင်းကို အရင်ရွေးပါ။");
+      }
       const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
       const autoAmount = saleItemsAmount || (type === "CREDIT" && ledgerForm.saleType === "RETAIL"
         ? Math.max(0, Math.round(Number(ledgerForm.cartons || 0) * Number(ledgerForm.rate || 0) - Number(ledgerForm.deductions || 0)))
@@ -1179,6 +1183,9 @@ export default function Dashboard({ view = "overview" }) {
         throw new Error(paymentBreakdownValidationMessage(ledgerForm.paymentBreakdown, cashSaleAmount));
       }
       const amountToSave = hasCashSaleBreakdown ? cashSaleBreakdownTotal : hasSinglePayment ? singlePaymentAmount : amount;
+      const paymentNote = type === "DEBIT" && paymentTargetLedgerId
+        ? [ledgerForm.note, `__SETTLES_CREDIT_LEDGER__:${paymentTargetLedgerId}`].filter(Boolean).join(" ")
+        : ledgerForm.note;
 
       if (editingTransaction && !isCashSale) {
         const result = await api(`/api/transactions/${editingTransaction.id}`, {
@@ -1237,7 +1244,7 @@ export default function Dashboard({ view = "overview" }) {
           amount: amountToSave,
           discountAmount: isCashSale ? 0 : ledgerDiscountAmount,
           discountNote: isCashSale ? null : ledgerDiscountNote,
-          note: ledgerForm.note,
+          note: paymentNote,
           saleItems: ledgerForm.saleItems?.length ? ledgerForm.saleItems : undefined,
           paymentType: hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType || (isCashSale ? "CASH" : null),
           paymentBreakdown: hasCashSaleBreakdown ? {
@@ -1296,6 +1303,7 @@ export default function Dashboard({ view = "overview" }) {
       });
       clearDashboardDraftFields(["ledgerForm"]);
       
+      setPaymentTargetLedgerId("");
       showAlert(isCashSale ? "လက်ငင်း Transaction သိမ်းဆည်းပြီးပါပြီ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
       setMessage(error.message);
@@ -1764,6 +1772,14 @@ export default function Dashboard({ view = "overview" }) {
   };
 
   const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
+  const paymentTargetLedgers = useMemo(() => (
+    (selectedCustomer?.ledgers || [])
+      .filter((ledger) => ledger.type === "CREDIT")
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  ), [selectedCustomer?.ledgers]);
+  useEffect(() => {
+    setPaymentTargetLedgerId("");
+  }, [selectedCustomerId]);
   const cashSaleBreakdownInput = ledgerForm.paymentBreakdown || EMPTY_PAYMENT_BREAKDOWN;
   const hasCashSaleBreakdown = hasPaymentBreakdownInput(cashSaleBreakdownInput);
   const cashSaleBreakdownTotal = paymentSplitTotal(cashSaleBreakdownInput);
@@ -2533,7 +2549,27 @@ export default function Dashboard({ view = "overview" }) {
                       </div>
 
                       {ledgerForm.type === "DEBIT" ? (
-                        <div className="grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:grid-cols-2">
+                        <div className="space-y-3">
+                          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                            <label className="block text-xs font-black text-emerald-950" htmlFor="payment-target-ledger">ငွေချေမည့် အကြွေးအဟောင်း ရွေးပါ</label>
+                            <select
+                              id="payment-target-ledger"
+                              value={paymentTargetLedgerId}
+                              onChange={(event) => setPaymentTargetLedgerId(event.target.value)}
+                              className="mt-2 h-11 w-full rounded-lg border border-emerald-300 bg-white px-3 text-sm font-bold text-slate-900"
+                              disabled={isSubmitting}
+                              required={paymentTargetLedgers.length > 0}
+                            >
+                              <option value="">{paymentTargetLedgers.length ? "အကြွေးမှတ်တမ်း ရွေးပါ" : "မရှင်းရသေးသော အကြွေးမရှိပါ"}</option>
+                              {paymentTargetLedgers.map((ledger) => (
+                                <option key={ledger.id} value={ledger.id}>
+                                  {formatDate(ledger.date)} · {formatMoney(ledger.amount)}{ledger.note ? ` · ${ledger.note}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                            <p className="mt-2 text-[11px] leading-4 text-emerald-800">ရွေးထားသော အကြွေး ID ကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။</p>
+                          </div>
+                          <div className="grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:grid-cols-2">
                           <label className="space-y-1 text-xs font-bold text-amber-950">
                             လျှော့စျေး (Ks)
                             <input
@@ -2561,6 +2597,7 @@ export default function Dashboard({ view = "overview" }) {
                           <p className="sm:col-span-2 text-[11px] leading-4 text-amber-800">
                             ဒီပမာဏက Customer အကြွေးကို လျှော့ပေးမည့်ငွေ ဖြစ်ပြီး ငွေချေမှတ်တမ်းတွင် သီးခြားပြပါမည်။
                           </p>
+                          </div>
                         </div>
                       ) : null}
 
