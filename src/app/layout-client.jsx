@@ -532,8 +532,14 @@ export default function RootLayoutClient({ children }) {
     const nextActor = String(nextActorName || '').trim();
     setActorName(nextActor);
     setAuthenticated(true);
-    const nextPath = routeForActor(nextActor);
-    if (nextPath !== pathname) router.replace(nextPath);
+    // Session restoration happens whenever a route segment remounts. Keep the
+    // page the user explicitly opened; only the initial root entry needs a
+    // role-specific landing redirect. Explicit actor switches use the event
+    // handler above and always redirect separately.
+    if (pathname === '/') {
+      const nextPath = routeForActor(nextActor);
+      if (nextPath !== pathname) router.replace(nextPath);
+    }
   }, [pathname, routeForActor, router]);
 
   const handleLogout = useCallback(() => {
