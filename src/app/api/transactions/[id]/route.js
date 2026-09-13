@@ -119,7 +119,7 @@ export async function PATCH(request, { params }) {
         where: { id: transactionId },
         data: {
           type,
-          actorName: getActorName(request),
+          actorName: body.preserveActorName ? ledger.actorName : getActorName(request),
           saleType: body.saleType || ledger.saleType || "RETAIL",
           itemSize: body.itemSize?.trim() || null,
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
