@@ -214,6 +214,19 @@ function SaveReviewModal({ review, onCancel, onConfirm }) {
   );
 }
 
+function getFormFieldLabel(element) {
+  const explicitLabel = element.getAttribute('data-review-label') || element.getAttribute('aria-label');
+  if (explicitLabel && explicitLabel !== 'ရွေးချယ်မှု') return explicitLabel;
+  const wrapper = element.closest('label');
+  if (wrapper) {
+    const clone = wrapper.cloneNode(true);
+    clone.querySelectorAll('input, textarea, select, button, [data-review-value]').forEach((child) => child.remove());
+    const labelText = clone.textContent.replace(/\s+/g, ' ').trim();
+    if (labelText) return labelText;
+  }
+  return element.placeholder || element.name || element.id || 'အချက်အလက်';
+}
+
 const PAGE_HEADERS = {
   '/activity': 'Activity History',
   '/auto-report-status': 'Auto Report အခြေအနေ',
@@ -367,7 +380,7 @@ export default function RootLayoutClient({ children }) {
       const fields = Array.from(form.querySelectorAll('input, textarea, [data-review-value]'))
         .filter((element) => element.type !== 'hidden' && element.type !== 'submit' && element.type !== 'button' && element.name !== 'pin')
         .map((element) => ({
-          label: element.getAttribute('data-review-label') || element.getAttribute('aria-label') || element.placeholder || element.name || element.id || 'အချက်အလက်',
+          label: getFormFieldLabel(element),
           value: element.getAttribute('data-review-value') || element.value,
         }))
         .filter((field) => field.value !== '');
