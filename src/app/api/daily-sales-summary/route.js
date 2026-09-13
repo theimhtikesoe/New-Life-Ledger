@@ -47,13 +47,15 @@ function parseDate(value) {
 async function getSourceSnapshot(date) {
   const { range } = parseDate(date);
   const ledgers = prisma.ledger?.findMany
-    ? await prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true, type: true } })
+    ? await prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true, type: true, note: true } })
     : [];
   const cashSales = prisma.cashSale?.findMany
     ? await prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
     : [];
-  // DEBIT ledger rows are debt settlements, not new wholesale sales.
-  const amounts = cashSales.map((row) => toAmount(row.amount));
+  const amounts = [
+    ...ledgers.filter((row) => isWholesaleSettlementLedger(row)).map((row) => toAmount(row.amount)),
+    ...cashSales.map((row) => toAmount(row.amount)),
+  ];
   return {
     capturedAt: new Date(),
     transactionCount: amounts.length,
@@ -96,6 +98,11 @@ function addPaymentTypes(target, split) {
   }
 }
 
+function isWholesaleSettlementLedger(ledger) {
+  return String(ledger?.type || "").toUpperCase() === "DEBIT"
+    && !String(ledger?.note || "").startsWith("__SETTLES_CREDIT_LEDGER__:");
+}
+
 function summarizeCashSales(sales) {
   const summary = emptySummary();
   for (const sale of sales) {
@@ -115,9 +122,19 @@ function summarizeCashSales(sales) {
 }
 
 function summarizeLedgerPayments(ledgers) {
-  // Keep this compatibility boundary for reconciliation callers, but never
-  // classify settlement payments as wholesale sales.
-  return emptySummary();
+  const summary = emptySummary();
+  for (const ledger of ledgers) {
+    if (!isWholesaleSettlementLedger(ledger)) continue;
+    const amount = toAmount(ledger.amount);
+    const split = getPaymentSplit(ledger);
+    summary.recordCount += 1;
+    summary.wholesaleTotal += amount;
+    summary.wholesaleCash += split.CASH;
+    addPaymentTypes(summary.paymentTypes, split);
+  }
+  summary.dailyTotal = summary.retailTotal + summary.wholesaleTotal;
+  summary.cashDailyTotal = summary.retailCash + summary.wholesaleCash;
+  return summary;
 }
 
 function combineSummaries(...summaries) {
@@ -264,7 +281,8 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   }
   const savedByDate = new Map(savedRows.map((row) => [row.date, row]));
   const selectedCash = summarizeCashSales(cashByDate.get(date) || []);
-  const selectedAuto = selectedCash;
+  const selectedLedgerPayments = summarizeLedgerPayments(ledgerByDate.get(date) || []);
+  const selectedAuto = combineSummaries(selectedCash, selectedLedgerPayments);
   const selectedSaved = savedByDate.get(date);
   const selectedDay = selectedSaved
     ? {
@@ -280,7 +298,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   const autoRows = new Map();
   const allDates = new Set([...cashByDate.keys(), ...ledgerByDate.keys()]);
   for (const rowDate of allDates) {
-    autoRows.set(rowDate, serializeRow(rowDate, summarizeCashSales(cashByDate.get(rowDate) || []), "AUTO_PREVIEW", null));
+    autoRows.set(rowDate, serializeRow(rowDate, combineSummaries(summarizeCashSales(cashByDate.get(rowDate) || []), summarizeLedgerPayments(ledgerByDate.get(rowDate) || [])), "AUTO_PREVIEW", null));
   }
   for (const [rowDate, row] of autoRows.entries()) {
     rows.set(rowDate, row);
