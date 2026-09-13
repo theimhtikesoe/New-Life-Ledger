@@ -6,6 +6,8 @@ import Link from 'next/link';
 import PINLogin from '@/components/PINLogin';
 import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
 import { formatMyanmarClock, formatMyanmarDateLabel } from '@/lib/myanmar-time-client';
+import { encodeActorHeader } from '@/lib/actor-header';
+import { defaultAllowedPaths } from '@/lib/user-permissions';
 
 const APP_ZOOM_KEY = 'new-life-ledger:app-zoom-v1';
 const MIN_APP_ZOOM = 0.85;
@@ -218,6 +220,7 @@ const PAGE_HEADERS = {
   '/balance-detail': 'လက်ကျန်ငွေ အသေးစိတ်',
   '/cap-stock': 'စက်ရုံအဖုံးလက်ကျန်',
   '/customer-management': 'Customer Management',
+  '/user-management': 'User Management',
   '/daily-bottle-sales': 'တစ်နေ့တာ ဗူးရောင်းစာရင်း',
   '/daily-summary': 'Daily Summary',
   '/data-management': 'Data Management',
@@ -349,9 +352,8 @@ export default function RootLayoutClient({ children }) {
   const [appZoom, setAppZoom] = useState(1);
   const pathname = usePathname();
   const router = useRouter();
-  const isProductionOnlyActor = actorName === 'ဇွဲဇွဲ' || actorName === 'ဖြိုးကို';
-  const isLedgerOnlyActor = actorName === 'ဆောင်းဦး';
-  const isCapStockOnlyActor = actorName === 'သက်မွန်နှင်း';
+  const [allowedPaths, setAllowedPaths] = useState([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saveReview, setSaveReview] = useState(null);
   const pendingSubmitRef = useRef(null);
@@ -399,6 +401,27 @@ export default function RootLayoutClient({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!actorName) {
+      setAllowedPaths([]);
+      setPermissionsLoading(false);
+      return undefined;
+    }
+    let active = true;
+    setAllowedPaths(defaultAllowedPaths(actorName));
+    setPermissionsLoading(true);
+    fetch('/api/user-permissions', { headers: { 'x-actor-name': encodeActorHeader(actorName) }, cache: 'no-store' })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || 'Permission data မရပါ။');
+        const row = (body.data || []).find((item) => item.actorName === actorName);
+        if (active && row) setAllowedPaths(Array.isArray(row.allowedPaths) ? row.allowedPaths : defaultAllowedPaths(actorName));
+      })
+      .catch(() => {})
+      .finally(() => { if (active) setPermissionsLoading(false); });
+    return () => { active = false; };
+  }, [actorName]);
+
+  useEffect(() => {
     const handleActorSelected = (event) => {
       const nextActorName = String(event.detail?.actorName || '').trim();
       if (!nextActorName) return;
@@ -410,18 +433,10 @@ export default function RootLayoutClient({ children }) {
   }, []);
 
   useEffect(() => {
-    if (isProductionOnlyActor && pathname !== '/production') {
-      router.replace('/production');
-      return;
-    }
-    if (isLedgerOnlyActor && pathname !== '/' && pathname !== '/ledger' && pathname !== '/balance-detail') {
-      router.replace('/');
-      return;
-    }
-    if (isCapStockOnlyActor && pathname !== '/cap-stock') {
-      router.replace('/cap-stock');
-    }
-  }, [actorName, isCapStockOnlyActor, isLedgerOnlyActor, isProductionOnlyActor, pathname, router]);
+    if (!actorName || permissionsLoading || allowedPaths.includes(pathname)) return;
+    const fallbackPath = allowedPaths.find((path) => path !== '/user-management') || '/';
+    if (pathname !== fallbackPath) router.replace(fallbackPath);
+  }, [actorName, allowedPaths, pathname, permissionsLoading, router]);
 
   const handleLoginSuccess = (nextActorName) => {
     setActorName(nextActorName || '');
@@ -433,12 +448,7 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   };
 
-  const canRenderCurrentPage = authenticated && (
-    (!isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor)
-    || (isProductionOnlyActor && pathname === '/production')
-    || (isLedgerOnlyActor && (pathname === '/' || pathname === '/ledger' || pathname === '/balance-detail'))
-    || (isCapStockOnlyActor && pathname === '/cap-stock')
-  );
+  const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
 
   return (
     <>

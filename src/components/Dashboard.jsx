@@ -2115,6 +2115,9 @@ export default function Dashboard({ view = "overview" }) {
                     <Link href="/customer-management" className="settings-menu-item border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">
                       <span className="ui-icon">👥</span><span>ဖောက်သည်စီမံခန့်ခွဲမှု</span>
                     </Link>
+                    <Link href="/user-management" className="settings-menu-item border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100">
+                      <span className="ui-icon">🔐</span><span>User Management</span>
+                    </Link>
                     <Link href="/data-management" className="settings-menu-item border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100">
                       <span className="ui-icon">🗂️</span><span>ဒေတာစီမံခန့်ခွဲမှု</span>
                     </Link>

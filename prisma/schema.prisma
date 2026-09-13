@@ -28,6 +28,17 @@ model Customer {
   @@index([deletedAt, name])
 }
 
+model UserPermission {
+  id          Int      @id @default(autoincrement())
+  actorName   String   @unique
+  allowedPaths Json
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
 model Order {
   id                     String          @id @default(uuid()) @db.Uuid
   status                 String          @default("DRAFT")
