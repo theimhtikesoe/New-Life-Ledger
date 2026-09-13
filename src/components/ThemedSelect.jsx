@@ -41,7 +41,11 @@ export default function ThemedSelect({ value = "", onChange, children, className
         data-review-value={selected.label}
         data-review-label={ariaLabel || id || "ရွေးချယ်မှု"}
         disabled={disabled}
-        onClick={() => setOpen((current) => !current)}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen((current) => !current);
+        }}
         className={`relative flex w-full items-center justify-between gap-3 text-left transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
         <span className="min-w-0 flex-1 truncate">{selected.label}</span>
@@ -52,7 +56,10 @@ export default function ThemedSelect({ value = "", onChange, children, className
           role="listbox"
           aria-labelledby={id}
           onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
           onWheel={(event) => event.stopPropagation()}
           onTouchMove={(event) => event.stopPropagation()}
           className="pointer-events-auto absolute left-0 right-0 top-[calc(100%+0.35rem)] z-[9999] max-h-64 touch-pan-y overflow-y-auto overscroll-contain rounded-xl border border-cyan-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.28)] backdrop-blur-xl"

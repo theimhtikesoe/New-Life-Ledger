@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build:ci": "if [ -n \"$DATABASE_URL\" ] && [ -n \"$DIRECT_URL\" ]; then prisma migrate deploy; fi; prisma generate && next build",
-    "build": "if [ -n \"$DATABASE_URL\" ] && [ -n \"$DIRECT_URL\" ]; then prisma migrate deploy; fi; prisma generate && next build",
+    "build:ci": "if [ -n \"$DATABASE_URL\" ]; then DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma migrate deploy; fi; prisma generate && next build",
+    "build": "if [ -n \"$DATABASE_URL\" ]; then DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" prisma migrate deploy; fi; prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
