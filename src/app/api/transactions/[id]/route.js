@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
 
 export const dynamic = "force-dynamic";
@@ -100,7 +100,9 @@ export async function PATCH(request, { params }) {
       const discountNote = type === "DEBIT" ? body.discountNote?.trim() || null : null;
       if (!Number.isFinite(amount) || amount <= 0) throw new Error("amount must be greater than zero");
       const saleItems = Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
-      const date = body.date ? getMyanmarDayRange(body.date).start : ledger.date;
+      const requestedDate = body.date || getMyanmarDateInputValue(ledger.date);
+      if (requestedDate > getMyanmarDateInputValue()) throw new Error("အနာဂတ်ရက်စွဲဖြင့် စာရင်းသိမ်း၍မရပါ။ ဒီနေ့ သို့မဟုတ် အတိတ်ရက်ကိုသာ ရွေးပါ။");
+      const date = body.date ? getMyanmarDayRange(requestedDate).start : ledger.date;
       const previousEffect = ledger.type === "CREDIT" ? ledger.amount : -(ledger.amount + (ledger.discountAmount || 0));
       const nextEffect = type === "CREDIT" ? amount : -(amount + discountAmount);
       const balanceAdjustment = nextEffect - previousEffect;
@@ -161,7 +163,7 @@ export async function PATCH(request, { params }) {
     invalidateFactoryStockCache();
     return NextResponse.json({ data: result });
   } catch (error) {
-    if (error.message === "Transaction not found" || error.message === "amount must be greater than zero") {
+    if (error.message === "Transaction not found" || error.message === "amount must be greater than zero" || error.message.includes("အနာဂတ်ရက်စွဲ")) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });

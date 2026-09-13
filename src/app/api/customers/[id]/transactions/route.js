@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
-import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +55,11 @@ export async function POST(request, { params }) {
     const discountNote = type === "DEBIT" ? body.discountNote?.trim() || null : null;
     const deductions = Math.round(Number(body.deductions || 0));
     const saleItems = type === "CREDIT" && Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
+    const todayMyanmar = getMyanmarDateInputValue();
+    const ledgerDate = body.date || todayMyanmar;
+    if (ledgerDate > todayMyanmar) {
+      return NextResponse.json({ error: "အနာဂတ်ရက်စွဲဖြင့် စာရင်းသိမ်း၍မရပါ။ ဒီနေ့ သို့မဟုတ် အတိတ်ရက်ကိုသာ ရွေးပါ။" }, { status: 400 });
+    }
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "amount must be greater than zero" }, { status: 400 });
     }
@@ -77,7 +82,7 @@ export async function POST(request, { params }) {
           deductions, amount, discountAmount, discountNote,
           note: body.note?.trim() || null,
           paymentType: body.paymentType || null, saleItems,
-          date: body.date ? getMyanmarDayRange(body.date).start : new Date(),
+          date: getMyanmarDayRange(ledgerDate).start,
         },
         select: {
           id: true, date: true, createdAt: true, actorName: true, type: true, saleType: true, itemSize: true,

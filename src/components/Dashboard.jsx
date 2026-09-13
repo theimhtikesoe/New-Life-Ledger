@@ -1863,9 +1863,9 @@ export default function Dashboard({ view = "overview" }) {
           remainingAmount: Math.max(0, Number(credit.amount || 0) - paidAmount),
         };
       })
-      .filter((ledger) => ledger.remainingAmount > 0)
+      .filter((ledger) => ledger.remainingAmount > 0 && formatMyanmarDateInputValue(ledger.date) <= currentMyanmarDate)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [selectedCustomer?.ledgers]);
+  }, [selectedCustomer?.ledgers, currentMyanmarDate]);
   const selectedPaymentTarget = useMemo(
     () => paymentTargetLedgers.find((ledger) => ledger.id === paymentTargetLedgerId) || null,
     [paymentTargetLedgers, paymentTargetLedgerId],
@@ -2654,7 +2654,8 @@ export default function Dashboard({ view = "overview" }) {
                               type="date"
                               className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all appearance-none"
                               style={{ colorScheme: 'dark' }}
-                              value={ledgerForm.date}
+                              value={ledgerForm.date || currentMyanmarDate}
+                              max={currentMyanmarDate}
                               onChange={(e) => setLedgerForm({ ...ledgerForm, date: e.target.value })}
                               disabled={isSubmitting}
                             />

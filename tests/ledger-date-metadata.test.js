@@ -9,7 +9,8 @@ const schema = readFileSync(resolve(process.cwd(), "prisma/schema.prisma"), "utf
 
 describe("Ledger date and save metadata", () => {
   it("stores the selected Myanmar ledger date separately from the database save timestamp", () => {
-    expect(createRoute).toContain("date: body.date ? getMyanmarDayRange(body.date).start : new Date()");
+    expect(createRoute).toContain("const ledgerDate = body.date || todayMyanmar;");
+    expect(createRoute).toContain("date: getMyanmarDayRange(ledgerDate).start");
     expect(createRoute).toContain("createdAt: true, actorName: true");
     expect(schema).toContain("actorName      String?");
   });
