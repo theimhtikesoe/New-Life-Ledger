@@ -393,7 +393,7 @@ export default function RootLayoutClient({ children }) {
     const normalizedActor = String(nextActorName || '').trim();
     if (normalizedActor === 'ဇွဲဇွဲ' || normalizedActor === 'ဖြိုးကို') return '/production';
     if (normalizedActor === 'သက်မွန်နှင်း') return '/cap-stock';
-    if (normalizedActor === 'ဆောင်းဦး') return '/ledger';
+    if (normalizedActor === 'ဆောင်းဦး') return '/';
     return '/';
   }, []);
 
