@@ -1160,7 +1160,9 @@ export default function Dashboard({ view = "overview" }) {
         throw new Error("ငွေချေမည့် အကြွေးအဟောင်းကို အရင်ရွေးပါ။");
       }
       const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
-      const autoAmount = saleItemsAmount || (type === "CREDIT" && ledgerForm.saleType === "RETAIL"
+      const autoAmount = type === "DEBIT"
+        ? (selectedPaymentTarget?.remainingAmount || 0)
+        : saleItemsAmount || (type === "CREDIT" && ledgerForm.saleType === "RETAIL"
         ? Math.max(0, Math.round(Number(ledgerForm.cartons || 0) * Number(ledgerForm.rate || 0) - Number(ledgerForm.deductions || 0)))
         : 0);
       const manualAmountText = String(ledgerForm.manualAmount ?? "").trim();
@@ -1168,6 +1170,9 @@ export default function Dashboard({ view = "overview" }) {
       const amount = hasManualAmount ? Math.max(0, Math.round(Number(manualAmountText || 0))) : autoAmount;
       const ledgerDiscountAmount = type === "DEBIT" ? Math.max(0, Math.round(Number(ledgerForm.discountAmount || 0))) : 0;
       const ledgerDiscountNote = type === "DEBIT" ? String(ledgerForm.discountNote || "").trim() : "";
+      if (type === "DEBIT" && selectedPaymentTarget && amount + ledgerDiscountAmount > selectedPaymentTarget.remainingAmount) {
+        throw new Error("ယခုငွေချေငွေ + လျှော့စျေးသည် အကြွေးကျန်ငွေထက် မကျော်ရပါ။");
+      }
       const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
       const hasCashSaleBreakdown = isCashSale && hasPaymentBreakdownInput(ledgerForm.paymentBreakdown);
       const cashSaleBreakdownTotal = hasCashSaleBreakdown ? paymentSplitTotal(ledgerForm.paymentBreakdown) : 0;
@@ -1772,11 +1777,28 @@ export default function Dashboard({ view = "overview" }) {
   };
 
   const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
-  const paymentTargetLedgers = useMemo(() => (
-    (selectedCustomer?.ledgers || [])
+  const paymentTargetLedgers = useMemo(() => {
+    const ledgers = selectedCustomer?.ledgers || [];
+    return ledgers
       .filter((ledger) => ledger.type === "CREDIT")
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  ), [selectedCustomer?.ledgers]);
+      .map((credit) => {
+        const paidAmount = ledgers
+          .filter((ledger) => ledger.type === "DEBIT" && String(ledger.note || "").includes(`__SETTLES_CREDIT_LEDGER__:${credit.id}`))
+          .reduce((sum, ledger) => sum + Number(ledger.amount || 0), 0);
+        return {
+          ...credit,
+          originalAmount: Number(credit.amount || 0),
+          paidAmount,
+          remainingAmount: Math.max(0, Number(credit.amount || 0) - paidAmount),
+        };
+      })
+      .filter((ledger) => ledger.remainingAmount > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [selectedCustomer?.ledgers]);
+  const selectedPaymentTarget = useMemo(
+    () => paymentTargetLedgers.find((ledger) => ledger.id === paymentTargetLedgerId) || null,
+    [paymentTargetLedgers, paymentTargetLedgerId],
+  );
   useEffect(() => {
     setPaymentTargetLedgerId("");
   }, [selectedCustomerId]);
@@ -1803,6 +1825,13 @@ export default function Dashboard({ view = "overview" }) {
     if (!cartons || !rate) return null;
     return cartons * rate - deductions;
   }, [ledgerForm.saleItems, ledgerForm.cartons, ledgerForm.rate, ledgerForm.deductions, ledgerForm.type, ledgerForm.saleType]);
+  const automaticLedgerAmount = ledgerForm.type === "DEBIT"
+    ? selectedPaymentTarget?.remainingAmount || 0
+    : computedSaleAmount || 0;
+  const paymentAmountPreview = Math.max(0, Math.round(Number(ledgerForm.manualAmount || automaticLedgerAmount || 0)));
+  const paymentRemainingPreview = selectedPaymentTarget
+    ? Math.max(0, selectedPaymentTarget.remainingAmount - paymentAmountPreview)
+    : 0;
 
   // Calculate KPI metrics from the lightweight customer list and today's summary.
   const kpiMetrics = useMemo(() => ({
@@ -2532,19 +2561,19 @@ export default function Dashboard({ view = "overview" }) {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ</p><p className="mt-1 text-2xl font-black text-cyan-950">{formatMoney(getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0)}</p></div>
+                          <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ</p><p className="mt-1 text-2xl font-black text-cyan-950">{formatMoney(ledgerForm.type === "DEBIT" ? (selectedPaymentTarget?.remainingAmount || 0) : (getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0))}</p></div>
                           <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">{ledgerForm.type === "CASH_SALE" ? "ပမာဏ (Ks)" : "လူကိုယ်တိုင် ထည့်မည့်ပမာဏ (Ks)"}</label>
                           <input
                             type="number"
                             className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
                             placeholder="0"
-                              value={ledgerForm.type === "CASH_SALE" ? (getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount) : ledgerForm.manualAmount}
+                              value={ledgerForm.type === "CASH_SALE" ? (getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount) : (ledgerForm.manualAmount || (ledgerForm.type === "DEBIT" && selectedPaymentTarget ? selectedPaymentTarget.remainingAmount : ""))}
                               onChange={(e) => setLedgerForm({ ...ledgerForm, [ledgerForm.type === "CASH_SALE" ? "amount" : "manualAmount"]: e.target.value })}
                               readOnly={ledgerForm.type === "CASH_SALE" && getSaleItemsTotal(ledgerForm.saleItems) > 0}
                               required={ledgerForm.type === "CASH_SALE"}
                               disabled={isSubmitting}
                             />
-                            {ledgerForm.type !== "CASH_SALE" ? <p className="text-[11px] font-normal text-slate-600">မထည့်လျှင် အပေါ်က auto ပမာဏကို သုံးမည်</p> : null}
+                            {ledgerForm.type === "DEBIT" ? <p className="text-[11px] font-normal text-slate-600">ရွေးထားသော အကြွေးကျန်ငွေကို အလိုအလျောက်ဖြည့်ထားပါသည်။ တစ်စိတ်တစ်ပိုင်းချေလိုလျှင် ပြင်ထည့်နိုင်ပါသည်။</p> : ledgerForm.type !== "CASH_SALE" ? <p className="text-[11px] font-normal text-slate-600">မထည့်လျှင် အပေါ်က auto ပမာဏကို သုံးမည်</p> : null}
                         </div>
                       </div>
 
@@ -2568,6 +2597,14 @@ export default function Dashboard({ view = "overview" }) {
                               ))}
                             </select>
                             <p className="mt-2 text-[11px] leading-4 text-emerald-800">ရွေးထားသော အကြွေး ID ကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။</p>
+                            {selectedPaymentTarget ? (
+                              <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-2 text-xs sm:grid-cols-4">
+                                <div><p className="text-slate-500">မူရင်းအကြွေး</p><p className="font-black text-slate-900">{formatMoney(selectedPaymentTarget.originalAmount)}</p></div>
+                                <div><p className="text-slate-500">ယခင်ချေပြီး</p><p className="font-black text-emerald-700">{formatMoney(selectedPaymentTarget.paidAmount)}</p></div>
+                                <div><p className="text-slate-500">ယခုချေမည့်</p><p className="font-black text-cyan-700">{formatMoney(paymentAmountPreview)}</p></div>
+                                <div><p className="text-slate-500">ချေပြီးကျန်</p><p className="font-black text-rose-700">{formatMoney(paymentRemainingPreview)}</p></div>
+                              </div>
+                            ) : null}
                           </div>
                           <div className="grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:grid-cols-2">
                           <label className="space-y-1 text-xs font-bold text-amber-950">
@@ -2594,8 +2631,8 @@ export default function Dashboard({ view = "overview" }) {
                               disabled={isSubmitting}
                             />
                           </label>
-                          <p className="sm:col-span-2 text-[11px] leading-4 text-amber-800">
-                            ဒီပမာဏက Customer အကြွေးကို လျှော့ပေးမည့်ငွေ ဖြစ်ပြီး ငွေချေမှတ်တမ်းတွင် သီးခြားပြပါမည်။
+                            <p className="sm:col-span-2 text-[11px] leading-4 text-amber-800">
+                            ဒီပမာဏက Customer အကြွေးကို လျှော့ပေးမည့်ငွေ ဖြစ်ပြီး ငွေချေမှတ်တမ်းတွင် သီးခြားပြပါမည်။ Amount ထက်နည်းပြီး ငွေချေထားလျှင် ကျန်ငွေကို အကြွေးအဖြစ် ဆက်ထားပါမည်။
                           </p>
                           </div>
                         </div>
