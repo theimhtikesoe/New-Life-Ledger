@@ -125,7 +125,7 @@ export async function loadCanonicalFactoryStockMovements({ actorName = "system" 
   // Derived records are the source of truth for production and sales. Do not
   // retain stale persisted sale rows after a transaction is edited/deleted or
   // after the cap-unit calculation changes. Manual stock adjustments remain.
-  const derivedSourceTypes = new Set(["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION", "LEDGER", "CASH_SALE"]);
+  const derivedSourceTypes = new Set(["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION", "BOTTLE_PRODUCTION_WASTE", "LEDGER", "CASH_SALE"]);
   const manualExisting = existing.filter((movement) => !derivedSourceTypes.has(movement.sourceType));
   const value = {
     movements: [...manualExisting, ...derived],
