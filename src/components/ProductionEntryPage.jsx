@@ -4,7 +4,7 @@ import ThemedSelect from "./ThemedSelect";
 
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BOTTLE_GROUPS, BOTTLE_ITEMS, TUBE_ITEMS, getBottleDisplayName, getBottleGroup, getBottleUnit, MACHINES } from "@/lib/production-catalog";
+import { BOTTLE_GROUPS, BOTTLE_ITEMS, TUBE_BY_MACHINE, getBottleDisplayName, getBottleGroup, getBottleUnit, MACHINES } from "@/lib/production-catalog";
 
 const DEFAULT_TUBE_WORKERS = ["AKA", "NMZ", "PPO", "ATZ", "KKK", "YMT", "KZP", "TZO"];
 const PRODUCTION_WORKERS_CACHE_KEY = "new-life-ledger:production-workers-v1";
@@ -79,7 +79,7 @@ export default function ProductionEntryPage() {
   const restoredProductionDraftRef = useRef(false);
 
   const selectedMachine = useMemo(() => MACHINES.find((machine) => machine.code === machineCode), [machineCode]);
-  const tubeItems = useMemo(() => TUBE_ITEMS.filter((item, index, list) => list.findIndex((candidate) => candidate.productKey === item.productKey) === index), []);
+  const tubeItems = useMemo(() => Object.values(TUBE_BY_MACHINE).flat().filter((item, index, list) => list.findIndex((candidate) => `${candidate.g}|${candidate.color}|${candidate.pcsPerBag}` === `${item.g}|${item.color}|${item.pcsPerBag}`) === index), []);
   const visibleWorkers = useMemo(() => category === "tube"
     ? savedWorkers.filter((worker) => DEFAULT_TUBE_WORKERS.includes(worker.name))
     : savedWorkers, [category, savedWorkers]);
