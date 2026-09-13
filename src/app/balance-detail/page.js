@@ -45,7 +45,7 @@ function waitForRetry(milliseconds) {
 }
 
 async function fetchJson(path, { timeoutMs = 15_000, maxAttempts = 3, ...requestOptions } = {}) {
-  const actorName = localStorage.getItem("actorName") || "";
+  const actorName = typeof window !== "undefined" ? window.localStorage.getItem("actorName") || "" : "";
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const controller = new AbortController();
@@ -235,7 +235,7 @@ export default function BalanceDetailPage() {
     const latest = settlementCustomer?.settlements?.[0];
     if (!latest) return;
     setSettlementSaving(true); setError("");
-    try { await fetchJson(`/api/outside-settlements?id=${encodeURIComponent(latest.id)}`, { maxAttempts: 1 }); await updateOutsideLedgerReminder(settlementCustomer.id, false); setCustomers((current) => current.map((row) => row.id === settlementCustomer.id ? { ...row, settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : row)); setSettlementCustomer(null); }
+    try { await fetchJson(`/api/outside-settlements?id=${encodeURIComponent(latest.id)}`, { method: "DELETE", maxAttempts: 1 }); await updateOutsideLedgerReminder(settlementCustomer.id, false); setCustomers((current) => current.map((row) => row.id === settlementCustomer.id ? { ...row, settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : row)); setSettlementCustomer(null); }
     catch (error) { setError(error.message || "မှတ်ချက်ဖြုတ်၍ မရပါ။"); } finally { setSettlementSaving(false); }
   }
   async function saveSettlement() {
