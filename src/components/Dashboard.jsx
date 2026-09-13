@@ -1147,6 +1147,25 @@ export default function Dashboard({ view = "overview" }) {
     }
   }
 
+  function switchLedgerType(nextType) {
+    const typeDefaults = nextType === "DEBIT" ? { type: "DEBIT", saleItems: [] } : { type: nextType, saleItems: [] };
+    setLedgerForm((current) => ({
+      ...current,
+      ...typeDefaults,
+      // These values belong to one transaction type only. Never carry a
+      // payment amount into a new debt or cash-sale entry.
+      amount: "",
+      manualAmount: "",
+      singlePaymentAmount: "",
+      discountAmount: "",
+      discountNote: "",
+      paymentType: nextType === "CASH_SALE" ? (current.paymentType || "CASH") : "",
+      paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
+      saleItems: [],
+    }));
+    setPaymentTargetLedgerId("");
+  }
+
   async function createLedgerTransaction(event) {
     event.preventDefault();
     if (!selectedCustomerId || isSubmitting) return;
@@ -2519,7 +2538,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-rose-600 text-slate-900 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CREDIT", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } })}
+                          onClick={() => switchLedgerType("CREDIT")}
                           disabled={isSubmitting}
                         >
                           အကြွေးတိုး
@@ -2531,7 +2550,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-emerald-600 text-slate-900 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "DEBIT", saleItems: [], paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN } })}
+                          onClick={() => switchLedgerType("DEBIT")}
                           disabled={isSubmitting}
                         >
                           ငွေချေ
@@ -2543,7 +2562,7 @@ export default function Dashboard({ view = "overview" }) {
                               ? "bg-cyan-500 text-slate-950 shadow-lg"
                               : "text-slate-600 hover:text-slate-900"
                           }`}
-                          onClick={() => setLedgerForm({ ...ledgerForm, type: "CASH_SALE", saleType: ledgerForm.type === "CASH_SALE" ? ledgerForm.saleType : "", paymentType: ledgerForm.paymentType || "CASH", paymentBreakdown: ledgerForm.type === "CASH_SALE" ? ledgerForm.paymentBreakdown : { ...EMPTY_PAYMENT_BREAKDOWN } })}
+                          onClick={() => switchLedgerType("CASH_SALE")}
                           disabled={isSubmitting || editingTransaction}
                         >
                           လက်ငင်းရောင်း
@@ -2570,7 +2589,7 @@ export default function Dashboard({ view = "overview" }) {
                             type="number"
                             className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
                             placeholder="0"
-                              value={ledgerForm.type === "CASH_SALE" ? (getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount) : (ledgerForm.manualAmount || (ledgerForm.type === "DEBIT" && selectedPaymentTarget ? selectedPaymentTarget.remainingAmount : ""))}
+                              value={ledgerForm.type === "CASH_SALE" ? (getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount) : (ledgerForm.manualAmount || automaticLedgerAmount || "")}
                               onChange={(e) => setLedgerForm({ ...ledgerForm, [ledgerForm.type === "CASH_SALE" ? "amount" : "manualAmount"]: e.target.value })}
                               readOnly={ledgerForm.type === "CASH_SALE" && getSaleItemsTotal(ledgerForm.saleItems) > 0}
                               required={ledgerForm.type === "CASH_SALE"}
@@ -2587,7 +2606,10 @@ export default function Dashboard({ view = "overview" }) {
                             <select
                               id="payment-target-ledger"
                               value={paymentTargetLedgerId}
-                              onChange={(event) => setPaymentTargetLedgerId(event.target.value)}
+                              onChange={(event) => {
+                                setPaymentTargetLedgerId(event.target.value);
+                                setLedgerForm((current) => ({ ...current, manualAmount: "", discountAmount: "", discountNote: "" }));
+                              }}
                               className="mt-2 h-11 w-full rounded-lg border border-emerald-300 bg-white px-3 text-sm font-bold text-slate-900"
                               disabled={isSubmitting}
                               required={paymentTargetLedgers.length > 0}
