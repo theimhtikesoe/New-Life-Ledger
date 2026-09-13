@@ -440,7 +440,10 @@ export default function RootLayoutClient({ children }) {
   }, []);
 
   const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
-  const actorRouteReady = !actorName || pathname === routeForActor(actorName);
+  // Once permissions have settled, the actor may freely navigate to any
+  // permitted page. During an actor switch/login, wait for the designated
+  // landing route so the previous dashboard does not flash underneath.
+  const actorRouteReady = !actorName || !permissionsLoading || pathname === routeForActor(actorName);
 
   useEffect(() => {
     if (!actorName) {
