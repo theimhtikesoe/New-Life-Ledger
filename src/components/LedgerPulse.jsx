@@ -19,6 +19,7 @@ function PlantColumn({ point, maxOutput, index }) {
     { key: "debtAmount", color: "from-rose-300 to-rose-500", leaf: "bg-rose-400", label: "အကြွေးတိုး", unit: "financial" },
     { key: "cashAmount", color: "from-sky-300 to-sky-500", leaf: "bg-sky-400", label: "လက်ငင်း", unit: "financial" },
     { key: "bottleOutput", color: "from-amber-300 to-amber-500", leaf: "bg-amber-400", label: "ဗူးထွက်ရှိမှု", unit: "bottles" },
+    { key: "tubeOutput", color: "from-violet-300 to-violet-500", leaf: "bg-violet-400", label: "Tube ထွက်ရှိမှု", unit: "tubes" },
   ];
   const financialTotal = [point.paidAmount, point.debtAmount, point.cashAmount].reduce((sum, value) => sum + Number(value || 0), 0);
 
@@ -32,7 +33,7 @@ function PlantColumn({ point, maxOutput, index }) {
             : (maxOutput > 0 ? (amount / maxOutput) * 100 : 0);
           const height = amount > 0 ? Math.min(92, Math.max(8, Math.round(percentage * 0.92))) : 3;
           return (
-              <div key={item.key} className="relative flex h-full w-1/5 max-w-7 items-end justify-center sm:max-w-9">
+              <div key={item.key} className="relative flex h-full w-1/6 max-w-7 items-end justify-center sm:max-w-9">
               <span className="absolute bottom-[calc(var(--bar-height)+0.2rem)] text-[8px] font-black text-slate-600" style={{ "--bar-height": `${height}%` }}>{amount > 0 ? `${Math.round(percentage)}%` : ""}</span>
               <div
                 className={`ledger-pulse-rise relative w-full rounded-t-full bg-gradient-to-t ${item.color} shadow-[0_0_12px_rgba(34,211,238,0.18)]`}
@@ -57,7 +58,7 @@ function PlantColumn({ point, maxOutput, index }) {
 export default function LedgerPulse({ data, loading = false, error = "" }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const points = useMemo(() => (Array.isArray(data?.days) ? data.days : []), [data?.days]);
-  const maxOutput = useMemo(() => Math.max(1, ...points.map((point) => Number(point.bottleOutput || 0))), [points]);
+  const maxOutput = useMemo(() => Math.max(1, ...points.flatMap((point) => [Number(point.bottleOutput || 0), Number(point.tubeOutput || 0)])), [points]);
 
   return (
     <section className="overflow-hidden rounded-2xl border border-cyan-200 bg-gradient-to-br from-white via-cyan-50/50 to-slate-50 p-2.5 text-slate-800 shadow-lg shadow-cyan-100/60 sm:p-4" aria-labelledby="ledger-pulse-title">
@@ -97,7 +98,8 @@ export default function LedgerPulse({ data, loading = false, error = "" }) {
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-400" />အကြွေးတိုး</span>
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-sky-400" />လက်ငင်း</span>
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />ဗူးထွက်ရှိမှု</span>
-            <span className="ml-auto text-slate-500">ငွေ ၃ မျိုး = တစ်နေ့တာငွေစုစုပေါင်းအပေါ် % · ဗူးထွက် = ၇ ရက်အတွင်းအမြင့်ဆုံးအပေါ် %</span>
+            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />Tube ထွက်ရှိမှု</span>
+            <span className="ml-auto text-slate-500">ငွေ ၃ မျိုး = တစ်နေ့တာငွေစုစုပေါင်းအပေါ် % · ဗူး / Tube ထွက် = ၇ ရက်အတွင်း သက်ဆိုင်ရာအမြင့်ဆုံးအပေါ် %</span>
           </div>
         </>
       ) : (

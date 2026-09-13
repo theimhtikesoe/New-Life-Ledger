@@ -35,6 +35,7 @@ function makePoint(range) {
     cashRetailCount: 0,
     cashWholesaleCount: 0,
     bottleOutput: 0,
+    tubeOutput: 0,
     activityCount: 0,
   };
 }
@@ -114,8 +115,10 @@ export async function GET(request) {
 
     for (const report of productionReports) {
       const point = points.find((item) => item.date === report.reportDate);
-      if (!point || report.category === "tube") continue;
-      point.bottleOutput += toAmount(report.outputQuantity) * toAmount(report.outputCapacity);
+      if (!point) continue;
+      const output = toAmount(report.outputQuantity) * toAmount(report.outputCapacity);
+      if (report.category === "tube") point.tubeOutput += output;
+      else point.bottleOutput += output;
     }
 
     for (const log of auditLogs) {
@@ -135,6 +138,7 @@ export async function GET(request) {
       cashAmount: 0,
       activityCount: 0,
       bottleOutput: 0,
+      tubeOutput: 0,
     });
 
     return NextResponse.json({

@@ -60,19 +60,9 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
-  const session = await getSessionInfo(request);
-  if (isProductionOnlySession(session) && path !== "/production") {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/production";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
-  }
-  if (isLedgerOnlySession(session) && path !== "/" && path !== "/ledger" && path !== "/balance-detail") {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
-  }
+  // Keep document requests on their current pathname. The client shell
+  // restores the session and applies page permissions after refresh, while
+  // API restrictions above remain enforced on the server.
 
   return NextResponse.next();
 }

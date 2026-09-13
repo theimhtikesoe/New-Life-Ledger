@@ -41,14 +41,13 @@ describe("API middleware access policy", () => {
     expect(mocks.getSessionInfo).toHaveBeenCalledTimes(1);
   });
 
-  it("redirects Zway Zway away from every page except Production", async () => {
+  it("keeps document requests on their current route while preserving API restrictions", async () => {
     mocks.getSessionInfo.mockResolvedValue({ actorName: "ဇွဲဇွဲ", access: "production-only" });
     const productionResponse = await middleware(request("/production"));
     const dashboardResponse = await middleware(request("/"));
 
     expect(productionResponse.status).toBe(200);
-    expect(dashboardResponse.status).toBe(307);
-    expect(dashboardResponse.headers.get("location")).toContain("/production");
+    expect(dashboardResponse.status).toBe(200);
   });
 
   it("allows Zway Zway production APIs but rejects non-production APIs", async () => {
