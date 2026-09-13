@@ -90,18 +90,18 @@ export async function GET(request) {
     let ledgers = await prisma.ledger.findMany({
       where: { date: { gte: start, lt: end }, type: "DEBIT" },
       select: { id: true, amount: true, date: true, type: true, saleType: true, note: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
-      orderBy: { date: "asc" },
+      orderBy: { date: "desc" },
     });
     ledgers = await hydrateSettledBottleSaleItems(prisma, ledgers);
     const creditLedgers = await prisma.ledger.findMany({
       where: { date: { gte: start, lt: end }, type: "CREDIT" },
       select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
-      orderBy: { date: "asc" },
+      orderBy: { date: "desc" },
     });
     const cashSales = await prisma.cashSale.findMany({
       where: { date: { gte: start, lt: end } },
       select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
-      orderBy: { date: "asc" },
+      orderBy: { date: "desc" },
     });
 
     const paidCustomers = buildCustomerRows(ledgers, { includeEmpty: true });

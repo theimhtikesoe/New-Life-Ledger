@@ -45,6 +45,7 @@ export async function GET(request) {
         note: movement.note,
       }))
       : [];
+    movements.sort((a, b) => String(b.movementDate || "").localeCompare(String(a.movementDate || "")));
     const usageByType = new Map();
     const usageDate = validDate || getMyanmarDateInputValue();
     for (const movement of allTubeMovements.filter((row) => row.movementDate === usageDate && row.movementType === "PRODUCTION_USE_OUT")) {

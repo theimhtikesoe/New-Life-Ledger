@@ -21,7 +21,7 @@ export async function GET() {
         current_balance: true,
         ledgers: {
           select: { date: true, type: true, amount: true },
-          orderBy: [{ date: "asc" }],
+          orderBy: [{ date: "desc" }],
         },
       },
     });

@@ -232,19 +232,19 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   const cashSales = await prisma.cashSale.findMany({
     where: { date: { gte: monthStart, lt: range.end } },
     select: { id: true, date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
-    orderBy: [{ date: "asc" }, { id: "asc" }],
+    orderBy: [{ date: "desc" }, { id: "desc" }],
   });
   const ledgers = prisma.ledger?.findMany
     ? await prisma.ledger.findMany({
         where: { date: { gte: monthStart, lt: range.end } },
         select: { id: true, date: true, type: true, paymentType: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
-        orderBy: [{ date: "asc" }, { id: "asc" }],
+        orderBy: [{ date: "desc" }, { id: "desc" }],
       })
     : [];
   const savedRows = await prisma.dailySalesSummary.findMany({
     where: { date: { gte: `${month}-01`, lte: date } },
     select: SUMMARY_SELECT,
-    orderBy: [{ date: "asc" }],
+    orderBy: [{ date: "desc" }],
   });
   const opening = await prisma.dailySalesOpening.findUnique({ where: { month } });
 
@@ -292,7 +292,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
       enteredBy: row.enteredBy || null,
     }));
   }
-  const sortedRows = [...rows.values()].sort((a, b) => a.date.localeCompare(b.date));
+  const sortedRows = [...rows.values()].sort((a, b) => b.date.localeCompare(a.date));
   const openingAmount = toAmount(opening?.amount);
   const openingAsOfDate = opening?.asOfDate || "";
   const monthlyTotal = openingAmount + sortedRows
@@ -303,7 +303,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
     date,
     selectedDay,
     autoPreview: selectedAuto,
-    autoRows: [...autoRows.values()].sort((a, b) => a.date.localeCompare(b.date)),
+    autoRows: [...autoRows.values()].sort((a, b) => b.date.localeCompare(a.date)),
     monthlyTotal,
     opening: opening
       ? { amount: openingAmount, asOfDate: openingAsOfDate, note: opening.note || "", updatedAt: opening.updatedAt }

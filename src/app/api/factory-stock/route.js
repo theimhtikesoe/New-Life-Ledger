@@ -72,12 +72,13 @@ export async function GET(request) {
       }
     }
     summary.sort((a, b) => a.productName.localeCompare(b.productName, "my") || Number(a.capacity || 0) - Number(b.capacity || 0));
+    const displayMovements = [...movements].sort((a, b) => String(b.movementDate || "").localeCompare(String(a.movementDate || "")) || new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime() || String(b.id || "").localeCompare(String(a.id || "")));
     return NextResponse.json({ data: {
       calculationMode: "DATABASE_DERIVED",
       isPhysicalVerified: false,
       dataSource,
       summary,
-      movements,
+      movements: displayMovements,
       warnings: ["ဤလက်ကျန်သည် Database မှတွက်ထားသော System Stock ဖြစ်ပြီး မြေပြင်လက်ကျန်နှင့် ကွာနိုင်ပါသည်။"],
     } });
   } catch (error) {
