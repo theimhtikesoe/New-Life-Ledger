@@ -531,9 +531,12 @@ export default function RootLayoutClient({ children }) {
   }, [actorName, pathname]);
 
   const handleLoginSuccess = useCallback((nextActorName) => {
-    setActorName(nextActorName || '');
+    const nextActor = String(nextActorName || '').trim();
+    setActorName(nextActor);
     setAuthenticated(true);
-  }, []);
+    const nextPath = routeForActor(nextActor);
+    if (nextPath !== pathname) router.replace(nextPath);
+  }, [pathname, routeForActor, router]);
 
   const handleLogout = useCallback(() => {
     setActorName('');
