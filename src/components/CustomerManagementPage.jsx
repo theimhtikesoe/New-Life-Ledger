@@ -1,5 +1,7 @@
 "use client";
 
+import ThemedSelect from "./ThemedSelect";
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
@@ -234,17 +236,17 @@ export default function BalanceDetailPage() {
             </div>
             <div className="grid w-full gap-2 sm:grid-cols-3 lg:max-w-3xl">
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="အမည် / ဖုန်း / လမ်းကြောင်းရှာရန်" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100" />
-              <select value={status} onChange={(event) => setStatus(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
+              <ThemedSelect value={status} onChange={(event) => setStatus(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
                 <option value="all">အားလုံး</option>
                 <option value="debt">အကြွေးရှိသူ</option>
                 <option value="prepaid">ကြိုတင်ငွေချေသူ</option>
                 <option value="zero">လက်ကျန်မရှိသူ</option>
-              </select>
-              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
+              </ThemedSelect>
+              <ThemedSelect value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
                 <option value="amount-desc">ပမာဏအများဆုံး</option>
                 <option value="amount-asc">ပမာဏအနည်းဆုံး</option>
                 <option value="name">အမည်စဉ်</option>
-              </select>
+              </ThemedSelect>
             </div>
           </div>
 
@@ -259,7 +261,7 @@ export default function BalanceDetailPage() {
                 <thead className="bg-slate-50 text-xs font-semibold text-slate-600"><tr><th className="px-3 py-3">Name</th><th className="px-3 py-3 text-right">ကြိုတင်ငွေချေ</th><th className="px-3 py-3 text-right">လက်ကျန်အကြွေး</th><th className="px-3 py-3">Customer Type</th><th className="px-3 py-3">ဖုန်း / Route</th><th className="px-3 py-3 text-right">လုပ်ဆောင်ချက်</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">{visibleCustomers.map((customer) => {
                   const balance = Number(customer.current_balance || 0);
-                  return <tr key={customer.id} className="bg-white hover:bg-slate-50"><td className="px-3 py-3 font-semibold text-slate-900">{customer.name}</td><td className="px-3 py-3 text-right font-semibold text-emerald-700">{balance < 0 ? formatMoney(Math.abs(balance)) : "0 Ks"}</td><td className="px-3 py-3 text-right font-semibold text-rose-700">{balance > 0 ? formatMoney(balance) : "0 Ks"}</td><td className="px-3 py-3"><select aria-label={`${customer.name} customer type`} value={customer.customerType === "WHOLESALE" ? "WHOLESALE" : "RETAIL"} disabled={savingCustomer} onChange={(event) => updateCustomerType(customer, event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-400"><option value="RETAIL">လက်လီ Customer</option><option value="WHOLESALE">လက်ကား Customer</option></select></td><td className="px-3 py-3 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</td><td className="px-3 py-3 text-right"><div className="flex flex-wrap justify-end gap-2"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="rounded-lg bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Detail</Link><button type="button" onClick={() => beginEdit(customer)} className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100">ပြင်</button><button type="button" onClick={() => deleteCustomer(customer)} className="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">ဖျက်</button></div></td></tr>;
+                  return <tr key={customer.id} className="bg-white hover:bg-slate-50"><td className="px-3 py-3 font-semibold text-slate-900">{customer.name}</td><td className="px-3 py-3 text-right font-semibold text-emerald-700">{balance < 0 ? formatMoney(Math.abs(balance)) : "0 Ks"}</td><td className="px-3 py-3 text-right font-semibold text-rose-700">{balance > 0 ? formatMoney(balance) : "0 Ks"}</td><td className="px-3 py-3"><ThemedSelect aria-label={`${customer.name} customer type`} value={customer.customerType === "WHOLESALE" ? "WHOLESALE" : "RETAIL"} disabled={savingCustomer} onChange={(event) => updateCustomerType(customer, event.target.value)} className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-cyan-400"><option value="RETAIL">လက်လီ Customer</option><option value="WHOLESALE">လက်ကား Customer</option></ThemedSelect></td><td className="px-3 py-3 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</td><td className="px-3 py-3 text-right"><div className="flex flex-wrap justify-end gap-2"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="rounded-lg bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 hover:bg-cyan-100">Detail</Link><button type="button" onClick={() => beginEdit(customer)} className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100">ပြင်</button><button type="button" onClick={() => deleteCustomer(customer)} className="rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100">ဖျက်</button></div></td></tr>;
                 })}</tbody>
               </table>
             </div>

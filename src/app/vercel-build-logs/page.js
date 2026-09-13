@@ -1,5 +1,7 @@
 "use client";
 
+import ThemedSelect from "@/components/ThemedSelect";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
 
@@ -97,9 +99,9 @@ export default function VercelBuildLogsPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <label className="min-w-0 flex-1">
                   <span className="text-sm font-semibold text-slate-800">Production deployment ရွေးရန်</span>
-                  <select value={selectedId} onChange={(event) => { setSelectedId(event.target.value); loadLogs(event.target.value, true); }} className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100">
+                  <ThemedSelect value={selectedId} onChange={(event) => { setSelectedId(event.target.value); loadLogs(event.target.value, true); }} className="mt-2 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100">
                     {deployments.map((deployment) => <option key={deployment.uid} value={deployment.uid}>{deploymentLabel(deployment)}</option>)}
-                  </select>
+                  </ThemedSelect>
                 </label>
                 <div className="grid grid-cols-2 gap-2 sm:min-w-64">
                   <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2"><p className="text-xs text-blue-700">Deployment များ</p><p className="mt-1 font-bold tabular-nums text-blue-900">{numberFormat.format(deployments.length)}</p></div>

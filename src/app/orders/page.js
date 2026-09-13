@@ -1,5 +1,7 @@
-
 "use client";
+
+import ThemedSelect from "@/components/ThemedSelect";
+
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { encodeActorHeader } from "@/lib/actor-header";
@@ -586,7 +588,7 @@ export default function OrdersPage() {
 
         {viewMode !== "TRASH" ? <section className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:flex-row sm:items-center">
           <label htmlFor="order-status-filter" className="shrink-0 text-sm font-semibold text-slate-700">Filter:</label>
-          <select
+          <ThemedSelect
             id="order-status-filter"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
@@ -597,7 +599,7 @@ export default function OrdersPage() {
                 {status === "ALL" ? "အားလုံး" : STATUS_LABELS[status] || status}
               </option>
             ))}
-          </select>
+          </ThemedSelect>
         </section> : null}
 
         {loading ? <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">Order များကို ရယူနေပါသည်...</section> : null}

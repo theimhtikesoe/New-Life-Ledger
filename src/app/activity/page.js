@@ -1,5 +1,7 @@
 "use client";
 
+import ThemedSelect from "@/components/ThemedSelect";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { formatMyanmarDateTime } from "@/lib/myanmar-time-client";
@@ -213,8 +215,8 @@ export default function ActivityPage() {
             </div>
             <div className="page-toolbar-controls w-full sm:w-auto">
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 sm:flex-none" />
-              <select value={actor} onChange={(e) => setActor(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:flex-none"><option value="">User အားလုံး</option>{ACTORS.map((item) => <option key={item} value={item}>{item}</option>)}</select>
-              <select value={action} onChange={(e) => setAction(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:flex-none"><option value="">Action အားလုံး</option>{ACTIONS.map((item) => <option key={item} value={item}>{actionLabel(item)}</option>)}</select>
+              <ThemedSelect value={actor} onChange={(e) => setActor(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:flex-none"><option value="">User အားလုံး</option>{ACTORS.map((item) => <option key={item} value={item}>{item}</option>)}</ThemedSelect>
+              <ThemedSelect value={action} onChange={(e) => setAction(e.target.value)} className="min-h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 sm:flex-none"><option value="">Action အားလုံး</option>{ACTIONS.map((item) => <option key={item} value={item}>{actionLabel(item)}</option>)}</ThemedSelect>
             </div>
           </div>
         </section>

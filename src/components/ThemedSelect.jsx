@@ -1,12 +1,11 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Children, useEffect, useMemo, useRef, useState } from "react";
 
 export default function ThemedSelect({ value = "", onChange, children, className = "", disabled = false, id, ariaLabel }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const options = useMemo(() => {
-    const list = Array.isArray(children) ? children : [children];
-    return list
+    return Children.toArray(children)
       .filter(Boolean)
       .map((child) => ({
         value: String(child.props?.value ?? child.props?.children ?? ""),

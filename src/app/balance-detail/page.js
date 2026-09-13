@@ -1,5 +1,7 @@
 "use client";
 
+import ThemedSelect from "@/components/ThemedSelect";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -328,17 +330,17 @@ export default function BalanceDetailPage() {
             </div>
             <div className="grid w-full gap-2 sm:grid-cols-3 lg:max-w-3xl">
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="အမည် / ဖုန်း / လမ်းကြောင်းရှာရန်" className="min-w-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100" />
-              <select value={status} onChange={(event) => setStatus(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
+              <ThemedSelect value={status} onChange={(event) => setStatus(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
                 <option value="all">အားလုံး</option>
                 <option value="debt">အကြွေးရှိသူ</option>
                 <option value="prepaid">ကြိုတင်ငွေချေသူ</option>
                 <option value="zero">လက်ကျန်မရှိသူ</option>
-              </select>
-              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
+              </ThemedSelect>
+              <ThemedSelect value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-cyan-400">
                 <option value="amount-desc">ပမာဏအများဆုံး</option>
                 <option value="amount-asc">ပမာဏအနည်းဆုံး</option>
                 <option value="name">အမည်စဉ်</option>
-              </select>
+              </ThemedSelect>
             </div>
           </div>
 

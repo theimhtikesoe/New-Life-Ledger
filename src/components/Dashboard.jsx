@@ -1,5 +1,7 @@
 "use client";
 
+import ThemedSelect from "./ThemedSelect";
+
 import Link from "next/link";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 // import KPISummaryDashboard from "./KPISummaryDashboard";
@@ -12,7 +14,6 @@ import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMe
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
-import ThemedSelect from "./ThemedSelect";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
 import BirthdayCelebration from "@/components/BirthdayCelebration";
 
@@ -339,7 +340,18 @@ export default function Dashboard({ view = "overview" }) {
   const [loadingStage, setLoadingStage] = useState(() => (Array.isArray(initialDashboardSnapshot?.customers) ? "" : "Dashboard data ရယူနေပါသည်"));
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
-  const [showCustomerList, setShowCustomerList] = useState(true);
+  const [showCustomerList, setShowCustomerList] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const actorName = window.localStorage.getItem("actorName") || "";
+      const draftKey = getDashboardDraftStorageKey(actorName);
+      const rawDraft = draftKey ? window.sessionStorage.getItem(draftKey) : null;
+      const draft = rawDraft ? JSON.parse(rawDraft) : null;
+      return !draft?.selectedCustomerId;
+    } catch {
+      return true;
+    }
+  });
   const [message, setMessage] = useState("");
   const [dataLoadError, setDataLoadError] = useState("");
   const [alert, setAlert] = useState(null);
@@ -522,7 +534,7 @@ export default function Dashboard({ view = "overview" }) {
         setCurrentPage(Math.floor(Number(draft.currentPage)));
       }
       if (typeof draft.showAddCustomer === "boolean") setShowAddCustomer(draft.showAddCustomer);
-      if (typeof draft.showCustomerList === "boolean") setShowCustomerList(draft.showCustomerList);
+      if (typeof draft.showCustomerList === "boolean") setShowCustomerList(draft.selectedCustomerId ? false : draft.showCustomerList);
       setSelectedCustomerId(draft.selectedCustomerId || null);
     };
 
