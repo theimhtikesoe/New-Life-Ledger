@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { aggregateStockMovements, ensureFactoryStockTable, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
+import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ export async function GET(request) {
     const factoryTubePieces = stockMovements
       .filter((movement) => movement.stockType === "TUBE")
       .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);
-    const paidLedgers = ledgerRows.filter((row) => row.type === "DEBIT");
+    const paidLedgers = await hydrateSettledBottleSaleItems(prisma, ledgerRows.filter((row) => row.type === "DEBIT"));
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
 
     const collectSaleItems = (rows = []) => {

@@ -51,6 +51,12 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("ငွေချေမည့် အကြွေးအဟောင်း ရွေးပါ");
   });
 
+  it("hydrates linked settled bottle items for the paid-bottle KPI", () => {
+    const routeSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/dashboard-kpi/route.js"), "utf8");
+    expect(routeSource).toContain('import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";');
+    expect(routeSource).toContain("const paidLedgers = await hydrateSettledBottleSaleItems");
+  });
+
   it("shows the automatic amount card for cash sales", () => {
     expect(dashboardSource).toContain("အလိုအလျောက်တွက်ထားသော ပမာဏ");
     expect(dashboardSource).toContain("getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0");
