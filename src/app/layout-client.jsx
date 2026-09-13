@@ -389,6 +389,23 @@ export default function RootLayoutClient({ children }) {
   const pendingSubmitRef = useRef(null);
   const handleAuthReady = useCallback(() => setAuthReady(true), []);
 
+  const routeForActor = useCallback((nextActorName, currentPath) => {
+    const normalizedActor = String(nextActorName || '').trim();
+    const defaultPaths = defaultAllowedPaths(normalizedActor);
+    if (currentPath && defaultPaths.includes(currentPath)) {
+      // Production is a dedicated work screen. Returning from a production
+      // actor to a general user should not leave the general user on a screen
+      // they did not select for this session.
+      if (currentPath === '/production' && normalizedActor !== 'ဇွဲဇွဲ' && normalizedActor !== 'ဖြိုးကို') return '/';
+      if (currentPath === '/cap-stock' && normalizedActor !== 'သက်မွန်နှင်း') return '/';
+      return currentPath;
+    }
+    if (normalizedActor === 'ဇွဲဇွဲ' || normalizedActor === 'ဖြိုးကို') return '/production';
+    if (normalizedActor === 'သက်မွန်နှင်း') return '/cap-stock';
+    if (normalizedActor === 'ဆောင်းဦး') return '/ledger';
+    return '/';
+  }, []);
+
   useEffect(() => {
     const handleSubmitCapture = (event) => {
       const form = event.target;
@@ -463,12 +480,16 @@ export default function RootLayoutClient({ children }) {
     const handleActorSelected = (event) => {
       const nextActorName = String(event.detail?.actorName || '').trim();
       if (!nextActorName) return;
+      const nextPath = routeForActor(nextActorName, pathname);
       setActorName(nextActorName);
       setAuthenticated(true);
+      setAllowedPaths(defaultAllowedPaths(nextActorName));
+      setPermissionsLoading(true);
+      if (nextPath !== pathname) router.replace(nextPath);
     };
     window.addEventListener('new-life-ledger:actor-selected', handleActorSelected);
     return () => window.removeEventListener('new-life-ledger:actor-selected', handleActorSelected);
-  }, []);
+  }, [pathname, routeForActor, router]);
 
   useEffect(() => {
     if (!actorName || permissionsLoading || allowedPaths.includes(pathname)) return;
