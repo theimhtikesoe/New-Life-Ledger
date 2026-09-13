@@ -18,6 +18,7 @@ export const PERMISSION_PAGES = [
   { path: "/activity", label: "Activity History" },
   { path: "/trace", label: "Trace / Tracking" },
   { path: "/discounts", label: "Customer လျှော့စျေး" },
+  { path: "/expenses", label: "အသုံးစားရိတ်" },
   { path: "/price-settings", label: "စျေးနှုန်းသတ်မှတ်ရန်" },
   { path: "/data-management", label: "Data Management" },
   { path: "/auto-report-status", label: "Auto Report အခြေအနေ" },
