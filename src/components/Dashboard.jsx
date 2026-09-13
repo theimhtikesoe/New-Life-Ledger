@@ -12,6 +12,7 @@ import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMe
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
+import ThemedSelect from "./ThemedSelect";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
 import BirthdayCelebration from "@/components/BirthdayCelebration";
 
@@ -2603,7 +2604,7 @@ export default function Dashboard({ view = "overview" }) {
                         <div className="space-y-3">
                           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                             <label className="block text-xs font-black text-emerald-950" htmlFor="payment-target-ledger">ငွေချေမည့် အကြွေးအဟောင်း ရွေးပါ</label>
-                            <select
+                            <ThemedSelect
                               id="payment-target-ledger"
                               value={paymentTargetLedgerId}
                               onChange={(event) => {
@@ -2612,15 +2613,14 @@ export default function Dashboard({ view = "overview" }) {
                               }}
                               className="mt-2 h-11 w-full rounded-lg border border-emerald-300 bg-white px-3 text-sm font-bold text-slate-900"
                               disabled={isSubmitting}
-                              required={paymentTargetLedgers.length > 0}
                             >
-                              <option value="">{paymentTargetLedgers.length ? "အကြွေးမှတ်တမ်း ရွေးပါ" : "မရှင်းရသေးသော အကြွေးမရှိပါ"}</option>
+                              <option value="" className="font-bold text-slate-500">{paymentTargetLedgers.length ? "အကြွေးမှတ်တမ်း ရွေးပါ" : "မရှင်းရသေးသော အကြွေးမရှိပါ"}</option>
                               {paymentTargetLedgers.map((ledger) => (
-                                <option key={ledger.id} value={ledger.id}>
+                                <option key={ledger.id} value={ledger.id} className="font-black text-rose-700">
                                   {formatDate(ledger.date)} · {formatMoney(ledger.amount)}{ledger.note ? ` · ${ledger.note}` : ""}
                                 </option>
                               ))}
-                            </select>
+                            </ThemedSelect>
                             <p className="mt-2 text-[11px] leading-4 text-emerald-800">ရွေးထားသော အကြွေး ID ကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။</p>
                             {selectedPaymentTarget ? (
                               <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-2 text-xs sm:grid-cols-4">
@@ -2705,19 +2705,19 @@ export default function Dashboard({ view = "overview" }) {
                             {ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown ? (
                               <p className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-[11px] leading-4 text-cyan-800">အောက်မှာ Payment ခွဲထည့်ထားသောကြောင့် အပေါ်က တစ်မျိုးတည်းရွေးရန် မလိုပါ။ Breakdown အတိုင်း data သိမ်းမည်။</p>
                             ) : null}
-                            <select
+                            <ThemedSelect
                               className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 py-2 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                               value={ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType}
                               onChange={(e) => setLedgerForm({ ...ledgerForm, paymentType: e.target.value })}
                               disabled={isSubmitting || (ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown)}
                             >
-                              {ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown ? <option value="MIXED">Breakdown အတိုင်း ခွဲထားသည်</option> : null}
-                              <option value="">Select Payment Type</option>
-                              <option value="CASH">Cash</option>
-                              <option value="KPAY">KPay</option>
-                              <option value="BANK">Bank Transfer</option>
-                              <option value="WAVE">Wave Money</option>
-                            </select>
+                              {ledgerForm.type === "CASH_SALE" && hasCashSaleBreakdown ? <option value="MIXED" className="font-black text-cyan-700">Breakdown အတိုင်း ခွဲထားသည်</option> : null}
+                              <option value="" className="font-bold text-slate-500">Select Payment Type</option>
+                              <option value="CASH" className="font-black text-emerald-700">Cash</option>
+                              <option value="KPAY" className="font-black text-indigo-700">KPay</option>
+                              <option value="BANK" className="font-black text-blue-700">Bank Transfer</option>
+                              <option value="WAVE" className="font-black text-violet-700">Wave Money</option>
+                            </ThemedSelect>
                             {ledgerForm.type === "CASH_SALE" && !hasCashSaleBreakdown ? (
                               <label className="mt-2 block rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900">
                                 {ledgerForm.paymentType === "KPAY" ? "KPay" : ledgerForm.paymentType === "BANK" ? "Bank" : ledgerForm.paymentType === "WAVE" ? "Wave" : "Cash"} တစ်ခုတည်းပေးချေငွေ (Ks)
