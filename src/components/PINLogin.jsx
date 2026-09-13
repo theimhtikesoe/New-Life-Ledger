@@ -31,7 +31,9 @@ function rememberAuthorizedActor(actorName) {
 
 function readActiveActor() {
   try {
-    const actor = localStorage.getItem(ACTIVE_ACTOR_SESSION_KEY) || "";
+    const actor = localStorage.getItem(ACTIVE_ACTOR_SESSION_KEY)
+      || sessionStorage.getItem(ACTIVE_ACTOR_SESSION_KEY)
+      || "";
     return ACTORS.includes(actor) ? actor : "";
   } catch {
     return "";
@@ -40,10 +42,12 @@ function readActiveActor() {
 
 function rememberActiveActor(actorName) {
   try { localStorage.setItem(ACTIVE_ACTOR_SESSION_KEY, actorName); } catch { /* best effort */ }
+  try { sessionStorage.setItem(ACTIVE_ACTOR_SESSION_KEY, actorName); } catch { /* best effort */ }
 }
 
 function clearActiveActor() {
   try { localStorage.removeItem(ACTIVE_ACTOR_SESSION_KEY); } catch { /* best effort */ }
+  try { sessionStorage.removeItem(ACTIVE_ACTOR_SESSION_KEY); } catch { /* best effort */ }
 }
 
 async function fetchAuthJson(path, options = {}) {
