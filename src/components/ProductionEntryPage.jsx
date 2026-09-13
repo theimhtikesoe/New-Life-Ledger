@@ -508,7 +508,7 @@ export default function ProductionEntryPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div><h2 className="text-2xl font-black text-slate-800">ထွက်ရှိမှုမှတ်တမ်းများ</h2><p className="text-xs text-slate-500">Date Filter ဖြင့် မနေ့၊ ဒီနေ့နှင့် ရှေ့နေ့များ၏ record များကို ကြည့်နိုင်ပါသည်။</p></div>
+          <div><h2 className="text-2xl font-black text-slate-800">ဗူး ထွက်ရှိမှုမှတ်တမ်းများ</h2><p className="text-xs text-slate-500">Date Filter ဖြင့် မနေ့၊ ဒီနေ့နှင့် ရှေ့နေ့များ၏ record များကို ကြည့်နိုင်ပါသည်။</p></div>
           <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border-2 border-indigo-200 bg-indigo-50 p-2 lg:w-auto">
             <span className="text-sm font-black text-indigo-900">မှတ်တမ်း Date</span>
             <button type="button" onClick={() => setHistoryDate((value) => shiftDateValue(value, -1))} className="rounded-lg border-2 border-indigo-300 bg-white px-3 text-2xl font-black text-indigo-800">‹</button>

@@ -12,7 +12,7 @@ describe("Production history page", () => {
   it("opens from the dashboard production KPI in a dedicated route", () => {
     expect(dashboardSource).toContain('href={`/production-history?date=${encodeURIComponent(selectedKpiDate)}`}');
     expect(routeSource).toContain("ProductionHistoryPage");
-    expect(layoutSource).toContain("'/production-history': 'ထွက်ရှိမှုမှတ်တမ်းများ'");
+    expect(layoutSource).toContain("'/production-history': 'ဗူး ထွက်ရှိမှုမှတ်တမ်းများ'");
   });
 
   it("supports date selection and groups report rows by submission", () => {

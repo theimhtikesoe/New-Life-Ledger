@@ -257,7 +257,7 @@ const PAGE_HEADERS = {
   '/factory-stock': 'စက်ရုံဗူးလက်ကျန်',
   '/orders': 'Customer Orders',
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',
-  '/production-history': 'ထွက်ရှိမှုမှတ်တမ်းများ',
+  '/production-history': 'ဗူး ထွက်ရှိမှုမှတ်တမ်းများ',
   '/tube-production-history': 'Tube ထွက်ရှိမှု အသေးစိတ်',
   '/tube-stock': 'စက်ရုံ Tube လက်ကျန် အသေးစိတ်',
   '/trace': 'Trace / Lineage Center',
