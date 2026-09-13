@@ -67,6 +67,16 @@ function parseMonth(value) {
   return text;
 }
 
+function getPreviousDateText(value) {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeOpeningAsOfDate(month, asOfDate) {
+  return asOfDate === `${month}-01` ? getPreviousDateText(asOfDate) : asOfDate;
+}
+
 function emptySummary() {
   return {
     retailTotal: 0,
@@ -294,7 +304,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   }
   const sortedRows = [...rows.values()].sort((a, b) => b.date.localeCompare(a.date));
   const openingAmount = toAmount(opening?.amount);
-  const openingAsOfDate = opening?.asOfDate || "";
+  const openingAsOfDate = opening?.asOfDate ? normalizeOpeningAsOfDate(month, opening.asOfDate) : "";
   const monthlyTotal = openingAmount + sortedRows
     .filter((row) => (!openingAsOfDate || row.date > openingAsOfDate) && row.date <= date)
     .reduce((total, row) => total + row.dailyTotal, 0);
@@ -337,9 +347,10 @@ export async function POST(request) {
 
     if (body.action === "opening") {
       const month = parseMonth(body.month);
-      const { text: asOfDate } = parseDate(body.asOfDate);
+      const { text: rawAsOfDate } = parseDate(body.asOfDate);
       const { text: selectedDate } = parseDate(body.selectedDate || body.asOfDate);
-      if (!asOfDate.startsWith(`${month}-`) || !selectedDate.startsWith(`${month}-`)) throw new Error("Opening ရက်စွဲသည် ရွေးထားသောလအတွင်း ဖြစ်ရပါမည်။");
+      const asOfDate = normalizeOpeningAsOfDate(month, rawAsOfDate);
+      if (!selectedDate.startsWith(`${month}-`)) throw new Error("Opening ရက်စွဲသည် ရွေးထားသောလအတွင်း ဖြစ်ရပါမည်။");
       if (asOfDate > selectedDate) throw new Error("Opening ရက်စွဲသည် ရွေးထားသောနေ့ထက် မကျော်ရပါ။");
       const amount = toAmount(body.amount);
       const opening = await prisma.dailySalesOpening.upsert({

@@ -153,6 +153,22 @@ describe("Daily sales summary API", () => {
     expect(body.data.monthlyTotal).toBe(1650000);
   });
 
+  it("includes the first day when a zero Opening was entered as the first day of the month", async () => {
+    mocks.findCashSale.mockResolvedValue([
+      sale("2026-09-01", "RETAIL", "CASH", 8422400),
+      sale("2026-09-02", "WHOLESALE", "CASH", 7084500),
+    ]);
+    const opening = { id: "opening-sep", month: "2026-09", amount: 0, asOfDate: "2026-09-01", note: null, updatedAt: new Date("2026-09-13T21:15:46.946Z") };
+    mocks.findOpening.mockResolvedValue(opening);
+
+    const response = await GET(new Request("http://localhost/api/daily-sales-summary?date=2026-09-02"));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data.opening).toMatchObject({ amount: 0, asOfDate: "2026-08-31" });
+    expect(body.data.monthlyTotal).toBe(15506900);
+  });
+
   it("rejects an invalid selected date without touching business data", async () => {
     const response = await GET(new Request("http://localhost/api/daily-sales-summary?date=not-a-date"));
     expect(response.status).toBe(400);

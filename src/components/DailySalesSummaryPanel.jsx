@@ -113,7 +113,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
           setOpeningForm({ ...AUGUST_NOTEBOOK_OPENING });
           setShowOpeningForm(false);
         } else {
-          setOpeningForm({ amount: "", asOfDate: getPreviousMyanmarDateInputValue(targetDate), note: "စာအုပ်မှ စုစုပေါင်း" });
+          setOpeningForm({ amount: "", asOfDate: getPreviousMyanmarDateInputValue(`${targetDate.slice(0, 7)}-01`), note: "စာအုပ်မှ စုစုပေါင်း" });
         }
       }
     } catch (requestError) {

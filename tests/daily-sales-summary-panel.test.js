@@ -49,6 +49,7 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain("return rowsWithCumulative.sort((a, b) => b.date.localeCompare(a.date));");
     expect(source).toContain("{formatMoney(displayedOpening)}");
     expect(source).toContain("လအစ Opening နှင့် ယနေ့အထိ လက်လီ/လက်ကား ရောင်းရငွေ စုစုပေါင်း။ ယနေ့အဆုံးတန်ဖိုးသည် နောက်နေ့ Opening ဖြစ်သည်။");
+    expect(source).toContain("getPreviousMyanmarDateInputValue(`${targetDate.slice(0, 7)}-01`)");
   });
 
   it("keeps six summary cards in an even two-column grid with centered monthly opening", () => {
