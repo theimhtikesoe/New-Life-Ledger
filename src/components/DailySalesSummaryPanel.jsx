@@ -137,11 +137,6 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
   const values = draft || toDraft(automatic);
   const dailyTotal = Number(values.retailTotal || 0) + Number(values.wholesaleTotal || 0);
-  const automaticDailyTotal = Number(automatic.retailTotal || 0) + Number(automatic.wholesaleTotal || 0);
-  const monthlyDelta = !summary?.opening?.asOfDate || date > summary.opening.asOfDate
-    ? dailyTotal - automaticDailyTotal
-    : 0;
-  const monthlyTotal = Number(summary?.monthlyTotal || 0) + monthlyDelta;
   const cashDailyTotal = Number(values.retailCash || 0) + Number(values.wholesaleCash || 0);
   const hasManualDifference = Number(values.retailTotal || 0) !== Number(automatic.retailTotal || 0)
     || Number(values.wholesaleTotal || 0) !== Number(automatic.wholesaleTotal || 0)
@@ -153,7 +148,8 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
     if (!summary?.rows?.length) return [];
     let running = Number(summary.opening?.amount || 0);
     const openingAsOfDate = summary.opening?.asOfDate || "";
-    return summary.rows.map((row) => {
+    const chronologicalRows = [...summary.rows].sort((a, b) => a.date.localeCompare(b.date));
+    const rowsWithCumulative = chronologicalRows.map((row) => {
       const displayRow = dateKey(row.date) === dateKey(date)
         ? {
             ...row,
@@ -169,6 +165,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       if (included) running += displayRow.dailyTotal;
       return { ...displayRow, monthlyCumulative: included ? running : null };
     });
+    return rowsWithCumulative.sort((a, b) => b.date.localeCompare(a.date));
   }, [summary, date, values, dailyTotal, cashDailyTotal]);
 
   const historyPageCount = Math.max(1, Math.ceil(tableRows.length / HISTORY_PAGE_SIZE));

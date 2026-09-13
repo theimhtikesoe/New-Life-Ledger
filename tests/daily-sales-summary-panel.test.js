@@ -17,7 +17,7 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain('setDraft(toDraft(body.data.autoPreview || body.data.selectedDay))');
     expect(source).not.toContain('setIsEditing(body.data.selectedDay?.source === "CASH_SALE")');
     expect(source).not.toContain("window.setTimeout(() => { saveDaily(); }, 900)");
-    expect(source).toContain('>Opening</button>');
+    expect(source).toContain('>လအစလက်ကျန်</button>');
     expect(source).toContain('aria-expanded={showOpeningForm}');
     expect(source).not.toContain('setShowOpeningForm(true);');
     expect(source).toContain('calculationMode: hasManualDifference ? "MANUAL" : "AUTO"');
@@ -44,6 +44,9 @@ describe("DailySalesSummaryPanel", () => {
   it("uses the current table Opening value in the green card", () => {
     expect(source).toContain("const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;");
     expect(source).toContain("const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;");
+    expect(source).toContain("const chronologicalRows = [...summary.rows].sort((a, b) => a.date.localeCompare(b.date));");
+    expect(source).toContain("const rowsWithCumulative = chronologicalRows.map((row) => {");
+    expect(source).toContain("return rowsWithCumulative.sort((a, b) => b.date.localeCompare(a.date));");
     expect(source).toContain("{formatMoney(displayedOpening)}");
     expect(source).toContain("အောက်ကဇယားရဲ့ လက်ရှိ Opening တန်ဖိုးအတိုင်း ပြထားသည်");
   });
