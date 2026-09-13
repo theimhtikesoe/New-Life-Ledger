@@ -29,7 +29,7 @@ export async function GET(request, { params }) {
       ...(Object.keys(date).length ? { date } : {}),
     };
     const select = {
-      id: true, date: true, type: true, saleType: true, itemSize: true,
+      id: true, date: true, createdAt: true, actorName: true, type: true, saleType: true, itemSize: true,
       cartons: true, rate: true, deductions: true, amount: true,
       discountAmount: true, discountNote: true, note: true,
       paymentType: true, saleItems: true,
@@ -70,7 +70,7 @@ export async function POST(request, { params }) {
       });
       const ledger = await tx.ledger.create({
         data: {
-          customerId, type, saleType: body.saleType || "RETAIL",
+          customerId, actorName: getActorName(request), type, saleType: body.saleType || "RETAIL",
           itemSize: body.itemSize?.trim() || null,
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
           rate: body.rate ? Math.round(Number(body.rate)) : null,
@@ -80,7 +80,7 @@ export async function POST(request, { params }) {
           date: body.date ? getMyanmarDayRange(body.date).start : new Date(),
         },
         select: {
-          id: true, date: true, type: true, saleType: true, itemSize: true,
+          id: true, date: true, createdAt: true, actorName: true, type: true, saleType: true, itemSize: true,
           cartons: true, rate: true, deductions: true, amount: true,
           discountAmount: true, discountNote: true, note: true,
           paymentType: true, saleItems: true,

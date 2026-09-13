@@ -117,6 +117,7 @@ export async function PATCH(request, { params }) {
         where: { id: transactionId },
         data: {
           type,
+          actorName: getActorName(request),
           saleType: body.saleType || ledger.saleType || "RETAIL",
           itemSize: body.itemSize?.trim() || null,
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
@@ -131,7 +132,7 @@ export async function PATCH(request, { params }) {
           date,
         },
         select: {
-          id: true, customerId: true, date: true, type: true, saleType: true, itemSize: true,
+          id: true, customerId: true, date: true, createdAt: true, actorName: true, type: true, saleType: true, itemSize: true,
           cartons: true, rate: true, deductions: true, amount: true, discountAmount: true,
           discountNote: true, note: true, paymentType: true, saleItems: true,
         },

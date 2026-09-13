@@ -2933,7 +2933,8 @@ export default function Dashboard({ view = "overview" }) {
                     <table className="w-full text-left text-sm text-slate-700">
                       <thead className="bg-slate-100 text-xs uppercase text-slate-700">
                         <tr>
-                          <th className="px-4 py-3">Date</th>
+                          <th className="px-4 py-3">စာရင်းရက်</th>
+                          <th className="px-4 py-3">သိမ်းချိန် / သိမ်းသူ</th>
                           <th className="px-4 py-3">Type</th>
                           <th className="px-4 py-3 text-right">Amount</th>
                           <th className="px-4 py-3">Payment</th>
@@ -2946,7 +2947,12 @@ export default function Dashboard({ view = "overview" }) {
                           filteredLedgers.map((ledger) => (
                             <tr key={ledger.id} className="hover:bg-slate-50/50 group">
                               <td className="whitespace-nowrap px-4 py-3 text-xs">
-                                {formatDate(ledger.date)}
+                                <p className="font-semibold text-slate-800">{formatMyanmarDateLabel(ledger.date)}</p>
+                                <p className="mt-1 text-[11px] text-slate-500">စာရင်းရက် (Myanmar)</p>
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-3 text-xs">
+                                <p className="font-medium text-slate-700">{ledger.createdAt ? formatDate(ledger.createdAt) : "မသိရသေးပါ"}</p>
+                                <p className="mt-1 text-[11px] text-slate-500">သိမ်းသူ: {ledger.actorName || "အဟောင်းမှတ်တမ်း"}</p>
                               </td>
                               <td className="px-4 py-3">
                                 <span
@@ -2992,7 +2998,7 @@ export default function Dashboard({ view = "overview" }) {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="6" className="px-4 py-8 text-center text-slate-500">
+                            <td colSpan="7" className="px-4 py-8 text-center text-slate-500">
                               Transaction မရှိသေးပါ။
                             </td>
                           </tr>

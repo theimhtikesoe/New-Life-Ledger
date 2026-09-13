@@ -1,0 +1,2 @@
+ALTER TABLE "Ledger"
+  ADD COLUMN IF NOT EXISTS "actorName" TEXT;
