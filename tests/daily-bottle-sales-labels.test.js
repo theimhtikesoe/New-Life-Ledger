@@ -7,25 +7,25 @@ const page = fs.readFileSync(path.join(root, "src/app/daily-bottle-sales/page.js
 const route = fs.readFileSync(path.join(root, "src/app/api/daily-bottle-sales/route.js"), "utf8");
 
 describe("Daily Bottle Sales combined totals", () => {
-  it("uses a combined summary for the headline totals", () => {
-    expect(route).toContain("const overallSummary = summarizeRows([...customers, ...creditCustomers]);");
+  it("uses physical sales only for the headline totals", () => {
+    expect(route).toContain("const overallSummary = summarizeRows(customers);");
     expect(route).toContain("totalBottles: overallSummary.totalBottles");
     expect(route).toContain("totalAmount: overallSummary.totalAmount");
   });
 
-  it("explains that the headline includes cash, payment, and debt increase", () => {
+  it("explains that the headline excludes duplicate payment bottles", () => {
     expect(page).toContain("စုစုပေါင်း ရောင်းဗူး");
-    expect(page).toContain("လက်ငင်း + ငွေချေ + အကြွေးတိုး");
+    expect(page).toContain("လက်ငင်း + အကြွေးတိုး (ငွေချေဗူး မထပ်ပေါင်း)");
     expect(page).toContain("စုစုပေါင်း ရောင်းတန်ဖိုး");
-    expect(page).toContain("တကယ်ရရှိငွေ");
-    expect(page).toContain("လက်ငင်း + ငွေချေ သာ");
+    expect(page).toContain("လက်ငင်း + အကြွေးတိုး (ငွေချေငွေ မထပ်ပေါင်း)");
+    expect(page).toContain("စုစုပေါင်းထဲ မထပ်ပေါင်း");
   });
 
   it("shows paid bottles as a separate KPI from debt-increase bottles", () => {
     expect(page).toContain("ငွေရပြီးဗူး");
     expect(page).toContain("data?.paidBottleSales?.totalBottles");
     expect(page).toContain("data?.cashBottleSales?.totalBottles");
-    expect(page).toContain("ငွေချေ + လက်ငင်း");
+    expect(page).toContain("လက်ငင်း + Link ချိတ်ငွေချေ");
     expect(page).toContain("အကြွေးတိုးဗူး");
   });
 
@@ -44,6 +44,7 @@ describe("Daily Bottle Sales combined totals", () => {
   it("keeps payment rows out of the headline physical-sale customers", () => {
     expect(route).toContain("const customers = buildCustomerRows([...cashSales, ...creditLedgers]);");
     expect(route).toContain("const paidCustomers = buildCustomerRows(ledgers, { includeEmpty: true });");
+    expect(route).toContain("const overallSummary = summarizeRows(customers);");
   });
 });
 

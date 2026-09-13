@@ -118,13 +118,15 @@ export async function GET(request) {
     const paidSummary = summarizeRows(paidCustomers);
     const cashSummary = summarizeRows(cashCustomers);
     const summary = summarizeRows(customers);
-    const overallSummary = summarizeRows([...customers, ...creditCustomers]);
+    // Physical sales are cash sales plus debt-increase rows. A payment only
+    // settles an existing credit sale and must never be added again here.
+    const overallSummary = summarizeRows(customers);
 
     return NextResponse.json({ data: {
       date,
-      // Headline physical sales include cash, payment-linked, and debt-increase
-      // rows. Debt-increase rows remain separated below for reconciliation.
-      totalCustomers: new Set([...customers, ...creditCustomers].map((row) => row.customer.id)).size,
+      // Headline physical sales include cash and debt-increase rows only.
+      // Payment-linked bottles remain separate below for reconciliation.
+      totalCustomers: new Set(customers.map((row) => row.customer.id)).size,
       totalBottles: overallSummary.totalBottles,
       totalAmount: overallSummary.totalAmount,
       totalPaidAmount: summary.totalPaidAmount,
