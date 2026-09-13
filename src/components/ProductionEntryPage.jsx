@@ -8,6 +8,11 @@ import { BOTTLE_GROUPS, BOTTLE_ITEMS, getBottleDisplayName, getBottleGroup, getB
 
 const DEFAULT_TUBE_WORKERS = ["AKA", "NMZ", "PPO", "ATZ", "KKK", "YMT", "KZP", "TZO"];
 const PRODUCTION_WORKERS_CACHE_KEY = "new-life-ledger:production-workers-v1";
+const PRODUCTION_DRAFT_KEY = "new-life-ledger:production-draft-v1";
+
+function productionDraftKey(actorName) {
+  return actorName ? `${PRODUCTION_DRAFT_KEY}:${encodeURIComponent(actorName)}` : "";
+}
 
 function todayMyanmar() {
   const now = new Date(Date.now() + (6 * 60 + 30) * 60 * 1000);
@@ -70,6 +75,8 @@ export default function ProductionEntryPage() {
   const [focusedField, setFocusedField] = useState("");
   const workerPressTimerRef = useRef(null);
   const suppressWorkerClickRef = useRef(false);
+  const productionDraftReadyRef = useRef(false);
+  const restoredProductionDraftRef = useRef(false);
 
   const selectedMachine = useMemo(() => MACHINES.find((machine) => machine.code === machineCode), [machineCode]);
   const tubeItems = useMemo(() => getTubeItemsForMachine(machineCode), [machineCode]);
@@ -90,6 +97,40 @@ export default function ProductionEntryPage() {
   }, []);
 
   useEffect(() => {
+    const currentActor = window.localStorage.getItem("actorName") || "";
+    const key = productionDraftKey(currentActor);
+    try {
+      const raw = key ? window.sessionStorage.getItem(key) : null;
+      const draft = raw ? JSON.parse(raw) : null;
+      if (draft && typeof draft === "object") {
+        restoredProductionDraftRef.current = Boolean(draft.machineCode);
+        if (typeof draft.reportDate === "string") setReportDate(draft.reportDate);
+        if (typeof draft.historyDate === "string") setHistoryDate(draft.historyDate);
+        if (typeof draft.machineCode === "string") setMachineCode(draft.machineCode);
+        if (currentActor !== "ဇွဲဇွဲ" && currentActor !== "ဖြိုးကို" && (draft.category === "tube" || draft.category === "bottle")) setCategory(draft.category);
+        if (typeof draft.activeBottleGroup === "string") setActiveBottleGroup(draft.activeBottleGroup);
+        if (typeof draft.activeTubeKey === "string") setActiveTubeKey(draft.activeTubeKey);
+        if (draft.lines && typeof draft.lines === "object") setLines(draft.lines);
+        if (typeof draft.wasteQuantity === "string") setWasteQuantity(draft.wasteQuantity);
+        if (typeof draft.tubeDamageQuantity === "string") setTubeDamageQuantity(draft.tubeDamageQuantity);
+        if (typeof draft.tubeQuantity === "string") setTubeQuantity(draft.tubeQuantity);
+        if (typeof draft.tubeQuantityUnit === "string") setTubeQuantityUnit(draft.tubeQuantityUnit);
+        if (draft.tubeMetrics && typeof draft.tubeMetrics === "object") setTubeMetrics((current) => ({ ...current, ...draft.tubeMetrics }));
+        if (Array.isArray(draft.involvedWorkers)) setInvolvedWorkers(draft.involvedWorkers);
+        if (typeof draft.workerNameDraft === "string") setWorkerNameDraft(draft.workerNameDraft);
+        if (typeof draft.editingSubmissionId === "string") setEditingSubmissionId(draft.editingSubmissionId);
+      }
+    } catch {
+      // Ignore an unavailable or malformed draft and keep the normal blank form.
+    }
+    productionDraftReadyRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (restoredProductionDraftRef.current && machineCode) {
+      restoredProductionDraftRef.current = false;
+      return;
+    }
     setActiveBottleGroup("03-white");
     setActiveTubeKey("");
     setLines({});
@@ -101,6 +142,32 @@ export default function ProductionEntryPage() {
       setActiveTubeKey(`${tubeItems[0].g}|${tubeItems[0].color}`);
     }
   }, [activeTubeKey, category, tubeItems]);
+
+  useEffect(() => {
+    if (!productionDraftReadyRef.current || !actorName) return;
+    try {
+      window.sessionStorage.setItem(productionDraftKey(actorName), JSON.stringify({
+        reportDate,
+        historyDate,
+        machineCode,
+        category,
+        activeBottleGroup,
+        activeTubeKey,
+        lines,
+        wasteQuantity,
+        tubeDamageQuantity,
+        tubeQuantity,
+        tubeQuantityUnit,
+        tubeMetrics,
+        involvedWorkers,
+        workerNameDraft,
+        editingSubmissionId,
+        savedAt: Date.now(),
+      }));
+    } catch {
+      // Keep the form usable when browser storage is unavailable or full.
+    }
+  }, [actorName, reportDate, historyDate, machineCode, category, activeBottleGroup, activeTubeKey, lines, wasteQuantity, tubeDamageQuantity, tubeQuantity, tubeQuantityUnit, tubeMetrics, involvedWorkers, workerNameDraft, editingSubmissionId]);
 
   const loadWorkers = useCallback(async () => {
     let hasCachedWorkers = false;
@@ -393,6 +460,7 @@ export default function ProductionEntryPage() {
       setMessage(`${body.data.lineCount} မျိုး၊ ${formatNumber(body.data.totalPieces)} ${category === "tube" ? "pcs" : "ဗူး"} ${editingSubmissionId ? "Update ပြီးပါပြီ" : "အောင်မြင်စွာ တင်ပြီးပါပြီ"}။`);
       setEditingSubmissionId("");
       resetForm();
+      try { window.sessionStorage.removeItem(productionDraftKey(actorName)); } catch { /* Ignore unavailable storage. */ }
       setHistoryDate(reportDate);
       await loadHistory(reportDate);
     } catch (submitError) {

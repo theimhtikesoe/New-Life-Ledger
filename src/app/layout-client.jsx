@@ -438,6 +438,47 @@ export default function RootLayoutClient({ children }) {
     if (pathname !== fallbackPath) router.replace(fallbackPath);
   }, [actorName, allowedPaths, pathname, permissionsLoading, router]);
 
+  useEffect(() => {
+    if (!actorName || !pathname || pathname === '/') return undefined;
+    const draftKey = `new-life-ledger-form-draft-v1:${encodeURIComponent(actorName)}:${pathname}`;
+    const restoreDraft = () => {
+      try {
+        const raw = window.sessionStorage.getItem(draftKey);
+        const draft = raw ? JSON.parse(raw) : null;
+        if (!Array.isArray(draft?.fields) || Date.now() - Number(draft.savedAt || 0) > 12 * 60 * 60 * 1000) return;
+        const draftElements = Array.from(document.querySelectorAll('form input, form textarea, form select'));
+        draft.fields.forEach((field) => {
+          const element = draftElements.find((candidate) => (candidate.dataset.draftField || candidate.name || candidate.id) === field.key);
+          if (!element || element.type === 'password') return;
+          if (element.type === 'checkbox') element.checked = Boolean(field.checked);
+          else element.value = field.value ?? '';
+          element.dispatchEvent(new Event(element.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+        });
+      } catch {
+        // Draft restoration is best-effort and must never block a page.
+      }
+    };
+    const saveDraft = () => {
+      try {
+        const fields = Array.from(document.querySelectorAll('form input, form textarea, form select'))
+          .filter((element) => element.type !== 'password' && element.type !== 'submit' && element.type !== 'button')
+          .map((element, index) => ({ key: element.dataset.draftField || element.name || element.id || `field-${index}`, value: element.value, checked: element.checked }))
+          .filter((field) => field.value || field.checked);
+        if (fields.length) window.sessionStorage.setItem(draftKey, JSON.stringify({ savedAt: Date.now(), fields }));
+      } catch {
+        // Ignore unavailable or full session storage.
+      }
+    };
+    const restoreTimer = window.setTimeout(restoreDraft, 0);
+    window.addEventListener('pagehide', saveDraft);
+    window.addEventListener('beforeunload', saveDraft);
+    return () => {
+      window.clearTimeout(restoreTimer);
+      window.removeEventListener('pagehide', saveDraft);
+      window.removeEventListener('beforeunload', saveDraft);
+    };
+  }, [actorName, pathname]);
+
   const handleLoginSuccess = (nextActorName) => {
     setActorName(nextActorName || '');
     setAuthenticated(true);
