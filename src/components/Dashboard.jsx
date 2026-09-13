@@ -1829,8 +1829,11 @@ export default function Dashboard({ view = "overview" }) {
     ? selectedPaymentTarget?.remainingAmount || 0
     : computedSaleAmount || 0;
   const paymentAmountPreview = Math.max(0, Math.round(Number(ledgerForm.manualAmount || automaticLedgerAmount || 0)));
+  const paymentDiscountPreview = ledgerForm.type === "DEBIT"
+    ? Math.max(0, Math.round(Number(ledgerForm.discountAmount || 0)))
+    : 0;
   const paymentRemainingPreview = selectedPaymentTarget
-    ? Math.max(0, selectedPaymentTarget.remainingAmount - paymentAmountPreview)
+    ? Math.max(0, selectedPaymentTarget.remainingAmount - paymentAmountPreview - paymentDiscountPreview)
     : 0;
 
   // Calculate KPI metrics from the lightweight customer list and today's summary.
