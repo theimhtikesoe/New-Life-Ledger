@@ -334,6 +334,7 @@ export default function Dashboard({ view = "overview" }) {
     saleItems: [],
   });
   const [paymentTargetLedgerId, setPaymentTargetLedgerId] = useState("");
+  const [pendingTransactionConfirmation, setPendingTransactionConfirmation] = useState(null);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(() => !Array.isArray(initialDashboardSnapshot?.customers));
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
@@ -1179,7 +1180,33 @@ export default function Dashboard({ view = "overview" }) {
     setPaymentTargetLedgerId("");
   }
 
-  async function createLedgerTransaction(event) {
+  function createLedgerTransaction(event) {
+    event.preventDefault();
+    if (!selectedCustomerId || isSubmitting) return;
+    const type = ledgerForm.type;
+    const amount = type === "CASH_SALE"
+      ? (hasCashSaleBreakdown ? cashSaleBreakdownTotal : Math.max(0, Math.round(Number(ledgerForm.singlePaymentAmount || ledgerForm.amount || cashSaleListedAmount || 0))))
+      : Math.max(0, Math.round(Number(ledgerForm.manualAmount || automaticLedgerAmount || 0)));
+    const discount = type === "DEBIT"
+      ? Math.max(0, Math.round(Number(ledgerForm.discountAmount || 0)))
+      : type === "CASH_SALE" ? cashSaleDiscount : 0;
+    setPendingTransactionConfirmation({
+      type,
+      amount,
+      discount,
+      target: selectedPaymentTarget,
+      remaining: selectedPaymentTarget ? Math.max(0, selectedPaymentTarget.remainingAmount - amount - discount) : null,
+      paymentType: ledgerForm.paymentType || (type === "CASH_SALE" ? "CASH" : "-"),
+      saleType: effectiveCashSaleType,
+    });
+  }
+
+  async function confirmLedgerTransaction() {
+    setPendingTransactionConfirmation(null);
+    await saveLedgerTransaction({ preventDefault() {} });
+  }
+
+  async function saveLedgerTransaction(event) {
     event.preventDefault();
     if (!selectedCustomerId || isSubmitting) return;
 
@@ -3513,6 +3540,34 @@ export default function Dashboard({ view = "overview" }) {
       )}
 
       {/* Transaction Delete Confirmation Modal */}
+      {pendingTransactionConfirmation && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-md">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.3)]">
+            <div className="border-b border-cyan-100 bg-gradient-to-r from-cyan-50 via-white to-violet-50 px-5 py-4">
+              <p className="text-xs font-black tracking-wide text-cyan-700">မသိမ်းမီ ပြန်လည်စစ်ဆေးရန်</p>
+              <h3 className="mt-1 text-xl font-black text-slate-900">စာရင်းသွင်းမည့်အချက်အလက် မှန်ပါသလား?</h3>
+              <p className="mt-1 text-sm text-slate-600">မှန်ကန်ပါက အောက်က “အတည်ပြုပြီး သိမ်းမည်” ကိုနှိပ်ပါ။</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 p-5 text-sm">
+              <div className={`rounded-xl border p-3 ${pendingTransactionConfirmation.type === "CREDIT" ? "border-rose-200 bg-rose-50" : pendingTransactionConfirmation.type === "DEBIT" ? "border-emerald-200 bg-emerald-50" : "border-cyan-200 bg-cyan-50"}`}>
+                <p className="text-xs font-bold text-slate-500">စာရင်းအမျိုးအစား</p>
+                <p className="mt-1 font-black text-slate-900">{pendingTransactionConfirmation.type === "CREDIT" ? "အကြွေးတိုး" : pendingTransactionConfirmation.type === "DEBIT" ? "ငွေချေ" : `လက်ငင်းရောင်း · ${cashSaleTypeLabel(pendingTransactionConfirmation.saleType)}`}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-bold text-slate-500">Amount</p>
+                <p className="mt-1 text-lg font-black text-slate-900">{formatMoney(pendingTransactionConfirmation.amount)}</p>
+              </div>
+              {pendingTransactionConfirmation.discount > 0 ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3"><p className="text-xs font-bold text-amber-700">လျှော့စျေး</p><p className="mt-1 font-black text-amber-900">{formatMoney(pendingTransactionConfirmation.discount)}</p></div> : null}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs font-bold text-slate-500">ငွေပေးချေမှုပုံစံ</p><p className="mt-1 font-black text-slate-900">{pendingTransactionConfirmation.paymentType}</p></div>
+              {pendingTransactionConfirmation.target ? <div className="col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3"><p className="text-xs font-bold text-emerald-700">ချိတ်ထားသော အကြွေး</p><p className="mt-1 font-black text-slate-900">မူရင်း {formatMoney(pendingTransactionConfirmation.target.originalAmount)} · ယခင်ချေပြီး {formatMoney(pendingTransactionConfirmation.target.paidAmount)}</p><p className="mt-1 font-black text-rose-700">သိမ်းပြီးနောက် ကျန်မည်: {formatMoney(pendingTransactionConfirmation.remaining)}</p></div> : null}
+            </div>
+            <div className="flex gap-3 border-t border-slate-100 p-5">
+              <button type="button" className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200" onClick={() => setPendingTransactionConfirmation(null)} disabled={isSubmitting}>ပြန်ပြင်မည်</button>
+              <button type="button" className="flex-1 rounded-xl bg-cyan-600 py-3 text-sm font-black text-white shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 disabled:opacity-50" onClick={confirmLedgerTransaction} disabled={isSubmitting}>အတည်ပြုပြီး သိမ်းမည်</button>
+            </div>
+          </div>
+        </div>
+      )}
       {deletingTransaction && !showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-xl border border-rose-200 bg-white p-6 shadow-2xl">
