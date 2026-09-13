@@ -51,6 +51,11 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("ငွေချေမည့် အကြွေးအဟောင်း ရွေးပါ");
   });
 
+  it("shows the automatic amount card for cash sales", () => {
+    expect(dashboardSource).toContain("အလိုအလျောက်တွက်ထားသော ပမာဏ");
+    expect(dashboardSource).toContain("getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0");
+  });
+
   it("provides an isolated date selector for date-sensitive KPI cards", () => {
     expect(dashboardSource).toContain('id="dashboard-kpi-date"');
     expect(dashboardSource).toContain('type="date"');

@@ -36,6 +36,15 @@ describe("Production page enhancements", () => {
     expect(salesItemPickerSource).not.toContain('currentCategory === "CAP" ? "အဖုံးအရောင် ရွေးပါ" : "ဗူးအမျိုးအစား ရွေးပါ"');
   });
 
+  it("lets the bottle/cap and Tube buttons toggle their picker panels", () => {
+    expect(salesItemPickerSource).toContain("function toggleProductPicker()");
+    expect(salesItemPickerSource).toContain("function toggleTubePicker()");
+    expect(salesItemPickerSource).toContain('aria-expanded={open && pickerMode === "product"}');
+    expect(salesItemPickerSource).toContain('aria-expanded={open && pickerMode === "tube"}');
+    expect(salesItemPickerSource).toContain("ဗူး/အဖုံး ပိတ်ရန် −");
+    expect(salesItemPickerSource).toContain("Tube ပိတ်ရန် −");
+  });
+
   it("accepts decimal tube quantities and preserves the exact entered value", () => {
     expect(productionSource).toContain('type="text" inputMode="decimal" value={tubeQuantity}');
     expect(productionSource).toContain("onChange={(event) => setTubeQuantity(event.target.value)}");
