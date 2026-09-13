@@ -58,12 +58,12 @@ async function fetchAuthJson(path, options = {}) {
 export default function PINLogin({ onSuccess, onLogout, onReady }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectingActor, setSelectingActor] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectingActor, setSelectingActor] = useState(true);
   const [pendingActor, setPendingActor] = useState("");
   const [authorizedActors, setAuthorizedActors] = useState(() => readAuthorizedActors());
-  const [actorLocked, setActorLocked] = useState(false);
+  const [actorLocked, setActorLocked] = useState(true);
   const [actorSelectionLoading, setActorSelectionLoading] = useState(false);
   const lastActivityAtRef = useRef(Date.now());
 
@@ -85,10 +85,12 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
         const actorName = body.actorName || localStorage.getItem("actorName");
         if (body.authenticated && ACTORS.includes(actorName)) {
           setIsAuthenticated(true);
-          setActorLocked(false);
+          // Always ask which user is using the website on entry. The server
+          // session stays available so selecting a user remains immediate.
+          setActorLocked(true);
+          setSelectingActor(true);
           setAuthorizedActors(readAuthorizedActors());
           lastActivityAtRef.current = Date.now();
-          onSuccess?.(actorName);
         } else {
           setIsAuthenticated(false);
           setActorLocked(false);

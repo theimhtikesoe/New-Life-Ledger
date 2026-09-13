@@ -439,12 +439,6 @@ export default function RootLayoutClient({ children }) {
     setAppZoom(readAppZoom());
   }, []);
 
-  const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
-  // Once permissions have settled, the actor may freely navigate to any
-  // permitted page. During an actor switch/login, wait for the designated
-  // landing route so the previous dashboard does not flash underneath.
-  const actorRouteReady = !actorName || !permissionsLoading || pathname === routeForActor(actorName);
-
   useEffect(() => {
     if (!actorName) {
       setAllowedPaths([]);
@@ -547,24 +541,15 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   }, []);
 
-  // Do not mount the home Dashboard before authentication and actor routing are
-  // ready. Otherwise a production/cap-stock actor briefly sees the Dashboard
-  // behind the PIN modal while the post-login redirect is still pending.
-  const showApp = authReady && actorRouteReady && canRenderCurrentPage;
+  // Keep the shell mounted after authentication so route changes never leave a
+  // blank or blocked screen. The actor selector handles the initial choice;
+  // routing/permission effects then move the user to the correct page.
+  const showApp = authReady && authenticated;
 
   return (
     <>
       <BlossomOverlay />
       <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} onReady={handleAuthReady} />
-      {authReady && authenticated && !showApp ? (
-        <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cyan-50 via-white to-violet-50 px-6 text-center">
-          <div className="rounded-2xl border border-cyan-200 bg-white/90 px-6 py-5 shadow-lg backdrop-blur">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true" />
-            <p className="mt-3 text-sm font-black text-cyan-900">User စာမျက်နှာ ရယူနေသည်...</p>
-            <p className="mt-1 text-xs font-bold text-slate-500">ခဏစောင့်ပေးပါ</p>
-          </div>
-        </main>
-      ) : null}
       {showApp && (
         <ActorSwitcher actorName={actorName} />
       )}
