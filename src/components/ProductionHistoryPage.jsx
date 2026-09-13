@@ -143,6 +143,7 @@ export default function ProductionHistoryPage() {
       </section>
 
       {error ? <div className="rounded-xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div> : null}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-bold text-slate-700">ကောင်းမွန်ဗူးကို သက်ဆိုင်ရာဗူးလက်ကျန်ထဲ ထည့်ပေါင်းထားပါသည်။ ဗူးပျက်ကို သီးခြားမှတ်တမ်းတင်ပြီး ဗူးလက်ကျန်မှ မနုတ်ပါ။ Tube သုံးစွဲမှုနှင့် Tube ပျက်ကိုသာ Tube လက်ကျန်မှ နုတ်ပါသည်။</div>
       <section className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-sm font-bold text-emerald-700">ကောင်းမွန်ဗူး</p><p className="mt-1 text-2xl font-black text-emerald-800">{formatNumber(totalPieces)} ဗူး</p></div>
         <div className="rounded-xl border border-red-200 bg-red-50 p-4"><p className="text-sm font-bold text-red-700">ဗူးပျက်</p><p className="mt-1 text-2xl font-black text-red-800">{formatNumber(totalWaste)} ဗူး</p></div>

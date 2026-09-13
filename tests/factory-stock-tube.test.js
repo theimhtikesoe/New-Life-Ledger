@@ -35,12 +35,13 @@ describe("Tube factory stock movements", () => {
     expect(summary[0]).toMatchObject({ systemCurrentCards: -3, openingStockCards: 0, unrecordedOpeningStockCards: 3, currentCards: -3, systemCurrentBottles: -300, openingStockBottles: 0, unrecordedOpeningStockBottles: 300, currentBottles: -300 });
   });
 
-  it("deducts good output, bottle waste, and tube damage from linked Tube stock", () => {
+  it("adds good bottles, records bottle waste without reducing bottle stock, and deducts Tube use/damage", () => {
     const rows = productionMovementRows([
       { category: "bottle", bottleType: "1 လီတာ ပြာ", outputQuantity: 2, outputCapacity: 100, wasteQuantity: 3, tubeDamageQuantity: 4, reportDate: "2026-09-03", submissionId: "bottle-2" },
     ], { tubeMappings: new Map([["1 လီတာ ပြာ::100", "24g B (S+1)"]]) });
     expect(rows.filter((row) => row.stockType === "TUBE")[0]).toMatchObject({ movementType: "PRODUCTION_USE_OUT", quantityBottles: -207 });
-    expect(rows.find((row) => row.stockType === "BOTTLE" && row.movementType === "PRODUCTION_WASTE_OUT")).toMatchObject({ quantityBottles: -3 });
+    expect(rows.find((row) => row.stockType === "BOTTLE" && row.movementType === "PRODUCTION_IN")).toMatchObject({ quantityBottles: 200 });
+    expect(rows.find((row) => row.stockType === "BOTTLE" && row.movementType === "PRODUCTION_WASTE_OUT")).toMatchObject({ quantityBottles: 0, note: "3 ဗူးပျက် · ဗူးလက်ကျန်မှ မနုတ်" });
   });
   it("keeps the factory bottle KPI from counting Tube packs", () => {
     const route = fs.readFileSync("src/app/api/dashboard-kpi/route.js", "utf8");

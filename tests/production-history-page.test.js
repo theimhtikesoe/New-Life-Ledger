@@ -42,5 +42,10 @@ describe("Production history page", () => {
     expect(pageSource).toContain("Tube လက်ကျန်မှ နုတ်ထား");
     expect(pageSource).toContain("grid grid-cols-2 gap-2 sm:grid-cols-4");
     expect(pageSource).toContain("group.tubeDamageQuantity");
+    expect(pageSource).toContain("ဗူးပျက်ကို သီးခြားမှတ်တမ်းတင်ပြီး ဗူးလက်ကျန်မှ မနုတ်ပါ");
+  });
+
+  it("does not subtract bottle waste from the Dashboard good-output KPI", () => {
+    expect(dashboardSource).toContain("goodPieces: totalPieces");
   });
 });

@@ -86,7 +86,7 @@ function summarizeProduction(rows = []) {
   const totalPieces = bottleRows.reduce((sum, row) => sum + Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0), 0);
   const wasteQuantity = bottleRows.reduce((sum, row) => sum + Number(row.wasteQuantity || row.damagedPieces || 0), 0);
   const machines = new Set(bottleRows.map((row) => row.machineCode).filter(Boolean));
-  return { totalPieces, wasteQuantity, goodPieces: Math.max(0, totalPieces - wasteQuantity), machineCount: machines.size };
+  return { totalPieces, wasteQuantity, goodPieces: totalPieces, machineCount: machines.size };
 }
 
 function productionRowLabel(row) {

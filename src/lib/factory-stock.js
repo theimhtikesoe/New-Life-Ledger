@@ -234,7 +234,10 @@ export function productionMovementRows(rows = [], { actorName = "system", source
         const totalTubeUse = outputPieces + wastePieces + tubeDamagePieces;
         movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_USE_OUT, stockType: STOCK_TYPES.TUBE, ...tubeIdentity, quantityCards: 0, quantityBottles: -totalTubeUse, sourceType: "BOTTLE_PRODUCTION", sourceId: reportId, sourceVersion, reason: "ဗူးထုတ်လုပ်ရာတွင် Tube သုံးစွဲ (ကောင်း/ဗူးပျက်/Tube ပျက်)", note: `${bottleIdentity.productName} ${capacity} ဆံ့`, actorName: clean(actorName) || "system" });
       }
-      if (wastePieces) movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_WASTE_OUT, stockType: STOCK_TYPES.BOTTLE, ...bottleIdentity, quantityCards: 0, quantityBottles: -wastePieces, sourceType: "BOTTLE_PRODUCTION_WASTE", sourceId: reportId, sourceVersion, reason: "ဗူးပျက်/အရည်အသွေးမပြည့်မီ ဗူးနုတ်", note: clean(row.notes) || null, actorName: clean(actorName) || "system" });
+      // Bottle waste is recorded for traceability only. It is not deducted
+      // from good-bottle stock because outputQuantity already represents the
+      // good bottles added to stock.
+      if (wastePieces) movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_WASTE_OUT, stockType: STOCK_TYPES.BOTTLE, ...bottleIdentity, quantityCards: 0, quantityBottles: 0, sourceType: "BOTTLE_PRODUCTION_WASTE", sourceId: reportId, sourceVersion, reason: "ဗူးပျက် သီးခြားမှတ်တမ်း", note: `${wastePieces} ဗူးပျက် · ဗူးလက်ကျန်မှ မနုတ်`, actorName: clean(actorName) || "system" });
     }
   }
   return movements;
