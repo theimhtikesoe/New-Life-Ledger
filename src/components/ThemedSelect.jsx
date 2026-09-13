@@ -1,7 +1,7 @@
 "use client";
 import { Children, useEffect, useMemo, useRef, useState } from "react";
 
-export default function ThemedSelect({ value = "", onChange, children, className = "", disabled = false, id, ariaLabel }) {
+export default function ThemedSelect({ value = "", onChange, children, className = "", disabled = false, id, name, ariaLabel }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const options = useMemo(() => {
@@ -38,6 +38,8 @@ export default function ThemedSelect({ value = "", onChange, children, className
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
+        data-review-value={selected.label}
+        data-review-label={ariaLabel || id || "ရွေးချယ်မှု"}
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
         className={`relative flex w-full items-center justify-between gap-3 text-left transition-all focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-200 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
@@ -54,7 +56,10 @@ export default function ThemedSelect({ value = "", onChange, children, className
               role="option"
               aria-selected={option.value === String(value)}
               disabled={option.disabled}
-              onClick={() => selectOption(option)}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                selectOption(option);
+              }}
               className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${option.value === String(value) ? "bg-cyan-100 text-cyan-950" : "text-slate-700 hover:bg-cyan-50 hover:text-cyan-950"} ${option.className} disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {option.label}
@@ -62,6 +67,7 @@ export default function ThemedSelect({ value = "", onChange, children, className
           ))}
         </div>
       ) : null}
+      {name ? <input type="hidden" name={name} value={value} readOnly /> : null}
     </div>
   );
 }

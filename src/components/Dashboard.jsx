@@ -2577,7 +2577,7 @@ export default function Dashboard({ view = "overview" }) {
                       <h3 className="text-lg font-semibold text-slate-900">{editingTransaction ? "စာရင်းပြင်ဆင်ရန်" : "စာရင်းအသစ်သွင်းရန်"}</h3>
                       {editingTransaction ? <button type="button" onClick={() => { setEditingTransaction(null); setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] }); }} className="text-xs font-semibold text-slate-500 hover:text-rose-600">မပြင်တော့ပါ</button> : null}
                     </div>
-                    <form className="mt-3 space-y-3" onSubmit={createLedgerTransaction}>
+                    <form data-save-review-handled="true" className="mt-3 space-y-3" onSubmit={createLedgerTransaction}>
                       <div className="flex flex-wrap p-1 bg-slate-50/80 rounded-xl border border-slate-200 mb-3 shadow-inner">
                         <button
                           type="button"

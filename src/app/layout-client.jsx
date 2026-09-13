@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PINLogin from '@/components/PINLogin';
@@ -185,6 +185,33 @@ function GlobalActionLoadingIndicator() {
   );
 }
 
+function SaveReviewModal({ review, onCancel, onConfirm }) {
+  if (!review) return null;
+  return (
+    <div className="fixed inset-0 z-[240] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-md">
+      <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-cyan-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.3)]">
+        <div className="border-b border-cyan-100 bg-gradient-to-r from-cyan-50 via-white to-violet-50 px-5 py-4">
+          <p className="text-xs font-black tracking-wide text-cyan-700">မသိမ်းမီ ပြန်လည်စစ်ဆေးရန်</p>
+          <h2 className="mt-1 text-xl font-black text-slate-900">အချက်အလက် မှန်ပါသလား?</h2>
+          <p className="mt-1 text-sm text-slate-600">မှန်ကန်ပါက အတည်ပြုပြီးမှသာ Database ထဲ သိမ်းပါမည်။</p>
+        </div>
+        <div className="max-h-[55vh] space-y-2 overflow-y-auto p-5">
+          {review.fields.length ? review.fields.map((field) => (
+            <div key={`${field.label}-${field.value}`} className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm">
+              <span className="shrink-0 font-bold text-slate-500">{field.label}</span>
+              <span className="max-w-[65%] break-words text-right font-black text-slate-900">{field.value || "—"}</span>
+            </div>
+          )) : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">ဖြည့်ထားသောအချက်အလက်များကို ပြန်စစ်ပါ။</p>}
+        </div>
+        <div className="flex gap-3 border-t border-slate-100 p-5">
+          <button type="button" onClick={onCancel} className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200">ပြန်ပြင်မည်</button>
+          <button type="button" onClick={onConfirm} className="flex-1 rounded-xl bg-cyan-600 py-3 text-sm font-black text-white shadow-lg shadow-cyan-600/20 hover:bg-cyan-700">အတည်ပြုပြီး သိမ်းမည်</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const PAGE_HEADERS = {
   '/activity': 'Activity History',
   '/auto-report-status': 'Auto Report အခြေအနေ',
@@ -326,6 +353,46 @@ export default function RootLayoutClient({ children }) {
   const isLedgerOnlyActor = actorName === 'ဆောင်းဦး';
   const isCapStockOnlyActor = actorName === 'သက်မွန်နှင်း';
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [saveReview, setSaveReview] = useState(null);
+  const pendingSubmitRef = useRef(null);
+
+  useEffect(() => {
+    const handleSubmitCapture = (event) => {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement) || form.dataset.saveReviewHandled === 'true' || pendingSubmitRef.current) return;
+      if (form.querySelector('input[type="password"]') || form.dataset.noSaveReview === 'true') return;
+      const submitter = event.submitter;
+      const fields = Array.from(form.querySelectorAll('input, textarea, [data-review-value]'))
+        .filter((element) => element.type !== 'hidden' && element.type !== 'submit' && element.type !== 'button' && element.name !== 'pin')
+        .map((element) => ({
+          label: element.getAttribute('data-review-label') || element.getAttribute('aria-label') || element.placeholder || element.name || element.id || 'အချက်အလက်',
+          value: element.getAttribute('data-review-value') || element.value,
+        }))
+        .filter((field) => field.value !== '');
+      event.preventDefault();
+      event.stopPropagation();
+      pendingSubmitRef.current = { form, submitter };
+      setSaveReview({ fields });
+    };
+    document.addEventListener('submit', handleSubmitCapture, true);
+    return () => document.removeEventListener('submit', handleSubmitCapture, true);
+  }, []);
+
+  const cancelSaveReview = () => {
+    pendingSubmitRef.current = null;
+    setSaveReview(null);
+  };
+  const confirmSaveReview = () => {
+    const pending = pendingSubmitRef.current;
+    pendingSubmitRef.current = null;
+    setSaveReview(null);
+    if (!pending?.form) return;
+    pending.form.dataset.saveReviewHandled = 'true';
+    window.setTimeout(() => {
+      pending.form.requestSubmit(pending.submitter || undefined);
+      delete pending.form.dataset.saveReviewHandled;
+    }, 0);
+  };
 
   useEffect(() => {
     setAppZoom(readAppZoom());
@@ -405,6 +472,7 @@ export default function RootLayoutClient({ children }) {
           </div>
         </>
       )}
+      <SaveReviewModal review={saveReview} onCancel={cancelSaveReview} onConfirm={confirmSaveReview} />
     </>
   );
 }

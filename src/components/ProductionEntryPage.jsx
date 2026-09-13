@@ -377,7 +377,6 @@ export default function ProductionEntryPage() {
       : null;
       const tubeSummary = `သုံးကော်စေ့: ${tubeMetrics.usedGlueKg || "0"} kg / ${tubeMetrics.usedGlueBags || "0"} အိတ်\nကျန်ကော်စေ့: ${tubeMetrics.remainingGlueBags || "0"} အိတ် / ${tubeMetrics.remainingGlueKg || "0"} kg\nခုတ်ဖက်: ${tubeMetrics.scrapKg || "0"} kg (${tubeMetrics.scrapTubeCount || "0"} ခုတ်ဖက် + ${tubeMetrics.scrapGlueCount || "0"} ကော်စေ့)\nTube အမျိုးအစား: ${tubeMetrics.tubeType || "မရွေးရသေး"}\nTube အရေအတွက်: ${formatNumber(Number(tubeMetrics.tubeCountBags || 0))} အိတ် / ${formatNumber(Number(selectedTube?.pcsPerBag || tubeMetrics.tubeCountPcs || 0))} pcs\nTube ပျက်: ${tubeMetrics.tubeDamageKg || "0"} kg\nကော်ပျက်: ${tubeMetrics.glueWasteKg || "0"} kg`;
     const summary = `နေ့စွဲ: ${reportDate}\nအမျိုးအစား: ${category === "tube" ? "Tube" : "ဗူးခွံ"}\nပူးတွဲဆင်းသူ: ${workerNames.join(", ") || "မဖြည့်ရသေး"}\n\n${category === "tube" ? tubeSummary : `${typeLines}\n\nဗူးပျက်: ${formatNumber(damagedPieces)}\nTube ပျက်: ${formatNumber(Number(tubeDamageQuantity || 0))}\nTube အရေအတွက်: ${formatNumber(Number(tubeQuantity || 0))} ${tubeQuantityUnit}`}`;
-    if (!window.confirm(`သိမ်းမည့် Production Report အကျဉ်းချုပ်\n\n${summary}\n\nဆက်လက်တင်သွင်းမလား?`)) return;
     setSubmitting(true);
     try {
       const actorName = localStorage.getItem("actorName") || "Rhyzoe";
