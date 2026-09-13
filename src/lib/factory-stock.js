@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
+import { normalizeBottleProductKey, normalizeBottleType } from "@/lib/production-catalog";
 
 export const STOCK_TYPES = {
   BOTTLE: "BOTTLE",
@@ -69,7 +70,10 @@ export async function loadTubeMappings() {
   if (typeof prisma.priceSetting?.findMany !== "function") return new Map();
   const rows = await prisma.priceSetting.findMany({ where: { scope: "ITEM", tubeType: { not: null } }, select: { productKey: true, tubeType: true }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
   const mappings = new Map();
-  for (const row of rows) if (!mappings.has(row.productKey) && row.tubeType) mappings.set(row.productKey, row.tubeType);
+  for (const row of rows) {
+    const productKey = normalizeBottleProductKey(row.productKey);
+    if (!mappings.has(productKey) && row.tubeType) mappings.set(productKey, row.tubeType);
+  }
   return mappings;
 }
 
@@ -157,7 +161,7 @@ export function normalizeCapacity(value) {
 }
 
 export function normalizeBottleIdentity({ productName, productKey, capacity }) {
-  const rawName = clean(productName) || clean(productKey).split("::")[0] || "ဗူးမသတ်မှတ်ရသေး";
+  const rawName = normalizeBottleType(clean(productName) || clean(productKey).split("::")[0] || "ဗူးမသတ်မှတ်ရသေး");
   const rawKey = clean(productKey);
   const keyCapacity = rawKey.includes("::") ? normalizeCapacity(rawKey.split("::").pop()) : 0;
   const normalizedCapacity = normalizeCapacity(capacity) || keyCapacity;

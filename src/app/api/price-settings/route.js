@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { PRICE_GROUPS, buildCatalog } from "@/lib/production-catalog";
+import { PRICE_GROUPS, buildCatalog, normalizeBottleProductKey } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,7 +60,7 @@ export async function GET(request) {
 
     const effectiveByKey = new Map();
     for (const row of priorRows) {
-      const key = `${row.scope}:${row.productKey}`;
+      const key = `${row.scope}:${row.scope === "ITEM" ? normalizeBottleProductKey(row.productKey) : row.productKey}`;
       if (!effectiveByKey.has(key)) effectiveByKey.set(key, serialize(row));
     }
 
@@ -69,7 +69,7 @@ export async function GET(request) {
     for (const row of exactRows) {
       const serialized = serialize(row);
       if (row.scope === "CATEGORY") exactCategoryPrices[row.productKey] = serialized;
-      else if (serialized.pricePerBottle > 0) exactItemPrices[row.productKey] = serialized;
+      else if (serialized.pricePerBottle > 0) exactItemPrices[normalizeBottleProductKey(row.productKey)] = serialized;
     }
 
     const catalog = buildCatalog().map((item) => {

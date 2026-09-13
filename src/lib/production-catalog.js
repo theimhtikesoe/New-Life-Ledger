@@ -26,7 +26,8 @@ export const BOTTLE_ITEMS = [
   { type: "လုံးချော (16g)", capacities: [100] },
   { type: "0.5 ဖြူ", capacities: [100, 270] },
   { type: "0.6 ဖြူ", capacities: [100, 250] },
-  { type: "0.6 ပြာ", capacities: [100, 250] },
+  { type: "0.6 ပြာ (S+1)", capacities: [100, 250] },
+  { type: "0.6 ပြာ (S+S)", capacities: [100, 250] },
   { type: "25 ကျပ်သား အဖြူ", capacities: [100, 210] },
   { type: "25 ကျပ်သား အပြာ", capacities: [100, 210] },
   { type: "30 ကျပ်သား", capacities: [100, 320] },
@@ -117,13 +118,26 @@ export function getBottleGroup(type) {
   return "candy";
 }
 
+export function normalizeBottleType(type) {
+  const value = String(type || "").trim();
+  return value === "0.6 ပြာ" || value === ".6 ပြာ" ? "0.6 ပြာ (S+1)" : value;
+}
+
+export function normalizeBottleProductKey(productKey) {
+  const value = String(productKey || "");
+  if (!value.includes("::")) return value;
+  const [type, ...rest] = value.split("::");
+  return `${normalizeBottleType(type)}::${rest.join("::")}`;
+}
+
 export function getBottleUnit(type) {
   const value = String(type || "");
   return value.startsWith("8 ဒေါင့်") || value.startsWith("ဒိန်") ? "ထုပ်" : "ကဒ်";
 }
 
 export function getBottleDisplayName(type) {
-  return String(type || "") === "သေးရှည်" ? "ဒိန်ဝိုင်းအလတ်" : String(type || "");
+  const value = String(type || "") === "သေးရှည်" ? "ဒိန်ဝိုင်းအလတ်" : String(type || "");
+  return normalizeBottleType(value);
 }
 
 export function buildCatalog() {
