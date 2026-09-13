@@ -52,8 +52,8 @@ async function getSourceSnapshot(date) {
   const cashSales = prisma.cashSale?.findMany
     ? await prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
     : [];
-  const includedLedgers = ledgers.filter((row) => row.type === "DEBIT");
-  const amounts = [...includedLedgers, ...cashSales].map((row) => toAmount(row.amount));
+  // DEBIT ledger rows are debt settlements, not new wholesale sales.
+  const amounts = cashSales.map((row) => toAmount(row.amount));
   return {
     capturedAt: new Date(),
     transactionCount: amounts.length,
@@ -115,19 +115,9 @@ function summarizeCashSales(sales) {
 }
 
 function summarizeLedgerPayments(ledgers) {
-  const summary = emptySummary();
-  for (const ledger of ledgers) {
-    if (String(ledger.type || "").toUpperCase() !== "DEBIT") continue;
-    const amount = toAmount(ledger.amount);
-    const split = getPaymentSplit(ledger);
-    summary.recordCount += 1;
-    summary.wholesaleTotal += amount;
-    summary.wholesaleCash += split.CASH;
-    addPaymentTypes(summary.paymentTypes, split);
-  }
-  summary.dailyTotal = summary.retailTotal + summary.wholesaleTotal;
-  summary.cashDailyTotal = summary.retailCash + summary.wholesaleCash;
-  return summary;
+  // Keep this compatibility boundary for reconciliation callers, but never
+  // classify settlement payments as wholesale sales.
+  return emptySummary();
 }
 
 function combineSummaries(...summaries) {
@@ -274,8 +264,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   }
   const savedByDate = new Map(savedRows.map((row) => [row.date, row]));
   const selectedCash = summarizeCashSales(cashByDate.get(date) || []);
-  const selectedLedgerPayments = summarizeLedgerPayments(ledgerByDate.get(date) || []);
-  const selectedAuto = combineSummaries(selectedCash, selectedLedgerPayments);
+  const selectedAuto = selectedCash;
   const selectedSaved = savedByDate.get(date);
   const selectedDay = selectedSaved
     ? {
@@ -291,7 +280,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   const autoRows = new Map();
   const allDates = new Set([...cashByDate.keys(), ...ledgerByDate.keys()]);
   for (const rowDate of allDates) {
-    autoRows.set(rowDate, serializeRow(rowDate, combineSummaries(summarizeCashSales(cashByDate.get(rowDate) || []), summarizeLedgerPayments(ledgerByDate.get(rowDate) || [])), "AUTO_PREVIEW", null));
+    autoRows.set(rowDate, serializeRow(rowDate, summarizeCashSales(cashByDate.get(rowDate) || []), "AUTO_PREVIEW", null));
   }
   for (const [rowDate, row] of autoRows.entries()) {
     rows.set(rowDate, row);

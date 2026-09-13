@@ -153,14 +153,8 @@ function summarizeDailySalesRows(cashSales = [], ledgers = []) {
     }
     for (const [type, value] of Object.entries(split)) result.paymentTypes[type] = (result.paymentTypes[type] || 0) + Number(value || 0);
   }
-  for (const ledger of ledgers) {
-    if (String(ledger.type || "").toUpperCase() !== "DEBIT") continue;
-    const ledgerAmount = Number(ledger.amount || 0);
-    const split = getPaymentSplit(ledger);
-    result.wholesaleTotal += ledgerAmount;
-    result.wholesaleCash += Number(split.CASH || 0);
-    for (const [type, value] of Object.entries(split)) result.paymentTypes[type] = (result.paymentTypes[type] || 0) + Number(value || 0);
-  }
+  // DEBIT ledger rows are debt settlements. They remain in the separate
+  // payment/activity report, but must not inflate wholesale sales totals.
   return {
     ...result,
     dailyTotal: result.retailTotal + result.wholesaleTotal,
