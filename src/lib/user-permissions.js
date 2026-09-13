@@ -25,7 +25,7 @@ export const PERMISSION_PAGES = [
 ];
 
 export function defaultAllowedPaths(actorName) {
-  if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") return ["/production"];
+  if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") return ["/", "/production"];
   if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail"];
   if (actorName === "သက်မွန်နှင်း") return ["/cap-stock"];
   return PERMISSION_PAGES.map((page) => page.path);
