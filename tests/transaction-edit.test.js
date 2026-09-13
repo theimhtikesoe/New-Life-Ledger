@@ -26,6 +26,12 @@ describe("Ledger transaction editing", () => {
     expect(dashboardSource).toContain("method: \"PATCH\"");
     expect(dashboardSource).toContain("ပြင်ဆင်ပြီး သိမ်းမည်");
   });
+
+  it("persists and restores the selected settlement link when editing a payment", () => {
+    expect(dashboardSource).toContain("note: paymentNote,");
+    expect(dashboardSource).toContain("const settlementMatch = String(transaction.note || \"\").match(/__SETTLES_CREDIT_LEDGER__:(\\S+)/);");
+    expect(dashboardSource).toContain("setPaymentTargetLedgerId(settlementMatch ? settlementMatch[1] : \"\");");
+  });
 });
 
 export {};

@@ -1264,7 +1264,7 @@ export default function Dashboard({ view = "overview" }) {
             amount,
             discountAmount: ledgerDiscountAmount,
             discountNote: ledgerDiscountNote,
-            note: ledgerForm.note,
+            note: paymentNote,
             saleItems: ledgerForm.saleItems?.length ? ledgerForm.saleItems : undefined,
             paymentType: ledgerForm.paymentType || null,
             date: ledgerForm.date || null,
@@ -1281,6 +1281,7 @@ export default function Dashboard({ view = "overview" }) {
           });
         }
         setEditingTransaction(null);
+        setPaymentTargetLedgerId("");
         setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
         clearDashboardDraftFields(["ledgerForm"]);
         showAlert("Transaction ကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။", "success");
@@ -1467,6 +1468,8 @@ export default function Dashboard({ view = "overview" }) {
   function beginEditTransaction(transaction) {
     if (!transaction || transaction.type === "CASH_SALE") return;
     setEditingTransaction(transaction);
+    const settlementMatch = String(transaction.note || "").match(/__SETTLES_CREDIT_LEDGER__:(\S+)/);
+    setPaymentTargetLedgerId(settlementMatch ? settlementMatch[1] : "");
     setLedgerForm({
       type: transaction.type || "CREDIT",
       saleType: transaction.saleType || "RETAIL",
