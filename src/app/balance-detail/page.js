@@ -44,7 +44,7 @@ function waitForRetry(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
-async function fetchJson(path, { timeoutMs = 15_000, maxAttempts = 3 } = {}) {
+async function fetchJson(path, { timeoutMs = 15_000, maxAttempts = 3, ...requestOptions } = {}) {
   const actorName = localStorage.getItem("actorName") || "";
   let lastError;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -52,7 +52,8 @@ async function fetchJson(path, { timeoutMs = 15_000, maxAttempts = 3 } = {}) {
     const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
       const response = await fetch(path, {
-        headers: { "x-actor-name": encodeActorHeader(actorName) },
+        ...requestOptions,
+        headers: { ...(requestOptions.headers || {}), "x-actor-name": encodeActorHeader(actorName) },
         signal: controller.signal,
         cache: "no-store",
       });
