@@ -7,6 +7,7 @@ const ACTOR_SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
 const AUTHORIZED_ACTORS_KEY = "new-life-ledger:authorized-actors-v1";
+const ACTIVE_ACTOR_SESSION_KEY = "new-life-ledger:active-actor-v1";
 
 function readAuthorizedActors() {
   try {
@@ -26,6 +27,23 @@ function rememberAuthorizedActor(actorName) {
   } catch {
     // If sessionStorage is unavailable, the current login still works.
   }
+}
+
+function readActiveActor() {
+  try {
+    const actor = sessionStorage.getItem(ACTIVE_ACTOR_SESSION_KEY) || "";
+    return ACTORS.includes(actor) ? actor : "";
+  } catch {
+    return "";
+  }
+}
+
+function rememberActiveActor(actorName) {
+  try { sessionStorage.setItem(ACTIVE_ACTOR_SESSION_KEY, actorName); } catch { /* best effort */ }
+}
+
+function clearActiveActor() {
+  try { sessionStorage.removeItem(ACTIVE_ACTOR_SESSION_KEY); } catch { /* best effort */ }
 }
 
 async function fetchAuthJson(path, options = {}) {
@@ -60,10 +78,10 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
   const [error, setError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectingActor, setSelectingActor] = useState(true);
+  const [selectingActor, setSelectingActor] = useState(() => !readActiveActor());
   const [pendingActor, setPendingActor] = useState("");
   const [authorizedActors, setAuthorizedActors] = useState(() => readAuthorizedActors());
-  const [actorLocked, setActorLocked] = useState(true);
+  const [actorLocked, setActorLocked] = useState(() => !readActiveActor());
   const [actorSelectionLoading, setActorSelectionLoading] = useState(false);
   const lastActivityAtRef = useRef(Date.now());
 
@@ -85,10 +103,15 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
         const actorName = body.actorName || localStorage.getItem("actorName");
         if (body.authenticated && ACTORS.includes(actorName)) {
           setIsAuthenticated(true);
-          // Always ask which user is using the website on entry. The server
-          // session stays available so selecting a user remains immediate.
-          setActorLocked(true);
-          setSelectingActor(true);
+          const activeActor = readActiveActor();
+          if (activeActor) {
+            setActorLocked(false);
+            setSelectingActor(false);
+            onSuccess?.(activeActor);
+          } else {
+            setActorLocked(true);
+            setSelectingActor(true);
+          }
           setAuthorizedActors(readAuthorizedActors());
           lastActivityAtRef.current = Date.now();
         } else {
@@ -197,6 +220,7 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
         setSelectingActor(false);
         setActorLocked(false);
         setIsAuthenticated(true);
+        rememberActiveActor(pendingActor);
         window.dispatchEvent(new CustomEvent("new-life-ledger:actor-selected", { detail: { actorName: pendingActor } }));
         onSuccess?.(pendingActor);
       } else {
@@ -216,6 +240,7 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
     setSelectingActor(false);
     setActorLocked(false);
     setIsAuthenticated(true);
+    rememberActiveActor(actorName);
     window.dispatchEvent(new CustomEvent("new-life-ledger:actor-selected", { detail: { actorName } }));
     onSuccess?.(actorName);
   };
@@ -261,6 +286,7 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
   const handleLogout = () => {
     fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     localStorage.removeItem("actorName");
+    clearActiveActor();
     setIsAuthenticated(false);
     setSelectingActor(true);
     setPendingActor("");
