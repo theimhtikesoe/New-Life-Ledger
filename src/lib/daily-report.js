@@ -10,6 +10,7 @@ import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } fr
 import { accountingAuditLogWhere, isEditActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity, isProductionWorkerCreateActivity } from "@/lib/accounting-activity";
 import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 import { getBottleDisplayName } from "@/lib/production-catalog";
+import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
 const REMOTE_CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
@@ -244,7 +245,7 @@ export async function getDailySalesSummaryCardData(dateLabel) {
 
 export async function getDailyReportData({ start, end, dateLabel } = getPreviousMyanmarDayRange()) {
   await ensureDatabase();
-  const [ledgers, cashSales, allAuditLogs, dailySalesSummary, productionReports] = await Promise.all([
+  let [ledgers, cashSales, allAuditLogs, dailySalesSummary, productionReports] = await Promise.all([
     prisma.ledger.findMany({
       where: { date: { gte: start, lt: end } },
       select: {
@@ -316,6 +317,11 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
         })
       : Promise.resolve([]),
   ]);
+  // A payment created from an old credit ledger stores the settlement link
+  // in its note, while older records may not copy saleItems onto the DEBIT
+  // row. Reuse the original credit sale items so PDF page 4 matches the
+  // website's paid bottle-sales view.
+  ledgers = await hydrateSettledBottleSaleItems(prisma, ledgers);
 
   const auditLogs = allAuditLogs.filter((log) => !log.hiddenAt && !isOrderWorkflowActivity(log) && !isEditActivity(log) && !isProductionReportSubmitActivity(log) && !isProductionWorkerCreateActivity(log));
   const { summary, customers: ledgerCustomers } = summarizeLedgers(ledgers);

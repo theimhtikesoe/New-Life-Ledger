@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -86,11 +87,12 @@ export async function GET(request) {
     await ensureDatabase();
     const date = new URL(request.url).searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(date);
-    const ledgers = await prisma.ledger.findMany({
+    let ledgers = await prisma.ledger.findMany({
       where: { date: { gte: start, lt: end }, type: "DEBIT" },
-      select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      select: { id: true, amount: true, date: true, saleType: true, note: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
       orderBy: { date: "asc" },
     });
+    ledgers = await hydrateSettledBottleSaleItems(prisma, ledgers);
     const creditLedgers = await prisma.ledger.findMany({
       where: { date: { gte: start, lt: end }, type: "CREDIT" },
       select: { id: true, amount: true, date: true, saleType: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
