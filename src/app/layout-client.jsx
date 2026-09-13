@@ -440,6 +440,7 @@ export default function RootLayoutClient({ children }) {
   }, []);
 
   const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
+  const actorRouteReady = !actorName || pathname === routeForActor(actorName);
 
   useEffect(() => {
     if (!actorName) {
@@ -546,12 +547,21 @@ export default function RootLayoutClient({ children }) {
   // Do not mount the home Dashboard before authentication and actor routing are
   // ready. Otherwise a production/cap-stock actor briefly sees the Dashboard
   // behind the PIN modal while the post-login redirect is still pending.
-  const showApp = authReady && canRenderCurrentPage;
+  const showApp = authReady && actorRouteReady && canRenderCurrentPage;
 
   return (
     <>
       <BlossomOverlay />
       <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} onReady={handleAuthReady} />
+      {authReady && authenticated && !showApp ? (
+        <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cyan-50 via-white to-violet-50 px-6 text-center">
+          <div className="rounded-2xl border border-cyan-200 bg-white/90 px-6 py-5 shadow-lg backdrop-blur">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-700" aria-hidden="true" />
+            <p className="mt-3 text-sm font-black text-cyan-900">User စာမျက်နှာ ရယူနေသည်...</p>
+            <p className="mt-1 text-xs font-bold text-slate-500">ခဏစောင့်ပေးပါ</p>
+          </div>
+        </main>
+      ) : null}
       {showApp && (
         <ActorSwitcher actorName={actorName} />
       )}
