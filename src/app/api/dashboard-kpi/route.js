@@ -46,6 +46,12 @@ export async function GET(request) {
     const factoryTubePieces = stockMovements
       .filter((movement) => movement.stockType === "TUBE")
       .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);
+    const factoryTubePacks = factoryStockSummary
+      .filter((item) => item.stockType === "TUBE")
+      .reduce((sum, item) => {
+        const capacity = Number(item.capacity || 0);
+        return sum + (capacity ? (Number(item.currentBottles || 0) < 0 ? -Math.ceil(Math.abs(Number(item.currentBottles || 0)) / capacity) : Math.floor(Number(item.currentBottles || 0) / capacity)) : 0);
+      }, 0);
     const paidLedgers = await hydrateSettledBottleSaleItems(prisma, ledgerRows.filter((row) => row.type === "DEBIT"));
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
 
@@ -124,6 +130,7 @@ export async function GET(request) {
         factoryStockCards,
         factoryCapPieces,
         factoryTubePieces,
+        factoryTubePacks,
       },
     });
   } catch (error) {

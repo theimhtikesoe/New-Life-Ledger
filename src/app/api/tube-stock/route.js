@@ -48,16 +48,18 @@ export async function GET(request) {
     const usageByType = new Map();
     const usageDate = validDate || getMyanmarDateInputValue();
     for (const movement of allTubeMovements.filter((row) => row.movementDate === usageDate && row.movementType === "PRODUCTION_USE_OUT")) {
-      const row = usageByType.get(movement.productKey) || { tubeType: movement.productName, capacity: Number(movement.capacity || 0), pieces: 0 };
+      const row = usageByType.get(movement.productKey) || { tubeType: movement.productName, capacity: Number(movement.capacity || 0), pieces: 0, packs: 0 };
       row.pieces += Math.abs(Number(movement.quantityBottles || 0));
+      row.packs = packEquivalent(row.pieces, row.capacity);
       usageByType.set(movement.productKey, row);
     }
     const dailyUsage = [...usageByType.values()];
     const byType = new Map();
     let totalPacks = 0;
     let totalPieces = 0;
+    let totalUsedPacks = 0;
     for (const movement of allTubeMovements) {
-      const current = byType.get(movement.productKey) || { tubeType: movement.productName, capacity: Number(movement.capacity || 0), productionPacks: 0, productionPieces: 0, usedPieces: 0, adjustmentPieces: 0, currentPieces: 0, currentPacks: 0 };
+      const current = byType.get(movement.productKey) || { tubeType: movement.productName, capacity: Number(movement.capacity || 0), productionPacks: 0, productionPieces: 0, usedPacks: 0, usedPieces: 0, adjustmentPieces: 0, currentPieces: 0, currentPacks: 0 };
       const packs = Number(movement.quantityCards || 0);
       const pieces = Number(movement.quantityBottles || 0);
       if (movement.movementType === "PRODUCTION_IN") {
@@ -67,6 +69,8 @@ export async function GET(request) {
         totalPieces += pieces;
       } else if (movement.movementType === "PRODUCTION_USE_OUT") {
         current.usedPieces += Math.abs(pieces);
+        current.usedPacks = packEquivalent(current.usedPieces, current.capacity);
+        totalUsedPacks += packEquivalent(pieces, current.capacity);
       } else {
         current.adjustmentPieces += pieces;
       }
@@ -83,6 +87,7 @@ export async function GET(request) {
       data: {
         totalPacks,
         totalPieces,
+        totalUsedPacks,
         records: rows.length,
         byType: byTypeRows,
         recentDate: validDate || null,
