@@ -27,4 +27,14 @@ describe("daily Tube production KPI", () => {
     expect(route).toContain("TubeProductionHistoryPage");
     expect(layout).toContain("'/tube-production-history': 'Tube ထွက်ရှိမှု အသေးစိတ်'");
   });
+
+  it("groups Tube additions by name/capacity and keeps weighted materials separate", () => {
+    expect(detail).toContain("Tube လက်ကျန်ထဲ ပေါင်းမည့် ထုတ်လုပ်မှုအကျဉ်းချုပ်");
+    expect(detail).toContain("const tubeSummaries = useMemo");
+    expect(detail).toContain("အိတ်/pcs သီးခြားစီ");
+    expect(detail).toContain("အလေးချိန်ဖြင့် သီးခြားမှတ်တမ်းများ");
+    expect(detail).toContain("သီးခြားသယ်ဆောင်/နောက်ပိုင်းလက်ကျန်တွက်ရန်");
+    expect(detail).toContain("materialTotals.usedGlueKg");
+    expect(detail).toContain("materialTotals.tubeDamageKg");
+  });
 });
