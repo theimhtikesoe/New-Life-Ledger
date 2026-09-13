@@ -19,4 +19,13 @@ describe("Tube stock type detail", () => {
     expect(route).toContain("usedPieces");
     expect(route).toContain("currentPieces");
   });
+
+  it("collapses weight details and shows summary KPIs", () => {
+    expect(page).toContain("နှိပ်၍ အသေးစိတ်ကြည့်ရန်");
+    expect(page).toContain("Tube အမျိုးအစား");
+    expect(page).toContain("ထုတ်လုပ်ဝင်");
+    expect(page).toContain("သုံးစွဲ");
+    expect(page).toContain("လက်ကျန်");
+    expect(page).toContain("<details");
+  });
 });

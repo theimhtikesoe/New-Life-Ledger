@@ -73,6 +73,13 @@ export default function TubeStockDetailPage() {
 
   const dailyTubeUsage = data?.dailyUsage || [];
   const dailyTubePieces = dailyTubeUsage.reduce((sum, row) => sum + Number(row.pieces || 0), 0);
+  const tubeSummary = {
+    types: data?.byType?.length || 0,
+    productionPacks: (data?.byType || []).reduce((sum, row) => sum + Number(row.productionPacks || 0), 0),
+    productionPieces: (data?.byType || []).reduce((sum, row) => sum + Number(row.productionPieces || 0), 0),
+    usedPieces: (data?.byType || []).reduce((sum, row) => sum + Number(row.usedPieces || 0), 0),
+    currentPieces: (data?.byType || []).reduce((sum, row) => sum + Number(row.currentPieces || 0), 0),
+  };
 
   async function openTypeDetails(item) {
     setSelectedType(item.tubeType);
@@ -94,27 +101,30 @@ export default function TubeStockDetailPage() {
   return (
     <main className="app-page-main">
       <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
-        <section className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-base font-black text-amber-950">Tube ခြင်းအလေးချိန် မှတ်တမ်း</h1>
-              <p className="mt-1 text-xs font-bold leading-5 text-amber-800">{TUBE_WEIGHT_NOTE}</p>
-            </div>
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">Reference</span>
-          </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {TUBE_WEIGHT_REFERENCE.map((item) => <article key={item.id} className="rounded-xl border border-amber-200 bg-white/90 p-3">
-              <h2 className="font-black text-slate-900">{item.tubeType} · {item.gramsPerTube}g</h2>
-              <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold text-slate-700">
-                <p className="rounded-lg bg-amber-50 p-2">Tube ပါပြီးသား<br /><strong>{item.filledSackKg} kg</strong></p>
-                <p className="rounded-lg bg-slate-100 p-2">ခြင်းအလွတ်<br /><strong>{item.emptySackKg} kg</strong></p>
-                <p className="rounded-lg bg-emerald-50 p-2">Tube သီးသန့် Net<br /><strong>{item.netTubeKg.toFixed(2)} kg</strong></p>
-                <p className="rounded-lg bg-blue-50 p-2">ခန့်မှန်းအရေအတွက်<br /><strong>≈ {number(item.estimatedPieces)} ခု</strong></p>
-              </div>
-              <p className="mt-2 text-[11px] font-bold text-slate-500">တွက်နည်း: ({item.filledSackKg} − {item.emptySackKg}) × 1000 ÷ {item.gramsPerTube} = {item.estimatedPieces} ခုခန့်</p>
-            </article>)}
-          </div>
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <article className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm"><p className="text-xs font-black text-cyan-700">Tube အမျိုးအစား</p><p className="mt-1 text-2xl font-black text-cyan-950">{loading ? "—" : number(tubeSummary.types)} မျိုး</p></article>
+          <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm"><p className="text-xs font-black text-emerald-700">ထုတ်လုပ်ဝင်</p><p className="mt-1 text-2xl font-black text-emerald-950">{loading ? "—" : number(tubeSummary.productionPacks)} အိတ်</p><p className="text-xs font-bold text-emerald-700">{number(tubeSummary.productionPieces)} pcs</p></article>
+          <article className="rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm"><p className="text-xs font-black text-rose-700">သုံးစွဲ</p><p className="mt-1 text-2xl font-black text-rose-950">{loading ? "—" : number(tubeSummary.usedPieces)} pcs</p></article>
+          <article className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm"><p className="text-xs font-black text-indigo-700">လက်ကျန်</p><p className="mt-1 text-2xl font-black text-indigo-950">{loading ? "—" : number(tubeSummary.currentPieces)} pcs</p></article>
         </section>
+        <details className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white shadow-sm">
+          <summary className="cursor-pointer list-none p-4 font-black text-amber-950 sm:p-5">Tube ခြင်းအလေးချိန် မှတ်တမ်း <span className="ml-2 text-xs font-bold text-amber-700">(နှိပ်၍ အသေးစိတ်ကြည့်ရန်)</span></summary>
+          <div className="border-t border-amber-100 p-4 sm:p-5">
+            <p className="text-xs font-bold leading-5 text-amber-800">{TUBE_WEIGHT_NOTE}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {TUBE_WEIGHT_REFERENCE.map((item) => <article key={item.id} className="rounded-xl border border-amber-200 bg-white/90 p-3">
+                <h2 className="font-black text-slate-900">{item.tubeType} · {item.gramsPerTube}g</h2>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-bold text-slate-700">
+                  <p className="rounded-lg bg-amber-50 p-2">Tube ပါပြီးသား<br /><strong>{item.filledSackKg} kg</strong></p>
+                  <p className="rounded-lg bg-slate-100 p-2">ခြင်းအလွတ်<br /><strong>{item.emptySackKg} kg</strong></p>
+                  <p className="rounded-lg bg-emerald-50 p-2">Tube သီးသန့် Net<br /><strong>{item.netTubeKg.toFixed(2)} kg</strong></p>
+                  <p className="rounded-lg bg-blue-50 p-2">ခန့်မှန်းအရေအတွက်<br /><strong>≈ {number(item.estimatedPieces)} ခု</strong></p>
+                </div>
+                <p className="mt-2 text-[11px] font-bold text-slate-500">တွက်နည်း: ({item.filledSackKg} − {item.emptySackKg}) × 1000 ÷ {item.gramsPerTube} = {item.estimatedPieces} ခုခန့်</p>
+              </article>)}
+            </div>
+          </div>
+        </details>
         <button type="button" onClick={() => setUsageOpen(true)} className="flex w-full items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-left shadow-sm"><div><p className="text-sm font-black text-rose-800">ယနေ့ Tube သုံးစွဲမှု</p><p className="mt-1 text-2xl font-black text-rose-950">{number(dailyTubePieces)} pcs</p></div><span className="text-sm font-black text-rose-700">အသေးစိတ်ကြည့်ရန် →</span></button>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
         {loading ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">Tube လက်ကျန် ရယူနေသည်...</div> : null}
