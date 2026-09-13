@@ -57,9 +57,9 @@ export default function ProductionEntryPage() {
   const [activeBottleGroup, setActiveBottleGroup] = useState("03-white");
   const [activeTubeKey, setActiveTubeKey] = useState("");
   const [lines, setLines] = useState({});
-  const [wasteQuantity, setWasteQuantity] = useState("0");
-  const [tubeDamageQuantity, setTubeDamageQuantity] = useState("0");
-  const [tubeQuantity, setTubeQuantity] = useState("0");
+  const [wasteQuantity, setWasteQuantity] = useState("");
+  const [tubeDamageQuantity, setTubeDamageQuantity] = useState("");
+  const [tubeQuantity, setTubeQuantity] = useState("");
   const [tubeQuantityUnit, setTubeQuantityUnit] = useState("အိတ်");
   const [tubeMetrics, setTubeMetrics] = useState({ usedGlueKg: "", usedGlueBags: "", remainingGlueKg: "", remainingGlueBags: "", scrapKg: "", scrapTubeCount: "", scrapGlueCount: "", tubeCountBags: "", tubeCountPcs: "", tubeDamageKg: "", glueWasteKg: "", tubeType: "" });
   const [involvedWorkers, setInvolvedWorkers] = useState([]);
@@ -111,9 +111,9 @@ export default function ProductionEntryPage() {
         if (typeof draft.activeBottleGroup === "string") setActiveBottleGroup(draft.activeBottleGroup);
         if (typeof draft.activeTubeKey === "string") setActiveTubeKey(draft.activeTubeKey);
         if (draft.lines && typeof draft.lines === "object") setLines(draft.lines);
-        if (typeof draft.wasteQuantity === "string") setWasteQuantity(draft.wasteQuantity);
-        if (typeof draft.tubeDamageQuantity === "string") setTubeDamageQuantity(draft.tubeDamageQuantity);
-        if (typeof draft.tubeQuantity === "string") setTubeQuantity(draft.tubeQuantity);
+        if (typeof draft.wasteQuantity === "string") setWasteQuantity(draft.wasteQuantity === "0" ? "" : draft.wasteQuantity);
+        if (typeof draft.tubeDamageQuantity === "string") setTubeDamageQuantity(draft.tubeDamageQuantity === "0" ? "" : draft.tubeDamageQuantity);
+        if (typeof draft.tubeQuantity === "string") setTubeQuantity(draft.tubeQuantity === "0" ? "" : draft.tubeQuantity);
         if (typeof draft.tubeQuantityUnit === "string") setTubeQuantityUnit(draft.tubeQuantityUnit);
         if (draft.tubeMetrics && typeof draft.tubeMetrics === "object") setTubeMetrics((current) => ({ ...current, ...draft.tubeMetrics }));
         if (Array.isArray(draft.involvedWorkers)) setInvolvedWorkers(draft.involvedWorkers);
@@ -374,9 +374,9 @@ export default function ProductionEntryPage() {
 
   function resetForm() {
     setLines({});
-    setWasteQuantity("0");
-    setTubeDamageQuantity("0");
-    setTubeQuantity("0");
+    setWasteQuantity("");
+    setTubeDamageQuantity("");
+    setTubeQuantity("");
     setTubeQuantityUnit("အိတ်");
     setTubeMetrics({ usedGlueKg: "", usedGlueBags: "", remainingGlueKg: "", remainingGlueBags: "", scrapKg: "", scrapTubeCount: "", scrapGlueCount: "", tubeCountBags: "", tubeCountPcs: "", tubeDamageKg: "", glueWasteKg: "", tubeType: "" });
     setInvolvedWorkers([]);

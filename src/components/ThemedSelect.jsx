@@ -42,7 +42,7 @@ export default function ThemedSelect({ value = "", onChange, children, className
         data-review-label={ariaLabel || id || "ရွေးချယ်မှု"}
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
-        className={`relative flex w-full items-center justify-between gap-3 text-left transition-all focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-200 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+        className={`relative flex w-full items-center justify-between gap-3 text-left transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
         <span className="min-w-0 flex-1 truncate">{selected.label}</span>
         <span className={`shrink-0 text-xs text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}>⌄</span>
@@ -64,9 +64,15 @@ export default function ThemedSelect({ value = "", onChange, children, className
               role="option"
               aria-selected={option.value === String(value)}
               disabled={option.disabled}
-              onClick={(event) => {
+              onPointerUp={(event) => {
                 event.stopPropagation();
                 selectOption(option);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  selectOption(option);
+                }
               }}
               className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${option.value === String(value) ? "bg-cyan-100 text-cyan-950" : "text-slate-700 hover:bg-cyan-50 hover:text-cyan-950"} ${option.className} disabled:cursor-not-allowed disabled:opacity-50`}
             >
