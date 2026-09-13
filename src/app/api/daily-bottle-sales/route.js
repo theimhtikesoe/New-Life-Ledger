@@ -89,7 +89,7 @@ export async function GET(request) {
     const { start, end } = getMyanmarDayRange(date);
     let ledgers = await prisma.ledger.findMany({
       where: { date: { gte: start, lt: end }, type: "DEBIT" },
-      select: { id: true, amount: true, date: true, saleType: true, note: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      select: { id: true, amount: true, date: true, type: true, saleType: true, note: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
       orderBy: { date: "asc" },
     });
     ledgers = await hydrateSettledBottleSaleItems(prisma, ledgers);

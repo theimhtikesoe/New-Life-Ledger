@@ -34,12 +34,6 @@ export default function ThemedSelect({ value = "", onChange, children, className
     <div
       ref={rootRef}
       className="relative w-full"
-      onClick={(event) => {
-        // ThemedSelect is often rendered inside a form label. Prevent the
-        // label's default activation from reaching the field below it.
-        event.preventDefault();
-        event.stopPropagation();
-      }}
     >
       <button
         id={id}

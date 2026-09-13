@@ -35,6 +35,11 @@ describe("Daily Bottle Sales combined totals", () => {
     expect(page).toContain("data?.paidBottleSales?.totalPaidAmount");
     expect(page).toContain("data?.paidBottleSales?.customers?.length > 0");
   });
+
+  it("selects the ledger type so settled payments can recover their credit sale items", () => {
+    expect(route).toContain("type: true, saleType: true");
+    expect(route).toContain("hydrateSettledBottleSaleItems(prisma, ledgers)");
+  });
 });
 
 export {};

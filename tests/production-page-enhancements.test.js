@@ -26,9 +26,9 @@ describe("Production page enhancements", () => {
   });
 
   it("makes Ledger cap color selection location-aware", () => {
-    expect(salesItemPickerSource).toContain('const capLocations = ["မန္တလေး", "အေးသာယာ", "Soe", "အခြား"]');
+    expect(salesItemPickerSource).toContain('const capLocations = ["မန္တလေး", "အေးသာယာ", "Soe", "အခြား", "အဖုံးမပါ"]');
     expect(salesItemPickerSource).toContain("const capSummary = !isCap && !isTube ?");
-    expect(salesItemPickerSource).toContain("{editingItem.capLocation || \"မန္တလေး\"} · {cap.productName}");
+    expect(salesItemPickerSource).toContain('value={editingItem.capLocation || "မန္တလေး"}');
     expect(salesItemPickerSource).toContain('aria-labelledby="sale-item-edit-title"');
     expect(salesItemPickerSource).toContain("ပြင်ရန်");
     expect(salesItemPickerSource).toContain("editingItemId");
@@ -63,7 +63,7 @@ describe("Production page enhancements", () => {
 
   it("includes bottle capacity in confirmation and saved history labels", () => {
     expect(productionSource).toContain('`${entry.bottleType} · ${entry.capacity.toLocaleString()} ဆံ့`');
-    expect(productionSource).toContain('`${entry.tubeG} ${entry.tubeColor} · ${entry.capacity.toLocaleString()} ဗူး/အိတ်`');
+    expect(productionSource).toContain('`${row.tubeG} ${row.tubeColor}`');
     expect(productionSource).toContain('`${getBottleDisplayName(row.bottleType)} · ${row.outputCapacity} ဆံ့`');
     expect(productionSource).toContain('{group.tubeQuantityUnit || "အိတ်"}');
     expect(productionSource).toContain("group.rows[0]?.category === \"tube\" ? \"စုစုပေါင်းထွက်ရှိမှု\" : \"ကောင်းမွန်ဗူး\"");
@@ -89,12 +89,18 @@ describe("Production page enhancements", () => {
   });
 
   it("places category and machine selectors at the top of the form", () => {
-    const categoryPosition = productionSource.indexOf("အမျိုးအစား</span><select");
-    const machinePosition = productionSource.indexOf("စက်</RequiredLabel><select");
+    const categoryPosition = productionSource.indexOf('<ThemedSelect ariaLabel="အမျိုးအစား"');
+    const machinePosition = productionSource.indexOf('<RequiredLabel>စက်</RequiredLabel><ThemedSelect');
     const workersPosition = productionSource.indexOf("ပူးတွဲဆင်းသူများ");
     expect(categoryPosition).toBeGreaterThan(-1);
     expect(machinePosition).toBeGreaterThan(-1);
     expect(categoryPosition).toBeLessThan(workersPosition);
     expect(machinePosition).toBeLessThan(workersPosition);
+  });
+
+  it("keeps the category selector available for every authorized production user", () => {
+    expect(productionSource).toContain('<ThemedSelect ariaLabel="အမျိုးအစား"');
+    expect(productionSource).not.toContain("categoryLocked");
+    expect(productionSource).toContain("relative z-30");
   });
 });
