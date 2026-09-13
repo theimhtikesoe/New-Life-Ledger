@@ -82,7 +82,7 @@ export default function VercelBuildLogsPage() {
           <section className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-rose-900 shadow-sm">
             <h2 className="font-semibold">Build Logs ရယူ၍ မရပါ</h2>
             <p className="mt-2 text-sm leading-6">{error}</p>
-            <p className="mt-2 text-xs leading-5 text-rose-800">Vercel API setting မထည့်ရသေးပါက server environment တွင်သာ `VERCEL_API_TOKEN` နှင့် `VERCEL_PROJECT_ID` ကို ထည့်ပြီး Production deployment ပြန်တင်ပါ။ Token ကို Website code သို့မဟုတ် Browser သို့ မပို့ပါ။</p>
+            <p className="mt-2 text-xs leading-5 text-rose-800">Vercel API setting မထည့်ရသေးပါက Vercel Project Settings → Environment Variables ထဲတွင် `VERCEL_API_TOKEN` ကို Production အတွက်သာ ထည့်ပြီး ပြန် Deploy လုပ်ပါ။ Project ID နှင့် Team ID ကို ဒီ project အတွက် ကြိုတင်သတ်မှတ်ထားပြီးသားပါ။ Token ကို Website code သို့မဟုတ် Browser သို့ မပို့ပါ။</p>
           </section>
         ) : null}
 

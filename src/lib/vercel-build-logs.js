@@ -19,9 +19,9 @@ export function redactBuildLogText(value) {
 }
 
 function getConfig() {
-  const token = String(process.env.VERCEL_API_TOKEN || "").trim();
-  const projectId = String(process.env.VERCEL_PROJECT_ID || "").trim();
-  const teamId = String(process.env.VERCEL_TEAM_ID || "").trim();
+  const token = String(process.env.VERCEL_API_TOKEN || process.env.VERCEL_OIDC_TOKEN || "").trim();
+  const projectId = String(process.env.VERCEL_PROJECT_ID || "prj_1MA3wBNEHfjqJ4RnK9HrEWtwn0gE").trim();
+  const teamId = String(process.env.VERCEL_TEAM_ID || "team_Dfm3hwo1o0NCeP3yx0GYXSwO").trim();
   const viewerActorSetting = String(process.env.VERCEL_BUILD_LOG_VIEWER_ACTORS || "").trim();
   const viewerActors = viewerActorSetting
     ? viewerActorSetting.split(",").map((actor) => actor.trim()).filter(Boolean)
@@ -160,7 +160,7 @@ export async function getVercelDeploymentEvents(deploymentId) {
 
 export function getSafeVercelError(error) {
   const code = error?.code;
-  if (code === "VERCEL_NOT_CONFIGURED") return "Vercel build logs ကြည့်ရန် server setting မထည့်ရသေးပါ။ VERCEL_API_TOKEN နှင့် VERCEL_PROJECT_ID ကို Vercel Environment Variables တွင်သာ ထည့်ပါ။";
+  if (code === "VERCEL_NOT_CONFIGURED") return "Vercel build logs ကြည့်ရန် server-side VERCEL_API_TOKEN မရှိသေးပါ။ Vercel Project Settings → Environment Variables ထဲတွင် Production အတွက်သာ ထည့်ပြီး ပြန် Deploy လုပ်ပါ။ Token ကို Website code သို့မဟုတ် Browser သို့ မပို့ပါ။";
   if (code === "VERCEL_AUTH") return "Vercel build logs ကြည့်ရန် token ခွင့်ပြုချက် မရှိပါ။ Token ကို ပြန်စစ်ပြီး Production environment သို့ ထည့်ထားကြောင်း စစ်ပါ။";
   if (code === "VERCEL_TIMEOUT") return "Vercel build logs ရယူရန် အချိန်ကြာသွားပါပြီ။ ပြန်လည်ရယူရန် နှိပ်ပါ။";
   return "Vercel build logs ရယူ၍ မရပါ။ Vercel project setting နှင့် network ကို ပြန်စစ်ပါ။";
