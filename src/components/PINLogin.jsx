@@ -31,7 +31,7 @@ function rememberAuthorizedActor(actorName) {
 
 function readActiveActor() {
   try {
-    const actor = sessionStorage.getItem(ACTIVE_ACTOR_SESSION_KEY) || "";
+    const actor = localStorage.getItem(ACTIVE_ACTOR_SESSION_KEY) || "";
     return ACTORS.includes(actor) ? actor : "";
   } catch {
     return "";
@@ -39,11 +39,11 @@ function readActiveActor() {
 }
 
 function rememberActiveActor(actorName) {
-  try { sessionStorage.setItem(ACTIVE_ACTOR_SESSION_KEY, actorName); } catch { /* best effort */ }
+  try { localStorage.setItem(ACTIVE_ACTOR_SESSION_KEY, actorName); } catch { /* best effort */ }
 }
 
 function clearActiveActor() {
-  try { sessionStorage.removeItem(ACTIVE_ACTOR_SESSION_KEY); } catch { /* best effort */ }
+  try { localStorage.removeItem(ACTIVE_ACTOR_SESSION_KEY); } catch { /* best effort */ }
 }
 
 async function fetchAuthJson(path, options = {}) {
@@ -115,10 +115,18 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
           setAuthorizedActors(readAuthorizedActors());
           lastActivityAtRef.current = Date.now();
         } else {
-          setIsAuthenticated(false);
-          setActorLocked(false);
-          setSelectingActor(true);
-          localStorage.removeItem("actorName");
+          const activeActor = readActiveActor();
+          if (activeActor) {
+            setIsAuthenticated(true);
+            setActorLocked(false);
+            setSelectingActor(false);
+            onSuccess?.(activeActor);
+          } else {
+            setIsAuthenticated(false);
+            setActorLocked(false);
+            setSelectingActor(true);
+            localStorage.removeItem("actorName");
+          }
         }
       })
       .catch((sessionError) => {
