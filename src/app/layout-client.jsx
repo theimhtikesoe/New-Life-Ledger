@@ -414,10 +414,6 @@ export default function RootLayoutClient({ children }) {
       router.replace('/production');
       return;
     }
-    if (actorName && !isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor && pathname === '/production') {
-      router.replace('/');
-      return;
-    }
     if (isLedgerOnlyActor && pathname !== '/' && pathname !== '/ledger' && pathname !== '/balance-detail') {
       router.replace('/');
       return;
