@@ -494,15 +494,15 @@ export default function RootLayoutClient({ children }) {
     };
   }, [actorName, pathname]);
 
-  const handleLoginSuccess = (nextActorName) => {
+  const handleLoginSuccess = useCallback((nextActorName) => {
     setActorName(nextActorName || '');
     setAuthenticated(true);
-  };
+  }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setActorName('');
     setAuthenticated(false);
-  };
+  }, []);
 
   const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
 

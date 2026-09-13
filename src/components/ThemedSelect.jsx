@@ -31,7 +31,16 @@ export default function ThemedSelect({ value = "", onChange, children, className
   };
 
   return (
-    <div ref={rootRef} className="relative w-full">
+    <div
+      ref={rootRef}
+      className="relative w-full"
+      onClick={(event) => {
+        // ThemedSelect is often rendered inside a form label. Prevent the
+        // label's default activation from reaching the field below it.
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+    >
       <button
         id={id}
         type="button"
@@ -55,11 +64,8 @@ export default function ThemedSelect({ value = "", onChange, children, className
         <div
           role="listbox"
           aria-labelledby={id}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          }}
+          onPointerDownCapture={(event) => event.stopPropagation()}
+          onClickCapture={(event) => event.preventDefault()}
           onWheel={(event) => event.stopPropagation()}
           onTouchMove={(event) => event.stopPropagation()}
           className="pointer-events-auto absolute left-0 right-0 top-[calc(100%+0.35rem)] z-[9999] max-h-64 touch-pan-y overflow-y-auto overscroll-contain rounded-xl border border-cyan-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.28)] backdrop-blur-xl"
@@ -71,7 +77,8 @@ export default function ThemedSelect({ value = "", onChange, children, className
               role="option"
               aria-selected={option.value === String(value)}
               disabled={option.disabled}
-              onPointerUp={(event) => {
+              onClick={(event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 selectOption(option);
               }}

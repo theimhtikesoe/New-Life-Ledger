@@ -58,30 +58,13 @@ function ServiceWorkerRegister() {
         __html: `
           (() => {
             if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-
-            let registrationPromise;
-            const updateServiceWorker = () => {
-              registrationPromise = registrationPromise || (async () => {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(registrations
-                  .filter((registration) => /\/service-worker-v(?:8|9)\.js$/.test(registration.active?.scriptURL || ''))
-                  .map((registration) => registration.unregister()));
-                return navigator.serviceWorker.register('/service-worker-v10.js', {
-                  updateViaCache: 'none',
-                });
-              })();
-              registrationPromise.then((registration) => {
-                registration.update().catch(() => {});
-              }).catch((error) => {
-                console.warn('Service Worker registration failed:', error);
-              });
+            const clearLegacyWorker = async () => {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(registrations.map((registration) => registration.unregister()));
+              const cacheNames = await caches.keys();
+              await Promise.all(cacheNames.filter((name) => name.startsWith('new-life-ledger-')).map((name) => caches.delete(name)));
             };
-
-            window.addEventListener('load', updateServiceWorker, { once: true });
-            window.addEventListener('pageshow', updateServiceWorker);
-            document.addEventListener('visibilitychange', () => {
-              if (document.visibilityState === 'visible') updateServiceWorker();
-            });
+            window.addEventListener('load', () => clearLegacyWorker().catch(() => {}), { once: true });
           })();
         `,
       }}
