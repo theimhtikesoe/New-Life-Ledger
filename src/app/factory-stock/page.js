@@ -78,6 +78,21 @@ export default function FactoryStockPage() {
     soldCards: bottleSummary.reduce((sum, item) => sum + Number(item.soldCards || 0), 0),
     currentCards: bottleSummary.reduce((sum, item) => sum + Number(item.currentCards || 0), 0),
   }), [bottleSummary]);
+  const todaySummary = useMemo(() => {
+    const rows = (data?.movements || []).filter((movement) => movement.stockType === "BOTTLE" && movement.movementDate === todayValue());
+    return rows.reduce((result, movement) => {
+      const cards = Math.abs(Number(movement.quantityCards || 0));
+      const bottles = Math.abs(Number(movement.quantityBottles || 0));
+      if (movement.movementType === "PRODUCTION_IN") {
+        result.productionCards += cards;
+        result.productionBottles += bottles;
+      } else if (movement.movementType === "SALE_OUT") {
+        result.soldCards += cards;
+        result.soldBottles += bottles;
+      }
+      return result;
+    }, { productionCards: 0, productionBottles: 0, soldCards: 0, soldBottles: 0 });
+  }, [data]);
   const dailyBottleUsage = useMemo(() => {
     const grouped = new Map();
     (data?.movements || []).filter((movement) => movement.stockType === "BOTTLE" && movement.movementDate === todayValue() && movement.movementType === "SALE_OUT").forEach((movement) => {
@@ -103,8 +118,8 @@ export default function FactoryStockPage() {
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Factory stock KPI">
           <article className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 shadow-sm"><p className="text-[11px] font-black text-cyan-700">ဗူးအမျိုးအစား</p><p className="mt-1 text-xl font-black text-cyan-950">{loading ? "—" : `${number(summary.types)} မျိုး`}</p></article>
-          <article className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm"><p className="text-[11px] font-black text-emerald-700">ထုတ်လုပ်ဝင်</p><p className="mt-1 text-2xl font-black text-emerald-950">{loading ? "—" : `${number(summary.productionCards)} ကဒ်`}</p><p className="mt-0.5 text-xs font-bold text-emerald-700">စက်ရုံဝင်</p></article>
-          <article className="rounded-xl border border-rose-200 bg-rose-50 p-3 shadow-sm"><p className="text-[11px] font-black text-rose-700">ရောင်းထွက်</p><p className="mt-1 text-2xl font-black text-rose-950">{loading ? "—" : `${number(summary.soldCards)} ကဒ်`}</p><p className="mt-0.5 text-xs font-bold text-rose-700">သုံးစွဲ/ရောင်း</p></article>
+          <article className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm"><p className="text-[11px] font-black text-emerald-700">ယနေ့ ထုတ်လုပ်ဝင်</p><p className="mt-1 text-2xl font-black text-emerald-950">{loading ? "—" : `${number(todaySummary.productionBottles)} ဗူး`}</p><p className="mt-0.5 text-xs font-bold text-emerald-700">{number(todaySummary.productionCards)} ကဒ် · စက်ရုံဝင်</p></article>
+          <article className="rounded-xl border border-rose-200 bg-rose-50 p-3 shadow-sm"><p className="text-[11px] font-black text-rose-700">ယနေ့ ရောင်းထွက်</p><p className="mt-1 text-2xl font-black text-rose-950">{loading ? "—" : `${number(todaySummary.soldBottles)} ဗူး`}</p><p className="mt-0.5 text-xs font-bold text-rose-700">{number(todaySummary.soldCards)} ကဒ် · သုံးစွဲ/ရောင်း</p></article>
           <article className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 shadow-sm"><p className="text-[11px] font-black text-indigo-700">လက်ကျန်</p><p className="mt-1 text-2xl font-black text-indigo-950">{loading ? "—" : `${number(summary.currentCards)} ကဒ်`}</p><p className="mt-0.5 text-xs font-bold text-indigo-700">Net Stock</p></article>
         </section>
         <button type="button" onClick={() => setUsageOpen(true)} className="flex w-full items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-left shadow-sm"><div><p className="text-xs font-black text-rose-800">ယနေ့ ဗူးရောင်း/သုံးစွဲမှု</p><p className="mt-0.5 text-xl font-black text-rose-950">{number(dailyBottlePieces)} ဗူး</p></div><span className="text-xs font-black text-rose-700">အသေးစိတ်ကြည့်ရန် →</span></button>
