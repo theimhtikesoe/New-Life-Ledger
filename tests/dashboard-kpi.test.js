@@ -85,6 +85,7 @@ describe("Dashboard KPI aggregate route", () => {
     mocks.ledgerAggregate.mockResolvedValue({ _count: { _all: 4 }, _sum: { amount: 800000 } });
     mocks.ledgerFindMany.mockResolvedValue([
       { type: "DEBIT", amount: 20000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
+      { type: "CREDIT", amount: 20000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
     ]);
     mocks.cashSaleGroupBy.mockResolvedValue([
       { saleType: "RETAIL", _count: { _all: 2 }, _sum: { amount: 300000 } },
@@ -111,15 +112,15 @@ describe("Dashboard KPI aggregate route", () => {
       wholesaleCount: 1,
       wholesaleAmount: 700000,
       bottleSales: {
-        totalBottles: 20,
-        totalAmount: 40000,
-        totalPaidAmount: 34000,
-        items: [{ productKey: "water-1l", bottleCount: 20, totalAmount: 40000 }],
+        totalBottles: 8,
+        totalAmount: 16000,
+        totalPaidAmount: 14000,
+        items: [{ productKey: "water-1l", bottleCount: 8, totalAmount: 16000 }],
       },
       paidBottleSales: { totalBottles: 12 },
       cashBottleSales: { totalBottles: 8 },
-      totalBottleSales: { totalBottles: 20, totalAmount: 40000, totalPaidAmount: 34000 },
-      creditBottleSales: { totalBottles: 0, totalAmount: 0, items: [] },
+      totalBottleSales: { totalBottles: 20, totalAmount: 40000, totalPaidAmount: 14000 },
+      creditBottleSales: { totalBottles: 12, totalAmount: 24000 },
     });
     expect(mocks.customerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: { deletedAt: null } }));
     expect(mocks.ledgerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ type: "DEBIT" }) }));

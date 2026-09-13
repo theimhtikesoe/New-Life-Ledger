@@ -40,6 +40,11 @@ describe("Daily Bottle Sales combined totals", () => {
     expect(route).toContain("type: true, saleType: true");
     expect(route).toContain("hydrateSettledBottleSaleItems(prisma, ledgers)");
   });
+
+  it("keeps payment rows out of the headline physical-sale customers", () => {
+    expect(route).toContain("const customers = buildCustomerRows([...cashSales, ...creditLedgers]);");
+    expect(route).toContain("const paidCustomers = buildCustomerRows(ledgers, { includeEmpty: true });");
+  });
 });
 
 export {};

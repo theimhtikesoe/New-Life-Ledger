@@ -106,7 +106,10 @@ export async function GET(request) {
 
     const paidCustomers = buildCustomerRows(ledgers, { includeEmpty: true });
     const cashCustomers = buildCustomerRows(cashSales);
-    const customers = buildCustomerRows([...ledgers, ...cashSales]);
+    // A DEBIT row settles a previous CREDIT order; it is a payment event, not
+    // a second physical sale. Keep it in paidBottleSales, but never add it to
+    // the headline physical-sales total alongside the original credit row.
+    const customers = buildCustomerRows([...cashSales, ...creditLedgers]);
 
     const creditItemMap = new Map();
     for (const row of creditLedgers) addItems(creditItemMap, row.saleItems);

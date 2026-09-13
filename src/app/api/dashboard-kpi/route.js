@@ -80,7 +80,10 @@ export async function GET(request) {
     };
     const paidBottleSales = collectSaleItems(paidLedgers);
     const cashBottleSales = collectSaleItems(cashSalesForItems);
-    const bottleSales = collectSaleItems([...paidLedgers, ...cashSalesForItems]);
+    // Payments settle an existing credit order and must not create a second
+    // physical-sale count. Keep paidBottleSales for the payment breakdown,
+    // while the headline sale total uses cash sales plus debt increases.
+    const bottleSales = collectSaleItems(cashSalesForItems);
     const creditBottleSales = collectSaleItems(creditLedgers);
     const totalBottleSales = {
       totalBottles: bottleSales.totalBottles + creditBottleSales.totalBottles,
