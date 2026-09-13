@@ -28,7 +28,7 @@ export async function GET(request) {
     const paymentStats = await prisma.ledger.aggregate({ where: { ...dayWhere, type: "DEBIT" }, _count: { _all: true }, _sum: { amount: true } });
     const cashSaleGroups = await prisma.cashSale.groupBy({ by: ["saleType"], where: dayWhere, _count: { _all: true }, _sum: { amount: true } });
     const ledgerRows = typeof prisma.ledger.findMany === "function"
-      ? await prisma.ledger.findMany({ where: { ...dayWhere, type: { in: ["DEBIT", "CREDIT"] } }, select: { type: true, amount: true, saleItems: true } })
+      ? await prisma.ledger.findMany({ where: { ...dayWhere, type: { in: ["DEBIT", "CREDIT"] } }, select: { id: true, type: true, amount: true, note: true, saleItems: true } })
       : [];
     const cashSalesForItems = typeof prisma.cashSale.findMany === "function"
       ? await prisma.cashSale.findMany({ where: dayWhere, select: { amount: true, saleItems: true } })
