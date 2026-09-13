@@ -31,7 +31,7 @@ const REQUIRED_TABLES = [
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType", "settledOutsideLedgerAt", "settledOutsideLedgerBy"];
-const REQUIRED_LEDGER_COLUMNS = ["saleItems", "discountAmount", "discountNote"];
+const REQUIRED_LEDGER_COLUMNS = ["saleItems", "discountAmount", "discountNote", "actorName"];
 const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
 const REQUIRED_PRICE_SETTING_COLUMNS = ["tubeType"];
 const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit", "tubeMetrics"];
@@ -177,6 +177,7 @@ export async function ensureDatabase() {
       // an older production database from returning a Prisma missing-column error.
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountAmount" INTEGER NOT NULL DEFAULT 0`);
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountNote" TEXT`);
+      await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "actorName" TEXT`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Customer_deletedAt_name_idx" ON "Customer"("deletedAt", "name")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_customerId_date_idx" ON "Ledger"("customerId", "date")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_date_type_idx" ON "Ledger"("date", "type")`);
