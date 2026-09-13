@@ -48,7 +48,15 @@ export default function ThemedSelect({ value = "", onChange, children, className
         <span className={`shrink-0 text-xs text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}>⌄</span>
       </button>
       {open && !disabled ? (
-        <div role="listbox" aria-labelledby={id} className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-[120] max-h-64 overflow-y-auto rounded-xl border border-cyan-200 bg-white/95 p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.22)] backdrop-blur-xl">
+        <div
+          role="listbox"
+          aria-labelledby={id}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onWheel={(event) => event.stopPropagation()}
+          onTouchMove={(event) => event.stopPropagation()}
+          className="pointer-events-auto absolute left-0 right-0 top-[calc(100%+0.35rem)] z-[9999] max-h-64 touch-pan-y overflow-y-auto overscroll-contain rounded-xl border border-cyan-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.28)] backdrop-blur-xl"
+        >
           {options.map((option) => (
             <button
               key={`${option.value}-${String(option.label)}`}
@@ -56,8 +64,8 @@ export default function ThemedSelect({ value = "", onChange, children, className
               role="option"
               aria-selected={option.value === String(value)}
               disabled={option.disabled}
-              onPointerDown={(event) => {
-                event.preventDefault();
+              onClick={(event) => {
+                event.stopPropagation();
                 selectOption(option);
               }}
               className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${option.value === String(value) ? "bg-cyan-100 text-cyan-950" : "text-slate-700 hover:bg-cyan-50 hover:text-cyan-950"} ${option.className} disabled:cursor-not-allowed disabled:opacity-50`}
