@@ -416,6 +416,11 @@ export default function RootLayoutClient({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!authReady) return;
+    document.getElementById('startup-fallback')?.remove();
+  }, [authReady]);
+
+  useEffect(() => {
     if (!actorName) {
       setAllowedPaths([]);
       setPermissionsLoading(false);
