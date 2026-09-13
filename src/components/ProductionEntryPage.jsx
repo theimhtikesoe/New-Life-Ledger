@@ -44,6 +44,7 @@ function OptionalLabel({ children }) {
 
 export default function ProductionEntryPage() {
   const today = todayMyanmar();
+  const [actorName, setActorName] = useState(() => (typeof window === "undefined" ? "" : window.localStorage.getItem("actorName") || ""));
   const [reportDate, setReportDate] = useState(today);
   const [historyDate, setHistoryDate] = useState(today);
   const [machineCode, setMachineCode] = useState("");
@@ -75,9 +76,11 @@ export default function ProductionEntryPage() {
   const visibleWorkers = useMemo(() => category === "tube"
     ? savedWorkers.filter((worker) => DEFAULT_TUBE_WORKERS.includes(worker.name))
     : savedWorkers, [category, savedWorkers]);
+  const categoryLocked = actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို";
 
   useEffect(() => {
     const applyActorDefaults = (actorName = window.localStorage.getItem("actorName")) => {
+      setActorName(actorName || "");
       setCategory(actorName === "ဖြိုးကို" ? "tube" : "bottle");
     };
     applyActorDefaults();
@@ -406,7 +409,7 @@ export default function ProductionEntryPage() {
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="mb-4 text-lg font-black text-slate-800">အခြေခံ အချက်အလက်</h2>
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-3">
-            <label className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 text-base font-black text-violet-950 shadow-sm"><span className="text-lg">အမျိုးအစား</span><ThemedSelect value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="h-14 w-full rounded-xl border-2 border-violet-300 bg-white px-3 text-lg font-black"><option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option></ThemedSelect></label>
+            <label className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 text-base font-black text-violet-950 shadow-sm"><span className="text-lg">အမျိုးအစား</span>{categoryLocked ? <div className="flex h-14 w-full items-center justify-between rounded-xl border-2 border-violet-300 bg-violet-100 px-3 text-lg font-black text-violet-950"><span>{category === "tube" ? "Tube" : "ဗူးခွံ"}</span><span className="rounded-full bg-violet-200 px-2 py-1 text-[11px] font-bold text-violet-700">သတ်မှတ်ထားသည်</span></div> : <ThemedSelect value={category} onChange={(event) => handleCategoryChange(event.target.value)} className="h-14 w-full rounded-xl border-2 border-violet-300 bg-white px-3 text-lg font-black"><option value="bottle">ဗူးခွံ</option><option value="tube">Tube</option></ThemedSelect>}</label>
             <label className="flex min-w-0 flex-col gap-2 rounded-2xl border-2 border-orange-200 bg-orange-50 p-4 text-base font-black text-orange-950 shadow-sm"><RequiredLabel>စက်</RequiredLabel><ThemedSelect value={machineCode} onChange={(event) => setMachineCode(event.target.value)} className="h-14 w-full rounded-xl border-2 border-orange-300 bg-white px-3 text-lg font-black"><option value="">စက်ရွေးချယ်ရန်</option>{MACHINES.filter((machine) => !machine.category || machine.category === category).map((machine) => <option key={machine.code} value={machine.code}>{machine.name}</option>)}</ThemedSelect></label>
             <label className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-2xl border-2 border-cyan-200 bg-cyan-50 p-4 text-base font-black text-cyan-950 shadow-sm"><RequiredLabel>Date</RequiredLabel><span className="flex min-w-0 gap-1"><button type="button" onClick={() => setReportDate((value) => shiftDateValue(value, -1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 text-2xl font-black">‹</button><input type="date" max={today} value={reportDate} onChange={(event) => setReportDate(event.target.value)} className="box-border h-14 min-w-0 flex-1 rounded-xl border-2 border-cyan-300 bg-white px-2 text-center text-lg font-black" /><button type="button" disabled={reportDate >= today} onClick={() => setReportDate((value) => shiftDateValue(value, 1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 text-2xl font-black disabled:opacity-40">›</button></span></label>
           </div>
