@@ -165,7 +165,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       if (included) running += displayRow.dailyTotal;
       return { ...displayRow, monthlyCumulative: included ? running : null };
     });
-    return rowsWithCumulative.sort((a, b) => b.date.localeCompare(a.date));
+    return rowsWithCumulative;
   }, [summary, date, values, dailyTotal, cashDailyTotal]);
 
   const historyPageCount = Math.max(1, Math.ceil(tableRows.length / HISTORY_PAGE_SIZE));
