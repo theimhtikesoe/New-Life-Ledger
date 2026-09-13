@@ -23,7 +23,15 @@ export default function UserManagementPage() {
         setPermissions(body.data || []);
         setCanManage(Boolean(body.canManage));
       })
-      .catch((loadError) => setError(loadError.message))
+      .catch((loadError) => {
+        if (actorName === "ဖေဖေ/မေမေ") {
+          setCanManage(true);
+          setPermissions(ACTORS.map((name) => ({ actorName: name, allowedPaths: defaultAllowedPaths(name) })));
+          setMessage("လက်ရှိ default permission ကို ပြထားပါသည်။ Database connection ပြန်ရသောအခါ သိမ်းနိုင်ပါမည်။");
+        } else {
+          setError(loadError.message || "Permission မရယူနိုင်ပါ။");
+        }
+      })
       .finally(() => setLoading(false));
   }, []);
 
