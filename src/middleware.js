@@ -23,6 +23,8 @@ const PRODUCTION_DASHBOARD_READ_PATHS = new Set([
   "/api/dashboard-pulse",
   "/api/daily-summary",
   "/api/production-reports",
+  "/api/factory-stock",
+  "/api/tube-stock",
 ]);
 const PRODUCTION_ONLY_ACTORS = new Set(["ဇွဲဇွဲ", "ဖြိုးကို"]);
 const LEDGER_ONLY_ACTOR = "ဆောင်းဦး";

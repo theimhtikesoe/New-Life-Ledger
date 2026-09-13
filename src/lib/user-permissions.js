@@ -26,7 +26,8 @@ export const PERMISSION_PAGES = [
 ];
 
 export function defaultAllowedPaths(actorName) {
-  if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") return ["/", "/production"];
+  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/factory-stock"];
+  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock"];
   if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail"];
   if (actorName === "သက်မွန်နှင်း") return ["/cap-stock"];
   return PERMISSION_PAGES.map((page) => page.path);
@@ -34,6 +35,9 @@ export function defaultAllowedPaths(actorName) {
 
 export function normalizeAllowedPaths(value, actorName) {
   const allowed = Array.isArray(value) ? value.filter((path) => PERMISSION_PAGES.some((page) => page.path === path)) : defaultAllowedPaths(actorName);
+  if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") {
+    return [...new Set(defaultAllowedPaths(actorName))];
+  }
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "ဆောင်းဦး" && actorName !== "သက်မွန်နှင်း" && !allowed.includes("/expenses")) allowed.push("/expenses");
   return [...new Set(allowed)];
 }
