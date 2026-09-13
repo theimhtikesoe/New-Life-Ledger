@@ -27,6 +27,7 @@ const MAX_GET_ATTEMPTS = 2;
 const DASHBOARD_LOADING_WATCHDOG_MS = 12000;
 const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
 const EMPTY_PAYMENT_BREAKDOWN = { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" };
+const PREPAYMENT_OPTION = "__PREPAYMENT__";
 const PAYMENT_BREAKDOWN_FIELDS = [
   { key: "CASH", label: "Cash" },
   { key: "KPAY", label: "KPay" },
@@ -1216,7 +1217,9 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       const type = ledgerForm.type;
       const isCashSale = type === "CASH_SALE";
-      if (type === "DEBIT" && paymentTargetLedgers.length > 0 && !paymentTargetLedgerId) {
+      const recordingPrepayment = type === "DEBIT" && paymentTargetLedgerId === PREPAYMENT_OPTION;
+      const canRecordPrepayment = paymentTargetLedgers.length === 0 || Number(selectedCustomer?.current_balance || 0) <= 0;
+      if (type === "DEBIT" && paymentTargetLedgers.length > 0 && !paymentTargetLedgerId && !canRecordPrepayment) {
         throw new Error("ငွေချေမည့် အကြွေးအဟောင်းကို အရင်ရွေးပါ။");
       }
       const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
@@ -1248,7 +1251,9 @@ export default function Dashboard({ view = "overview" }) {
         throw new Error(paymentBreakdownValidationMessage(ledgerForm.paymentBreakdown, cashSaleAmount));
       }
       const amountToSave = hasCashSaleBreakdown ? cashSaleBreakdownTotal : hasSinglePayment ? singlePaymentAmount : amount;
-      const paymentNote = type === "DEBIT" && paymentTargetLedgerId
+      const paymentNote = type === "DEBIT" && recordingPrepayment
+        ? [ledgerForm.note, "__PREPAYMENT__"].filter(Boolean).join(" ")
+        : type === "DEBIT" && paymentTargetLedgerId
         ? [ledgerForm.note, `__SETTLES_CREDIT_LEDGER__:${paymentTargetLedgerId}`].filter(Boolean).join(" ")
         : ledgerForm.note;
 
@@ -1862,6 +1867,7 @@ export default function Dashboard({ view = "overview" }) {
     () => paymentTargetLedgers.find((ledger) => ledger.id === paymentTargetLedgerId) || null,
     [paymentTargetLedgers, paymentTargetLedgerId],
   );
+  const canRecordPrepayment = paymentTargetLedgers.length === 0 || Number(selectedCustomer?.current_balance || 0) <= 0;
   useEffect(() => {
     setPaymentTargetLedgerId("");
   }, [selectedCustomerId]);
@@ -2661,13 +2667,14 @@ export default function Dashboard({ view = "overview" }) {
                               disabled={isSubmitting}
                             >
                               <option value="" className="font-bold text-slate-500">{paymentTargetLedgers.length ? "အကြွေးမှတ်တမ်း ရွေးပါ" : "မရှင်းရသေးသော အကြွေးမရှိပါ"}</option>
+                              {canRecordPrepayment ? <option value={PREPAYMENT_OPTION} className="font-black text-cyan-700">ငွေကြိုချေ (အကြွေးမရှိ)</option> : null}
                               {paymentTargetLedgers.map((ledger) => (
                                 <option key={ledger.id} value={ledger.id} className="font-black text-rose-700">
                                   {formatDate(ledger.date)} · {formatMoney(ledger.amount)}{ledger.note ? ` · ${ledger.note}` : ""}
                                 </option>
                               ))}
                             </ThemedSelect>
-                            <p className="mt-2 text-[11px] leading-4 text-emerald-800">ရွေးထားသော အကြွေး ID ကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။</p>
+                            <p className="mt-2 text-[11px] leading-4 text-emerald-800">{paymentTargetLedgerId === PREPAYMENT_OPTION ? "ဤငွေကို အကြွေးဟောင်းမချိတ်ဘဲ ငွေကြိုချေအဖြစ် မှတ်တမ်းတင်ပါမည်။" : "ရွေးထားသော အကြွေး ID ကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။"}</p>
                             {selectedPaymentTarget ? (
                               <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-2 text-xs sm:grid-cols-4">
                                 <div><p className="text-slate-500">မူရင်းအကြွေး</p><p className="font-black text-slate-900">{formatMoney(selectedPaymentTarget.originalAmount)}</p></div>

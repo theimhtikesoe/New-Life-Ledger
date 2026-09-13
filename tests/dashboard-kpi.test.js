@@ -49,6 +49,8 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("paymentTargetLedgers");
     expect(dashboardSource).toContain("__SETTLES_CREDIT_LEDGER__:");
     expect(dashboardSource).toContain("ငွေချေမည့် အကြွေးအဟောင်း ရွေးပါ");
+    expect(dashboardSource).toContain("PREPAYMENT_OPTION");
+    expect(dashboardSource).toContain("ငွေကြိုချေ (အကြွေးမရှိ)");
   });
 
   it("hydrates linked settled bottle items for the paid-bottle KPI", () => {
