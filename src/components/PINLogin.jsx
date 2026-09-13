@@ -55,7 +55,7 @@ async function fetchAuthJson(path, options = {}) {
   }
 }
 
-export default function PINLogin({ onSuccess, onLogout }) {
+export default function PINLogin({ onSuccess, onLogout, onReady }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -104,9 +104,13 @@ export default function PINLogin({ onSuccess, onLogout }) {
           localStorage.removeItem("actorName");
         }
       })
-      .finally(() => active && setIsLoading(false));
+    .finally(() => {
+      if (!active) return;
+      setIsLoading(false);
+      onReady?.();
+    });
     return () => { active = false; };
-  }, [onSuccess]);
+  }, [onReady, onSuccess]);
 
   useEffect(() => {
     const openActorSelector = () => {

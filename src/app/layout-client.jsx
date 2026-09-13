@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PINLogin from '@/components/PINLogin';
@@ -362,6 +362,7 @@ function AppZoomControls({ appZoom, onChange, settingsOpen }) {
 export default function RootLayoutClient({ children }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [actorName, setActorName] = useState('');
+  const [authReady, setAuthReady] = useState(false);
   const [appZoom, setAppZoom] = useState(1);
   const pathname = usePathname();
   const router = useRouter();
@@ -370,6 +371,7 @@ export default function RootLayoutClient({ children }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saveReview, setSaveReview] = useState(null);
   const pendingSubmitRef = useRef(null);
+  const handleAuthReady = useCallback(() => setAuthReady(true), []);
 
   useEffect(() => {
     const handleSubmitCapture = (event) => {
@@ -507,7 +509,16 @@ export default function RootLayoutClient({ children }) {
   return (
     <>
       <BlossomOverlay />
-      <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} />
+      {!authReady && (
+        <div className="fixed inset-0 z-[230] flex items-center justify-center bg-slate-100/95 p-4">
+          <div className="rounded-2xl border border-cyan-200 bg-white px-6 py-5 text-center shadow-xl shadow-cyan-900/10">
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-cyan-100 border-t-cyan-700" aria-hidden="true" />
+            <p className="mt-3 text-sm font-black text-cyan-900">New Life Ledger</p>
+            <p className="mt-1 text-xs text-slate-500">အသုံးပြုသူ session စစ်ဆေးနေပါသည်...</p>
+          </div>
+        </div>
+      )}
+      <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} onReady={handleAuthReady} />
       {canRenderCurrentPage && (
         <ActorSwitcher actorName={actorName} />
       )}
