@@ -10,7 +10,24 @@ function isManager(request) {
   return MANAGER_ACTORS.includes(getActorName(request));
 }
 
+async function ensureUserPermissionTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "UserPermission" (
+      "id" SERIAL NOT NULL,
+      "actorName" TEXT NOT NULL,
+      "allowedPaths" JSONB NOT NULL,
+      "updatedBy" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "UserPermission_pkey" PRIMARY KEY ("id")
+    )
+  `);
+  await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "UserPermission_actorName_key" ON "UserPermission"("actorName")`);
+  await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "UserPermission_updatedAt_idx" ON "UserPermission"("updatedAt")`);
+}
+
 async function getRows() {
+  await ensureUserPermissionTable();
   const rows = await prisma.userPermission.findMany({ orderBy: { actorName: "asc" } });
   const byActor = new Map(rows.map((row) => [row.actorName, row]));
   return Promise.all(ACTORS.map(async (actorName) => {
@@ -33,6 +50,7 @@ export async function PUT(request) {
   const body = await request.json().catch(() => ({}));
   const updates = Array.isArray(body?.permissions) ? body.permissions : [];
   if (!updates.length) return NextResponse.json({ error: "Permission data မပါပါ။" }, { status: 400 });
+  await ensureUserPermissionTable();
   const results = [];
   for (const update of updates) {
     const actorName = String(update?.actorName || "").trim();
