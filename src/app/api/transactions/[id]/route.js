@@ -119,7 +119,9 @@ export async function PATCH(request, { params }) {
         where: { id: transactionId },
         data: {
           type,
-          actorName: body.preserveActorName ? ledger.actorName : getActorName(request),
+          actorName: body.preserveActorName
+            ? (Object.prototype.hasOwnProperty.call(body, "actorNameOverride") ? body.actorNameOverride : ledger.actorName)
+            : getActorName(request),
           saleType: body.saleType || ledger.saleType || "RETAIL",
           itemSize: body.itemSize?.trim() || null,
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
