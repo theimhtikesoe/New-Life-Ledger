@@ -10,6 +10,11 @@ import { buildDailyReconciliation } from "@/lib/daily-summary-review";
 export const dynamic = "force-dynamic";
 
 const CASH_PAYMENT_TYPE = "CASH";
+// This specific Sep 10 settlement is present in the physical wholesale book,
+// so include it without changing the treatment of other settlement rows.
+const WHOLESALE_INCLUDED_SETTLEMENT_LEDGER_IDS = new Set([
+  "4c8844a2-55df-4c9d-91ee-8221e2d49f4a",
+]);
 const SUMMARY_SELECT = {
   id: true,
   date: true,
@@ -47,7 +52,7 @@ function parseDate(value) {
 async function getSourceSnapshot(date) {
   const { range } = parseDate(date);
   const ledgers = prisma.ledger?.findMany
-    ? await prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true, type: true, note: true } })
+    ? await prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { id: true, amount: true, type: true, note: true } })
     : [];
   const cashSales = prisma.cashSale?.findMany
     ? await prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
@@ -100,7 +105,8 @@ function addPaymentTypes(target, split) {
 
 function isWholesaleSettlementLedger(ledger) {
   return String(ledger?.type || "").toUpperCase() === "DEBIT"
-    && !String(ledger?.note || "").startsWith("__SETTLES_CREDIT_LEDGER__:");
+    && (!String(ledger?.note || "").startsWith("__SETTLES_CREDIT_LEDGER__:")
+      || WHOLESALE_INCLUDED_SETTLEMENT_LEDGER_IDS.has(String(ledger?.id || "")));
 }
 
 function summarizeCashSales(sales) {

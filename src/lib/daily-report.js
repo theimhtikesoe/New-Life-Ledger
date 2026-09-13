@@ -15,6 +15,11 @@ import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 const MYANMAR_OFFSET_MS = (6 * 60 + 30) * 60 * 1000;
 const REMOTE_CHROMIUM_PACK_URL = "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
 const MYANMAR_TIME_ZONE = "Asia/Yangon";
+// This Sep 10 settlement is present in the physical wholesale book. Keep the
+// exception limited to this ledger so other settlements remain excluded.
+const WHOLESALE_INCLUDED_SETTLEMENT_LEDGER_IDS = new Set([
+  "4c8844a2-55df-4c9d-91ee-8221e2d49f4a",
+]);
 
 function pad(value) {
   return String(value).padStart(2, "0");
@@ -155,7 +160,8 @@ function summarizeDailySalesRows(cashSales = [], ledgers = []) {
   }
   for (const ledger of ledgers) {
     if (String(ledger.type || "").toUpperCase() !== "DEBIT") continue;
-    if (String(ledger.note || "").startsWith("__SETTLES_CREDIT_LEDGER__:")) continue;
+    if (String(ledger.note || "").startsWith("__SETTLES_CREDIT_LEDGER__:")
+      && !WHOLESALE_INCLUDED_SETTLEMENT_LEDGER_IDS.has(String(ledger.id || ""))) continue;
     const ledgerAmount = Number(ledger.amount || 0);
     const split = getPaymentSplit(ledger);
     result.wholesaleTotal += ledgerAmount;
