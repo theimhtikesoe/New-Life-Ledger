@@ -286,6 +286,7 @@ export default function Dashboard({ view = "overview" }) {
     typeof window === "undefined" ? "" : (window.localStorage.getItem("actorName") || "").trim()
   ));
   const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး";
+  const isProductionDashboard = dashboardActorName === "ဇွဲဇွဲ" || dashboardActorName === "ဖြိုးကို";
   const [customers, setCustomers] = useState(() => initialDashboardSnapshot?.customers || []);
   const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => initialDashboardSnapshot?.allCustomersForKPI || []);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
@@ -747,6 +748,7 @@ export default function Dashboard({ view = "overview" }) {
   }, [isSendingTelegramReport, resetTelegramReportModal, showAlert, telegramReportPin, telegramReportPreview]);
 
   const loadOverdueDebts = useCallback(async () => {
+    if (isProductionDashboard) return;
     // This is a non-critical background request. It must never leave the bell
     // in an infinite loading state if the database or network is slow.
     try {
@@ -796,12 +798,12 @@ export default function Dashboard({ view = "overview" }) {
       // expensive historical KPI/stock rebuild at the same time: production
       // uses connection_limit=1, so KPI could otherwise occupy the only
       // connection and make the customer screen appear stuck.
-      const customerRequest = api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal });
-      const allCustomersRequest = search ? api("/api/customers?includeLedgers=false", { signal }) : customerRequest;
-      const [customerRows, allCustomersRows] = await Promise.all([
-        customerRequest,
-        allCustomersRequest,
-      ]);
+      const [customerRows, allCustomersRows] = isProductionDashboard
+        ? [[], []]
+        : await Promise.all([
+          api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal }),
+          search ? api("/api/customers?includeLedgers=false", { signal }) : api(`/api/customers?includeLedgers=false`, { signal }),
+        ]);
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
       saveDashboardSnapshot({ customers: customerRows, allCustomersForKPI: allCustomersRows });
@@ -832,11 +834,11 @@ export default function Dashboard({ view = "overview" }) {
           }
         });
       void kpiRequest;
-      void loadOverdueDebts();
+      if (!isProductionDashboard) void loadOverdueDebts();
 
       // Detailed daily values are intentionally background work.
       setLoadingStage("Data ရယူနေပါသည်");
-      void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
+      if (!isProductionDashboard) void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
         .then((summary) => {
           const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
           const payments = (summary.transactions || [])
@@ -859,13 +861,14 @@ export default function Dashboard({ view = "overview" }) {
 
       // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
       setLoadingStage("Data ရယူနေပါသည်");
-      void api("/api/unverified-kpay?status=PENDING", { signal, background: true })
+      if (!isProductionDashboard) void api("/api/unverified-kpay?status=PENDING", { signal, background: true })
         .then((kpayRows) => setPendingKpay(kpayRows))
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Pending KPay data was not loaded:", error);
         });
 
       // Stage 6: the visual pulse is non-critical and loads after the main data.
+      if (isProductionDashboard) return;
       setLedgerPulseLoading(true);
       setLedgerPulseError("");
       void api("/api/dashboard-pulse?days=7", { signal, cache: "no-store", timeoutMs: 20000, background: true })
@@ -2020,7 +2023,7 @@ export default function Dashboard({ view = "overview" }) {
                 <span>ငွေရှင်းတမ်း</span>
               </Link>
             </div> : null}
-            {!isLedgerView && !isSangEulDashboard ? (
+            {!isLedgerView && !isSangEulDashboard && !isProductionDashboard ? (
             <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
               <div className="col-span-2 flex min-w-0 [&>button]:w-full">
                 <OverdueNotificationBell
@@ -2166,6 +2169,11 @@ export default function Dashboard({ view = "overview" }) {
               </button>
             </div>
           ) : null}
+        {isProductionDashboard ? (
+          <div className="mt-3 flex justify-center">
+            <Link href="/production" className="neon-menu-button flex min-h-16 w-full max-w-md items-center justify-center gap-2 rounded-xl border border-orange-300 bg-orange-100 px-4 py-3 text-base font-black text-orange-800 shadow-sm hover:bg-orange-200" title="ထုတ်လုပ်မှု မှတ်တမ်း">🏭 <span>ထုတ်လုပ်မှု</span></Link>
+          </div>
+        ) : null}
         </header>
 
 
@@ -2173,7 +2181,7 @@ export default function Dashboard({ view = "overview" }) {
         {!isLedgerView ? (
           <>
             {/* Compact Summary Box */}
-            <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
+            <section className={`neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4 ${isProductionDashboard ? "hidden" : ""}`}>
           <div className="dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {/* Customer and balance overview */}
             {isSangEulDashboard ? <Link
@@ -2298,7 +2306,16 @@ export default function Dashboard({ view = "overview" }) {
           </>
         ) : null}
 
-        {!isLedgerView && !isSangEulDashboard ? (
+        {isProductionDashboard ? (
+          <section className="neon-surface neon-sweep rounded-2xl border border-orange-200/80 bg-gradient-to-br from-white via-orange-50/60 to-cyan-50/60 p-4">
+            <div className="mb-3"><p className="text-xs font-bold uppercase tracking-wide text-orange-700">Production KPI</p><h2 className="text-lg font-black text-slate-900">ထုတ်လုပ်မှု အခြေအနေ</h2></div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><p className="text-sm font-bold text-orange-800">ဗူး ထွက်ရှိမှု</p><p className="mt-2 text-3xl font-black text-orange-950">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p><p className="mt-1 text-sm font-bold text-orange-700">ကောင်းမွန် {productionSummary.goodPieces.toLocaleString()} · ပျက်စီး {productionSummary.wasteQuantity.toLocaleString()}</p></div>
+              <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4"><p className="text-sm font-bold text-cyan-800">Tube ထွက်ရှိမှု</p><p className="mt-2 text-3xl font-black text-cyan-950">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-cyan-700">{tubeProductionSummary.totalPieces.toLocaleString()} pcs · {tubeProductionSummary.rows.length} အမျိုးအစား</p></div>
+            </div>
+          </section>
+        ) : null}
+        {!isLedgerView && !isSangEulDashboard && !isProductionDashboard ? (
           <LedgerPulse data={ledgerPulse} loading={ledgerPulseLoading} error={ledgerPulseError} />
         ) : null}
 

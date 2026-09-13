@@ -56,7 +56,7 @@ export async function middleware(request) {
       && PRODUCTION_DASHBOARD_READ_PATHS.has(path);
     if (isProductionOnlySession(session) && !PRODUCTION_API_PATHS.has(path) && !productionDashboardRead) {
       return NextResponse.json(
-        { ok: false, error: "ဇွဲဇွဲ အသုံးပြုသူသည် ထုတ်လုပ်မှုစာမျက်နှာနှင့် သက်ဆိုင်သောလုပ်ဆောင်ချက်များကိုသာ အသုံးပြုနိုင်ပါသည်။" },
+        { ok: false, error: `${session.actorName} အသုံးပြုသူသည် ထုတ်လုပ်မှုစာမျက်နှာနှင့် သက်ဆိုင်သောလုပ်ဆောင်ချက်များကိုသာ အသုံးပြုနိုင်ပါသည်။` },
         { status: 403 },
       );
     }
