@@ -543,10 +543,10 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   }, []);
 
-  // The home Dashboard is intentionally mounted on the first paint. Auth and
-  // permission checks may continue in the background without replacing it
-  // with a loading or white screen.
-  const showApp = pathname === '/' || authReady || canRenderCurrentPage;
+  // Do not mount the home Dashboard before authentication and actor routing are
+  // ready. Otherwise a production/cap-stock actor briefly sees the Dashboard
+  // behind the PIN modal while the post-login redirect is still pending.
+  const showApp = authReady && canRenderCurrentPage;
 
   return (
     <>
