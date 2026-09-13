@@ -80,8 +80,10 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("disabled={!selectedKpiIsToday}");
     expect(dashboardSource).toContain('href={`/production-history?date=${encodeURIComponent(selectedKpiDate)}`}');
     expect(dashboardSource).toContain("dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4");
-    expect(dashboardSource).toContain("`${tubeProductionSummary.totalPieces.toLocaleString()} Pcs`");
-    expect(dashboardSource).toContain("`${factoryTubePieces.toLocaleString()} Pcs`");
+    expect(dashboardSource).toContain("`${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`");
+    expect(dashboardSource).toContain("`${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`");
+    expect(dashboardSource).toContain("`${factoryTubePacks.toLocaleString()} အိတ်`");
+    expect(dashboardSource).toContain("`${factoryTubePieces.toLocaleString()} pcs · ထုတ်လုပ်ဝင်ပြီးနောက် ကျန်သော Tube`");
     expect(dashboardSource).not.toContain("`${tubeProductionSummary.totalPieces.toLocaleString()} လုံး`");
     expect(dashboardSource).not.toContain("`${factoryTubePieces.toLocaleString()} လုံး`");
     expect(dashboardSource).toContain('Number(displayedTotalBalance) < 0 ? "text-green-700" : "text-rose-700"');

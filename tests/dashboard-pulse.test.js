@@ -111,6 +111,7 @@ describe("Dashboard Ledger Pulse API", () => {
       cashCount: 2,
       cashAmount: 13000,
       bottleOutput: 2400,
+      tubeOutput: 10000,
       activityCount: 4,
     });
   });
