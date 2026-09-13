@@ -1237,6 +1237,7 @@ export default function Dashboard({ view = "overview" }) {
       return;
     }
     setIsSubmitting(true);
+    const previousCustomerBalance = Number(selectedCustomer?.current_balance || 0);
     try {
       setMessage("");
       const type = ledgerForm.type;
@@ -1402,6 +1403,9 @@ export default function Dashboard({ view = "overview" }) {
       showAlert(isCashSale ? "လက်ငင်း Transaction သိမ်းဆည်းပြီးပါပြီ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
       setLedgerFormError(error.message || "စာရင်းသိမ်းရာတွင် အမှားရှိပါသည်။ ပြန်စစ်ပြီး ထပ်လုပ်ပါ။");
+      setSelectedCustomer((prev) => prev ? { ...prev, current_balance: previousCustomerBalance } : prev);
+      setCustomers((prev) => prev.map((customer) => customer.id === selectedCustomerId ? { ...customer, current_balance: previousCustomerBalance } : customer));
+      setAllCustomersForKPI((prev) => prev.map((customer) => customer.id === selectedCustomerId ? { ...customer, current_balance: previousCustomerBalance } : customer));
       if (error.status && error.status >= 500) await loadCustomer(selectedCustomerId);
     } finally {
       setIsSubmitting(false);
