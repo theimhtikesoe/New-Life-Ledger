@@ -16,6 +16,8 @@ const REQUIRED_TABLES = [
   "ProductionWorker",
   "CashSale",
   "PriceSetting",
+  "Expense",
+  "OutsideLedgerSettlement",
   "DailySalesSummary",
   "DailySalesSummarySource",
   "DailySalesOpening",
@@ -182,6 +184,12 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "CashSale_date_saleType_idx" ON "CashSale"("date", "saleType")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_entityType_idx" ON "AuditLog"("createdAt", "entityType")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "ProductionReport_reportDate_category_idx" ON "ProductionReport"("reportDate", "category")`);
+      await setupQuery(`CREATE TABLE IF NOT EXISTS "Expense" ("id" UUID PRIMARY KEY DEFAULT gen_random_uuid(), "expenseDate" TEXT NOT NULL, "category" TEXT NOT NULL, "description" TEXT NOT NULL, "amount" INTEGER NOT NULL, "note" TEXT, "actorName" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "Expense_expenseDate_idx" ON "Expense"("expenseDate")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "Expense_category_idx" ON "Expense"("category")`);
+      await setupQuery(`CREATE TABLE IF NOT EXISTS "OutsideLedgerSettlement" ("id" UUID PRIMARY KEY DEFAULT gen_random_uuid(), "customerId" UUID NOT NULL REFERENCES "Customer"("id") ON DELETE CASCADE, "ledgerId" UUID, "amount" INTEGER NOT NULL, "paymentMethod" TEXT NOT NULL, "note" TEXT, "settledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "actorName" TEXT NOT NULL)`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "OutsideLedgerSettlement_customerId_settledAt_idx" ON "OutsideLedgerSettlement"("customerId", "settledAt")`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "OutsideLedgerSettlement_ledgerId_idx" ON "OutsideLedgerSettlement"("ledgerId")`);
 
       // Production requests normally arrive after migrations have already
       // created the complete schema. Avoid repeating many CREATE/ALTER/index

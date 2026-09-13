@@ -252,7 +252,7 @@ export default function ProductionEntryPage() {
   const totalCards = filledEntries.reduce((sum, entry) => sum + entry.quantity, 0);
   const damagedPieces = Math.max(0, Number(wasteQuantity || 0));
   const goodPieces = totalPieces;
-  const visibleEntries = category === "tube" ? entries.filter((entry) => entry.key === activeTubeKey) : entries.filter((entry) => getBottleGroup(entry.bottleType) === activeBottleGroup);
+  const visibleEntries = category === "tube" ? entries : entries.filter((entry) => getBottleGroup(entry.bottleType) === activeBottleGroup);
   const groupCounts = useMemo(() => Object.fromEntries(BOTTLE_GROUPS.map((group) => [group.key, entries.filter((entry) => getBottleGroup(entry.bottleType) === group.key).length])), [entries]);
   const summaryByType = useMemo(() => {
     const result = new Map();

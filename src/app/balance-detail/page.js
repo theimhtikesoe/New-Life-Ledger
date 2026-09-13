@@ -118,7 +118,7 @@ function SummaryCard({ title, subtitle, value, count, countLabel = "ယောက
   );
 }
 
-function CustomerRow({ customer, onToggleReminder, updating }) {
+function CustomerRow({ customer, onToggleReminder, onOpenSettlement, updating }) {
   const router = useRouter();
   const info = balanceInfo(customer.current_balance);
   const badgeClass = {
@@ -160,7 +160,7 @@ function CustomerRow({ customer, onToggleReminder, updating }) {
         </div>
         <Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="min-h-11 rounded-lg px-3 py-2 text-base font-bold text-cyan-700 underline decoration-cyan-300 underline-offset-2 hover:bg-cyan-50">Ledger အသေးစိတ် →</Link>
       </div>
-      {info.key === "debt" ? <button type="button" onClick={() => onToggleReminder(customer)} disabled={updating} className={`mt-3 w-full rounded-lg border px-3 py-2 text-xs font-bold transition ${marked ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-800"}`}>
+      {info.key === "debt" ? <button type="button" onClick={() => onOpenSettlement(customer)} disabled={updating} className={`mt-3 w-full rounded-lg border px-3 py-2 text-xs font-bold transition ${marked ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-800"}`}>
         {updating ? "သိမ်းနေသည်..." : marked ? "✓ မြေပြင်မှာ ငွေချေပြီး" : "မြေပြင်မှာ ငွေချေပြီးကြောင်း မှတ်ရန် နှိပ်ပါ"}
       </button> : null}
     </article>
@@ -182,6 +182,13 @@ export default function BalanceDetailPage() {
   const [error, setError] = useState("");
   const [showBalanceExplanation, setShowBalanceExplanation] = useState(false);
   const [updatingReminderId, setUpdatingReminderId] = useState(null);
+  const [settlementCustomer, setSettlementCustomer] = useState(null);
+  const [settlementTransactions, setSettlementTransactions] = useState([]);
+  const [settlementMethod, setSettlementMethod] = useState("ငွေသား");
+  const [settlementAmount, setSettlementAmount] = useState("");
+  const [settlementLedgerId, setSettlementLedgerId] = useState("");
+  const [settlementNote, setSettlementNote] = useState("");
+  const [settlementSaving, setSettlementSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -219,6 +226,16 @@ export default function BalanceDetailPage() {
     return () => { active = false; };
   }, []);
 
+  async function openSettlement(customer) {
+    setSettlementCustomer(customer); setSettlementAmount(String(Math.round(Number(customer.current_balance || 0)))); setSettlementLedgerId(""); setSettlementNote("");
+    try { const [customerData, settlements] = await Promise.all([fetchJson(`/api/customers/${encodeURIComponent(customer.id)}?includeLedgers=true&includeCashSales=true`), fetchJson(`/api/outside-settlements?customerId=${encodeURIComponent(customer.id)}`)]); setSettlementTransactions([...(customerData?.ledgers || []), ...(customerData?.cashSales || [])].sort((a,b) => new Date(b.date)-new Date(a.date))); setSettlementCustomer((current) => ({ ...current, ...customerData, settlements: settlements || [] })); } catch (error) { setError(error.message || "Transaction ရယူ၍ မရပါ။"); }
+  }
+  async function saveSettlement() {
+    if (!settlementCustomer) return; setSettlementSaving(true); setError("");
+    try { await fetchJson("/api/outside-settlements", { method: "POST", headers: { "Content-Type": "application/json", "x-actor-name": encodeActorHeader(localStorage.getItem("actorName") || "") }, body: JSON.stringify({ customerId: settlementCustomer.id, ledgerId: settlementLedgerId || null, amount: settlementAmount, paymentMethod: settlementMethod, note: settlementNote }) });
+      const updated = await updateOutsideLedgerReminder(settlementCustomer.id, true); setCustomers((current) => current.map((row) => row.id === settlementCustomer.id ? { ...row, ...updated } : row)); setSettlementCustomer(null);
+    } catch (error) { setError(error.message || "မြေပြင်ငွေချေမှတ်တမ်း သိမ်း၍ မရပါ။"); } finally { setSettlementSaving(false); }
+  }
   async function toggleOutsideLedgerReminder(customer) {
     const marked = !customer.settledOutsideLedgerAt;
     setUpdatingReminderId(customer.id);
@@ -351,20 +368,21 @@ export default function BalanceDetailPage() {
 
           {loading ? <p className="py-12 text-center text-slate-500">Customer လက်ကျန်များ ရယူနေသည်...</p> : visibleCustomers.length ? (
             <>
-              <div className="mt-4 grid gap-3 md:hidden">{visibleCustomers.map((customer) => <CustomerRow key={customer.id} customer={customer} onToggleReminder={toggleOutsideLedgerReminder} updating={updatingReminderId === customer.id} />)}</div>
+              <div className="mt-4 grid gap-3 md:hidden">{visibleCustomers.map((customer) => <CustomerRow key={customer.id} customer={customer} onToggleReminder={toggleOutsideLedgerReminder} onOpenSettlement={openSettlement} updating={updatingReminderId === customer.id} />)}</div>
               <div className="mt-4 hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[980px] text-left text-sm">
                   <thead className="border-b border-slate-200 text-xs uppercase text-slate-500"><tr><th className="px-3 py-3">Customer</th><th className="px-3 py-3">အခြေအနေ</th><th className="px-3 py-3 text-right">လက်ကျန်</th><th className="px-3 py-3">မြေပြင်ငွေချေမှတ်ချက်</th><th className="px-3 py-3 text-right">အသေးစိတ်</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">{visibleCustomers.map((customer) => {
                     const info = balanceInfo(customer.current_balance);
                     const badgeClass = info.key === "debt" ? "bg-rose-100 text-rose-800" : info.key === "prepaid" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700";
-                    return <tr key={customer.id} className="hover:bg-slate-50"><td className="px-3 py-3"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-800 hover:underline">{customer.name}</Link><p className="mt-1 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p></td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span></td><td className={`px-3 py-3 text-right font-bold ${info.key === "debt" ? "text-rose-700" : info.key === "prepaid" ? "text-emerald-700" : "text-slate-700"}`}>{info.amount ? formatMoney(info.amount) : "0 Ks"}</td><td className="px-3 py-3">{info.key === "debt" ? <button type="button" onClick={() => toggleOutsideLedgerReminder(customer)} disabled={updatingReminderId === customer.id} aria-pressed={Boolean(customer.settledOutsideLedgerAt)} title={customer.settledOutsideLedgerAt ? "မှတ်ချက်ကို ပြန်ဖျက်ရန် နှိပ်ပါ" : "မြေပြင်မှာ ငွေချေပြီးကြောင်း မှတ်ရန် နှိပ်ပါ"} className={`rounded-lg border px-3 py-2 text-xs font-bold ${customer.settledOutsideLedgerAt ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-800"}`}>{updatingReminderId === customer.id ? "သိမ်းနေသည်..." : customer.settledOutsideLedgerAt ? "✓ မြေပြင်မှာ ငွေချေပြီး" : "မြေပြင်မှာ ငွေချေပြီးကြောင်း မှတ်ရန် နှိပ်ပါ"}</button> : <span className="text-xs text-slate-400">—</span>}</td><td className="px-3 py-3 text-right"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-700 hover:underline">Ledger →</Link></td></tr>;
+                    return <tr key={customer.id} className="hover:bg-slate-50"><td className="px-3 py-3"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-800 hover:underline">{customer.name}</Link><p className="mt-1 text-xs text-slate-500">{customer.phone || "ဖုန်းမရှိ"}{customer.routeTag ? ` · ${customer.routeTag}` : ""}</p></td><td className="px-3 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{info.label}</span></td><td className={`px-3 py-3 text-right font-bold ${info.key === "debt" ? "text-rose-700" : info.key === "prepaid" ? "text-emerald-700" : "text-slate-700"}`}>{info.amount ? formatMoney(info.amount) : "0 Ks"}</td><td className="px-3 py-3">{info.key === "debt" ? <button type="button" onClick={() => openSettlement(customer)} disabled={updatingReminderId === customer.id} aria-pressed={Boolean(customer.settledOutsideLedgerAt)} title={customer.settledOutsideLedgerAt ? "မှတ်ချက်ကို ပြန်ဖျက်ရန် နှိပ်ပါ" : "မြေပြင်မှာ ငွေချေပြီးကြောင်း မှတ်ရန် နှိပ်ပါ"} className={`rounded-lg border px-3 py-2 text-xs font-bold ${customer.settledOutsideLedgerAt ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-amber-300 bg-amber-50 text-amber-800"}`}>{updatingReminderId === customer.id ? "သိမ်းနေသည်..." : customer.settledOutsideLedgerAt ? "✓ မြေပြင်မှာ ငွေချေပြီး" : "မြေပြင်မှာ ငွေချေပြီးကြောင်း မှတ်ရန် နှိပ်ပါ"}</button> : <span className="text-xs text-slate-400">—</span>}</td><td className="px-3 py-3 text-right"><Link href={`/ledger?customerId=${encodeURIComponent(customer.id)}`} className="font-semibold text-cyan-700 hover:underline">Ledger →</Link></td></tr>;
                   })}</tbody>
                 </table>
               </div>
             </>
           ) : <div className="mt-4 rounded-xl border border-slate-200 px-4 py-10 text-center text-sm text-slate-500">ကိုက်ညီသော customer မတွေ့ပါ။</div>}
         </section>
+      {settlementCustomer ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><h2 className="text-xl font-black">{settlementCustomer.name} — မြေပြင်ငွေချေ</h2><button onClick={() => setSettlementCustomer(null)} className="text-2xl">×</button></div><p className="mt-1 text-sm text-slate-500">ငွေချေပြီးကြောင်း မှတ်မည့် အကြွေးနှင့် အမှန်တကယ် ချေငွေကို သီးခြားရွေး/ထည့်ပါ။</p><label className="mt-4 block text-sm font-bold">အကြွေးဟောင်း ရွေးရန်<select value={settlementLedgerId} onChange={e => setSettlementLedgerId(e.target.value)} className="mt-1 w-full rounded-xl border p-3"><option value="">အကြွေးအားလုံး / သီးခြားမရွေး</option>{settlementTransactions.filter(t => t.type === "CREDIT" || !t.type).map(t => <option key={t.id} value={t.id}>{new Date(t.date).toLocaleDateString("my-MM")} · {Number(t.amount || 0).toLocaleString()} Ks · {t.note || "အကြွေး"}</option>)}</select></label><label className="mt-3 block text-sm font-bold">ဘာနဲ့ ချေသလဲ<select value={settlementMethod} onChange={e => setSettlementMethod(e.target.value)} className="mt-1 w-full rounded-xl border p-3"><option>ငွေသား</option><option>KPay</option><option>Wave</option><option>ဘဏ်လွှဲ</option><option>အခြား</option></select></label><label className="mt-3 block text-sm font-bold">တကယ် ချေတဲ့ငွေ (Ks)<input inputMode="numeric" value={settlementAmount} onChange={e => setSettlementAmount(e.target.value.replace(/[^0-9,]/g, ""))} className="mt-1 w-full rounded-xl border p-3" /></label><label className="mt-3 block text-sm font-bold">အသေးစိတ်မှတ်ချက်<textarea value={settlementNote} onChange={e => setSettlementNote(e.target.value)} className="mt-1 w-full rounded-xl border p-3" rows="2" /></label><div className="mt-5 flex gap-3"><button onClick={() => setSettlementCustomer(null)} className="flex-1 rounded-xl bg-slate-100 py-3 font-bold">မလုပ်တော့</button><button disabled={settlementSaving} onClick={saveSettlement} className="flex-1 rounded-xl bg-emerald-600 py-3 font-black text-white">{settlementSaving ? "သိမ်းနေသည်..." : "ငွေချေပြီး မှတ်မည်"}</button></div></div></div> : null}
       </div>
     </main>
   );

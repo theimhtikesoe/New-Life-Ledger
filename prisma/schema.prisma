@@ -22,10 +22,39 @@ model Customer {
   suggestedKpay   UnverifiedKpay[] @relation("KpaySuggestion")
   orders          Order[]
   cashSales       CashSale[]
+  outsideSettlements OutsideLedgerSettlement[]
   createdAt       DateTime         @default(now())
   deletedAt       DateTime?
 
   @@index([deletedAt, name])
+}
+
+model Expense {
+  id          String   @id @default(uuid()) @db.Uuid
+  expenseDate String
+  category    String
+  description String
+  amount      Int
+  note        String?
+  actorName   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([expenseDate])
+  @@index([category])
+}
+
+model OutsideLedgerSettlement {
+  id            String   @id @default(uuid()) @db.Uuid
+  customerId    String   @db.Uuid
+  ledgerId      String?  @db.Uuid
+  amount        Int
+  paymentMethod String
+  note          String?
+  settledAt     DateTime @default(now())
+  actorName     String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  @@index([customerId, settledAt])
+  @@index([ledgerId])
 }
 
 model UserPermission {

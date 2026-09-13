@@ -254,6 +254,7 @@ const PAGE_HEADERS = {
   '/daily-summary': 'Daily Summary',
   '/data-management': 'Data Management',
   '/discounts': 'Customer လျှော့စျေးမှတ်တမ်း',
+  '/expenses': 'အသုံးစားရိတ်',
   '/factory-stock': 'စက်ရုံဗူးလက်ကျန်',
   '/orders': 'Customer Orders',
   '/production': 'ထွက်ရှိမှု မှတ်တမ်းတင်ရန်',

@@ -2113,6 +2113,12 @@ export default function Dashboard({ view = "overview" }) {
                     <Link href="/orders" className="settings-menu-item border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
                       <span className="ui-icon">🧾</span><span>အော်ဒါများ</span>
                     </Link>
+                    <Link href="/expenses" className="settings-menu-item border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                      <span className="ui-icon">💸</span><span>အသုံးစားရိတ်</span>
+                    </Link>
+                    <Link href="/trace" className="settings-menu-item border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100">
+                      <span className="ui-icon">🔗</span><span>Trace / Tracking</span>
+                    </Link>
                     <button type="button" onClick={handleOpenTelegramReportPreview} className="settings-menu-item border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100">
                       <span className="ui-icon">📨</span><span>Manual အစီရင်ခံစာ</span>
                     </button>
