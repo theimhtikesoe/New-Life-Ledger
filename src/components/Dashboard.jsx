@@ -272,6 +272,16 @@ function AlertNotification({ message, type, onClose }) {
   );
 }
 
+function LedgerFormError({ message }) {
+  if (!message) return null;
+  return (
+    <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-semibold leading-6 text-amber-950 shadow-sm">
+      <span className="mr-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs font-black text-white" aria-hidden="true">!</span>
+      {message}
+    </div>
+  );
+}
+
 export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
   return [
     ...ledgers,
@@ -356,6 +366,7 @@ export default function Dashboard({ view = "overview" }) {
     }
   });
   const [message, setMessage] = useState("");
+  const [ledgerFormError, setLedgerFormError] = useState("");
   const [dataLoadError, setDataLoadError] = useState("");
   const [alert, setAlert] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1215,6 +1226,16 @@ export default function Dashboard({ view = "overview" }) {
     event.preventDefault();
     if (!selectedCustomerId || isSubmitting) return;
 
+    setLedgerFormError("");
+    const selectedLedgerDate = ledgerForm.date || currentMyanmarDate;
+    if (selectedLedgerDate > currentMyanmarDate) {
+      setLedgerFormError("အနာဂတ်ရက်စွဲဖြင့် စာရင်းသိမ်း၍မရပါ။ ဒီနေ့ သို့မဟုတ် အတိတ်ရက်ကိုသာ ရွေးပါ။");
+      return;
+    }
+    if (ledgerForm.type === "DEBIT" && selectedPaymentTarget && formatMyanmarDateInputValue(selectedPaymentTarget.date) > selectedLedgerDate) {
+      setLedgerFormError("ရွေးထားသော အကြွေးရက်ထက် စောသောနေ့ဖြင့် ငွေချေလို့မရပါ။ ငွေချေရက်ကို အကြွေးတိုးသည့်နေ့ သို့မဟုတ် ထိုနောက်ပိုင်းရက်အဖြစ် ရွေးပါ။");
+      return;
+    }
     setIsSubmitting(true);
     try {
       setMessage("");
@@ -1380,10 +1401,8 @@ export default function Dashboard({ view = "overview" }) {
       setPaymentTargetLedgerId("");
       showAlert(isCashSale ? "လက်ငင်း Transaction သိမ်းဆည်းပြီးပါပြီ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
-      setMessage(error.message);
-      showAlert(error.message, "error");
-      // Revert optimistic update on error
-      await loadCustomer(selectedCustomerId);
+      setLedgerFormError(error.message || "စာရင်းသိမ်းရာတွင် အမှားရှိပါသည်။ ပြန်စစ်ပြီး ထပ်လုပ်ပါ။");
+      if (error.status && error.status >= 500) await loadCustomer(selectedCustomerId);
     } finally {
       setIsSubmitting(false);
     }
@@ -1949,7 +1968,7 @@ export default function Dashboard({ view = "overview" }) {
   return (
     <main className="dashboard-root-page min-h-screen min-w-0 overflow-x-clip bg-transparent" aria-busy={loading || isSubmitting}>
       <OverdueAlertAudio overdueDebts={overdueDebts} ready={overdueDebts !== null} />
-      {alert && (
+      {alert?.type === "success" && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
       )}
       {(isSubmitting || (loading && !loadingTimedOut && !dashboardKpi && customers.length === 0 && allCustomersForKPI.length === 0)) && (
@@ -2607,6 +2626,7 @@ export default function Dashboard({ view = "overview" }) {
                       <h3 className="text-lg font-semibold text-slate-900">{editingTransaction ? "စာရင်းပြင်ဆင်ရန်" : "စာရင်းအသစ်သွင်းရန်"}</h3>
                       {editingTransaction ? <button type="button" onClick={() => { setEditingTransaction(null); setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] }); }} className="text-xs font-semibold text-slate-500 hover:text-rose-600">မပြင်တော့ပါ</button> : null}
                     </div>
+                    <LedgerFormError message={ledgerFormError} />
                     <form data-save-review-handled="true" className="mt-3 space-y-3" onSubmit={createLedgerTransaction}>
                       <div className="flex flex-wrap p-1 bg-slate-50/80 rounded-xl border border-slate-200 mb-3 shadow-inner">
                         <button
