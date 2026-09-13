@@ -63,7 +63,15 @@ export async function POST(request, { params }) {
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "amount must be greater than zero" }, { status: 400 });
     }
+    const settlementMatch = type === "DEBIT"
+      ? String(body.note || "").match(/^__SETTLES_CREDIT_LEDGER__:(\S+)$/)
+      : null;
     const result = await prisma.$transaction(async (tx) => {
+      if (settlementMatch) {
+        const target = await tx.ledger.findUnique({ where: { id: settlementMatch[1] }, select: { customerId: true, date: true, type: true, amount: true } });
+        if (!target || target.customerId !== customerId || target.type !== "CREDIT") throw new Error("ရွေးထားသော အကြွေးမှတ်တမ်း မတွေ့ပါ။");
+        if (getMyanmarDateInputValue(target.date) > ledgerDate) throw new Error("အနာဂတ်အကြွေးကို မချေနိုင်ပါ။ အကြွေးတိုးသည့်နေ့ သို့မဟုတ် ထိုနောက်ပိုင်းရက်ကိုသာ ရွေးပါ။");
+      }
       const customer = await tx.customer.update({
         where: { id: customerId },
         data: {
@@ -106,6 +114,9 @@ export async function POST(request, { params }) {
     invalidateFactoryStockCache();
     return NextResponse.json({ data: result }, { status: 201 });
   } catch (error) {
+    if (error.message.includes("အကြွေးမှတ်တမ်း") || error.message.includes("အနာဂတ်အကြွေး")) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }
 }

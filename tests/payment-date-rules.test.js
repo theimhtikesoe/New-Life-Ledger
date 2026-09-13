@@ -24,6 +24,11 @@ describe("Payment date rules", () => {
     expect(dashboard).toContain("value={ledgerForm.date || currentMyanmarDate}");
     expect(dashboard).toContain("max={currentMyanmarDate}");
   });
+
+  it("allows a payment on the same date as its credit and rejects later payment dates", () => {
+    expect(createRoute).toContain("getMyanmarDateInputValue(target.date) > ledgerDate");
+    expect(createRoute).toContain("အကြွေးတိုးသည့်နေ့ သို့မဟုတ် ထိုနောက်ပိုင်းရက်ကိုသာ ရွေးပါ");
+  });
 });
 
 export {};
