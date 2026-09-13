@@ -2000,7 +2000,15 @@ export default function Dashboard({ view = "overview" }) {
                 </div>
               ) : null}
             </div>
-            {isSangEulDashboard && !isLedgerView ? <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-1 items-center rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[180px] lg:justify-self-end">
+            {isSangEulDashboard && !isLedgerView ? <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
+              <Link
+                href="/production"
+                className="neon-menu-button neon-card-red flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-3 text-center text-base font-black leading-5 text-red-700 shadow-sm transition-colors hover:bg-red-100"
+                title="ထုတ်လုပ်မှု မှတ်တမ်း"
+              >
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">🏭</span>
+                <span>ထုတ်လုပ်မှု</span>
+              </Link>
               <Link
                 href="/ledger"
                 className="neon-menu-button neon-card-cyan flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300 bg-cyan-50 px-3 py-3 text-center text-base font-black leading-5 text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100"
