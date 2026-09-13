@@ -418,14 +418,6 @@ export default function RootLayoutClient({ children }) {
   const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
 
   useEffect(() => {
-    // Safari standalone/PWA can finish the session request before the
-    // permission request and current page have rendered. Removing the
-    // server fallback at authReady alone leaves a blank white frame there.
-    if (!authReady || (authenticated && !canRenderCurrentPage)) return;
-    document.getElementById('startup-fallback')?.remove();
-  }, [authReady, authenticated, canRenderCurrentPage]);
-
-  useEffect(() => {
     if (!actorName) {
       setAllowedPaths([]);
       setPermissionsLoading(false);
@@ -514,23 +506,19 @@ export default function RootLayoutClient({ children }) {
     setAuthenticated(false);
   }, []);
 
+  // The home Dashboard is intentionally mounted on the first paint. Auth and
+  // permission checks may continue in the background without replacing it
+  // with a loading or white screen.
+  const showApp = pathname === '/' || authReady || canRenderCurrentPage;
+
   return (
     <>
       <BlossomOverlay />
-      {!authReady && (
-        <div className="fixed inset-0 z-[230] flex items-center justify-center bg-slate-100/95 p-4">
-          <div className="rounded-2xl border border-cyan-200 bg-white px-6 py-5 text-center shadow-xl shadow-cyan-900/10">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-cyan-100 border-t-cyan-700" aria-hidden="true" />
-            <p className="mt-3 text-sm font-black text-cyan-900">New Life Ledger</p>
-            <p className="mt-1 text-xs text-slate-500">အသုံးပြုသူ session စစ်ဆေးနေပါသည်...</p>
-          </div>
-        </div>
-      )}
       <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} onReady={handleAuthReady} />
-      {canRenderCurrentPage && (
+      {showApp && (
         <ActorSwitcher actorName={actorName} />
       )}
-      {canRenderCurrentPage && (
+      {showApp && (
         <>
           {/* Mount the global player before page children so it cannot miss the
               first overdue-status/audio event during the PWA startup handshake. */}
