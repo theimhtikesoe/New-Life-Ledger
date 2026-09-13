@@ -37,4 +37,9 @@ describe("Persistent audio navigation", () => {
       expect(source, relativePath).not.toContain('<a\n');
     });
   });
+
+  it("captures the current URL before a hard refresh", () => {
+    expect(layoutSource).toContain("const currentUrl = window.location.href;");
+    expect(layoutSource).toContain("window.location.assign(currentUrl);");
+  });
 });

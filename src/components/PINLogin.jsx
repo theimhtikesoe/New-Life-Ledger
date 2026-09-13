@@ -96,12 +96,24 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
           localStorage.removeItem("actorName");
         }
       })
-      .catch(() => {
+      .catch((sessionError) => {
         if (active) {
-          setIsAuthenticated(false);
-          setActorLocked(false);
-          setSelectingActor(true);
-          localStorage.removeItem("actorName");
+          const cachedActor = localStorage.getItem("actorName");
+          // A refresh can briefly lose the session request on mobile/VPN
+          // connections. Keep the cached actor in place so the current route
+          // remains mounted; a real 401 response still takes the normal login
+          // path above.
+          if (sessionError?.status !== 401 && ACTORS.includes(cachedActor)) {
+            setIsAuthenticated(true);
+            setActorLocked(false);
+            setSelectingActor(false);
+            onSuccess?.(cachedActor);
+          } else {
+            setIsAuthenticated(false);
+            setActorLocked(false);
+            setSelectingActor(true);
+            localStorage.removeItem("actorName");
+          }
         }
       })
     .finally(() => {

@@ -94,7 +94,11 @@ function RefreshOverlay() {
     } catch {
       // A browser without an active service worker can still perform a normal reload.
     } finally {
+      const currentUrl = window.location.href;
       window.location.reload();
+      // Some installed-PWA shells reset the location during reload. Restore
+      // the captured URL so refresh never sends the user to the dashboard.
+      if (window.location.href !== currentUrl) window.location.assign(currentUrl);
     }
   };
 
@@ -142,10 +146,16 @@ function SettingsToggle({ open, onToggle }) {
 function GlobalActionLoadingIndicator() {
   const [pendingRequests, setPendingRequests] = useState(0);
   const [recentAction, setRecentAction] = useState(false);
+  const pendingRequestIdsRef = useRef(new Set());
+  const nextRequestIdRef = useRef(0);
 
   useEffect(() => {
     const originalFetch = window.fetch.bind(window);
     let actionTimer;
+    const removePendingRequest = (requestId) => {
+      if (!pendingRequestIdsRef.current.delete(requestId)) return;
+      setPendingRequests(pendingRequestIdsRef.current.size);
+    };
     const startAction = () => {
       setRecentAction(true);
       window.clearTimeout(actionTimer);
@@ -160,10 +170,15 @@ function GlobalActionLoadingIndicator() {
       const isBackgroundRequest = requestHeaders?.get?.('x-background-request') === 'true'
         || requestHeaders?.['x-background-request'] === 'true';
       if (isBackgroundRequest) return originalFetch(...args);
-      setPendingRequests((count) => count + 1);
+      const requestId = nextRequestIdRef.current + 1;
+      nextRequestIdRef.current = requestId;
+      pendingRequestIdsRef.current.add(requestId);
+      setPendingRequests(pendingRequestIdsRef.current.size);
       startAction();
+      const watchdog = window.setTimeout(() => removePendingRequest(requestId), 15000);
       return originalFetch(...args).finally(() => {
-        setPendingRequests((count) => Math.max(0, count - 1));
+        window.clearTimeout(watchdog);
+        removePendingRequest(requestId);
       });
     };
 
@@ -175,6 +190,7 @@ function GlobalActionLoadingIndicator() {
       document.removeEventListener('click', handleAction, true);
       document.removeEventListener('submit', handleAction, true);
       window.clearTimeout(actionTimer);
+      pendingRequestIdsRef.current.clear();
     };
   }, []);
 
@@ -433,7 +449,12 @@ export default function RootLayoutClient({ children }) {
         const row = (body.data || []).find((item) => item.actorName === actorName);
         if (active && row) setAllowedPaths(Array.isArray(row.allowedPaths) ? row.allowedPaths : defaultAllowedPaths(actorName));
       })
-      .catch(() => {})
+      .catch(() => {
+        // Keep the actor's built-in route policy on a transient/offline error.
+        // Redirecting to the first allowed route here loses the page the user
+        // explicitly refreshed and used to send users back to Dashboard.
+        if (active) setAllowedPaths(defaultAllowedPaths(actorName));
+      })
       .finally(() => { if (active) setPermissionsLoading(false); });
     return () => { active = false; };
   }, [actorName]);
@@ -451,6 +472,7 @@ export default function RootLayoutClient({ children }) {
 
   useEffect(() => {
     if (!actorName || permissionsLoading || allowedPaths.includes(pathname)) return;
+    if (pathname !== '/' && !allowedPaths.length) return;
     const fallbackPath = allowedPaths.find((path) => path !== '/user-management') || '/';
     if (pathname !== fallbackPath) router.replace(fallbackPath);
   }, [actorName, allowedPaths, pathname, permissionsLoading, router]);

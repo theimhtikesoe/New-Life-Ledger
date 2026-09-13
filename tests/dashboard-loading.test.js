@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 const source = fs.readFileSync(path.join(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
 
 describe("Dashboard loading recovery", () => {
+  it("uses a finite global fetch watchdog for startup and action loading", () => {
+    const layoutSource = fs.readFileSync(path.join(process.cwd(), "src/app/layout-client.jsx"), "utf8");
+    expect(layoutSource).toContain("window.setTimeout(() => removePendingRequest(requestId), 15000)");
+  });
+
   it("has a watchdog so a slow API request cannot leave the screen covered forever", () => {
     expect(source).toContain("DASHBOARD_LOADING_WATCHDOG_MS = 12000");
     expect(source).toContain("setLoadingTimedOut(true)");
