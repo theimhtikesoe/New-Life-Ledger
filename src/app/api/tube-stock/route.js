@@ -48,6 +48,20 @@ export async function GET(request) {
     movements.sort((a, b) => String(b.movementDate || "").localeCompare(String(a.movementDate || "")));
     const usageByType = new Map();
     const usageDate = validDate || getMyanmarDateInputValue();
+    let dailyProductionPacks = 0;
+    let dailyProductionPieces = 0;
+    let dailyUsedPacks = 0;
+    let dailyUsedPieces = 0;
+    for (const movement of allTubeMovements.filter((row) => row.movementDate === usageDate)) {
+      if (movement.movementType === "PRODUCTION_IN") {
+        dailyProductionPacks += Number(movement.quantityCards || 0);
+        dailyProductionPieces += Number(movement.quantityBottles || 0);
+      } else if (movement.movementType === "PRODUCTION_USE_OUT") {
+        const pieces = Math.abs(Number(movement.quantityBottles || 0));
+        dailyUsedPieces += pieces;
+        dailyUsedPacks += packEquivalent(pieces, movement.capacity);
+      }
+    }
     for (const movement of allTubeMovements.filter((row) => row.movementDate === usageDate && row.movementType === "PRODUCTION_USE_OUT")) {
       const row = usageByType.get(movement.productKey) || { tubeType: movement.productName, capacity: Number(movement.capacity || 0), pieces: 0, packs: 0 };
       row.pieces += Math.abs(Number(movement.quantityBottles || 0));
@@ -89,6 +103,10 @@ export async function GET(request) {
         totalPacks,
         totalPieces,
         totalUsedPacks,
+        dailyProductionPacks,
+        dailyProductionPieces,
+        dailyUsedPacks,
+        dailyUsedPieces,
         records: rows.length,
         byType: byTypeRows,
         recentDate: validDate || null,

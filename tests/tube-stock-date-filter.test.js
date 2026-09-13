@@ -10,5 +10,11 @@ describe("Tube stock date-filtered history", () => {
     expect(route).toContain("recentRows");
     expect(route).toContain("...(validDate ? { reportDate: validDate } : {})");
     expect(route).toContain("take: validLimit");
+    expect(route).toContain("dailyProductionPacks");
+    expect(route).toContain("dailyUsedPieces");
+    expect(page).toContain("data?.dailyProductionPacks");
+    expect(page).toContain("data?.dailyUsedPacks");
+    expect(page).toContain("ယနေ့ ထုတ်လုပ်ဝင်");
+    expect(page).toContain("ယနေ့ သုံးစွဲ");
   });
 });

@@ -77,10 +77,10 @@ export default function TubeStockDetailPage() {
   const rows = useMemo(() => [...(data?.byType || [])].sort((a, b) => String(a.tubeType).localeCompare(String(b.tubeType))), [data]);
   const summary = useMemo(() => ({
     types: rows.length,
-    productionPacks: Number(data?.totalPacks || rows.reduce((sum, row) => sum + Number(row.productionPacks || 0), 0)),
-    productionPieces: Number(data?.totalPieces || rows.reduce((sum, row) => sum + Number(row.productionPieces || 0), 0)),
-    usedPacks: Number(data?.totalUsedPacks || rows.reduce((sum, row) => sum + Number(row.usedPacks || 0), 0)),
-    usedPieces: rows.reduce((sum, row) => sum + Number(row.usedPieces || 0), 0),
+    productionPacks: Number(data?.dailyProductionPacks || 0),
+    productionPieces: Number(data?.dailyProductionPieces || 0),
+    usedPacks: Number(data?.dailyUsedPacks || 0),
+    usedPieces: Number(data?.dailyUsedPieces || 0),
     currentPacks: rows.reduce((sum, row) => sum + Number(row.currentPacks || 0), 0),
     currentPieces: rows.reduce((sum, row) => sum + Number(row.currentPieces || 0), 0),
   }), [data, rows]);
@@ -96,8 +96,8 @@ export default function TubeStockDetailPage() {
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Tube stock KPI">
           <article className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 shadow-sm"><p className="text-[11px] font-black text-cyan-700">Tube အမျိုးအစား</p><p className="mt-1 text-xl font-black text-cyan-950">{value(summary.types, "မျိုး", loading)}</p></article>
-          <article className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm"><p className="text-[11px] font-black text-emerald-700">ထုတ်လုပ်ဝင်</p><p className="mt-1 text-2xl font-black text-emerald-950">{value(summary.productionPacks, "အိတ်", loading)}</p><p className="mt-0.5 text-xs font-bold text-emerald-700">{value(summary.productionPieces, "pcs", loading)}</p></article>
-          <article className="rounded-xl border border-rose-200 bg-rose-50 p-3 shadow-sm"><p className="text-[11px] font-black text-rose-700">သုံးစွဲ</p><p className="mt-1 text-2xl font-black text-rose-950">{value(summary.usedPacks, "အိတ်", loading)}</p><p className="mt-0.5 text-xs font-bold text-rose-700">{value(summary.usedPieces, "pcs", loading)}</p></article>
+          <article className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm"><p className="text-[11px] font-black text-emerald-700">ယနေ့ ထုတ်လုပ်ဝင်</p><p className="mt-1 text-2xl font-black text-emerald-950">{value(summary.productionPacks, "အိတ်", loading)}</p><p className="mt-0.5 text-xs font-bold text-emerald-700">{value(summary.productionPieces, "pcs", loading)}</p></article>
+          <article className="rounded-xl border border-rose-200 bg-rose-50 p-3 shadow-sm"><p className="text-[11px] font-black text-rose-700">ယနေ့ သုံးစွဲ</p><p className="mt-1 text-2xl font-black text-rose-950">{value(summary.usedPacks, "အိတ်", loading)}</p><p className="mt-0.5 text-xs font-bold text-rose-700">{value(summary.usedPieces, "pcs", loading)}</p></article>
           <article className="rounded-xl border border-indigo-200 bg-indigo-50 p-3 shadow-sm"><p className="text-[11px] font-black text-indigo-700">လက်ကျန်</p><p className="mt-1 text-2xl font-black text-indigo-950">{value(summary.currentPacks, "အိတ်", loading)}</p><p className="mt-0.5 text-xs font-bold text-indigo-700">{value(summary.currentPieces, "pcs", loading)}</p></article>
         </section>
         {!loading && !rows.length ? <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-bold text-slate-500">Tube လက်ကျန် data မရှိသေးပါ။</div> : null}
