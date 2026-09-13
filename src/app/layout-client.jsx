@@ -415,10 +415,15 @@ export default function RootLayoutClient({ children }) {
     setAppZoom(readAppZoom());
   }, []);
 
+  const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
+
   useEffect(() => {
-    if (!authReady) return;
+    // Safari standalone/PWA can finish the session request before the
+    // permission request and current page have rendered. Removing the
+    // server fallback at authReady alone leaves a blank white frame there.
+    if (!authReady || (authenticated && !canRenderCurrentPage)) return;
     document.getElementById('startup-fallback')?.remove();
-  }, [authReady]);
+  }, [authReady, authenticated, canRenderCurrentPage]);
 
   useEffect(() => {
     if (!actorName) {
@@ -508,8 +513,6 @@ export default function RootLayoutClient({ children }) {
     setActorName('');
     setAuthenticated(false);
   }, []);
-
-  const canRenderCurrentPage = authenticated && !permissionsLoading && allowedPaths.includes(pathname);
 
   return (
     <>
