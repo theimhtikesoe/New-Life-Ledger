@@ -292,13 +292,13 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
               </label>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-indigo-700">{currentLabel}</span>
-                <button type="button" onClick={() => setShowOpeningForm(!showOpeningForm)} className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] font-black text-indigo-700 shadow-sm hover:bg-indigo-50" aria-expanded={showOpeningForm}>လအစလက်ကျန်</button>
+                <button type="button" onClick={() => setShowOpeningForm(!showOpeningForm)} className="rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] font-black text-indigo-700 shadow-sm hover:bg-indigo-50" aria-expanded={showOpeningForm}>လအစ Opening</button>
               </div>
             </div>
 
             {showOpeningForm && (
               <div className="mt-3 rounded-xl border border-indigo-200 bg-indigo-50/40 p-4">
-                <h3 className="text-sm font-bold text-indigo-900">လအစ စာအုပ်လက်ကျန် ညှိရန်</h3>
+                <h3 className="text-sm font-bold text-indigo-900">လအစ Opening သတ်မှတ်ရန်</h3>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   <label className="space-y-1">
                     <span className="text-[11px] font-bold text-indigo-700">စုစုပေါင်း (Ks)</span>
@@ -309,10 +309,10 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                     <input type="date" value={openingDraft.asOfDate} onChange={(e) => setOpeningForm({ ...openingDraft, asOfDate: e.target.value })} className="h-10 w-full rounded-lg border border-indigo-200 px-3 text-sm" />
                   </label>
                   <div className="flex items-end">
-                    <button type="button" onClick={saveOpening} disabled={saving} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "လအစလက်ကျန် သိမ်းမည်"}</button>
+                    <button type="button" onClick={saveOpening} disabled={saving} className="h-10 w-full rounded-lg bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "လအစ Opening သိမ်းမည်"}</button>
                   </div>
                 </div>
-                <p className="mt-2 text-[10px] leading-4 text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,950 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `လအစလက်ကျန် သိမ်းမည်` နှိပ်မှသာ စနစ်ထဲ သိမ်းပါမည်။</p>
+                <p className="mt-2 text-[10px] leading-4 text-indigo-600">26/08/2026 အထိ စာအုပ်ထဲက စုစုပေါင်း <strong>246,593,950 Ks</strong> ကို အကြိုဖြည့်ထားပါသည်။ မသိမ်းမီ ပြန်စစ်နိုင်ပြီး `လအစ Opening သိမ်းမည်` နှိပ်မှသာ စနစ်ထဲ သိမ်းပါမည်။</p>
               </div>
             )}
 
@@ -331,7 +331,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                 </label>
               ))}
               <div className="flex h-full flex-col rounded-xl border border-rose-200 bg-rose-50 p-3.5">
-                <p className="text-xs font-semibold text-rose-800">တစ်နေ့တာ လက်လီ + လက်ကား</p>
+                <p className="text-xs font-semibold text-rose-800">ယနေ့ လက်လီ + လက်ကား ရောင်းရငွေ</p>
                 <p className="mt-1 text-xl font-bold text-rose-900">{formatMoney(dailyTotal)}</p>
                 <p className="mt-1 text-[11px] text-rose-700">လက်လီရောင်းရငွေ + လက်ကားရောင်းရငွေ</p>
               </div>
@@ -341,9 +341,9 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                 <p className="mt-1 text-[11px] text-rose-700">လက်လီငွေသား + လက်ကားငွေသား</p>
               </div>
               <div className="col-span-2 flex h-full w-full flex-col justify-self-center rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 sm:w-1/2">
-                <p className="text-xs font-semibold text-emerald-800">လစဉ်စုစုပေါင်း / နောက်နေ့ Opening</p>
+                <p className="text-xs font-semibold text-emerald-800">ယနေ့အထိ စုစုပေါင်း / နောက်နေ့ Opening</p>
                 <p className="mt-1 text-xl font-bold text-emerald-900">{formatMoney(displayedOpening)}</p>
-                <p className="mt-1 text-[11px] text-emerald-700">အောက်ကဇယားရဲ့ လက်ရှိ Opening တန်ဖိုးအတိုင်း ပြထားသည်</p>
+                <p className="mt-1 text-[11px] leading-4 text-emerald-700">လအစ Opening နှင့် ယနေ့အထိ လက်လီ/လက်ကား ရောင်းရငွေ စုစုပေါင်း။ ယနေ့အဆုံးတန်ဖိုးသည် နောက်နေ့ Opening ဖြစ်သည်။</p>
               </div>
             </div>
 
@@ -358,7 +358,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
             {summary?.rows?.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-sm font-bold text-slate-900">နေ့စဉ်ရောင်းရငွေ / နောက်နေ့ Opening ဇယား</h3>
-                <p className="mt-1 text-[11px] text-slate-500">အဲဒီနေ့အဆုံး စုစုပေါင်းက နောက်နေ့ Opening အဖြစ် အလိုအလျောက် ဆက်သွားပါသည်။</p>
+                <p className="mt-1 text-[11px] text-slate-500">လတိုင်းကို Opening 0 ဖြင့် စတင်ပြီး၊ ယနေ့အဆုံး စုစုပေါင်းသည် နောက်နေ့ Opening အဖြစ် အလိုအလျောက် ဆက်သွားပါသည်။</p>
                 <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-slate-600">
@@ -366,8 +366,8 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                         <th className="px-3 py-2 font-bold">ရက်စွဲ</th>
                         <th className="px-3 py-2 font-bold">လက်လီ (Total)</th>
                         <th className="px-3 py-2 font-bold">လက်ကား (Total)</th>
-                        <th className="px-3 py-2 font-bold">တစ်နေ့တာ</th>
-                        <th className="px-3 py-2 font-bold">အဲဒီနေ့အဆုံး / နောက်နေ့ Opening</th>
+                        <th className="px-3 py-2 font-bold">နေ့စဉ် ရောင်းရငွေ</th>
+                        <th className="px-3 py-2 font-bold">ယနေ့အဆုံး စုစုပေါင်း / နောက်နေ့ Opening</th>
                         <th className="px-3 py-2 font-bold">ငွေသား</th>
                         <th className="px-3 py-2 font-bold">Source</th>
                       </tr>

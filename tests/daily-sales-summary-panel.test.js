@@ -17,7 +17,7 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain('setDraft(toDraft(body.data.autoPreview || body.data.selectedDay))');
     expect(source).not.toContain('setIsEditing(body.data.selectedDay?.source === "CASH_SALE")');
     expect(source).not.toContain("window.setTimeout(() => { saveDaily(); }, 900)");
-    expect(source).toContain('>လအစလက်ကျန်</button>');
+    expect(source).toContain('>လအစ Opening</button>');
     expect(source).toContain('aria-expanded={showOpeningForm}');
     expect(source).not.toContain('setShowOpeningForm(true);');
     expect(source).toContain('calculationMode: hasManualDifference ? "MANUAL" : "AUTO"');
@@ -48,7 +48,7 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain("const rowsWithCumulative = chronologicalRows.map((row) => {");
     expect(source).toContain("return rowsWithCumulative.sort((a, b) => b.date.localeCompare(a.date));");
     expect(source).toContain("{formatMoney(displayedOpening)}");
-    expect(source).toContain("အောက်ကဇယားရဲ့ လက်ရှိ Opening တန်ဖိုးအတိုင်း ပြထားသည်");
+    expect(source).toContain("လအစ Opening နှင့် ယနေ့အထိ လက်လီ/လက်ကား ရောင်းရငွေ စုစုပေါင်း။ ယနေ့အဆုံးတန်ဖိုးသည် နောက်နေ့ Opening ဖြစ်သည်။");
   });
 
   it("keeps six summary cards in an even two-column grid with centered monthly opening", () => {
@@ -56,7 +56,7 @@ describe("DailySalesSummaryPanel", () => {
     const outputEnd = source.indexOf('<div className="mt-4 flex flex-col gap-3', outputStart);
     const output = source.slice(outputStart, outputEnd);
     const inputCards = output.indexOf("{[INPUT_FIELDS[0], INPUT_FIELDS[2], INPUT_FIELDS[1], INPUT_FIELDS[3]].map");
-    const dailyTotalCard = output.indexOf("တစ်နေ့တာ လက်လီ + လက်ကား");
+    const dailyTotalCard = output.indexOf("ယနေ့ လက်လီ + လက်ကား ရောင်းရငွေ");
     const cashTotalCard = output.indexOf("တစ်နေ့တာ ငွေသား");
     const monthlyOpeningCard = output.indexOf('col-span-2 flex h-full w-full flex-col justify-self-center');
 
@@ -66,9 +66,9 @@ describe("DailySalesSummaryPanel", () => {
     expect(dailyTotalCard).toBeGreaterThan(inputCards);
     expect(cashTotalCard).toBeGreaterThan(dailyTotalCard);
     expect(monthlyOpeningCard).toBeGreaterThan(cashTotalCard);
-    expect(output).toContain("လစဉ်စုစုပေါင်း / နောက်နေ့ Opening");
+    expect(output).toContain("ယနေ့အထိ စုစုပေါင်း / နောက်နေ့ Opening");
     expect(output).not.toContain("max-w-sm rounded-xl border");
     expect(source).toContain("နေ့စဉ်ရောင်းရငွေ / နောက်နေ့ Opening ဇယား");
-    expect(source).toContain("အဲဒီနေ့အဆုံး / နောက်နေ့ Opening");
+    expect(source).toContain("ယနေ့အဆုံး စုစုပေါင်း / နောက်နေ့ Opening");
   });
 });
