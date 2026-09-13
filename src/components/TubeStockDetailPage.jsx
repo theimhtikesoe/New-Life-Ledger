@@ -66,7 +66,7 @@ export default function TubeStockDetailPage() {
       const response = await fetch(`/api/tube-stock?type=${encodeURIComponent(row.tubeType)}&limit=100`, { cache: "no-store" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Tube အသေးစိတ် ရယူ၍မရပါ။");
-      setDetailMovements(body.data?.movements || []);
+      setDetailMovements([...(body.data?.movements || [])].sort((a, b) => String(b.movementDate || "").localeCompare(String(a.movementDate || "")) || new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
     } catch (fetchError) {
       setError(fetchError.message);
     } finally {

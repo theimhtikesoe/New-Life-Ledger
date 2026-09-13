@@ -70,7 +70,9 @@ export default function FactoryStockPage() {
   // Bottle KPI contract: filter((item) => item.stockType !== "TUBE")
   const bottleSummary = (data?.summary || []).filter((item) => item.stockType === "BOTTLE");
   const selected = bottleSummary.find((item) => item.productKey === selectedKey);
-  const selectedMovements = data?.movements?.filter((item) => item.productKey === selectedKey) || [];
+  const selectedMovements = (data?.movements || [])
+    .filter((item) => item.productKey === selectedKey)
+    .sort((a, b) => String(b.movementDate || "").localeCompare(String(a.movementDate || "")) || new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   const openDetails = (productKey) => setSelectedKey(productKey);
   const dailyBottleUsage = (() => { const grouped = new Map(); (data?.movements || []).filter((movement) => movement.stockType === "BOTTLE" && movement.movementDate === todayValue() && movement.movementType === "SALE_OUT").forEach((movement) => { const key = `${movement.productName}::${movement.capacity}`; const row = grouped.get(key) || { name: movement.productName, capacity: Number(movement.capacity || 0), bottles: 0, cards: 0 }; row.bottles += Math.abs(Number(movement.quantityBottles || 0)); row.cards += Math.abs(Number(movement.quantityCards || 0)); grouped.set(key, row); }); return [...grouped.values()]; })();
   const dailyBottlePieces = dailyBottleUsage.reduce((sum, row) => sum + row.bottles, 0);
