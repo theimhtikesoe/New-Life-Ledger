@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { encodeActorHeader } from "@/lib/actor-header";
 
 const money = (value) => `${Number(value || 0).toLocaleString("en-US")} Ks`;
 const initialExpenses = [
@@ -8,6 +9,7 @@ const initialExpenses = [
   ["အသား", "အသား", 1817500],
   ["အသီးအရွက်နှင့် ဟင်းထဲထည့်သည့် အစာပလာဘိုး", "အသီးအရွက်နှင့် ဟင်းထဲထည့်သည့် အစာပလာဘိုး", 1713000],
 ];
+const apiOptions = (options = {}) => ({ ...options, headers: { ...(options.headers || {}), "x-actor-name": encodeActorHeader(typeof window === "undefined" ? "" : localStorage.getItem("actorName") || "") } });
 
 export default function ExpensesPage() {
   const [rows, setRows] = useState([]);
@@ -16,17 +18,17 @@ export default function ExpensesPage() {
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const response = await fetch("/api/expenses?month=2026-08", { cache: "no-store" });
+    const response = await fetch("/api/expenses?month=2026-08", apiOptions({ cache: "no-store" }));
     const body = await response.json();
     const existing = Array.isArray(body.data) ? body.data : [];
     if (existing.length) {
       setRows(existing);
     } else {
-      const seeded = await Promise.all(initialExpenses.map(([, description, amount]) => fetch("/api/expenses", {
+      const seeded = await Promise.all(initialExpenses.map(([, description, amount]) => fetch("/api/expenses", apiOptions({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expenseDate: "2026-08-31", category: "စားသောက်စာရိတ်", description, amount }),
-      }).then((result) => result.json()).then((result) => result.data).catch(() => null)));
+      })).then((result) => result.json()).then((result) => result.data).catch(() => null)));
       setRows(seeded.filter(Boolean));
     }
   }
@@ -40,7 +42,7 @@ export default function ExpensesPage() {
   async function save(event) {
     event.preventDefault();
     setError("");
-    const response = await fetch("/api/expenses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    const response = await fetch("/api/expenses", apiOptions({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) }));
     const body = await response.json();
     if (!response.ok) return setError(body.error || "သိမ်း၍ မရပါ။");
     setRows((current) => [body.data, ...current]);
@@ -49,7 +51,7 @@ export default function ExpensesPage() {
 
   async function remove(id) {
     if (!window.confirm("ဤအသုံးစားရိတ်ကို ဖျက်မည်လား။")) return;
-    const response = await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    const response = await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, apiOptions({ method: "DELETE" }));
     if (response.ok) setRows((current) => current.filter((row) => row.id !== id));
   }
 
