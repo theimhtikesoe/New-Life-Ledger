@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { encodeActorHeader } from "@/lib/actor-header";
 
 const money = new Intl.NumberFormat("en-US");
@@ -76,8 +77,8 @@ function toneClasses(tone) {
     : "border-amber-200 bg-amber-50 text-amber-900";
 }
 
-export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0, dateLoading = false }) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0, dateLoading = false, fullPage = false }) {
+  const [isOpen, setIsOpen] = useState(fullPage);
   const [date, setDate] = useState(() => selectedDate || formatMyanmarDateInputValue());
   const [summary, setSummary] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -257,11 +258,10 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="neon-card neon-sweep neon-card-violet flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-violet-200 bg-violet-50/85 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[170px]"
-        aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ panel ဖွင့်ရန်"
+      <Link
+        href={`/daily-sales-summary?date=${encodeURIComponent(selectedDate || formatMyanmarDateInputValue())}`}
+        className={`${fullPage ? "hidden" : ""} neon-card neon-sweep neon-card-violet flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-violet-200 bg-violet-50/85 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md sm:min-h-[170px]`}
+        aria-label="နေ့စဉ် လက်လီ လက်ကား ရောင်းရငွေ အသေးစိတ်စာမျက်နှာဖွင့်ရန်"
       >
         <p className="text-sm font-black uppercase tracking-wide text-violet-700 sm:text-base">ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း</p>
         <p className="mt-2 flex min-h-8 items-center text-2xl font-black text-violet-900">{loading || dateLoading ? "ရယူနေသည်..." : formatMoney(dailyTotal)}</p>
@@ -271,18 +271,18 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
           <p>{loading || dateLoading ? "ရယူနေသည်..." : `လက်ကား ${wholesaleCount} ခု`}</p>
         </div>
         <p className="mt-auto pt-2 text-xs font-bold text-violet-700 sm:text-sm">အသေးစိတ်ကြည့်ရန် →</p>
-      </button>
+      </Link>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-[120] flex items-start justify-center bg-slate-950/35 p-2 backdrop-blur-[2px] sm:items-center sm:p-5" style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }} role="dialog" aria-modal="true" aria-labelledby="daily-sales-summary-title">
-          <section className="relative max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl sm:max-h-[94vh] sm:p-6">
+        <div className={fullPage ? "min-h-screen bg-slate-50 py-4 sm:py-8" : "fixed inset-0 z-[120] flex items-start justify-center bg-slate-950/35 p-2 backdrop-blur-[2px] sm:items-center sm:p-5"} style={fullPage ? undefined : { paddingTop: "max(0.5rem, env(safe-area-inset-top))" }} role={fullPage ? undefined : "dialog"} aria-modal={fullPage ? undefined : "true"} aria-labelledby="daily-sales-summary-title">
+          <section className={fullPage ? "mx-auto w-full max-w-5xl px-3 sm:px-6" : "relative max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl sm:max-h-[94vh] sm:p-6"}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-semibold tracking-[0.16em] text-indigo-600">နေ့စဉ် ရောင်းရငွေ အနှစ်ချုပ်</p>
                 <h2 id="daily-sales-summary-title" className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</h2>
                 <p className="mt-1 text-xs leading-5 text-slate-600">နေ့စဉ် ၄ ခုကို သိမ်းထားနိုင်ပြီး တစ်လစာစုစုပေါင်းကို auto တွက်ပေးပါသည်။</p>
               </div>
-              <button type="button" onClick={() => setIsOpen(false)} className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50" aria-label="Panel ပိတ်ရန်">ပိတ်မည်</button>
+              {fullPage ? <Link href="/" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Dashboard သို့</Link> : <button type="button" onClick={() => setIsOpen(false)} className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50" aria-label="Panel ပိတ်ရန်">ပိတ်မည်</button>}
             </div>
 
             <div className="mt-4 flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
