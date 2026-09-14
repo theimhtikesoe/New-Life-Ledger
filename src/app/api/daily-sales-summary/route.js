@@ -9,6 +9,9 @@ import { buildDailyReconciliation } from "@/lib/daily-summary-review";
 
 export const dynamic = "force-dynamic";
 
+const SUMMARY_CACHE_TTL_MS = 15_000;
+const summaryCache = new Map();
+
 const CASH_PAYMENT_TYPE = "CASH";
 // This specific Sep 10 settlement is present in the physical wholesale book,
 // so include it without changing the treatment of other settlement rows.
@@ -257,27 +260,32 @@ function validateDailyInput(body) {
 }
 
 async function readSummary(date, { includeReconciliation = false } = {}) {
+  const cacheKey = `${date}:${includeReconciliation ? "reconcile" : "summary"}`;
+  const cached = summaryCache.get(cacheKey);
+  if (cached && Date.now() - cached.createdAt < SUMMARY_CACHE_TTL_MS) return cached.data;
   const { range } = parseDate(date);
   const month = date.slice(0, 7);
   const monthStart = getMyanmarDayRange(`${month}-01`).start;
-  const cashSales = await prisma.cashSale.findMany({
-    where: { date: { gte: monthStart, lt: range.end } },
-    select: { id: true, date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
-    orderBy: [{ date: "desc" }, { id: "desc" }],
-  });
-  const ledgers = prisma.ledger?.findMany
-    ? await prisma.ledger.findMany({
+  const [cashSales, ledgers, savedRows, opening] = await Promise.all([
+    prisma.cashSale.findMany({
+      where: { date: { gte: monthStart, lt: range.end } },
+      select: { id: true, date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+    }),
+    prisma.ledger?.findMany
+      ? prisma.ledger.findMany({
         where: { date: { gte: monthStart, lt: range.end } },
-        select: { id: true, date: true, type: true, paymentType: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
+        select: { id: true, date: true, saleType: true, type: true, paymentType: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
         orderBy: [{ date: "desc" }, { id: "desc" }],
-      })
-    : [];
-  const savedRows = await prisma.dailySalesSummary.findMany({
-    where: { date: { gte: `${month}-01`, lte: date } },
-    select: SUMMARY_SELECT,
-    orderBy: [{ date: "desc" }],
-  });
-  const opening = await prisma.dailySalesOpening.findUnique({ where: { month } });
+        })
+      : Promise.resolve([]),
+    prisma.dailySalesSummary.findMany({
+      where: { date: { gte: `${month}-01`, lte: date } },
+      select: SUMMARY_SELECT,
+      orderBy: [{ date: "desc" }],
+    }),
+    prisma.dailySalesOpening.findUnique({ where: { month } }),
+  ]);
 
   const cashByDate = new Map();
   for (const sale of cashSales) {
@@ -338,7 +346,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
     .filter((row) => (!openingAsOfDate || row.date > openingAsOfDate) && row.date <= date)
     .reduce((total, row) => total + row.dailyTotal, 0);
 
-  return {
+  const result = {
     date,
     selectedDay,
     autoPreview: selectedAuto,
@@ -353,6 +361,8 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
       ? { reconciliation: buildDailyReconciliation({ date, auto: selectedAuto, saved: selectedSaved, cashSales: cashByDate.get(date) || [], ledgerPayments: ledgerByDate.get(date) || [] }) }
       : {}),
   };
+  summaryCache.set(cacheKey, { createdAt: Date.now(), data: result });
+  return result;
 }
 
 export async function GET(request) {
@@ -372,6 +382,7 @@ export async function POST(request) {
   try {
     await ensureDatabase();
     const body = await request.json();
+    summaryCache.clear();
     const actorName = getActorName(request);
 
     if (body.action === "opening") {
