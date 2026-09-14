@@ -1,6 +1,36 @@
 export function settlementTargetId(note) {
-  const match = String(note || "").match(/^__SETTLES_CREDIT_LEDGER__:(\S+)$/);
-  return match ? match[1] : null;
+  return settlementTargetIds(note)[0] || null;
+}
+
+export function settlementTargetIds(note) {
+  return [...String(note || "").matchAll(/__SETTLES_CREDIT_LEDGER__:(\S+)/g)]
+    .map((match) => match[1])
+    .filter((id, index, ids) => ids.indexOf(id) === index);
+}
+
+export function cleanSettlementNote(note) {
+  return String(note || "")
+    .replace(/__SETTLES_CREDIT_LEDGER__:\S+/g, "")
+    .replace(/__PREPAYMENT__/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function buildSettlementNote(note, { targetId = "", prepayment = false } = {}) {
+  const base = cleanSettlementNote(note);
+  const marker = prepayment
+    ? "__PREPAYMENT__"
+    : targetId ? `__SETTLES_CREDIT_LEDGER__:${targetId}` : "";
+  return [base, marker].filter(Boolean).join(" ");
+}
+
+export function normalizeSettlementNote(note) {
+  const base = cleanSettlementNote(note);
+  const targetId = settlementTargetId(note);
+  const marker = targetId
+    ? `__SETTLES_CREDIT_LEDGER__:${targetId}`
+    : String(note || "").includes("__PREPAYMENT__") ? "__PREPAYMENT__" : "";
+  return [base, marker].filter(Boolean).join(" ");
 }
 
 export async function hydrateSettlementSaleTypes(db, ledgers = []) {
@@ -22,8 +52,8 @@ export async function hydrateSettlementSaleTypes(db, ledgers = []) {
 }
 
 export function isWholesaleSettlement(ledger) {
-  if (String(ledger?.type || "").toUpperCase() !== "DEBIT") return false;
-  const targetId = settlementTargetId(ledger.note);
-  if (!targetId) return true;
-  return String(ledger.settlementSaleType || "").toUpperCase() === "WHOLESALE";
+  // Settlement selection is a data link only. Every ledger DEBIT is a
+  // payment received and must remain in the wholesale/payment total even
+  // when it points to one or more old CREDIT rows.
+  return String(ledger?.type || "").toUpperCase() === "DEBIT";
 }

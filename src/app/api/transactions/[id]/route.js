@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
+import { normalizeSettlementNote } from "@/lib/ledger-settlement";
 
 export const dynamic = "force-dynamic";
 
@@ -133,7 +134,7 @@ export async function PATCH(request, { params }) {
           amount,
           discountAmount,
           discountNote,
-          note: body.note?.trim() || null,
+          note: type === "DEBIT" ? normalizeSettlementNote(body.note) || null : body.note?.trim() || null,
           paymentType: body.paymentType || null,
           saleItems,
           date,

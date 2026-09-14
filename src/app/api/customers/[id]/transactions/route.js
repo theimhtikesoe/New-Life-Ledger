@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
+import { normalizeSettlementNote } from "@/lib/ledger-settlement";
 import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
 import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 
@@ -94,7 +95,7 @@ export async function POST(request, { params }) {
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
           rate: body.rate ? Math.round(Number(body.rate)) : null,
           deductions, amount, discountAmount, discountNote,
-          note: body.note?.trim() || null,
+          note: type === "DEBIT" ? normalizeSettlementNote(body.note) || null : body.note?.trim() || null,
           paymentType: body.paymentType || null, saleItems,
           date: getMyanmarDayRange(ledgerDate).start,
         },

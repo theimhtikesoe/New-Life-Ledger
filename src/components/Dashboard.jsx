@@ -11,6 +11,7 @@ import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } fro
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
+import { buildSettlementNote } from "@/lib/ledger-settlement";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
@@ -1281,10 +1282,11 @@ export default function Dashboard({ view = "overview" }) {
         throw new Error(paymentBreakdownValidationMessage(ledgerForm.paymentBreakdown, cashSaleAmount));
       }
       const amountToSave = hasCashSaleBreakdown ? cashSaleBreakdownTotal : hasSinglePayment ? singlePaymentAmount : amount;
-      const paymentNote = type === "DEBIT" && recordingPrepayment
-        ? [ledgerForm.note, "__PREPAYMENT__"].filter(Boolean).join(" ")
-        : type === "DEBIT" && paymentTargetLedgerId
-        ? [ledgerForm.note, `__SETTLES_CREDIT_LEDGER__:${paymentTargetLedgerId}`].filter(Boolean).join(" ")
+      const paymentNote = type === "DEBIT"
+        ? buildSettlementNote(ledgerForm.note, {
+            targetId: recordingPrepayment ? "" : paymentTargetLedgerId,
+            prepayment: recordingPrepayment,
+          })
         : ledgerForm.note;
 
       if (editingTransaction && !isCashSale) {
