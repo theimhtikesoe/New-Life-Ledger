@@ -18,7 +18,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { createProductionSummaryHtml, createReportHtml, formatCashSaleDetails, getDailyReportData } from "@/lib/daily-report";
+import { createProductionSummaryHtml, createReportHtml, formatCashSaleDetails, getDailyReportData, summarizeProductionReports } from "@/lib/daily-report";
 
 const period = {
   start: new Date("2026-08-25T00:00:00.000Z"),
@@ -63,6 +63,18 @@ beforeEach(() => {
 });
 
 describe("Telegram daily report CashSale data", () => {
+  it("uses the total produced Tube bags instead of the legacy manual quantity", () => {
+    const summary = summarizeProductionReports([
+      { category: "tube", tubeG: "13g", tubeColor: "W", outputQuantity: 2, outputCapacity: 2500, outputUnit: "အိတ်", tubeQuantityValue: "3.5", tubeQuantityUnit: "အိတ်" },
+      { category: "tube", tubeG: "13g", tubeColor: "S+S", outputQuantity: 7, outputCapacity: 2500, outputUnit: "အိတ်", tubeQuantityValue: "0", tubeQuantityUnit: "အိတ်" },
+      { category: "tube", tubeG: "24g", tubeColor: "W", outputQuantity: 6, outputCapacity: 1500, outputUnit: "အိတ်", tubeQuantityValue: "0", tubeQuantityUnit: "အိတ်" },
+    ]);
+
+    expect(summary.tubeQuantityValue).toBe("15");
+    expect(summary.tubeQuantityUnit).toBe("အိတ်");
+    expect(summary.tubes.reduce((total, row) => total + row.quantity, 0)).toBe(15);
+  });
+
   it("renders the fourth production page with book summary tables and totals", () => {
     const html = createProductionSummaryHtml({
       dateLabel: "2026-08-25",

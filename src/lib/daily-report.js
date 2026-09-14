@@ -176,7 +176,7 @@ function summarizeDailySalesRows(cashSales = [], ledgers = []) {
   };
 }
 
-function summarizeProductionReports(rows = []) {
+export function summarizeProductionReports(rows = []) {
   const bottles = new Map();
   const tubes = new Map();
   let totalOutput = 0;
@@ -211,7 +211,20 @@ function summarizeProductionReports(rows = []) {
       tubeQuantityUnit = row.tubeQuantityUnit || "အိတ်";
     }
   }
-  return { bottles: [...bottles.values()], tubes: [...tubes.values()], totalOutput, totalWaste, totalTubeDamage, tubeQuantityValue, tubeQuantityUnit };
+  const tubeRows = [...tubes.values()];
+  const producedTubeQuantity = tubeRows.reduce((total, row) => total + Number(row.quantity || 0), 0);
+  const producedTubeUnit = tubeRows[0]?.unit || tubeQuantityUnit;
+  return {
+    bottles: [...bottles.values()],
+    tubes: tubeRows,
+    totalOutput,
+    totalWaste,
+    totalTubeDamage,
+    // The PDF must report the bags actually produced in the Tube rows.
+    // tubeQuantityValue is an older/manual field and can be unrelated (e.g. 3.5).
+    tubeQuantityValue: tubeRows.length ? String(producedTubeQuantity) : tubeQuantityValue,
+    tubeQuantityUnit: tubeRows.length ? producedTubeUnit : tubeQuantityUnit,
+  };
 }
 
 export async function getDailySalesSummaryCardData(dateLabel) {
