@@ -44,9 +44,11 @@ describe("DailySalesSummaryPanel", () => {
   it("uses the current table Opening value in the green card", () => {
     expect(source).toContain("const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;");
     expect(source).toContain("const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;");
-    expect(source).toContain("const chronologicalRows = [...summary.rows].sort((a, b) => a.date.localeCompare(b.date));");
+    expect(source).toContain("const tableSummary = historySummary || summary;");
+    expect(source).toContain("const chronologicalRows = [...tableSummary.rows].sort((a, b) => a.date.localeCompare(b.date));");
+    expect(source).toContain("const [historyDate, setHistoryDate] = useState(() => formatMyanmarDateInputValue());");
+    expect(source).toContain("Table Date");
     expect(source).toContain("const rowsWithCumulative = chronologicalRows.map((row) => {");
-    expect(source).toContain("return rowsWithCumulative.sort((a, b) => b.date.localeCompare(a.date));");
     expect(source).toContain("{formatMoney(displayedOpening)}");
     expect(source).toContain("လအစ Opening နှင့် ယနေ့အထိ လက်လီ/လက်ကား ရောင်းရငွေ စုစုပေါင်း။ ယနေ့အဆုံးတန်ဖိုးသည် နောက်နေ့ Opening ဖြစ်သည်။");
     expect(source).toContain("getPreviousMyanmarDateInputValue(`${targetDate.slice(0, 7)}-01`)");

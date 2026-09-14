@@ -80,7 +80,9 @@ function toneClasses(tone) {
 export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0, dateLoading = false, fullPage = false }) {
   const [isOpen, setIsOpen] = useState(fullPage);
   const [date, setDate] = useState(() => selectedDate || formatMyanmarDateInputValue());
+  const [historyDate, setHistoryDate] = useState(() => formatMyanmarDateInputValue());
   const [summary, setSummary] = useState(null);
+  const [historySummary, setHistorySummary] = useState(null);
   const [draft, setDraft] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -135,6 +137,22 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
     load(date);
   }, [load, date]);
 
+  useEffect(() => {
+    let active = true;
+    const actorName = window.localStorage.getItem("actorName") || "";
+    fetch(`/api/daily-sales-summary?date=${encodeURIComponent(historyDate)}`, {
+      cache: "no-store",
+      headers: { "x-actor-name": encodeActorHeader(actorName) },
+    }).then(async (response) => {
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) throw new Error(body.error || "နေ့စဉ် history data မရသေးပါ။");
+      if (active) setHistorySummary(body.data);
+    }).catch((requestError) => {
+      if (active) setError(requestError.message || "နေ့စဉ် history data မရသေးပါ။");
+    });
+    return () => { active = false; };
+  }, [historyDate]);
+
   const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
   const values = draft || toDraft(automatic);
   const dailyTotal = Number(values.retailTotal || 0) + Number(values.wholesaleTotal || 0);
@@ -146,12 +164,13 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   const invalidCashInput = Number(values.retailCash || 0) > Number(values.retailTotal || 0)
     || Number(values.wholesaleCash || 0) > Number(values.wholesaleTotal || 0);
   const tableRows = useMemo(() => {
-    if (!summary?.rows?.length) return [];
-    let running = Number(summary.opening?.amount || 0);
-    const openingAsOfDate = summary.opening?.asOfDate || "";
-    const chronologicalRows = [...summary.rows].sort((a, b) => a.date.localeCompare(b.date));
+    const tableSummary = historySummary || summary;
+    if (!tableSummary?.rows?.length) return [];
+    let running = Number(tableSummary.opening?.amount || 0);
+    const openingAsOfDate = tableSummary.opening?.asOfDate || "";
+    const chronologicalRows = [...tableSummary.rows].sort((a, b) => a.date.localeCompare(b.date));
     const rowsWithCumulative = chronologicalRows.map((row) => {
-      const displayRow = dateKey(row.date) === dateKey(date)
+      const displayRow = dateKey(row.date) === dateKey(historyDate) && dateKey(historyDate) === dateKey(date)
         ? {
             ...row,
             retailTotal: Number(values.retailTotal || 0),
@@ -167,7 +186,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       return { ...displayRow, monthlyCumulative: included ? running : null };
     });
     return rowsWithCumulative;
-  }, [summary, date, values, dailyTotal, cashDailyTotal]);
+  }, [historySummary, summary, date, historyDate, values, dailyTotal, cashDailyTotal]);
 
   const historyPageCount = Math.max(1, Math.ceil(tableRows.length / HISTORY_PAGE_SIZE));
   const visibleHistoryPage = Math.min(historyPage, historyPageCount);
@@ -177,9 +196,9 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   );
 
   useEffect(() => {
-    const selectedDateIndex = tableRows.findIndex((row) => dateKey(row.date) === dateKey(date));
+    const selectedDateIndex = tableRows.findIndex((row) => dateKey(row.date) === dateKey(historyDate));
     setHistoryPage(selectedDateIndex >= 0 ? Math.floor(selectedDateIndex / HISTORY_PAGE_SIZE) + 1 : 1);
-  }, [date, tableRows]);
+  }, [historyDate, tableRows]);
 
   const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;
   const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;
@@ -357,8 +376,11 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
 
             {summary?.rows?.length > 0 && (
               <div className="mt-6">
-                <h3 className="text-sm font-bold text-slate-900">နေ့စဉ်ရောင်းရငွေ / နောက်နေ့ Opening ဇယား</h3>
-                <p className="mt-1 text-[11px] text-slate-500">လတိုင်းကို Opening 0 ဖြင့် စတင်ပြီး၊ ယနေ့အဆုံး စုစုပေါင်းသည် နောက်နေ့ Opening အဖြစ် အလိုအလျောက် ဆက်သွားပါသည်။</p>
+                <div className="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div><h3 className="text-sm font-bold text-slate-900">နေ့စဉ်ရောင်းရငွေ / နောက်နေ့ Opening ဇယား</h3><p className="mt-1 text-[11px] text-slate-500">အပေါ်က Date သည် KPI ကြည့်ရန်သာ ဖြစ်ပြီး၊ ဒီအောက်က Date သည် Table history အတွက် သီးခြားဖြစ်ပါသည်။</p></div>
+                  <label className="flex shrink-0 items-center gap-2 text-sm font-bold text-indigo-900"><span>Table Date</span><input type="date" value={historyDate} onChange={(event) => { setHistoryDate(event.target.value); setHistoryPage(1); }} className="min-h-10 rounded-lg border border-indigo-300 bg-white px-2.5 py-2 text-sm font-semibold text-slate-800" /></label>
+                </div>
+                <p className="mt-2 text-[11px] text-slate-500">စက်တင်ဘာ ၁ ရက်မှ ရွေးထားသော Table Date အထိ data များကို ပြသပါသည်။ ယနေ့အထိကြည့်လိုပါက Table Date ကို ယနေ့အတိုင်းထားပါ။</p>
                 <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-slate-600">
