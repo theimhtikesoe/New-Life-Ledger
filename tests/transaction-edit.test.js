@@ -10,6 +10,7 @@ describe("Ledger transaction editing", () => {
     expect(routeSource).toContain('export async function PATCH(request, { params })');
     expect(routeSource).toContain("const previousEffect = ledger.type === \"CREDIT\"");
     expect(routeSource).toContain("const nextEffect = type === \"CREDIT\"");
+    expect(routeSource).toContain("{ maxWait: 15000, timeout: 30000 }");
     expect(routeSource).toContain('data: {\n          type,');
     expect(routeSource).toContain('action: "UPDATE"');
   });

@@ -22,6 +22,13 @@ describe("Ledger form validation feedback", () => {
     expect(source).toContain("setLedgerFormError(error.message ||");
     expect(source).toContain("if (error.status && error.status >= 500) await loadCustomer(selectedCustomerId);");
   });
+
+  it("allows one repayment to settle the customer's total debt across multiple credit entries", () => {
+    expect(source).toContain("const availableCustomerBalance = Math.max(0, Math.round(Number(selectedCustomer?.current_balance || 0)))");
+    expect(source).toContain("? Math.max(0, Math.round(Number(selectedCustomer?.current_balance || 0)))");
+    expect(source).toContain("amount + ledgerDiscountAmount > availableCustomerBalance");
+    expect(source).toContain("availableCustomerBalance - paymentAmountPreview - paymentDiscountPreview");
+  });
 });
 
 export {};

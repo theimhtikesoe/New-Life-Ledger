@@ -1211,7 +1211,7 @@ export default function Dashboard({ view = "overview" }) {
       amount,
       discount,
       target: selectedPaymentTarget,
-      remaining: selectedPaymentTarget ? Math.max(0, selectedPaymentTarget.remainingAmount - amount - discount) : null,
+      remaining: selectedPaymentTarget ? Math.max(0, availableCustomerBalance - amount - discount) : null,
       paymentType: ledgerForm.paymentType || (type === "CASH_SALE" ? "CASH" : "-"),
       saleType: null,
     });
@@ -1250,7 +1250,10 @@ export default function Dashboard({ view = "overview" }) {
       }
       const saleItemsAmount = getSaleItemsTotal(ledgerForm.saleItems);
       const autoAmount = type === "DEBIT"
-        ? (selectedPaymentTarget?.remainingAmount || 0)
+        // A repayment may cover several credit entries. The selected target is
+        // only the ledger link; the customer's current balance is the amount
+        // available to settle (for example, 458,000 across multiple debts).
+        ? Math.max(0, Math.round(Number(selectedCustomer?.current_balance || 0)))
         : saleItemsAmount || (type === "CREDIT" && ledgerForm.saleType === "RETAIL"
         ? Math.max(0, Math.round(Number(ledgerForm.cartons || 0) * Number(ledgerForm.rate || 0) - Number(ledgerForm.deductions || 0)))
         : 0);
@@ -1259,7 +1262,8 @@ export default function Dashboard({ view = "overview" }) {
       const amount = hasManualAmount ? Math.max(0, Math.round(Number(manualAmountText || 0))) : autoAmount;
       const ledgerDiscountAmount = type === "DEBIT" ? Math.max(0, Math.round(Number(ledgerForm.discountAmount || 0))) : 0;
       const ledgerDiscountNote = type === "DEBIT" ? String(ledgerForm.discountNote || "").trim() : "";
-      if (type === "DEBIT" && selectedPaymentTarget && amount + ledgerDiscountAmount > selectedPaymentTarget.remainingAmount) {
+      const availableCustomerBalance = Math.max(0, Math.round(Number(selectedCustomer?.current_balance || 0)));
+      if (type === "DEBIT" && availableCustomerBalance > 0 && amount + ledgerDiscountAmount > availableCustomerBalance) {
         throw new Error("ယခုငွေချေငွေ + လျှော့စျေးသည် အကြွေးကျန်ငွေထက် မကျော်ရပါ။");
       }
       const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
@@ -1874,7 +1878,7 @@ export default function Dashboard({ view = "overview" }) {
   const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
   const paymentTargetLedgers = useMemo(() => {
     const ledgers = selectedCustomer?.ledgers || [];
-    return ledgers
+      return ledgers
       .filter((ledger) => ledger.type === "CREDIT")
       .map((credit) => {
         const paidAmount = ledgers
@@ -1887,7 +1891,10 @@ export default function Dashboard({ view = "overview" }) {
           remainingAmount: Math.max(0, Number(credit.amount || 0) - paidAmount),
         };
       })
-      .filter((ledger) => ledger.remainingAmount > 0 && formatMyanmarDateInputValue(ledger.date) <= currentMyanmarDate)
+      // This select is only a data link (which credit/bottle sale this payment
+      // relates to). It must not limit payment by one credit row's remainder;
+      // the customer balance is calculated from all CREDIT and DEBIT rows.
+      .filter((ledger) => formatMyanmarDateInputValue(ledger.date) <= currentMyanmarDate)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [selectedCustomer?.ledgers, currentMyanmarDate]);
   const selectedPaymentTarget = useMemo(
@@ -1921,15 +1928,16 @@ export default function Dashboard({ view = "overview" }) {
     if (!cartons || !rate) return null;
     return cartons * rate - deductions;
   }, [ledgerForm.saleItems, ledgerForm.cartons, ledgerForm.rate, ledgerForm.deductions, ledgerForm.type, ledgerForm.saleType]);
+  const availableCustomerBalance = Math.max(0, Math.round(Number(selectedCustomer?.current_balance || 0)));
   const automaticLedgerAmount = ledgerForm.type === "DEBIT"
-    ? selectedPaymentTarget?.remainingAmount || 0
+    ? availableCustomerBalance
     : computedSaleAmount || 0;
   const paymentAmountPreview = Math.max(0, Math.round(Number(ledgerForm.manualAmount || automaticLedgerAmount || 0)));
   const paymentDiscountPreview = ledgerForm.type === "DEBIT"
     ? Math.max(0, Math.round(Number(ledgerForm.discountAmount || 0)))
     : 0;
   const paymentRemainingPreview = selectedPaymentTarget
-    ? Math.max(0, selectedPaymentTarget.remainingAmount - paymentAmountPreview - paymentDiscountPreview)
+    ? Math.max(0, availableCustomerBalance - paymentAmountPreview - paymentDiscountPreview)
     : 0;
 
   // Calculate KPI metrics from the lightweight customer list and today's summary.
@@ -2593,7 +2601,7 @@ export default function Dashboard({ view = "overview" }) {
           )}
 
           <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4 sm:p-5 min-h-[500px]">
-            {loadingCustomer ? (
+            {loadingCustomer && !selectedCustomer ? (
               <div className="flex min-h-[460px] items-center justify-center rounded-lg border border-dashed border-slate-300">
                 <div className="text-center">
                   <div className="flex justify-center">
@@ -2603,7 +2611,15 @@ export default function Dashboard({ view = "overview" }) {
                 </div>
               </div>
             ) : selectedCustomer ? (
-              <div id="customer-details-section" className="scroll-mt-4">
+              <div id="customer-details-section" className="relative scroll-mt-4">
+                {loadingCustomer ? (
+                  <div className="absolute inset-x-0 top-0 z-20 flex justify-center px-3 pt-2" role="status" aria-live="polite">
+                    <div className="flex items-center gap-2 rounded-full border border-cyan-200 bg-white/95 px-4 py-2 text-xs font-bold text-cyan-800 shadow-lg backdrop-blur-sm">
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" aria-hidden="true" />
+                      လုပ်ဆောင်နေပါသည်...
+                    </div>
+                  </div>
+                ) : null}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between pt-4">
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
@@ -2690,13 +2706,17 @@ export default function Dashboard({ view = "overview" }) {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ</p><p className="mt-1 text-2xl font-black text-cyan-950">{formatMoney(ledgerForm.type === "DEBIT" ? (selectedPaymentTarget?.remainingAmount || 0) : (getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0))}</p></div>
+                          <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ</p><p className="mt-1 text-2xl font-black text-cyan-950">{formatMoney(ledgerForm.type === "DEBIT" ? availableCustomerBalance : (getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0))}</p></div>
                           <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">{ledgerForm.type === "CASH_SALE" ? "ပမာဏ (Ks)" : "လူကိုယ်တိုင် ထည့်မည့်ပမာဏ (Ks)"}</label>
                           <input
                             type="number"
                             className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
                             placeholder="0"
-                              value={ledgerForm.type === "CASH_SALE" ? (getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount) : (ledgerForm.manualAmount || automaticLedgerAmount || "")}
+                              value={ledgerForm.type === "CASH_SALE"
+                                ? (getSaleItemsTotal(ledgerForm.saleItems) || ledgerForm.amount)
+                                : ledgerForm.type === "DEBIT"
+                                  ? (ledgerForm.manualAmount ?? "")
+                                  : (ledgerForm.manualAmount || automaticLedgerAmount || "")}
                               onChange={(e) => setLedgerForm({ ...ledgerForm, [ledgerForm.type === "CASH_SALE" ? "amount" : "manualAmount"]: e.target.value })}
                               readOnly={ledgerForm.type === "CASH_SALE" && getSaleItemsTotal(ledgerForm.saleItems) > 0}
                               required={ledgerForm.type === "CASH_SALE"}

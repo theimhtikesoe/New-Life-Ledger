@@ -17,6 +17,12 @@ describe("ledger save reliability", () => {
     expect(dashboard).toContain("void loadCustomer(selectedCustomerId).catch((refreshError)");
   });
 
+  it("keeps the selected customer visible and shows a processing indicator during refresh", () => {
+    expect(dashboard).toContain("loadingCustomer && !selectedCustomer");
+    expect(dashboard).toContain('role="status" aria-live="polite"');
+    expect(dashboard).toContain("လုပ်ဆောင်နေပါသည်...");
+  });
+
   it("hides raw Prisma pool details from users", () => {
     expect(database).toContain('code: "DATABASE_BUSY"');
     expect(database).toContain("ခဏစောင့်ပြီး တစ်ကြိမ်သာ ပြန်စမ်းပါ");

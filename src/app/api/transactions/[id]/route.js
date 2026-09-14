@@ -88,6 +88,9 @@ export async function PATCH(request, { params }) {
     await ensureDatabase();
     const transactionId = params.id;
     const body = await request.json();
+    // The serverless Prisma client intentionally uses a single DB connection.
+    // Dashboard refreshes can briefly occupy it, so allow an edit to wait for
+    // that connection instead of failing with P2028 before the callback starts.
     const result = await prisma.$transaction(async (tx) => {
       const ledger = await tx.ledger.findUnique({
         where: { id: transactionId },
@@ -161,7 +164,7 @@ export async function PATCH(request, { params }) {
         },
       });
       return { ledger: updated, current_balance: customer.current_balance };
-    });
+    }, { maxWait: 15000, timeout: 30000 });
     invalidateFactoryStockCache();
     return NextResponse.json({ data: result });
   } catch (error) {

@@ -25,4 +25,16 @@ export async function hydrateSettledBottleSaleItems(db, ledgers = []) {
   });
 }
 
+export function dedupeSettledBottleSaleItems(ledgers = []) {
+  const seenTargets = new Set();
+  return ledgers.map((row) => {
+    if (row?.type !== "DEBIT" || !Array.isArray(row.saleItems) || !row.saleItems.length) return row;
+    const targetId = settlementTargetId(row.note);
+    if (!targetId) return row;
+    if (seenTargets.has(targetId)) return { ...row, saleItems: [] };
+    seenTargets.add(targetId);
+    return row;
+  });
+}
+
 export { settlementTargetId };

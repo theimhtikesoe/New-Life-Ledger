@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { aggregateStockMovements, ensureFactoryStockTable, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
-import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
+import { dedupeSettledBottleSaleItems, hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +52,7 @@ export async function GET(request) {
         const capacity = Number(item.capacity || 0);
         return sum + (capacity ? (Number(item.currentBottles || 0) < 0 ? -Math.ceil(Math.abs(Number(item.currentBottles || 0)) / capacity) : Math.floor(Number(item.currentBottles || 0) / capacity)) : 0);
       }, 0);
-    const paidLedgers = await hydrateSettledBottleSaleItems(prisma, ledgerRows.filter((row) => row.type === "DEBIT"));
+    const paidLedgers = dedupeSettledBottleSaleItems(await hydrateSettledBottleSaleItems(prisma, ledgerRows.filter((row) => row.type === "DEBIT")));
     const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
 
     const collectSaleItems = (rows = []) => {

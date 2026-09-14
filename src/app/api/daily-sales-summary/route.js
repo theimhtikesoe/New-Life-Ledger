@@ -6,6 +6,7 @@ import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, hasPaymentBreakdownInput } from "@/lib/payment-split";
 import { buildDailyReconciliation } from "@/lib/daily-summary-review";
+import { hydrateSettlementSaleTypes, isWholesaleSettlement } from "@/lib/ledger-settlement";
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +14,6 @@ const SUMMARY_CACHE_TTL_MS = 15_000;
 const summaryCache = new Map();
 
 const CASH_PAYMENT_TYPE = "CASH";
-// This specific Sep 10 settlement is present in the physical wholesale book,
-// so include it without changing the treatment of other settlement rows.
-const WHOLESALE_INCLUDED_SETTLEMENT_LEDGER_IDS = new Set([
-  "4c8844a2-55df-4c9d-91ee-8221e2d49f4a",
-  "fb66540b-e298-496d-a371-9b97ae51afd1",
-]);
 const SUMMARY_SELECT = {
   id: true,
   date: true,
@@ -55,9 +50,10 @@ function parseDate(value) {
 
 async function getSourceSnapshot(date) {
   const { range } = parseDate(date);
-  const ledgers = prisma.ledger?.findMany
+  let ledgers = prisma.ledger?.findMany
     ? await prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { id: true, amount: true, type: true, note: true } })
     : [];
+  ledgers = await hydrateSettlementSaleTypes(prisma, ledgers);
   const cashSales = prisma.cashSale?.findMany
     ? await prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } })
     : [];
@@ -108,9 +104,7 @@ function addPaymentTypes(target, split) {
 }
 
 function isWholesaleSettlementLedger(ledger) {
-  return String(ledger?.type || "").toUpperCase() === "DEBIT"
-    && (!String(ledger?.note || "").startsWith("__SETTLES_CREDIT_LEDGER__:")
-      || WHOLESALE_INCLUDED_SETTLEMENT_LEDGER_IDS.has(String(ledger?.id || "")));
+  return isWholesaleSettlement(ledger);
 }
 
 function summarizeCashSales(sales) {
@@ -198,17 +192,20 @@ async function captureFutureSourceLinks(summaryId, date) {
   const { range } = parseDate(date);
   const ledgers = await prisma.ledger.findMany({
     where: { date: { gte: range.start, lt: range.end } },
-    select: { id: true, amount: true, paymentType: true, type: true },
+    select: { id: true, amount: true, paymentType: true, type: true, saleType: true, note: true },
   });
+  const hydratedLedgers = await hydrateSettlementSaleTypes(prisma, ledgers);
   const cashSales = await prisma.cashSale.findMany({
     where: { date: { gte: range.start, lt: range.end } },
     select: { id: true, amount: true, paymentType: true, paymentBreakdown: true, saleType: true },
   });
   const links = [
-    ...ledgers.map((ledger) => ({
+    ...hydratedLedgers.map((ledger) => ({
       sourceType: "LEDGER",
       sourceId: ledger.id,
-      contributionType: "LEDGER_TOTAL",
+      contributionType: isWholesaleSettlementLedger(ledger) || normalizeCashSaleType(ledger.saleType) === "WHOLESALE"
+        ? "WHOLESALE_TOTAL"
+        : "RETAIL_TOTAL",
       amount: toAmount(ledger.amount),
       paymentType: ledger.paymentType || null,
     })),
@@ -266,7 +263,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   const { range } = parseDate(date);
   const month = date.slice(0, 7);
   const monthStart = getMyanmarDayRange(`${month}-01`).start;
-  const [cashSales, ledgers, savedRows, opening] = await Promise.all([
+  let [cashSales, ledgers, savedRows, opening] = await Promise.all([
     prisma.cashSale.findMany({
       where: { date: { gte: monthStart, lt: range.end } },
       select: { id: true, date: true, saleType: true, paymentType: true, paymentBreakdown: true, note: true, amount: true, customer: { select: { id: true, name: true } } },
@@ -286,6 +283,7 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
     }),
     prisma.dailySalesOpening.findUnique({ where: { month } }),
   ]);
+  ledgers = await hydrateSettlementSaleTypes(prisma, ledgers);
 
   const cashByDate = new Map();
   for (const sale of cashSales) {
