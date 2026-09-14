@@ -205,11 +205,12 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   );
 
   useEffect(() => {
-    // The visible table page follows the KPI date the user clicked. The
-    // separate Table Date controls the loaded range, not the active page.
+    // The visible table page follows the KPI date the user clicked. If the
+    // selected date has no row yet (for example, today's empty sales day),
+    // open the latest available history page instead of falling back to page 1.
     const selectedDateIndex = tableRows.findIndex((row) => dateKey(row.date) === dateKey(date));
-    setHistoryPage(selectedDateIndex >= 0 ? Math.floor(selectedDateIndex / HISTORY_PAGE_SIZE) + 1 : 1);
-  }, [date, tableRows]);
+    setHistoryPage(selectedDateIndex >= 0 ? Math.floor(selectedDateIndex / HISTORY_PAGE_SIZE) + 1 : historyPageCount);
+  }, [date, tableRows, historyPageCount]);
 
   const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;
   const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;

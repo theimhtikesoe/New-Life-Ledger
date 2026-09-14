@@ -55,6 +55,11 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain("getPreviousMyanmarDateInputValue(`${targetDate.slice(0, 7)}-01`)");
   });
 
+  it("opens the latest history page when the selected date has no row yet", () => {
+    expect(source).toContain("selectedDateIndex >= 0 ? Math.floor(selectedDateIndex / HISTORY_PAGE_SIZE) + 1 : historyPageCount");
+    expect(source).toContain("selected date has no row yet");
+  });
+
   it("keeps six summary cards in an even two-column grid with centered monthly opening", () => {
     const outputStart = source.indexOf('<div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 sm:items-stretch">');
     const outputEnd = source.indexOf('<div className="mt-4 flex flex-col gap-3', outputStart);
