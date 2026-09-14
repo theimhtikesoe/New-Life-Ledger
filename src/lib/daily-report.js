@@ -19,6 +19,7 @@ const MYANMAR_TIME_ZONE = "Asia/Yangon";
 // exception limited to this ledger so other settlements remain excluded.
 const WHOLESALE_INCLUDED_SETTLEMENT_LEDGER_IDS = new Set([
   "4c8844a2-55df-4c9d-91ee-8221e2d49f4a",
+  "fb66540b-e298-496d-a371-9b97ae51afd1",
 ]);
 
 function pad(value) {
