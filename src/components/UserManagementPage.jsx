@@ -12,6 +12,8 @@ export default function UserManagementPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("ALL");
   const actor = permissions.find((row) => row.actorName === selectedActor) || permissions[0];
 
   useEffect(() => {
@@ -36,13 +38,35 @@ export default function UserManagementPage() {
   }, []);
 
   const selectedCount = actor?.allowedPaths?.length || 0;
+  const pageCategory = (page) => {
+    if (page.path === "/") return "အဓိက";
+    if (["/ledger", "/balance-detail", "/daily-sales-summary", "/daily-summary", "/daily-bottle-sales"].includes(page.path)) return "စာရင်း / ရောင်းအား";
+    if (["/production", "/production-history", "/tube-production-history", "/factory-stock", "/tube-stock", "/cap-stock"].includes(page.path)) return "စက်ရုံ / ထုတ်လုပ်မှု";
+    if (["/customer-management", "/orders", "/discounts", "/expenses"].includes(page.path)) return "လုပ်ငန်းစီမံမှု";
+    if (["/user-management", "/activity", "/trace", "/data-management", "/auto-report-status", "/vercel-build-logs"].includes(page.path)) return "စီမံခန့်ခွဲမှု";
+    return "အခြား";
+  };
+  const categories = ["ALL", ...new Set(PERMISSION_PAGES.map(pageCategory))];
+  const visiblePages = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return PERMISSION_PAGES.filter((page) => {
+      const matchesCategory = category === "ALL" || pageCategory(page) === category;
+      const matchesQuery = !normalizedQuery || `${page.label} ${page.path}`.toLowerCase().includes(normalizedQuery);
+      return matchesCategory && matchesQuery;
+    });
+  }, [category, query]);
   const updateSelected = (nextPaths) => setPermissions((current) => current.map((row) => row.actorName === selectedActor ? { ...row, allowedPaths: nextPaths } : row));
   const togglePath = (path) => {
     const current = new Set(actor?.allowedPaths || []);
     if (current.has(path)) current.delete(path); else current.add(path);
     updateSelected([...current]);
   };
-  const allSelected = useMemo(() => selectedCount === PERMISSION_PAGES.length, [selectedCount]);
+  const updateVisible = (enabled) => {
+    const current = new Set(actor?.allowedPaths || []);
+    visiblePages.forEach((page) => enabled ? current.add(page.path) : current.delete(page.path));
+    updateSelected([...current]);
+  };
+  const resetSelectedToDefault = () => updateSelected(defaultAllowedPaths(selectedActor));
   const savePermissions = async (event) => {
     event.preventDefault();
     if (!canManage || saving) return;
@@ -68,7 +92,19 @@ export default function UserManagementPage() {
         {loading ? <section className="rounded-2xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">Permission data ရယူနေပါသည်...</section> : error ? <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{error}</section> : !canManage ? <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-bold text-amber-800">ဒီ Page ကို Permission ပြင်ရန် ဖေဖေ/မေမေ User ဖြင့် ဝင်ပါ။</section> : (
           <form onSubmit={savePermissions} className="grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
             <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"><h3 className="px-2 pb-2 text-sm font-black text-slate-700">User များ</h3><div className="grid gap-2">{permissions.map((row) => <button key={row.actorName} type="button" onClick={() => setSelectedActor(row.actorName)} className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left text-sm font-black transition ${selectedActor === row.actorName ? "border-cyan-400 bg-cyan-50 text-cyan-900 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-200 hover:bg-cyan-50/50"}`}><span>{row.actorName}</span><span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-500">{row.allowedPaths.length}</span></button>)}</div></section>
-            <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3"><div><h3 className="text-lg font-black text-slate-900">{selectedActor}</h3><p className="mt-1 text-xs font-bold text-slate-500">{selectedCount} / {PERMISSION_PAGES.length} pages ခွင့်ပြုထားသည်</p></div><div className="flex gap-2"><button type="button" onClick={() => updateSelected(PERMISSION_PAGES.map((page) => page.path))} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">အားလုံးပေးမည်</button><button type="button" onClick={() => updateSelected([])} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700">အားလုံးဖြုတ်မည်</button></div></div><div className="mt-4 grid gap-2 sm:grid-cols-2">{PERMISSION_PAGES.map((page) => { const checked = actor.allowedPaths.includes(page.path); return <label key={page.path} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${checked ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-slate-50"}`}><input type="checkbox" checked={checked} onChange={() => togglePath(page.path)} className="h-5 w-5 accent-cyan-600" /><span><span className="block text-sm font-black text-slate-800">{page.label}</span><span className="block text-[11px] font-bold text-slate-500">{page.path}</span></span></label>; })}</div><button type="submit" disabled={saving} className="mt-5 w-full rounded-xl bg-cyan-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 disabled:opacity-50">{saving ? "သိမ်းနေပါသည်..." : "Permission သိမ်းမည်"}</button>{message ? <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{message}</p> : null}</section>
+            <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div><h3 className="text-lg font-black text-slate-900">{selectedActor}</h3><p className="mt-1 text-xs font-bold text-slate-500">{selectedCount} / {PERMISSION_PAGES.length} permission များ ဖွင့်ထားသည် · ပြသနေသည် {visiblePages.length} ခု</p></div>
+                <div className="flex flex-wrap gap-2"><button type="button" onClick={() => updateSelected(PERMISSION_PAGES.map((page) => page.path))} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">အားလုံးဖွင့်</button><button type="button" onClick={() => updateSelected([])} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700">အားလုံးပိတ်</button><button type="button" onClick={resetSelectedToDefault} className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">မူလအတိုင်းပြန်ထား</button></div>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_220px]">
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Permission ရှာရန် — Page name / URL" className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+                <select value={category} onChange={(event) => setCategory(event.target.value)} className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-800 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100">{categories.map((item) => <option key={item} value={item}>{item === "ALL" ? `အားလုံး (${PERMISSION_PAGES.length})` : item}</option>)}</select>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => updateVisible(true)} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">ပြသနေသော {visiblePages.length} ခု ဖွင့်</button><button type="button" onClick={() => updateVisible(false)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700">ပြသနေသော {visiblePages.length} ခု ပိတ်</button></div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">{visiblePages.map((page) => { const checked = actor.allowedPaths.includes(page.path); return <label key={page.path} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition ${checked ? "border-cyan-300 bg-cyan-50" : "border-slate-200 bg-slate-50"}`}><input type="checkbox" checked={checked} onChange={() => togglePath(page.path)} className="h-5 w-5 accent-cyan-600" /><span><span className="block text-sm font-black text-slate-800">{page.label}</span><span className="block text-[11px] font-bold text-slate-500">{page.path} · {pageCategory(page)}</span></span></label>; })}</div>
+              {!visiblePages.length ? <p className="mt-4 rounded-xl bg-slate-50 p-5 text-center text-sm font-bold text-slate-500">ကိုက်ညီသော Permission မတွေ့ပါ။</p> : null}
+              <button type="submit" disabled={saving} className="mt-5 w-full rounded-xl bg-cyan-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 disabled:opacity-50">{saving ? "သိမ်းနေပါသည်..." : "Permission သိမ်းမည်"}</button>{message ? <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{message}</p> : null}</section>
           </form>
         )}
       </div>
