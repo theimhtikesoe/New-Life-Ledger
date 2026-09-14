@@ -44,7 +44,8 @@ describe("DailySalesSummaryPanel", () => {
   it("uses the current table Opening value in the green card", () => {
     expect(source).toContain("const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;");
     expect(source).toContain("const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;");
-    expect(source).toContain("const tableSummary = historySummary || summary;");
+    expect(source).toContain("const tableSummary = historySummary;");
+    expect(source).toContain("const [historyLoading, setHistoryLoading] = useState(false);");
     expect(source).toContain("const chronologicalRows = [...tableSummary.rows].sort((a, b) => a.date.localeCompare(b.date));");
     expect(source).toContain("const [historyDate, setHistoryDate] = useState(() => formatMyanmarDateInputValue());");
     expect(source).toContain("Table Date");

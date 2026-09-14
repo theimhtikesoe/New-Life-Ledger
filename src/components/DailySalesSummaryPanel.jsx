@@ -85,6 +85,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   const [historySummary, setHistorySummary] = useState(null);
   const [draft, setDraft] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState("");
@@ -140,6 +141,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   useEffect(() => {
     let active = true;
     const actorName = window.localStorage.getItem("actorName") || "";
+    setHistoryLoading(true);
     fetch(`/api/daily-sales-summary?date=${encodeURIComponent(historyDate)}`, {
       cache: "no-store",
       headers: { "x-actor-name": encodeActorHeader(actorName) },
@@ -149,6 +151,8 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       if (active) setHistorySummary(body.data);
     }).catch((requestError) => {
       if (active) setError(requestError.message || "နေ့စဉ် history data မရသေးပါ။");
+    }).finally(() => {
+      if (active) setHistoryLoading(false);
     });
     return () => { active = false; };
   }, [historyDate]);
@@ -164,7 +168,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   const invalidCashInput = Number(values.retailCash || 0) > Number(values.retailTotal || 0)
     || Number(values.wholesaleCash || 0) > Number(values.wholesaleTotal || 0);
   const tableRows = useMemo(() => {
-    const tableSummary = historySummary || summary;
+    const tableSummary = historySummary;
     if (!tableSummary?.rows?.length) return [];
     let running = Number(tableSummary.opening?.amount || 0);
     const openingAsOfDate = tableSummary.opening?.asOfDate || "";
@@ -186,7 +190,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
       return { ...displayRow, monthlyCumulative: included ? running : null };
     });
     return rowsWithCumulative;
-  }, [historySummary, summary, date, historyDate, values, dailyTotal, cashDailyTotal]);
+  }, [historySummary, date, historyDate, values, dailyTotal, cashDailyTotal]);
 
   const historyPageCount = Math.max(1, Math.ceil(tableRows.length / HISTORY_PAGE_SIZE));
   const visibleHistoryPage = Math.min(historyPage, historyPageCount);
@@ -374,13 +378,14 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
               </div>
             </div>
 
-            {summary?.rows?.length > 0 && (
+            {(historyLoading || historySummary?.rows?.length > 0) && (
               <div className="mt-6">
                 <div className="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-indigo-50/60 p-3 sm:flex-row sm:items-end sm:justify-between">
                   <div><h3 className="text-sm font-bold text-slate-900">နေ့စဉ်ရောင်းရငွေ / နောက်နေ့ Opening ဇယား</h3><p className="mt-1 text-[11px] text-slate-500">အပေါ်က Date သည် KPI ကြည့်ရန်သာ ဖြစ်ပြီး၊ ဒီအောက်က Date သည် Table history အတွက် သီးခြားဖြစ်ပါသည်။</p></div>
                   <label className="flex shrink-0 items-center gap-2 text-sm font-bold text-indigo-900"><span>Table Date</span><input type="date" value={historyDate} onChange={(event) => { setHistoryDate(event.target.value); setHistoryPage(1); }} className="min-h-10 rounded-lg border border-indigo-300 bg-white px-2.5 py-2 text-sm font-semibold text-slate-800" /></label>
                 </div>
                 <p className="mt-2 text-[11px] text-slate-500">စက်တင်ဘာ ၁ ရက်မှ ရွေးထားသော Table Date အထိ data များကို ပြသပါသည်။ ယနေ့အထိကြည့်လိုပါက Table Date ကို ယနေ့အတိုင်းထားပါ။</p>
+                {historyLoading ? <p className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center text-sm font-semibold text-indigo-700">Table history data ရယူနေပါသည်...</p> : null}
                 <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-slate-600">
