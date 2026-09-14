@@ -328,9 +328,10 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
   for (const row of savedRows) {
     const savedSummary = summarizeSavedRow(row);
     const sourceRow = autoRows.get(row.date);
-    // Legacy imports may contain a zero placeholder even when the underlying
-    // ledger/cash-sale source has real data. Keep the source row visible.
-    if (!row.calculationMode && isZeroSummary(savedSummary) && sourceRow && !isZeroSummary(sourceRow)) {
+    // Legacy/AUTO rows may contain a zero placeholder even when the underlying
+    // ledger/cash-sale source has real data. Keep the source row visible. A
+    // MANUAL zero is intentional and must remain an explicit override.
+    if (row.calculationMode !== "MANUAL" && isZeroSummary(savedSummary) && sourceRow && !isZeroSummary(sourceRow)) {
       rows.set(row.date, sourceRow);
       continue;
     }
