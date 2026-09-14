@@ -9,6 +9,7 @@ export const PERMISSION_PAGES = [
   { path: "/balance-detail", label: "လက်ကျန်ငွေ အသေးစိတ်" },
   { path: "/daily-bottle-sales", label: "နေ့စဉ်ဗူးရောင်းစာရင်း" },
   { path: "/daily-sales-summary", label: "ယနေ့ လက်လီ / လက်ကား စုစုပေါင်း" },
+  { path: "/daily-report-download", label: "နေ့စွဲအလိုက် Daily PDF Download" },
   { path: "/daily-summary", label: "နေ့စဉ်စာရင်းချုပ်" },
   { path: "/tube-stock", label: "စက်ရုံ Tube လက်ကျန်" },
   { path: "/factory-stock", label: "စက်ရုံဗူးလက်ကျန်" },
@@ -41,5 +42,6 @@ export function normalizeAllowedPaths(value, actorName) {
   }
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "ဆောင်းဦး" && actorName !== "သက်မွန်နှင်း" && !allowed.includes("/expenses")) allowed.push("/expenses");
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "သက်မွန်နှင်း" && allowed.includes("/") && !allowed.includes("/daily-sales-summary")) allowed.push("/daily-sales-summary");
+  if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "ဆောင်းဦး" && actorName !== "သက်မွန်နှင်း" && allowed.includes("/") && !allowed.includes("/daily-report-download")) allowed.push("/daily-report-download");
   return [...new Set(allowed)];
 }
