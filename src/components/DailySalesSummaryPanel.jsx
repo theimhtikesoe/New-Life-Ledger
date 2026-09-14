@@ -131,6 +131,8 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   useEffect(() => {
     const targetDate = selectedDate || formatMyanmarDateInputValue();
     setDate(targetDate);
+    setHistoryDate(targetDate);
+    setHistoryPage(1);
   }, [selectedDate]);
 
   useEffect(() => {

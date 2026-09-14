@@ -60,6 +60,11 @@ describe("DailySalesSummaryPanel", () => {
     expect(source).toContain("selected date has no row yet");
   });
 
+  it("keeps the history table aligned with the selected top date", () => {
+    expect(source).toContain("setHistoryDate(targetDate);");
+    expect(source).toContain("setHistoryPage(1);");
+  });
+
   it("keeps six summary cards in an even two-column grid with centered monthly opening", () => {
     const outputStart = source.indexOf('<div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3 sm:items-stretch">');
     const outputEnd = source.indexOf('<div className="mt-4 flex flex-col gap-3', outputStart);
