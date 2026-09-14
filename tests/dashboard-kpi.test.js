@@ -65,6 +65,11 @@ describe("Dashboard KPI aggregate route", () => {
     expect(routeSource).toContain("const paidLedgers = dedupeSettledBottleSaleItems(await hydrateSettledBottleSaleItems");
   });
 
+  it("matches Cap Stock Net Stock Change for the factory cap KPI", () => {
+    const routeSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/dashboard-kpi/route.js"), "utf8");
+    expect(routeSource).toContain('item.stockType === "CAP" && Number(item.capacity || 0) > 0');
+  });
+
   it("shows the automatic amount card for cash sales", () => {
     expect(dashboardSource).toContain("အလိုအလျောက်တွက်ထားသော ပမာဏ");
     expect(dashboardSource).toContain("getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0");

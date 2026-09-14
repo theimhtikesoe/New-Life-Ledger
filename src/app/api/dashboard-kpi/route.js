@@ -42,7 +42,12 @@ export async function GET(request) {
     const factoryStockSummary = aggregateStockMovements(stockMovements);
     // Keep Tube stock out of the bottle KPI: factoryStockSummary.filter((item) => item.stockType !== "TUBE")
     const factoryStockCards = factoryStockSummary.filter((item) => item.stockType === "BOTTLE").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
-    const factoryCapPieces = factoryStockSummary.filter((item) => item.stockType === "CAP").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
+    // Match the Cap Stock page: only configured cap packs represent physical
+    // stock. Legacy color-only rows with capacity 0 are not part of Net Stock
+    // Change and must not change the Dashboard KPI.
+    const factoryCapPieces = factoryStockSummary
+      .filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0)
+      .reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
     const factoryTubePieces = stockMovements
       .filter((movement) => movement.stockType === "TUBE")
       .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);
