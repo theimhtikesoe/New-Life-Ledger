@@ -2287,7 +2287,7 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="pt-2 text-sm font-bold text-slate-600">အသေးစိတ် →</p>
             </Link>
-            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} dateLoading={kpiDateLoading} />
+            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} retailAmount={dashboardKpi?.retailAmount || 0} wholesaleAmount={dashboardKpi?.wholesaleAmount || 0} dateLoading={kpiDateLoading} />
             <Link
               href="/tube-stock"
               aria-label="စက်ရုံ Tube လက်ကျန် အသေးစိတ်ကြည့်ရန်"

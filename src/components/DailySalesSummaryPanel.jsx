@@ -77,7 +77,7 @@ function toneClasses(tone) {
     : "border-amber-200 bg-amber-50 text-amber-900";
 }
 
-export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0, dateLoading = false, fullPage = false }) {
+export default function DailySalesSummaryPanel({ selectedDate = "", totalCount = 0, retailCount = 0, wholesaleCount = 0, retailAmount = 0, wholesaleAmount = 0, dateLoading = false, fullPage = false }) {
   const [isOpen, setIsOpen] = useState(fullPage);
   const [date, setDate] = useState(() => selectedDate || formatMyanmarDateInputValue());
   const [historyDate, setHistoryDate] = useState(() => formatMyanmarDateInputValue());
@@ -158,7 +158,12 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
   }, [historyDate]);
 
   const automatic = summary?.autoPreview || summary?.selectedDay || EMPTY_DAY;
-  const values = draft || toDraft(automatic);
+  const values = useMemo(() => draft || (summary ? toDraft(automatic) : {
+    retailTotal: Number(retailAmount || 0),
+    wholesaleTotal: Number(wholesaleAmount || 0),
+    retailCash: 0,
+    wholesaleCash: 0,
+  }), [draft, summary, automatic, retailAmount, wholesaleAmount]);
   const dailyTotal = Number(values.retailTotal || 0) + Number(values.wholesaleTotal || 0);
   const cashDailyTotal = Number(values.retailCash || 0) + Number(values.wholesaleCash || 0);
   const hasManualDifference = Number(values.retailTotal || 0) !== Number(automatic.retailTotal || 0)
