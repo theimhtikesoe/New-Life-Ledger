@@ -210,7 +210,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
     // open the latest available history page instead of falling back to page 1.
     const selectedDateIndex = tableRows.findIndex((row) => dateKey(row.date) === dateKey(date));
     setHistoryPage(selectedDateIndex >= 0 ? Math.floor(selectedDateIndex / HISTORY_PAGE_SIZE) + 1 : historyPageCount);
-  }, [date, tableRows, historyPageCount]);
+  }, [date, historyDate, historySummary, tableRows, historyPageCount]);
 
   const currentTableOpening = tableRows.find((row) => dateKey(row.date) === dateKey(date))?.monthlyCumulative;
   const displayedOpening = currentTableOpening == null ? dailyTotal : currentTableOpening;
