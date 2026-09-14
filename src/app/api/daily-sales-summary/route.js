@@ -182,6 +182,13 @@ function serializeRow(date, summary, source, savedAt = null, metadata = {}) {
   return { date, ...summary, source, savedAt, ...metadata };
 }
 
+function isZeroSummary(summary) {
+  return Number(summary?.retailTotal || 0) === 0
+    && Number(summary?.wholesaleTotal || 0) === 0
+    && Number(summary?.retailCash || 0) === 0
+    && Number(summary?.wholesaleCash || 0) === 0;
+}
+
 async function captureFutureSourceLinks(summaryId, date) {
   // Keep tests and legacy deployments safe if the additive model has not been generated yet.
   if (!prisma.dailySalesSummarySource?.upsert) return;
@@ -311,7 +318,15 @@ async function readSummary(date, { includeReconciliation = false } = {}) {
     rows.set(rowDate, row);
   }
   for (const row of savedRows) {
-    rows.set(row.date, serializeRow(row.date, summarizeSavedRow(row), "DAILY_SUMMARY", row.updatedAt, {
+    const savedSummary = summarizeSavedRow(row);
+    const sourceRow = autoRows.get(row.date);
+    // Legacy imports may contain a zero placeholder even when the underlying
+    // ledger/cash-sale source has real data. Keep the source row visible.
+    if (!row.calculationMode && isZeroSummary(savedSummary) && sourceRow && !isZeroSummary(sourceRow)) {
+      rows.set(row.date, sourceRow);
+      continue;
+    }
+    rows.set(row.date, serializeRow(row.date, savedSummary, "DAILY_SUMMARY", row.updatedAt, {
       enteredAt: row.enteredAt || null,
       enteredBy: row.enteredBy || null,
     }));

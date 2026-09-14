@@ -114,6 +114,18 @@ describe("Daily sales summary API", () => {
     expect(body.data.reconciliation.candidates).toEqual([expect.objectContaining({ id: "sale-reconcile", amount: 60000, paymentLabel: "CASH 40,000 Ks + KPAY 20,000 Ks" })]);
   });
 
+  it("keeps source data visible when a legacy saved row is all zeros", async () => {
+    const sourceSale = sale("2026-09-13", "RETAIL", "CASH", 2275250);
+    mocks.findCashSale.mockResolvedValue([sourceSale]);
+    mocks.findDaily.mockResolvedValue([savedRow("2026-09-13", { retailTotal: 0, wholesaleTotal: 0, retailCash: 0, wholesaleCash: 0 })]);
+
+    const response = await GET(new Request("http://localhost/api/daily-sales-summary?date=2026-09-14"));
+    const body = await response.json();
+    const row = body.data.rows.find((item) => item.date === "2026-09-13");
+
+    expect(row).toMatchObject({ retailTotal: 2275250, dailyTotal: 2275250, source: "AUTO_PREVIEW" });
+  });
+
   it("saves the four daily inputs as a separate auditable row", async () => {
     const row = savedRow("2026-08-27", { retailTotal: 200000, wholesaleTotal: 450000, retailCash: 100000, wholesaleCash: 50000 });
     mocks.upsertDaily.mockResolvedValue(row);
