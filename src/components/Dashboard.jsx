@@ -1213,16 +1213,17 @@ export default function Dashboard({ view = "overview" }) {
       target: selectedPaymentTarget,
       remaining: selectedPaymentTarget ? Math.max(0, selectedPaymentTarget.remainingAmount - amount - discount) : null,
       paymentType: ledgerForm.paymentType || (type === "CASH_SALE" ? "CASH" : "-"),
-      saleType: effectiveCashSaleType,
+      saleType: null,
     });
   }
 
   async function confirmLedgerTransaction() {
+    if (!pendingTransactionConfirmation?.saleType) return;
     setPendingTransactionConfirmation(null);
-    await saveLedgerTransaction({ preventDefault() {} });
+    await saveLedgerTransaction({ preventDefault() {} }, pendingTransactionConfirmation.saleType);
   }
 
-  async function saveLedgerTransaction(event) {
+  async function saveLedgerTransaction(event, saleTypeOverride = null) {
     event.preventDefault();
     if (!selectedCustomerId || isSubmitting) return;
 
@@ -1332,7 +1333,7 @@ export default function Dashboard({ view = "overview" }) {
         method: "POST",
         body: JSON.stringify({
           type: ledgerForm.type,
-          saleType: isCashSale ? effectiveCashSaleType : ledgerForm.saleType,
+          saleType: saleTypeOverride || (isCashSale ? effectiveCashSaleType : ledgerForm.saleType),
           itemSize: ledgerForm.itemSize,
           cartons: Number(ledgerForm.cartons || 0) || null,
           rate: Number(ledgerForm.rate || 0) || null,
@@ -3616,12 +3617,12 @@ export default function Dashboard({ view = "overview" }) {
             <div className="border-b border-cyan-100 bg-gradient-to-r from-cyan-50 via-white to-violet-50 px-5 py-4">
               <p className="text-xs font-black tracking-wide text-cyan-700">မသိမ်းမီ ပြန်လည်စစ်ဆေးရန်</p>
               <h3 className="mt-1 text-xl font-black text-slate-900">စာရင်းသွင်းမည့်အချက်အလက် မှန်ပါသလား?</h3>
-              <p className="mt-1 text-sm text-slate-600">မှန်ကန်ပါက အောက်က “အတည်ပြုပြီး သိမ်းမည်” ကိုနှိပ်ပါ။</p>
+              <p className="mt-1 text-sm text-slate-600">အောက်မှာ လက်လီ သို့မဟုတ် လက်ကား တစ်ခုကို မဖြစ်မနေရွေးပြီးမှ data သိမ်းပါမည်။</p>
             </div>
             <div className="grid grid-cols-2 gap-3 p-5 text-sm">
               <div className={`rounded-xl border p-3 ${pendingTransactionConfirmation.type === "CREDIT" ? "border-rose-200 bg-rose-50" : pendingTransactionConfirmation.type === "DEBIT" ? "border-emerald-200 bg-emerald-50" : "border-cyan-200 bg-cyan-50"}`}>
                 <p className="text-xs font-bold text-slate-500">စာရင်းအမျိုးအစား</p>
-                <p className="mt-1 font-black text-slate-900">{pendingTransactionConfirmation.type === "CREDIT" ? "အကြွေးတိုး" : pendingTransactionConfirmation.type === "DEBIT" ? "ငွေချေ" : `လက်ငင်းရောင်း · ${cashSaleTypeLabel(pendingTransactionConfirmation.saleType)}`}</p>
+                <p className="mt-1 font-black text-slate-900">{pendingTransactionConfirmation.type === "CREDIT" ? "အကြွေးတိုး" : pendingTransactionConfirmation.type === "DEBIT" ? "ငွေချေ" : "လက်ငင်းရောင်း"}</p>
               </div>
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs font-bold text-slate-500">Amount</p>
@@ -3629,11 +3630,27 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               {pendingTransactionConfirmation.discount > 0 ? <div className="rounded-xl border border-amber-200 bg-amber-50 p-3"><p className="text-xs font-bold text-amber-700">လျှော့စျေး</p><p className="mt-1 font-black text-amber-900">{formatMoney(pendingTransactionConfirmation.discount)}</p></div> : null}
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><p className="text-xs font-bold text-slate-500">ငွေပေးချေမှုပုံစံ</p><p className="mt-1 font-black text-slate-900">{pendingTransactionConfirmation.paymentType}</p></div>
+              <div className="col-span-2 rounded-xl border-2 border-violet-200 bg-violet-50 p-3">
+                <p className="text-xs font-black text-violet-900">ဒီစာရင်းက ဘယ်အမျိုးအစားလဲ? <span className="text-rose-600">(မဖြစ်မနေရွေးပါ)</span></p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {[{ value: "RETAIL", label: "လက်လီ", className: "border-violet-300 bg-white text-violet-800" }, { value: "WHOLESALE", label: "လက်ကား", className: "border-amber-300 bg-white text-amber-800" }].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`rounded-xl border-2 px-3 py-3 text-sm font-black transition ${option.className} ${pendingTransactionConfirmation.saleType === option.value ? "ring-4 ring-cyan-200" : "opacity-70 hover:opacity-100"}`}
+                      onClick={() => setPendingTransactionConfirmation((current) => current ? { ...current, saleType: option.value } : current)}
+                      disabled={isSubmitting}
+                    >
+                      {pendingTransactionConfirmation.saleType === option.value ? "✓ " : ""}{option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {pendingTransactionConfirmation.target ? <div className="col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3"><p className="text-xs font-bold text-emerald-700">ချိတ်ထားသော အကြွေး</p><p className="mt-1 font-black text-slate-900">မူရင်း {formatMoney(pendingTransactionConfirmation.target.originalAmount)} · ယခင်ချေပြီး {formatMoney(pendingTransactionConfirmation.target.paidAmount)}</p><p className="mt-1 font-black text-rose-700">သိမ်းပြီးနောက် ကျန်မည်: {formatMoney(pendingTransactionConfirmation.remaining)}</p></div> : null}
             </div>
             <div className="flex gap-3 border-t border-slate-100 p-5">
               <button type="button" className="flex-1 rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700 hover:bg-slate-200" onClick={() => setPendingTransactionConfirmation(null)} disabled={isSubmitting}>ပြန်ပြင်မည်</button>
-              <button type="button" className="flex-1 rounded-xl bg-cyan-600 py-3 text-sm font-black text-white shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 disabled:opacity-50" onClick={confirmLedgerTransaction} disabled={isSubmitting}>အတည်ပြုပြီး သိမ်းမည်</button>
+              <button type="button" className="flex-1 rounded-xl bg-cyan-600 py-3 text-sm font-black text-white shadow-lg shadow-cyan-600/20 hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50" onClick={confirmLedgerTransaction} disabled={isSubmitting || !pendingTransactionConfirmation.saleType}>အတည်ပြုပြီး သိမ်းမည်</button>
             </div>
           </div>
         </div>

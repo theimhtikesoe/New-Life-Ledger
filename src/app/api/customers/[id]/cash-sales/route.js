@@ -6,9 +6,10 @@ import { customerDefaultCashSaleType, normalizeCashSaleType } from "@/lib/cash-s
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 import { hasPaymentBreakdownInput, paymentSplitForInput } from "@/lib/payment-split";
 import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
-import { getMyanmarDayRange } from "@/lib/myanmar-time";
+import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
+const SALE_TYPE_REQUIRED_FROM = "2026-09-12";
 
 const cashSaleSelect = {
   id: true,
@@ -78,10 +79,15 @@ export async function POST(request, { params }) {
     const saleItems = Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
     const hasBreakdown = hasPaymentBreakdownInput(body.paymentBreakdown);
     const storedPaymentType = hasBreakdown ? "MIXED" : body.paymentType?.trim() || "CASH";
+    const submittedDate = String(body.date || getMyanmarDateInputValue()).trim();
     const date = parseDate(body.date);
     const customer = await prisma.customer.findUnique({ where: { id: params.id }, select: { id: true, name: true, customerType: true, deletedAt: true } });
     if (!customer || customer.deletedAt) return NextResponse.json({ error: "Customer မတွေ့ပါ သို့မဟုတ် Recycle Bin ထဲ ရှိနေပါသည်။" }, { status: 404 });
-    const saleType = body.saleType ? normalizeCashSaleType(body.saleType) : customerDefaultCashSaleType(customer);
+    const submittedSaleType = String(body.saleType || "").trim().toUpperCase();
+    if (submittedDate >= SALE_TYPE_REQUIRED_FROM && !["RETAIL", "WHOLESALE"].includes(submittedSaleType)) {
+      return NextResponse.json({ error: "၂၀၂၆-၀၉-၁၂ ရက်နေ့မှစ၍ လက်လီ သို့မဟုတ် လက်ကားကို မဖြစ်မနေရွေးပါ။ မရွေးရသေးသော data ကို မသိမ်းပါ။" }, { status: 400 });
+    }
+    const saleType = submittedSaleType ? normalizeCashSaleType(submittedSaleType) : customerDefaultCashSaleType(customer);
 
     const cashSale = await prisma.cashSale.create({
         data: {

@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 
 const source = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
 
-describe("Cash-sale automatic type selection", () => {
-  it("uses the selected customer type when the user leaves retail/wholesale unselected", () => {
+describe("Transaction retail/wholesale confirmation", () => {
+  it("requires an explicit type choice before sending the transaction", () => {
     expect(source).toContain("customerDefaultCashSaleType");
     expect(source).toContain("const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);");
-    expect(source).toContain("saleType: isCashSale ? effectiveCashSaleType : ledgerForm.saleType");
-    expect(source).toContain('saleType: ledgerForm.type === "CASH_SALE" ? ledgerForm.saleType : ""');
-    expect(source).toContain("မရွေးထားပါက Customer အမျိုးအစားအတိုင်း အလိုအလျောက်သိမ်းမည်");
+    expect(source).toContain("saleType: saleTypeOverride || (isCashSale ? effectiveCashSaleType : ledgerForm.saleType)");
+    expect(source).toContain("if (!pendingTransactionConfirmation?.saleType) return;");
+    expect(source).toContain("လက်လီ သို့မဟုတ် လက်ကား တစ်ခုကို မဖြစ်မနေရွေးပြီးမှ data သိမ်းပါမည်");
+    expect(source).toContain("disabled={isSubmitting || !pendingTransactionConfirmation.saleType}");
   });
 });
 

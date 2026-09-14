@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
+import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
 import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
 import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
+const SALE_TYPE_REQUIRED_FROM = "2026-09-12";
 
 export async function GET(request, { params }) {
   try {
@@ -63,6 +65,10 @@ export async function POST(request, { params }) {
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "amount must be greater than zero" }, { status: 400 });
     }
+    const submittedSaleType = String(body.saleType || "").trim().toUpperCase();
+    if (ledgerDate >= SALE_TYPE_REQUIRED_FROM && !["RETAIL", "WHOLESALE"].includes(submittedSaleType)) {
+      return NextResponse.json({ error: "၂၀၂၆-၀၉-၁၂ ရက်နေ့မှစ၍ လက်လီ သို့မဟုတ် လက်ကားကို မဖြစ်မနေရွေးပါ။ မရွေးရသေးသော data ကို မသိမ်းပါ။" }, { status: 400 });
+    }
     const settlementMatch = type === "DEBIT"
       ? String(body.note || "").match(/^__SETTLES_CREDIT_LEDGER__:(\S+)$/)
       : null;
@@ -83,7 +89,7 @@ export async function POST(request, { params }) {
       });
       const ledger = await tx.ledger.create({
         data: {
-          customerId, actorName: getActorName(request), type, saleType: body.saleType || "RETAIL",
+          customerId, actorName: getActorName(request), type, saleType: submittedSaleType ? normalizeCashSaleType(submittedSaleType) : "RETAIL",
           itemSize: body.itemSize?.trim() || null,
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
           rate: body.rate ? Math.round(Number(body.rate)) : null,
