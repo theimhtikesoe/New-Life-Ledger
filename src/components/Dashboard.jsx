@@ -2146,6 +2146,9 @@ export default function Dashboard({ view = "overview" }) {
                     <button type="button" onClick={handleOpenTelegramReportPreview} className="settings-menu-item border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100">
                       <span className="ui-icon">📨</span><span>Manual အစီရင်ခံစာ</span>
                     </button>
+                    <Link href="/daily-report-download" className="settings-menu-item border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+                      <span className="ui-icon">📄</span><span>နေ့စွဲအလိုက် PDF Download</span>
+                    </Link>
                     <Link href="/auto-report-status" className="settings-menu-item border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100">
                       <span className="ui-icon">📡</span><span>Auto Report အခြေအနေ</span>
                     </Link>

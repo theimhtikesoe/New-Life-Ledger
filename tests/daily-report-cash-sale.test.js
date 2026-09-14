@@ -83,9 +83,14 @@ describe("Telegram daily report CashSale data", () => {
         tubes: [{ label: "1 လီတာ ဖြူ", capacity: 2500, quantity: 2, pieces: 5000, unit: "ထုပ်" }],
         totalOutput: 2000,
         totalWaste: 12,
-        totalTubeDamage: 3,
-        tubeQuantityValue: "2.525",
-        tubeQuantityUnit: "ထုပ်",
+      totalTubeDamage: 3,
+      tubeQuantityValue: "2.525",
+      tubeQuantityUnit: "ထုပ်",
+      tubeMetrics: { tubeDamageKg: 22, scrapKg: 1.5, scrapTubeCount: 2, scrapGlueCount: 1, usedGlueKg: 4, usedGlueBags: 2, remainingGlueKg: 3, remainingGlueBags: 1, tubeCountBags: 15, tubeCountPcs: 31500, glueWasteKg: 0.5, tubeTypes: ["13g W"] },
+      tubeRecordCount: 1,
+      involvedWorkers: ["Worker A"],
+      machineNames: ["Tube Machine"],
+      notes: ["Test note"],
       },
     }, "", "");
     expect(html).toContain("ဗူး နှင့် Tube ထွက်ရှိမှု စာရင်း");
@@ -97,6 +102,9 @@ describe("Telegram daily report CashSale data", () => {
     expect(html).toContain("2,000 ဗူး");
     expect(html).toContain("ဗူးပျက်စုစုပေါင်း");
     expect(html).toContain("2.525");
+    expect(html).toContain("Tube စုစုပေါင်း");
+    expect(html).toContain("Tube အသေးစိတ်");
+    expect(html).toContain("Worker A");
   });
 
   it("renders retail and wholesale cash-sale details on separate full lines", () => {

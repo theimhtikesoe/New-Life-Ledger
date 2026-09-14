@@ -184,7 +184,28 @@ export function summarizeProductionReports(rows = []) {
   let totalTubeDamage = 0;
   let tubeQuantityValue = "0";
   let tubeQuantityUnit = "အိတ်";
+  const tubeMetrics = {
+    tubeDamageKg: 0,
+    scrapKg: 0,
+    scrapTubeCount: 0,
+    scrapGlueCount: 0,
+    usedGlueKg: 0,
+    usedGlueBags: 0,
+    remainingGlueKg: 0,
+    remainingGlueBags: 0,
+    tubeCountBags: 0,
+    tubeCountPcs: 0,
+    glueWasteKg: 0,
+    tubeTypes: new Set(),
+  };
+  const tubeSubmissionKeys = new Set();
+  const involvedWorkers = new Set();
+  const machineNames = new Set();
+  const notes = new Set();
   for (const row of rows) {
+    if (Array.isArray(row.involvedWorkers)) row.involvedWorkers.map((worker) => String(worker || "").trim()).filter(Boolean).forEach((worker) => involvedWorkers.add(worker));
+    if (row.machineName) machineNames.add(String(row.machineName));
+    if (row.notes) notes.add(String(row.notes));
     const quantity = Number(row.outputQuantity || 0);
     const capacity = Number(row.outputCapacity || 0);
     const pieces = quantity * capacity;
@@ -195,6 +216,14 @@ export function summarizeProductionReports(rows = []) {
       current.quantity += quantity;
       current.pieces += pieces;
       tubes.set(key, current);
+      tubeSubmissionKeys.add(String(row.submissionId || key));
+      const metrics = row.tubeMetrics && typeof row.tubeMetrics === "object" ? row.tubeMetrics : null;
+      if (metrics) {
+        for (const field of ["tubeDamageKg", "scrapKg", "scrapTubeCount", "scrapGlueCount", "usedGlueKg", "usedGlueBags", "remainingGlueKg", "remainingGlueBags", "tubeCountBags", "tubeCountPcs", "glueWasteKg"]) {
+          tubeMetrics[field] += Number(metrics[field] || 0);
+        }
+        if (metrics.tubeType) tubeMetrics.tubeTypes.add(String(metrics.tubeType));
+      }
     } else {
       const label = getBottleDisplayName(row.bottleType) || "ဗူးအမျိုးအစား မသတ်မှတ်ရသေးပါ";
       const key = `${label}|${capacity}`;
@@ -224,6 +253,11 @@ export function summarizeProductionReports(rows = []) {
     // tubeQuantityValue is an older/manual field and can be unrelated (e.g. 3.5).
     tubeQuantityValue: tubeRows.length ? String(producedTubeQuantity) : tubeQuantityValue,
     tubeQuantityUnit: tubeRows.length ? producedTubeUnit : tubeQuantityUnit,
+    tubeMetrics: { ...tubeMetrics, tubeTypes: [...tubeMetrics.tubeTypes] },
+    tubeRecordCount: tubeSubmissionKeys.size,
+    involvedWorkers: [...involvedWorkers],
+    machineNames: [...machineNames],
+    notes: [...notes],
   };
 }
 
@@ -333,7 +367,7 @@ export async function getDailyReportData({ start, end, dateLabel } = getPrevious
     prisma.productionReport?.findMany
       ? prisma.productionReport.findMany({
           where: { reportDate: dateLabel },
-          select: { category: true, outputQuantity: true, outputCapacity: true, outputUnit: true, bottleType: true, tubeG: true, tubeColor: true, wasteQuantity: true, tubeDamageQuantity: true, tubeQuantity: true, tubeQuantityValue: true, tubeQuantityUnit: true },
+          select: { category: true, submissionId: true, machineName: true, outputQuantity: true, outputCapacity: true, outputUnit: true, bottleType: true, tubeG: true, tubeColor: true, wasteQuantity: true, tubeDamageQuantity: true, tubeQuantity: true, tubeQuantityValue: true, tubeQuantityUnit: true, tubeMetrics: true, involvedWorkers: true, notes: true },
           orderBy: [{ id: "asc" }],
         })
       : Promise.resolve([]),
@@ -591,8 +625,11 @@ export function createProductionSummaryHtml(report, fontDataUri, latinDataUri) {
   const number = (value) => Number(value || 0).toLocaleString("en-US");
   const bottleRows = summary.bottles.map((item) => `<tr><td>${esc(item.label)}</td><td>${number(item.capacity)} ဆံ့</td><td>${number(item.quantity)} ${esc(item.unit)}</td><td>${number(item.pieces)} ဗူး</td></tr>`).join("") || `<tr><td colspan="4">ဒီနေ့ ဗူးထွက်ရှိမှု မရှိသေးပါ။</td></tr>`;
   const tubeRows = summary.tubes.map((item) => `<tr><td>${esc(item.label)}</td><td>${number(item.capacity)} ခု</td><td>${number(item.quantity)} ${esc(item.unit)}</td><td>${number(item.pieces)} ခု</td></tr>`).join("") || `<tr><td colspan="4">ဒီနေ့ Tube ထုတ်လုပ်မှု မရှိသေးပါ။</td></tr>`;
+  const tubeMetrics = summary.tubeMetrics || {};
+  const tubeDetails = `<div class="tube-details"><div class="tube-detail"><div class="tube-detail-label">Tube စုစုပေါင်း</div><div class="tube-detail-value">${esc(summary.tubeQuantityValue)} ${esc(summary.tubeQuantityUnit)} / ${number(summary.tubes.reduce((total, row) => total + Number(row.pieces || 0), 0))} pcs</div></div><div class="tube-detail"><div class="tube-detail-label">မှတ်တမ်းအကြိမ်</div><div class="tube-detail-value">${number(summary.tubeRecordCount)} ကြိမ် · အမျိုးအစား ${number(summary.tubes.length)} မျိုး</div></div><div class="tube-detail"><div class="tube-detail-label">Tube ပျက်</div><div class="tube-detail-value">${number(tubeMetrics.tubeDamageKg)} kg</div></div><div class="tube-detail"><div class="tube-detail-label">ခုတ်ဖက်</div><div class="tube-detail-value">${number(tubeMetrics.scrapKg)} kg (${number(tubeMetrics.scrapTubeCount)} ခုတ်ဖက် + ${number(tubeMetrics.scrapGlueCount)} ကော်စေ့)</div></div><div class="tube-detail"><div class="tube-detail-label">သုံးကော်စေ့ / ကျန်</div><div class="tube-detail-value">${number(tubeMetrics.usedGlueKg)} kg / ${number(tubeMetrics.usedGlueBags)} အိတ်</div><div class="tube-detail-note">ကျန် ${number(tubeMetrics.remainingGlueBags)} အိတ် / ${number(tubeMetrics.remainingGlueKg)} kg</div></div><div class="tube-detail"><div class="tube-detail-label">Tube အသေးစိတ်</div><div class="tube-detail-value">${esc((tubeMetrics.tubeTypes || []).join(", ") || "မသတ်မှတ်ရသေး")}</div><div class="tube-detail-note">${number(tubeMetrics.tubeCountBags)} အိတ် / ${number(tubeMetrics.tubeCountPcs)} pcs · ကော်ပျက် ${number(tubeMetrics.glueWasteKg)} kg</div></div></div>`;
+  const productionMeta = `<div class="production-meta"><div><strong>ဆင်းသူများ:</strong> ${esc((summary.involvedWorkers || []).join(", ") || "မရှိ")}</div><div><strong>စက်:</strong> ${esc((summary.machineNames || []).join(", ") || "မသတ်မှတ်ရသေး")}</div><div><strong>မှတ်ချက်:</strong> ${esc((summary.notes || []).join(" · ") || "မရှိ")}</div></div>`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
-    @font-face{font-family:Padauk;src:url(data:font/ttf;base64,${fontDataUri}) format('truetype');font-weight:400}@font-face{font-family:DejaVu;src:url(data:font/ttf;base64,${latinDataUri}) format('truetype');font-weight:400}*{box-sizing:border-box}body{margin:0;background:#f8fafc;color:#0f172a;font-family:Padauk,DejaVu,sans-serif}.sheet{width:1100px;padding:34px;background:#fff;border:1px solid #cbd5e1;border-radius:28px}.brand{font-family:DejaVu,Padauk,sans-serif;font-size:18px;letter-spacing:2px;color:#4338ca;font-weight:700}.title{font-size:38px;font-weight:700;margin-top:6px}.date{font-family:DejaVu,Padauk,sans-serif;font-size:21px;color:#475569;margin-top:6px}.rule{height:2px;background:#e2e8f0;margin:24px 0}h2{font-size:26px;margin:22px 0 10px;color:#3730a3}.production-table{width:100%;border-collapse:collapse;font-size:21px}.production-table th,.production-table td{padding:11px 12px;border-bottom:1px solid #e2e8f0;text-align:left}.production-table th{background:#e0e7ff;color:#312e81}.production-table td:nth-child(n+2),.production-table th:nth-child(n+2){text-align:right}.tube-title{color:#c2410c}.tube-table th{background:#ffedd5;color:#9a3412}.totals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}.total{padding:16px;border-radius:14px;background:#ecfdf5;border:1px solid #bbf7d0}.total:nth-child(2){background:#fff1f2;border-color:#fecdd3}.total:nth-child(3),.total:nth-child(4){background:#fff7ed;border-color:#fed7aa}.total-label{font-size:17px;color:#475569}.total-value{font-family:DejaVu,Padauk,sans-serif;font-size:25px;font-weight:700;margin-top:6px}</style></head><body><section id="production-summary" class="sheet"><div class="brand">NEW LIFE LEDGER</div><div class="title">ဗူး နှင့် Tube ထွက်ရှိမှု စာရင်း</div><div class="date">စာရင်းရက် — ${esc(formatReportDateLabel(report.dateLabel))}</div><div class="rule"></div><h2>စာအုပ်မှတ်တမ်းအကျဉ်းချုပ် — ဗူး</h2><table class="production-table"><thead><tr><th>ဗူးအမျိုးအစား</th><th>ဆံ့</th><th>အရေအတွက်</th><th>စုစုပေါင်းဗူး</th></tr></thead><tbody>${bottleRows}</tbody></table><h2 class="tube-title">Tube အကျဉ်းချုပ်</h2><table class="production-table tube-table"><thead><tr><th>Tube အမျိုးအစား</th><th>တစ်ကြိမ်ဆံ့</th><th>အရေအတွက်</th><th>စုစုပေါင်း Tube</th></tr></thead><tbody>${tubeRows}</tbody></table><div class="totals"><div class="total"><div class="total-label">စုစုပေါင်းထွက်ရှိမှု</div><div class="total-value">${number(summary.totalOutput)} ဗူး</div></div><div class="total"><div class="total-label">ဗူးပျက်စုစုပေါင်း</div><div class="total-value">${number(summary.totalWaste)} ဗူး</div></div><div class="total"><div class="total-label">Tube ပျက်</div><div class="total-value">${number(summary.totalTubeDamage)} ခု</div></div><div class="total"><div class="total-label">Tube အရေအတွက်</div><div class="total-value">${esc(summary.tubeQuantityValue)} ${esc(summary.tubeQuantityUnit)}</div></div></div></section></body></html>`;
+    @font-face{font-family:Padauk;src:url(data:font/ttf;base64,${fontDataUri}) format('truetype');font-weight:400}@font-face{font-family:DejaVu;src:url(data:font/ttf;base64,${latinDataUri}) format('truetype');font-weight:400}*{box-sizing:border-box}body{margin:0;background:#f8fafc;color:#0f172a;font-family:Padauk,DejaVu,sans-serif}.sheet{width:1100px;padding:34px;background:#fff;border:1px solid #cbd5e1;border-radius:28px}.brand{font-family:DejaVu,Padauk,sans-serif;font-size:18px;letter-spacing:2px;color:#4338ca;font-weight:700}.title{font-size:38px;font-weight:700;margin-top:6px}.date{font-family:DejaVu,Padauk,sans-serif;font-size:21px;color:#475569;margin-top:6px}.rule{height:2px;background:#e2e8f0;margin:24px 0}h2{font-size:26px;margin:22px 0 10px;color:#3730a3}.production-table{width:100%;border-collapse:collapse;font-size:21px}.production-table th,.production-table td{padding:11px 12px;border-bottom:1px solid #e2e8f0;text-align:left}.production-table th{background:#e0e7ff;color:#312e81}.production-table td:nth-child(n+2),.production-table th:nth-child(n+2){text-align:right}.tube-title{color:#c2410c}.tube-table th{background:#ffedd5;color:#9a3412}.totals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}.total{padding:16px;border-radius:14px;background:#ecfdf5;border:1px solid #bbf7d0}.total:nth-child(2){background:#fff1f2;border-color:#fecdd3}.total:nth-child(3),.total:nth-child(4){background:#fff7ed;border-color:#fed7aa}.total-label{font-size:17px;color:#475569}.total-value{font-family:DejaVu,Padauk,sans-serif;font-size:25px;font-weight:700;margin-top:6px}.tube-details{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px}.tube-detail{padding:14px;border-radius:14px;background:#f8fafc;border:1px solid #cbd5e1}.tube-detail-label{font-size:17px;color:#475569}.tube-detail-value{font-size:21px;font-weight:700;margin-top:6px;color:#1e293b}.tube-detail-note{font-size:16px;color:#64748b;margin-top:4px}.production-meta{margin-top:18px;padding:16px;border-radius:14px;background:#eef2ff;border:1px solid #c7d2fe;font-size:18px;line-height:1.6;color:#334155}.production-meta strong{color:#3730a3}</style></head><body><section id="production-summary" class="sheet"><div class="brand">NEW LIFE LEDGER</div><div class="title">ဗူး နှင့် Tube ထွက်ရှိမှု စာရင်း</div><div class="date">စာရင်းရက် — ${esc(formatReportDateLabel(report.dateLabel))}</div><div class="rule"></div><h2>စာအုပ်မှတ်တမ်းအကျဉ်းချုပ် — ဗူး</h2><table class="production-table"><thead><tr><th>ဗူးအမျိုးအစား</th><th>ဆံ့</th><th>အရေအတွက်</th><th>စုစုပေါင်းဗူး</th></tr></thead><tbody>${bottleRows}</tbody></table><h2 class="tube-title">Tube အကျဉ်းချုပ်</h2><table class="production-table tube-table"><thead><tr><th>Tube အမျိုးအစား</th><th>တစ်ကြိမ်ဆံ့</th><th>အရေအတွက်</th><th>စုစုပေါင်း Tube</th></tr></thead><tbody>${tubeRows}</tbody></table>${tubeDetails}${productionMeta}<div class="totals"><div class="total"><div class="total-label">စုစုပေါင်းထွက်ရှိမှု</div><div class="total-value">${number(summary.totalOutput)} ဗူး</div></div><div class="total"><div class="total-label">ဗူးပျက်စုစုပေါင်း</div><div class="total-value">${number(summary.totalWaste)} ဗူး</div></div><div class="total"><div class="total-label">Tube ပျက်</div><div class="total-value">${number(tubeMetrics.tubeDamageKg)} kg</div></div><div class="total"><div class="total-label">Tube အရေအတွက်</div><div class="total-value">${esc(summary.tubeQuantityValue)} ${esc(summary.tubeQuantityUnit)}</div></div></div></section></body></html>`;
 }
 
 let chromiumExecutablePromise;
