@@ -278,8 +278,8 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
           <section className={fullPage ? "mx-auto w-full max-w-5xl px-3 sm:px-6" : "relative max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl sm:max-h-[94vh] sm:p-6"}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-semibold tracking-[0.16em] text-indigo-600">နေ့စဉ် ရောင်းရငွေ အနှစ်ချုပ်</p>
-                <h2 id="daily-sales-summary-title" className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</h2>
+                {!fullPage ? <p className="text-xs font-semibold tracking-[0.16em] text-indigo-600">နေ့စဉ် ရောင်းရငွေ အနှစ်ချုပ်</p> : null}
+                {!fullPage ? <h2 id="daily-sales-summary-title" className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ</h2> : <h2 id="daily-sales-summary-title" className="sr-only">နေ့စဉ် လက်လီ / လက်ကား ရောင်းရငွေ အချက်အလက်</h2>}
                 <p className="mt-1 text-xs leading-5 text-slate-600">နေ့စဉ် ၄ ခုကို သိမ်းထားနိုင်ပြီး တစ်လစာစုစုပေါင်းကို auto တွက်ပေးပါသည်။</p>
               </div>
               {fullPage ? <Link href="/" className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Dashboard သို့</Link> : <button type="button" onClick={() => setIsOpen(false)} className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 hover:bg-slate-50" aria-label="Panel ပိတ်ရန်">ပိတ်မည်</button>}

@@ -251,6 +251,7 @@ const PAGE_HEADERS = {
   '/customer-management': 'Customer Management',
   '/user-management': 'User Management',
   '/daily-bottle-sales': 'တစ်နေ့တာ ဗူးရောင်းစာရင်း',
+  '/daily-sales-summary': 'ယနေ့ လက်လီ / လက်ကား စုစုပေါင်း',
   '/daily-summary': 'Daily Summary',
   '/data-management': 'Data Management',
   '/discounts': 'Customer လျှော့စျေးမှတ်တမ်း',
