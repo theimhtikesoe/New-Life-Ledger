@@ -6,9 +6,10 @@ describe("Daily PDF download permissions", () => {
     expect(PERMISSION_PAGES).toContainEqual({ path: "/daily-report-download", label: "နေ့စွဲအလိုက် Daily PDF Download" });
   });
 
-  it("grants the daily PDF page to full-access users", () => {
+  it("includes the daily PDF page in full-user defaults and allows custom records to control it", () => {
     expect(defaultAllowedPaths("ဖေဖေ/မေမေ")).toContain("/daily-report-download");
-    expect(normalizeAllowedPaths(["/"], "Rhyzoe")).toContain("/daily-report-download");
+    expect(normalizeAllowedPaths(["/"], "Rhyzoe")).not.toContain("/daily-report-download");
+    expect(normalizeAllowedPaths(["/", "/daily-report-download"], "Rhyzoe")).toContain("/daily-report-download");
   });
 
   it("does not broaden restricted production or ledger users", () => {

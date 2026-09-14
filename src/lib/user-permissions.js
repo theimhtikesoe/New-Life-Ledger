@@ -42,6 +42,5 @@ export function normalizeAllowedPaths(value, actorName) {
   }
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "ဆောင်းဦး" && actorName !== "သက်မွန်နှင်း" && !allowed.includes("/expenses")) allowed.push("/expenses");
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "သက်မွန်နှင်း" && allowed.includes("/") && !allowed.includes("/daily-sales-summary")) allowed.push("/daily-sales-summary");
-  if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "ဆောင်းဦး" && actorName !== "သက်မွန်နှင်း" && allowed.includes("/") && !allowed.includes("/daily-report-download")) allowed.push("/daily-report-download");
   return [...new Set(allowed)];
 }
