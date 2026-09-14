@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getPreviousMyanmarDayRange } from "@/lib/myanmar-time";
+import { formatMyanmarClock, formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 
 export default function DailyReportDownloadPage() {
   const [date, setDate] = useState(() => getPreviousMyanmarDayRange().dateLabel);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const downloadPdf = async () => {
     if (!date || loading) return;
@@ -42,13 +49,16 @@ export default function DailyReportDownloadPage() {
   return (
     <main className="min-h-screen bg-slate-50 px-3 py-6 sm:px-6 sm:py-10">
       <section className="mx-auto max-w-2xl rounded-2xl border border-violet-200 bg-white p-5 shadow-sm sm:p-8">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div><p className="text-xs font-bold text-slate-500">ယနေ့ရက်စွဲ</p><p className="mt-1 text-sm font-black text-slate-800">{formatMyanmarDateLabel(currentTime)}</p><p className="mt-1 font-mono text-xl font-black tracking-wider text-cyan-700">{formatMyanmarClock(currentTime)}</p><p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p></div>
+          <Link href="/" className="rounded-lg border border-cyan-300 bg-cyan-50 px-4 py-2 text-sm font-black text-cyan-700 hover:bg-cyan-100">← Dashboard သို့</Link>
+        </div>
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black tracking-[0.16em] text-violet-600">NEW LIFE LEDGER</p>
             <h1 className="mt-1 text-2xl font-black text-slate-900">နေ့စွဲအလိုက် Daily PDF Download</h1>
             <p className="mt-2 text-sm leading-6 text-slate-600">Website ထဲက ရွေးထားသောရက်စွဲအတိုင်း Telegram report PDF ကို ပြန်ထုတ်ပြီး download လုပ်နိုင်ပါသည်။</p>
           </div>
-          <Link href="/" className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">Dashboard</Link>
         </div>
 
         <div className="mt-6 rounded-xl border border-violet-200 bg-violet-50/60 p-4">
