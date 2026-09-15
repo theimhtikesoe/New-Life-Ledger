@@ -69,6 +69,7 @@ export async function GET(request) {
         if (!Array.isArray(row.saleItems)) return;
         totalPaidAmount += Math.max(0, Math.round(Number(row.amount || 0)));
         row.saleItems.forEach((item) => {
+          if (item?.isCap || item?.productType === "cap" || item?.categoryKey === "CAP" || item?.productType === "tube" || item?.categoryKey === "TUBE") return;
           const bottleCount = Math.max(0, Math.round(Number(item.bottleCount || 0)));
           const totalAmount = Math.max(0, Math.round(Number(item.totalAmount || 0)));
           if (!bottleCount && !totalAmount) return;

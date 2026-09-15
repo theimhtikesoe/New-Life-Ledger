@@ -791,9 +791,11 @@ export default function Dashboard({ view = "overview" }) {
     // Stale-while-revalidate: a previous successful snapshot is already usable
     // UI data. Keep it visible while the fresh server response runs silently.
     setLoading(!hasCachedDashboardForSelectedDate);
-    setKpiDateLoading(!hasCachedDashboardForSelectedDate);
+    // Even when a cached dashboard exists, the KPI request is still running.
+    // Do not render an old/missing bottleSales field as a misleading 0.
+    setKpiDateLoading(true);
     setKpiDateError("");
-    setDashboardKpiLoading(!hasCachedDashboardForSelectedDate);
+    setDashboardKpiLoading(true);
     setDashboardKpiError("");
     setLoadingTimedOut(false);
     setDataLoadError("");
@@ -1124,7 +1126,7 @@ export default function Dashboard({ view = "overview" }) {
   const todayPaidBottleSales = dashboardKpi?.paidBottleSales || { totalBottles: 0 };
   const todayCashBottleSales = dashboardKpi?.cashBottleSales || { totalBottles: 0 };
   const todayCreditBottleSales = dashboardKpi?.creditBottleSales || { totalBottles: 0, totalAmount: 0, items: [] };
-  const bottleSalesLoading = (dashboardKpiLoading && !dashboardKpi) || kpiDateLoading;
+  const bottleSalesLoading = dashboardKpiLoading || kpiDateLoading;
   const productionSummary = useMemo(() => summarizeProduction(productionRows), [productionRows]);
   const tubeProductionSummary = useMemo(() => {
     const rows = tubeProductionRows;
