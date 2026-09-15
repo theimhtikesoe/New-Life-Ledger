@@ -15,34 +15,45 @@ const MIN_APP_ZOOM = 0.85;
 const MAX_APP_ZOOM = 1.15;
 const APP_ZOOM_STEP = 0.05;
 installClientWriteDeduplication();
-const BLOSSOM_PETALS = Array.from({ length: 18 }, (_, index) => ({
-  left: `${(index * 17 + 7) % 100}%`,
-  delay: `${(index % 9) * -1.9}s`,
-  duration: `${13 + (index % 6) * 2}s`,
-  size: `${9 + (index % 4) * 2}px`,
-  drift: `${-80 + (index % 7) * 28}px`,
-  rotate: `${(index * 31) % 180}deg`,
-}));
 
-function BlossomOverlay() {
-  return (
-    <div className="blossom-overlay" aria-hidden="true">
-      {BLOSSOM_PETALS.map((petal, index) => (
-        <span
-          key={index}
-          className="blossom-petal"
-          style={{
-            '--blossom-left': petal.left,
-            '--blossom-delay': petal.delay,
-            '--blossom-duration': petal.duration,
-            '--blossom-size': petal.size,
-            '--blossom-drift': petal.drift,
-            '--blossom-rotate': petal.rotate,
-          }}
-        />
-      ))}
+// New Life (6-miles), Taunggyi factory area. Browser GPS is preferred when
+// available; this is the fallback used on devices that deny location access.
+const DEFAULT_WEATHER_LOCATION = { latitude: 20.78919, longitude: 97.03776 };
+
+function WeatherOverlay() {
+  const [weather, setWeather] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadWeather = async (location = DEFAULT_WEATHER_LOCATION) => {
+      try {
+        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=weather_code&timezone=auto`, { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) setWeather(Number(data.current?.weather_code));
+      } catch {
+        // Weather is decorative; keep the page usable when the service is offline.
+      }
+    };
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => loadWeather({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+        () => loadWeather(),
+        { maximumAge: 900000, timeout: 5000 },
+      );
+    } else loadWeather();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (weather === null) return null;
+  const rainy = (weather >= 51 && weather <= 82) || weather >= 95;
+  const sunny = weather <= 2;
+  if (!rainy && !sunny) return null;
+  return rainy ? (
+    <div className="weather-overlay weather-rain" aria-hidden="true">
+      {Array.from({ length: 42 }, (_, index) => <i key={index} style={{ '--rain-left': `${(index * 23) % 100}%`, '--rain-delay': `${(index % 11) * -0.22}s`, '--rain-duration': `${0.75 + (index % 5) * 0.12}s` }} />)}
     </div>
-  );
+  ) : <div className="weather-overlay weather-sun" aria-hidden="true" />;
 }
 
 function clampAppZoom(value) {
@@ -558,7 +569,7 @@ export default function RootLayoutClient({ children }) {
 
   return (
     <>
-      <BlossomOverlay />
+      <WeatherOverlay />
       <PINLogin onSuccess={handleLoginSuccess} onLogout={handleLogout} onReady={handleAuthReady} />
       {showApp && (
         <ActorSwitcher actorName={actorName} />

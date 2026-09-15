@@ -1138,3 +1138,67 @@ textarea {
     );
   }
 }
+
+/* Calm visual mode: remove the neon/glow/bling treatment from the shared shell. */
+.neon-app-shell::before,
+.neon-card::before,
+.neon-menu-button::before,
+.neon-surface::after,
+.neon-card::after,
+.neon-control-deck::after,
+.neon-sweep::after {
+  display: none !important;
+  animation: none !important;
+}
+.neon-app-shell-viewport {
+  background: #f8fafc;
+}
+.neon-card,
+.neon-surface,
+.neon-control-deck {
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06) !important;
+}
+.neon-card,
+.neon-card:hover {
+  transform: none !important;
+}
+.neon-app-shell button:not(:disabled):hover,
+.neon-app-shell a:hover {
+  filter: none !important;
+}
+
+.weather-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+.weather-rain i {
+  position: absolute;
+  top: -12vh;
+  left: var(--rain-left);
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.48));
+  transform: rotate(15deg);
+  animation: weatherRain var(--rain-duration) linear var(--rain-delay) infinite;
+}
+@keyframes weatherRain {
+  to { transform: translate3d(-8vw, 120vh, 0) rotate(15deg); }
+}
+.weather-sun::before {
+  content: "";
+  position: absolute;
+  top: -16vh;
+  left: 50%;
+  width: min(58vw, 720px);
+  height: min(42vw, 520px);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(253, 224, 71, 0.24), rgba(251, 191, 36, 0.08) 42%, transparent 72%);
+  opacity: 0.7;
+}
+@media (prefers-reduced-motion: reduce) {
+  .weather-rain i { animation: none; display: none; }
+}
