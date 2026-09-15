@@ -8,11 +8,13 @@ import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
 import { formatMyanmarClock, formatMyanmarDateLabel } from '@/lib/myanmar-time-client';
 import { encodeActorHeader } from '@/lib/actor-header';
 import { defaultAllowedPaths } from '@/lib/user-permissions';
+import { installClientWriteDeduplication } from '@/lib/client-write-dedupe';
 
 const APP_ZOOM_KEY = 'new-life-ledger:app-zoom-v1';
 const MIN_APP_ZOOM = 0.85;
 const MAX_APP_ZOOM = 1.15;
 const APP_ZOOM_STEP = 0.05;
+installClientWriteDeduplication();
 const BLOSSOM_PETALS = Array.from({ length: 18 }, (_, index) => ({
   left: `${(index * 17 + 7) % 100}%`,
   delay: `${(index % 9) * -1.9}s`,
