@@ -252,10 +252,12 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
     if (!Array.isArray(row.saleItems)) continue;
     for (const item of row.saleItems) {
       if (isCapSaleItem(item)) {
-        const capCount = positiveInteger(item?.cardCount || item?.unitCount || item?.bottleCount);
+        // capOnly rows store cardCount as bags; unitCount/bottleCount are the
+        // actual pieces that must be deducted from CAP stock.
+        const capCount = positiveInteger(item?.capOnly ? (item?.unitCount || item?.bottleCount) : (item?.cardCount || item?.unitCount || item?.bottleCount));
         if (!capCount) continue;
         const identity = normalizeCapIdentity({ productName: item?.productName, productKey: item?.productKey, location: item?.capLocation, packSize: item?.capPackSize });
-        movements.push({ movementDate: getMyanmarDateInputValue(row.date), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...identity, quantityCards: -capCount, quantityBottles: 0, sourceType, sourceId: clean(row.id), sourceVersion, reason: "အဖုံးရောင်းစာရင်း", note: null, actorName: clean(actorName) || "system" });
+        movements.push({ movementDate: getMyanmarDateInputValue(row.date), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...identity, quantityCards: item?.capOnly ? 0 : -capCount, quantityBottles: -capCount, sourceType, sourceId: clean(row.id), sourceVersion, reason: "အဖုံးရောင်းစာရင်း", note: item?.capOnly ? `${positiveInteger(item?.cardCount)} အိတ် × ${identity.capacity} ဆံ့` : null, actorName: clean(actorName) || "system" });
         continue;
       }
       const isTube = item?.productType === "tube" || item?.categoryKey === "TUBE";

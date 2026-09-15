@@ -69,8 +69,9 @@ function saleItemsSummary(items = []) {
   if (!Array.isArray(items) || !items.length) return "";
   return items.map((item) => {
     if (item?.isCap || item?.categoryKey === "CAP") {
-      const count = Number(item.cardCount || item.unitCount || 0);
-      return `${item.productName || "အဖုံး"} × ${count.toLocaleString()} အဖုံး = ${formatMoney(item.totalAmount)}`;
+      const count = Number(item.unitCount || item.cardCount || 0);
+      const bagText = item.capOnly ? ` · ${Number(item.cardCount || 0).toLocaleString()} အိတ် × ${Number(item.capacity || item.capPackSize || 5000).toLocaleString()} ဆံ့` : "";
+      return `${item.productName || "အဖုံး"}${bagText} = ${count.toLocaleString()} အဖုံး = ${formatMoney(item.totalAmount)}`;
     }
     if (item?.productType === "tube" || item?.categoryKey === "TUBE") {
       return `${item.productName || "Tube"} × ${item.cardCount || 0} အိတ် = ${Number(item.bottleCount || 0).toLocaleString()} Tube = ${formatMoney(item.totalAmount)}`;
@@ -1045,11 +1046,12 @@ export default function Dashboard({ view = "overview" }) {
 
     setLoadingCustomer(true);
     try {
-      // Production uses connection_limit=1. Fetch the customer snapshot first
-      // and then its transactions so a refresh cannot lose one half of the
-      // update to a pool timeout.
-      const customer = await api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`);
-      const transactionPage = await api(`/api/customers/${id}/transactions?limit=50&offset=0`);
+      // Both requests are read-only; run them concurrently to avoid two full
+      // network round trips when switching customers in the ledger.
+      const [customer, transactionPage] = await Promise.all([
+        api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`),
+        api(`/api/customers/${id}/transactions?limit=50&offset=0`),
+      ]);
       setSelectedCustomer({ ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] });
       setTransactionPagination(transactionPage.pagination || { offset: 0, limit: 50, total: 0, hasMore: false });
       setSelectedCustomerId(customer.id);
