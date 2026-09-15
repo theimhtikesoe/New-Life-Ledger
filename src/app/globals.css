@@ -1047,18 +1047,35 @@ textarea {
   }
 }
 
-/* Route headers intentionally keep the Ledger-style stacked flow on desktop:
-   the Dashboard link sits in its own top row, while date and title stay in
-   the centered white header instead of attaching to the right edge. */
+/* Match the working Ledger header on desktop: date/clock centered and the
+   app/page title in the left column, never attached to the right edge. */
 .shared-page-header-route .shared-page-header-content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
+  gap: 1.5rem;
+}
+.shared-page-header-route .shared-page-header-content > div:first-child {
+  grid-column: 2;
+  grid-row: 1;
 }
 .shared-page-header-route .shared-page-header-content > div:last-child {
+  grid-column: 1;
+  grid-row: 1;
   width: 100%;
-  text-align: center;
+  text-align: left;
+}
+@media (max-width: 639px) {
+  .shared-page-header-route .shared-page-header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0;
+  }
+  .shared-page-header-route .shared-page-header-content > div:last-child {
+    text-align: center;
+  }
 }
 
 /* Dashboard and Ledger use their in-page header, but must start on the same
