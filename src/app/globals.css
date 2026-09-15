@@ -1047,30 +1047,18 @@ textarea {
   }
 }
 
-/* Desktop route headers should use the available width instead of stacking the
-   navigation, clock, and page title into a tall mobile-style column. */
-@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
-  .shared-page-header-route {
-    min-height: 0 !important;
-    padding-block: 1rem !important;
-  }
-
-  .shared-page-header-route > div {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 1.5rem;
-    min-height: 0 !important;
-  }
-
-  .shared-page-header-route .shared-page-header-nav {
-    min-height: 0;
-  }
-
-  .shared-page-header-route .shared-page-header-nav + div + div {
-    min-width: 0;
-    text-align: right;
-  }
+/* Route headers intentionally keep the Ledger-style stacked flow on desktop:
+   the Dashboard link sits in its own top row, while date and title stay in
+   the centered white header instead of attaching to the right edge. */
+.shared-page-header-route .shared-page-header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+.shared-page-header-route .shared-page-header-content > div:last-child {
+  width: 100%;
+  text-align: center;
 }
 
 /* Dashboard and Ledger use their in-page header, but must start on the same

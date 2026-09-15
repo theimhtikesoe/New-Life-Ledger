@@ -39,8 +39,8 @@ export default function DiscountsPage() {
   }, [rows]);
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900 sm:px-6">
-      <div className="mx-auto max-w-6xl space-y-5">
+    <main className="app-page-main">
+      <div className="app-page-container space-y-5">
         <header className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div><p className="text-sm font-semibold text-slate-700">Customer အလိုက် ပေးထားသော လျှော့စျေးများကို ပြန်ကြည့်ရန်</p></div>
