@@ -15,6 +15,7 @@ import { buildSettlementNote } from "@/lib/ledger-settlement";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
+import MusicMiniPlayer from "./MusicMiniPlayer";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
 import BirthdayCelebration from "@/components/BirthdayCelebration";
 
@@ -2063,6 +2064,7 @@ export default function Dashboard({ view = "overview" }) {
               <p className="mt-1 text-sm font-semibold text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
               <p className="mt-1 font-mono text-2xl font-bold tracking-wider text-cyan-700 tabular-nums sm:text-3xl">{formatMyanmarClock(currentTime)}</p>
               <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
+              <MusicMiniPlayer />
               {!isLedgerView ? (
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
                   <label htmlFor="dashboard-kpi-date" className="text-[11px] font-semibold text-cyan-700">KPI ရက်စွဲ</label>

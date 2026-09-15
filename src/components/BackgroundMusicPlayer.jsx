@@ -10,22 +10,9 @@ const OVERDUE_LAST_AUTO_ATTEMPT_DAY_KEY = "new-life-ledger:overdue-alert-audio-a
 const OVERDUE_AUDIO_STATUS_KEY = "new-life-ledger:overdue-alert-audio-status-v1";
 
 const TRACKS = [
-  {
-    name: "Ledger Drift",
-    src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663911487146/YZzdOvvQQGcPdMBE.mp3",
-  },
-  {
-    name: "Ledger Drift 2",
-    src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663911487146/rTYMeMabEYCyQoZh.mp3",
-  },
-  {
-    name: "Ledger Drift 3",
-    src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663911487146/GbZLFEJNeDyjKhyI.mp3",
-  },
-  {
-    name: "Ledger Drift 4",
-    src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663911487146/BTQbxwohYQINEhcG.mp3",
-  },
+  { name: "New Life", src: "/audio/new-life.mp3" },
+  { name: "New Life 2", src: "/audio/new-life-2.mp3" },
+  { name: "New Life 3", src: "/audio/new-life-3.mp3" },
 ];
 
 function readMutedPreference() {
@@ -169,6 +156,23 @@ export default function BackgroundMusicPlayer({ settingsOpen = false }) {
     writeMusicCheckpoint(nextIndex, 0);
     setTrackIndex(nextIndex);
   }, []);
+
+  const handlePreviousTrack = useCallback(() => {
+    const previousIndex = (trackIndexRef.current - 1 + TRACKS.length) % TRACKS.length;
+    trackIndexRef.current = previousIndex;
+    resumePositionRef.current = 0;
+    writeMusicCheckpoint(previousIndex, 0);
+    setTrackIndex(previousIndex);
+  }, []);
+
+  useEffect(() => {
+    dispatchMusicEvent("new-life-ledger:background-music-state", {
+      track: TRACKS[trackIndex]?.name || "New Life",
+      trackIndex,
+      playState,
+      muted,
+    });
+  }, [muted, playState, trackIndex]);
 
   useEffect(() => {
     const checkpoint = readMusicCheckpoint();
@@ -341,6 +345,23 @@ export default function BackgroundMusicPlayer({ settingsOpen = false }) {
       setPlayState("playing");
     }
   };
+
+  const handlePlayPause = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || audio.paused) startMusic();
+    else pauseMusic("paused");
+  }, [pauseMusic, startMusic]);
+
+  useEffect(() => {
+    const handleMusicCommand = (event) => {
+      if (event.detail?.action === "playPause") handlePlayPause();
+      if (event.detail?.action === "mute") handleMusicButton();
+      if (event.detail?.action === "next") handleTrackEnded();
+      if (event.detail?.action === "previous") handlePreviousTrack();
+    };
+    window.addEventListener("new-life-ledger:background-music-command", handleMusicCommand);
+    return () => window.removeEventListener("new-life-ledger:background-music-command", handleMusicCommand);
+  }, [handlePlayPause, handlePreviousTrack, handleTrackEnded]);
 
   return (
     <div
