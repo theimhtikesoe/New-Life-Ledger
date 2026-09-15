@@ -1065,6 +1065,31 @@ textarea {
   width: 100%;
   text-align: left;
 }
+/* Compatibility for one previously cached client bundle whose header still
+   wraps navigation, date, and title inside one direct child. */
+@media (min-width: 640px) {
+  .shared-page-header-route > div:first-child:not(.shared-page-header-nav) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    align-items: center;
+    gap: 0 1.5rem;
+  }
+  .shared-page-header-route > div:first-child:not(.shared-page-header-nav) > div:first-child {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .shared-page-header-route > div:first-child:not(.shared-page-header-nav) > div:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .shared-page-header-route > div:first-child:not(.shared-page-header-nav) > div:last-child {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    text-align: left;
+  }
+}
 @media (max-width: 639px) {
   .shared-page-header-route .shared-page-header-content {
     display: flex;
