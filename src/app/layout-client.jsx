@@ -16,8 +16,8 @@ const MAX_APP_ZOOM = 1.15;
 const APP_ZOOM_STEP = 0.05;
 installClientWriteDeduplication();
 
-// New Life (6-miles), Taunggyi factory area. Browser GPS is preferred when
-// available; this is the fallback used on devices that deny location access.
+// New Life (6-miles), Taunggyi factory area. Weather is intentionally tied to
+// the factory, not the viewer's phone location.
 const DEFAULT_WEATHER_LOCATION = { latitude: 20.78919, longitude: 97.03776 };
 
 function WeatherOverlay() {
@@ -35,13 +35,7 @@ function WeatherOverlay() {
         // Weather is decorative; keep the page usable when the service is offline.
       }
     };
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => loadWeather({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
-        () => loadWeather(),
-        { maximumAge: 900000, timeout: 5000 },
-      );
-    } else loadWeather();
+    loadWeather();
     return () => { cancelled = true; };
   }, []);
 
