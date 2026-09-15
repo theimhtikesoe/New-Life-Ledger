@@ -1332,6 +1332,33 @@ export default function Dashboard({ view = "overview" }) {
         return;
       }
       
+      if (editingTransaction && isCashSale) {
+        const result = await api(`/api/customers/${selectedCustomerId}/cash-sales/${editingTransaction.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            saleType: saleTypeOverride || effectiveCashSaleType,
+            itemSize: ledgerForm.itemSize,
+            cartons: Number(ledgerForm.cartons || 0) || null,
+            rate: Number(ledgerForm.rate || 0) || null,
+            deductions: Number(ledgerForm.deductions || 0),
+            amount: amountToSave,
+            note: ledgerForm.note,
+            saleItems: ledgerForm.saleItems?.length ? ledgerForm.saleItems : undefined,
+            paymentType: hasCashSaleBreakdown ? "MIXED" : ledgerForm.paymentType || "CASH",
+            paymentBreakdown: hasCashSaleBreakdown ? { ...ledgerForm.paymentBreakdown, discount: discountAmount, listedAmount: listedSaleAmount || amount, paidAmount: cashSaleBreakdownTotal } : hasSinglePayment ? { CASH: 0, KPAY: 0, BANK: 0, WAVE: 0, SPECIAL: 0, [ledgerForm.paymentType || "CASH"]: singlePaymentAmount, discount: listedSaleAmount > 0 ? Math.max(0, listedSaleAmount - singlePaymentAmount) : 0, listedAmount: listedSaleAmount || amount, paidAmount: singlePaymentAmount } : undefined,
+            date: ledgerForm.date || null,
+          }),
+        });
+        if (result?.cashSale) setSelectedCustomer((prev) => ({ ...prev, cashSales: (prev.cashSales || []).map((sale) => sale.id === result.cashSale.id ? result.cashSale : sale) }));
+        setEditingTransaction(null);
+        setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
+        clearDashboardDraftFields(["ledgerForm"]);
+        showAlert("လက်ငင်း Transaction ကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။", "success");
+        void loadCustomer(selectedCustomerId).catch((refreshError) => console.warn("Customer refresh after cash-sale edit was not completed:", refreshError));
+        void loadDashboard().catch((refreshError) => console.warn("Dashboard refresh after cash-sale edit was not completed:", refreshError));
+        return;
+      }
+
       // Cash sales are stored outside Ledger and never change Customer.current_balance.
       if (!isCashSale) {
         const balanceDelta = type === "CREDIT" ? amount : -(amount + ledgerDiscountAmount);
@@ -1515,7 +1542,7 @@ export default function Dashboard({ view = "overview" }) {
   }
 
   function beginEditTransaction(transaction) {
-    if (!transaction || transaction.type === "CASH_SALE") return;
+    if (!transaction) return;
     setEditingTransaction(transaction);
     const settlementMatch = String(transaction.note || "").match(/__SETTLES_CREDIT_LEDGER__:(\S+)/);
     setPaymentTargetLedgerId(settlementMatch ? settlementMatch[1] : "");
@@ -1527,14 +1554,14 @@ export default function Dashboard({ view = "overview" }) {
       rate: transaction.rate ?? "",
       deductions: transaction.deductions ?? "",
       amount: transaction.amount ?? "",
-      manualAmount: transaction.amount ?? "",
+      manualAmount: transaction.type === "CASH_SALE" ? "" : (transaction.amount ?? ""),
       discountAmount: transaction.discountAmount ?? "",
       discountNote: transaction.discountNote || "",
       note: transaction.note || "",
       date: formatMyanmarDateInputValue(transaction.date),
       paymentType: transaction.paymentType || "",
-      singlePaymentAmount: "",
-      paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN },
+      singlePaymentAmount: transaction.type === "CASH_SALE" ? (transaction.amount ?? "") : "",
+      paymentBreakdown: transaction.paymentBreakdown ? { ...EMPTY_PAYMENT_BREAKDOWN, ...transaction.paymentBreakdown } : { ...EMPTY_PAYMENT_BREAKDOWN },
       saleItems: Array.isArray(transaction.saleItems) ? transaction.saleItems : [],
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2984,7 +3011,7 @@ export default function Dashboard({ view = "overview" }) {
                       </div>
                       {saleItemsSummary(ledger.saleItems) ? <p className="mt-2 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-medium leading-4 text-violet-900">ဗူး: {saleItemsSummary(ledger.saleItems)}</p> : null}
                       <div className="mt-2 grid grid-cols-2 gap-2">
-                        {ledger.type !== "CASH_SALE" ? <button type="button" onClick={() => beginEditTransaction(ledger)} className="min-h-8 rounded-md border border-sky-200 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50">ပြင်ရန်</button> : <span />}
+                        <button type="button" onClick={() => beginEditTransaction(ledger)} className="min-h-8 rounded-md border border-sky-200 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50">ပြင်ရန်</button>
                         <button type="button" onClick={() => setDeletingTransaction(ledger)} className="min-h-8 rounded-md border border-rose-200 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50">ဖျက်ရန်</button>
                       </div>
                     </article>
@@ -3044,9 +3071,9 @@ export default function Dashboard({ view = "overview" }) {
                                 {saleItemsSummary(ledger.saleItems) ? <p className="mt-1 max-w-[320px] truncate font-medium text-violet-800">ဗူး: {saleItemsSummary(ledger.saleItems)}</p> : null}
                               </td>
                               <td className="px-4 py-3 text-center">
-                                {ledger.type !== "CASH_SALE" ? <button type="button" onClick={() => beginEditTransaction(ledger)} className="mr-1 rounded-md p-1.5 text-slate-400 hover:bg-sky-50 hover:text-sky-600 transition-colors" title="Edit transaction">
+                                <button type="button" onClick={() => beginEditTransaction(ledger)} className="mr-1 rounded-md p-1.5 text-slate-400 hover:bg-sky-50 hover:text-sky-600 transition-colors" title="Edit transaction">
                                   <span className="text-xs font-semibold">ပြင်</span>
-                                </button> : null}
+                                </button>
                                 <button type="button" onClick={() => setDeletingTransaction(ledger)} className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors" title={ledger.type === "CASH_SALE" ? "Delete cash sale" : "Delete transaction"}>
                                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M3 6h18"></path>
