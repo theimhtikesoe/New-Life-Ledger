@@ -65,7 +65,7 @@ function ServiceWorkerRegister() {
               await Promise.all(cacheNames.filter((name) => name.startsWith('new-life-ledger-')).map((name) => caches.delete(name)));
             };
             // Remove legacy workers before the next client navigation can reuse
-            // their stale HTML/JS cache. Waiting for `load` allowed one full
+            // their stale HTML/JS cache. Waiting for the load event allowed one full
             // route render to keep the previous header bundle visible.
             clearLegacyWorker().catch(() => {});
           })();
