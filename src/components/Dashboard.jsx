@@ -423,6 +423,8 @@ export default function Dashboard({ view = "overview" }) {
   const telegramPreviewRequestRef = useRef(0);
   const telegramPreviewControllerRef = useRef(null);
   const telegramReportSendInFlightRef = useRef(false);
+  const ledgerSaveInFlightRef = useRef(false);
+  const ledgerRequestIdRef = useRef(null);
   const lastDashboardAttemptAtRef = useRef(0);
   const dashboardLoadingWatchdogRef = useRef(null);
   const dashboardRequestIdRef = useRef(0);
@@ -1226,7 +1228,7 @@ export default function Dashboard({ view = "overview" }) {
 
   async function saveLedgerTransaction(event, saleTypeOverride = null) {
     event.preventDefault();
-    if (!selectedCustomerId || isSubmitting) return;
+    if (!selectedCustomerId || isSubmitting || ledgerSaveInFlightRef.current) return;
 
     setLedgerFormError("");
     const selectedLedgerDate = ledgerForm.date || currentMyanmarDate;
@@ -1238,8 +1240,10 @@ export default function Dashboard({ view = "overview" }) {
       setLedgerFormError("ရွေးထားသော အကြွေးရက်ထက် စောသောနေ့ဖြင့် ငွေချေလို့မရပါ။ ငွေချေရက်ကို အကြွေးတိုးသည့်နေ့ သို့မဟုတ် ထိုနောက်ပိုင်းရက်အဖြစ် ရွေးပါ။");
       return;
     }
-    setIsSubmitting(true);
     const previousCustomerBalance = Number(selectedCustomer?.current_balance || 0);
+    ledgerSaveInFlightRef.current = true;
+    if (!ledgerRequestIdRef.current) ledgerRequestIdRef.current = crypto.randomUUID();
+    setIsSubmitting(true);
     try {
       setMessage("");
       const type = ledgerForm.type;
@@ -1339,6 +1343,7 @@ export default function Dashboard({ view = "overview" }) {
         method: "POST",
         body: JSON.stringify({
           type: ledgerForm.type,
+          requestId: ledgerRequestIdRef.current,
           saleType: saleTypeOverride || (isCashSale ? effectiveCashSaleType : ledgerForm.saleType),
           itemSize: ledgerForm.itemSize,
           cartons: Number(ledgerForm.cartons || 0) || null,
@@ -1408,13 +1413,16 @@ export default function Dashboard({ view = "overview" }) {
       
       setPaymentTargetLedgerId("");
       showAlert(isCashSale ? "လက်ငင်း Transaction သိမ်းဆည်းပြီးပါပြီ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
+      ledgerRequestIdRef.current = null;
     } catch (error) {
       setLedgerFormError(error.message || "စာရင်းသိမ်းရာတွင် အမှားရှိပါသည်။ ပြန်စစ်ပြီး ထပ်လုပ်ပါ။");
       setSelectedCustomer((prev) => prev ? { ...prev, current_balance: previousCustomerBalance } : prev);
       setCustomers((prev) => prev.map((customer) => customer.id === selectedCustomerId ? { ...customer, current_balance: previousCustomerBalance } : customer));
       setAllCustomersForKPI((prev) => prev.map((customer) => customer.id === selectedCustomerId ? { ...customer, current_balance: previousCustomerBalance } : customer));
       if (error.status && error.status >= 500) await loadCustomer(selectedCustomerId);
+      if (error.status && error.status < 500) ledgerRequestIdRef.current = null;
     } finally {
+      ledgerSaveInFlightRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -2646,8 +2654,8 @@ export default function Dashboard({ view = "overview" }) {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 items-start">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/30 p-3 shadow-sm sm:p-5">
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:gap-6 items-start">
+                  <div className="w-full rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-lg font-semibold text-slate-900">{editingTransaction ? "စာရင်းပြင်ဆင်ရန်" : "စာရင်းအသစ်သွင်းရန်"}</h3>
                       {editingTransaction ? <button type="button" onClick={() => { setEditingTransaction(null); setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", singlePaymentAmount: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] }); }} className="text-xs font-semibold text-slate-500 hover:text-rose-600">မပြင်တော့ပါ</button> : null}

@@ -52,6 +52,9 @@ export async function POST(request, { params }) {
     await ensureDatabase();
     const customerId = params.id;
     const body = await request.json();
+    const requestId = typeof body.requestId === "string" && body.requestId.trim()
+      ? body.requestId.trim().slice(0, 120)
+      : null;
     const type = body.type === "DEBIT" ? "DEBIT" : "CREDIT";
     const amount = Math.round(Number(body.amount || 0));
     const discountAmount = type === "DEBIT" ? Math.max(0, Math.round(Number(body.discountAmount || 0))) : 0;
@@ -74,6 +77,20 @@ export async function POST(request, { params }) {
       ? String(body.note || "").match(/^__SETTLES_CREDIT_LEDGER__:(\S+)$/)
       : null;
     const result = await prisma.$transaction(async (tx) => {
+      if (requestId) {
+        const existing = await tx.ledger.findUnique({
+          where: { requestId },
+          select: { id: true, customerId: true, date: true, createdAt: true, actorName: true, type: true, saleType: true, itemSize: true, cartons: true, rate: true, deductions: true, amount: true, discountAmount: true, discountNote: true, note: true, paymentType: true, saleItems: true },
+        });
+        if (existing) {
+          if (existing.customerId !== customerId) throw new Error("ဒီ request ကို အခြား Customer အတွက် အသုံးပြုပြီးပါပြီ။");
+          const customer = await tx.customer.findUnique({
+            where: { id: customerId },
+            select: { id: true, name: true, phone: true, routeTag: true, current_balance: true, createdAt: true },
+          });
+          return { customer, ledger: existing, duplicate: true };
+        }
+      }
       if (settlementMatch) {
         const target = await tx.ledger.findUnique({ where: { id: settlementMatch[1] }, select: { customerId: true, date: true, type: true, amount: true } });
         if (!target || target.customerId !== customerId || target.type !== "CREDIT") throw new Error("ရွေးထားသော အကြွေးမှတ်တမ်း မတွေ့ပါ။");
@@ -90,7 +107,7 @@ export async function POST(request, { params }) {
       });
       const ledger = await tx.ledger.create({
         data: {
-          customerId, actorName: getActorName(request), type, saleType: submittedSaleType ? normalizeCashSaleType(submittedSaleType) : "RETAIL",
+          customerId, requestId, actorName: getActorName(request), type, saleType: submittedSaleType ? normalizeCashSaleType(submittedSaleType) : "RETAIL",
           itemSize: body.itemSize?.trim() || null,
           cartons: body.cartons ? Math.round(Number(body.cartons)) : null,
           rate: body.rate ? Math.round(Number(body.rate)) : null,
@@ -119,7 +136,7 @@ export async function POST(request, { params }) {
       return { customer, ledger };
     });
     invalidateFactoryStockCache();
-    return NextResponse.json({ data: result }, { status: 201 });
+    return NextResponse.json({ data: result }, { status: result.duplicate ? 200 : 201 });
   } catch (error) {
     if (error.message.includes("အကြွေးမှတ်တမ်း") || error.message.includes("အနာဂတ်အကြွေး")) {
       return NextResponse.json({ error: error.message }, { status: 400 });

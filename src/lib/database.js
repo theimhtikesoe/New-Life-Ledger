@@ -31,7 +31,7 @@ const REQUIRED_TABLES = [
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType", "settledOutsideLedgerAt", "settledOutsideLedgerBy"];
-const REQUIRED_LEDGER_COLUMNS = ["saleItems", "discountAmount", "discountNote", "actorName"];
+const REQUIRED_LEDGER_COLUMNS = ["saleItems", "discountAmount", "discountNote", "actorName", "requestId"];
 const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
 const REQUIRED_PRICE_SETTING_COLUMNS = ["tubeType"];
 const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit", "tubeMetrics"];
@@ -178,6 +178,8 @@ export async function ensureDatabase() {
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountAmount" INTEGER NOT NULL DEFAULT 0`);
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "discountNote" TEXT`);
       await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "actorName" TEXT`);
+      await setupQuery(`ALTER TABLE IF EXISTS "Ledger" ADD COLUMN IF NOT EXISTS "requestId" TEXT`);
+      await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Ledger_requestId_key" ON "Ledger"("requestId") WHERE "requestId" IS NOT NULL`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Customer_deletedAt_name_idx" ON "Customer"("deletedAt", "name")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_customerId_date_idx" ON "Ledger"("customerId", "date")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_date_type_idx" ON "Ledger"("date", "type")`);
@@ -565,6 +567,8 @@ export async function ensureDatabase() {
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "saleItems" JSONB`);
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "discountAmount" INTEGER NOT NULL DEFAULT 0`);
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "discountNote" TEXT`);
+      await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "requestId" TEXT`);
+      await setupQuery(`CREATE UNIQUE INDEX IF NOT EXISTS "Ledger_requestId_key" ON "Ledger"("requestId") WHERE "requestId" IS NOT NULL`);
       await setupQuery(`ALTER TABLE "CashSale" ADD COLUMN IF NOT EXISTS "saleItems" JSONB`);
       await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "deletedAt" TIMESTAMP(3)`);
 

@@ -206,6 +206,7 @@ model Ledger {
   customerId     String   @db.Uuid
   customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   actorName      String?
+  requestId      String?  @unique
   type           String
   saleType       String
   itemSize       String?
