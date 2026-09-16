@@ -1141,6 +1141,11 @@ export default function Dashboard({ view = "overview" }) {
     [allCustomersForKPI],
   );
 
+  const customersWithBalanceCount = useMemo(
+    () => allCustomersForKPI.filter((customer) => Number(customer.current_balance || 0) > 0).length,
+    [allCustomersForKPI],
+  );
+
   const factoryStockCards = useMemo(
     () => Number(dashboardKpi?.factoryStockCards ?? (factoryStock?.summary || []).reduce((sum, item) => sum + Number(item.currentCards || 0), 0)),
     [dashboardKpi, factoryStock],
@@ -2471,8 +2476,8 @@ export default function Dashboard({ view = "overview" }) {
               {showDashboardAttention ? (
                 <div id="dashboard-attention-panel" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Link href="/balance-detail" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-800 hover:bg-rose-100">
-                    <p className="font-bold">အကြွေးအဟောင်း</p>
-                    <p className="mt-1 text-lg font-black">{overdueDebtsLoaded ? `${Array.isArray(overdueDebts) ? overdueDebts.length.toLocaleString() : "0"} ယောက်` : "ရယူနေသည်..."}</p>
+                    <p className="font-bold">လက်ရှိအကြွေးကျန်သူ</p>
+                    <p className="mt-1 text-lg font-black">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : `${customersWithBalanceCount.toLocaleString()} ယောက်`}</p>
                     <p className="mt-1 text-xs">အသေးစိတ်ကြည့်ရန် →</p>
                   </Link>
                   <Link href="/factory-stock" className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900 hover:bg-blue-100">
