@@ -40,6 +40,9 @@ export async function GET(request) {
       ? await loadCanonicalFactoryStockMovements()
       : { movements: [] };
     const factoryStockSummary = aggregateStockMovements(stockMovements);
+    const negativeBottleStockItems = factoryStockSummary.filter((item) => item.stockType === "BOTTLE" && Number(item.currentCards || 0) < 0).length;
+    const negativeCapStockItems = factoryStockSummary.filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0 && Number(item.currentCards || 0) < 0).length;
+    const negativeTubeStockItems = factoryStockSummary.filter((item) => item.stockType === "TUBE" && Number(item.currentBottles || 0) < 0).length;
     // Keep Tube stock out of the bottle KPI: factoryStockSummary.filter((item) => item.stockType !== "TUBE")
     const factoryStockCards = factoryStockSummary.filter((item) => item.stockType === "BOTTLE").reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
     // Match the Cap Stock page: only configured cap packs represent physical
@@ -137,6 +140,9 @@ export async function GET(request) {
         factoryCapPieces,
         factoryTubePieces,
         factoryTubePacks,
+        negativeBottleStockItems,
+        negativeCapStockItems,
+        negativeTubeStockItems,
       },
     });
   } catch (error) {

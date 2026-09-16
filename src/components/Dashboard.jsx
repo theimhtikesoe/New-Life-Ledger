@@ -308,6 +308,7 @@ export default function Dashboard({ view = "overview" }) {
   const [loadingDeletedCustomerDetail, setLoadingDeletedCustomerDetail] = useState(false);
   const [deletedCustomerDetailError, setDeletedCustomerDetailError] = useState("");
   const [pendingKpay, setPendingKpay] = useState([]);
+  const [pendingKpayLoaded, setPendingKpayLoaded] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const customerCacheRef = useRef(new Map());
@@ -384,6 +385,7 @@ export default function Dashboard({ view = "overview" }) {
   const [todayCashSales, setTodayCashSales] = useState(() => initialDashboardSnapshot?.todayCashSales || []);
   const [factoryStock] = useState(() => initialDashboardSnapshot?.factoryStock || null);
   const [overdueDebts, setOverdueDebts] = useState(() => initialDashboardSnapshot?.overdueDebts || null);
+  const [overdueDebtsLoaded, setOverdueDebtsLoaded] = useState(() => Array.isArray(initialDashboardSnapshot?.overdueDebts));
   const [dashboardKpi, setDashboardKpi] = useState(() => initialDashboardSnapshot?.dashboardKpi || null);
   // A cached KPI may be stale. Start in loading state so the bottle card never
   // presents a cached/empty 0 as the current result before the fresh request.
@@ -779,12 +781,14 @@ export default function Dashboard({ view = "overview" }) {
       });
       const rows = Array.isArray(overdueRows) ? overdueRows : [];
       setOverdueDebts(rows);
+      setOverdueDebtsLoaded(true);
       saveDashboardSnapshot({ overdueDebts: rows });
     } catch (error) {
       console.warn("Overdue debts were not loaded:", error);
       // Keep the last successful snapshot; if none exists, explicitly resolve
       // to an empty state so the bell cannot remain stuck on “ရယူနေသည်...”.
       setOverdueDebts((current) => current ?? []);
+      setOverdueDebtsLoaded(true);
     }
   }, []);
 
@@ -884,9 +888,13 @@ export default function Dashboard({ view = "overview" }) {
       // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
       setLoadingStage("Data ရယူနေပါသည်");
       if (!isProductionDashboard) void api("/api/unverified-kpay?status=PENDING", { signal, background: true })
-        .then((kpayRows) => setPendingKpay(kpayRows))
+        .then((kpayRows) => {
+          setPendingKpay(Array.isArray(kpayRows) ? kpayRows : []);
+          setPendingKpayLoaded(true);
+        })
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Pending KPay data was not loaded:", error);
+          if (error.name !== "AbortError") setPendingKpayLoaded(true);
         });
 
       // Stage 6: the visual pulse is non-critical and loads after the main data.
@@ -1120,6 +1128,9 @@ export default function Dashboard({ view = "overview" }) {
   const factoryTubePieces = Number(dashboardKpi?.factoryTubePieces || 0);
   const factoryTubePacks = Number(dashboardKpi?.factoryTubePacks || 0);
   const factoryCapPieces = Number(dashboardKpi?.factoryCapPieces || 0);
+  const negativeStockItems = Number(dashboardKpi?.negativeBottleStockItems || 0)
+    + Number(dashboardKpi?.negativeCapStockItems || 0)
+    + Number(dashboardKpi?.negativeTubeStockItems || 0);
 
     const hasKpiSnapshot = Boolean(dashboardKpi);
   const currentMyanmarDate = formatMyanmarDateInputValue(currentTime);
@@ -2441,17 +2452,17 @@ export default function Dashboard({ view = "overview" }) {
                 <div id="dashboard-attention-panel" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <Link href="/balance-detail" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-800 hover:bg-rose-100">
                     <p className="font-bold">အကြွေးအဟောင်း</p>
-                    <p className="mt-1 text-lg font-black">{Array.isArray(overdueDebts) ? overdueDebts.length.toLocaleString() : "ရယူနေသည်..."} ယောက်</p>
+                    <p className="mt-1 text-lg font-black">{overdueDebtsLoaded ? `${Array.isArray(overdueDebts) ? overdueDebts.length.toLocaleString() : "0"} ယောက်` : "ရယူနေသည်..."}</p>
                     <p className="mt-1 text-xs">အသေးစိတ်ကြည့်ရန် →</p>
                   </Link>
                   <Link href="/data-management" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900 hover:bg-amber-100">
                     <p className="font-bold">KPay စစ်ရန်</p>
-                    <p className="mt-1 text-lg font-black">{pendingKpay.length.toLocaleString()} ခု</p>
-                    <p className="mt-1 text-xs">စုစုပေါင်း {formatMoney(totalPending)}</p>
+                    <p className="mt-1 text-lg font-black">{pendingKpayLoaded ? `${pendingKpay.length.toLocaleString()} ခု` : "ရယူနေသည်..."}</p>
+                    <p className="mt-1 text-xs">စုစုပေါင်း {pendingKpayLoaded ? formatMoney(totalPending) : "ရယူနေသည်..."}</p>
                   </Link>
                   <Link href="/factory-stock" className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900 hover:bg-blue-100">
                     <p className="font-bold">Stock သတိပေးချက်</p>
-                    <p className="mt-1 text-lg font-black">{factoryStockCards < 0 || factoryCapPieces < 0 || factoryTubePieces < 0 ? "စစ်ရန်လို" : "လက်ရှိအခြေအနေကောင်း"}</p>
+                    <p className="mt-1 text-lg font-black">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : negativeStockItems > 0 ? `${negativeStockItems} ခု စစ်ရန်လို` : "လက်ရှိအခြေအနေကောင်း"}</p>
                     <p className="mt-1 text-xs">System-derived stock ကိုသာ ပြထားသည်</p>
                   </Link>
                 </div>
