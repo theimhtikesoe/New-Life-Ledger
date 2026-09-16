@@ -368,11 +368,8 @@ export default function Dashboard({ view = "overview" }) {
   const [showCustomerList, setShowCustomerList] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
-      const actorName = window.localStorage.getItem("actorName") || "";
-      const draftKey = getDashboardDraftStorageKey(actorName);
-      const rawDraft = draftKey ? window.sessionStorage.getItem(draftKey) : null;
-      const draft = rawDraft ? JSON.parse(rawDraft) : null;
-      return !draft?.selectedCustomerId;
+      const requestedCustomerId = new URLSearchParams(window.location.search).get("customerId");
+      return requestedCustomerId ? false : true;
     } catch {
       return true;
     }
@@ -443,6 +440,8 @@ export default function Dashboard({ view = "overview" }) {
   const telegramReportSendInFlightRef = useRef(false);
   const ledgerSaveInFlightRef = useRef(false);
   const ledgerRequestIdRef = useRef(null);
+  const customerRequestIdRef = useRef(0);
+  const customerRequestControllerRef = useRef(null);
   const lastDashboardAttemptAtRef = useRef(0);
   const dashboardLoadingWatchdogRef = useRef(null);
   const dashboardRequestIdRef = useRef(0);
@@ -590,7 +589,19 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     if (!isLedgerView || typeof window === "undefined") return;
     const requestedCustomerId = new URLSearchParams(window.location.search).get("customerId");
-    if (!requestedCustomerId) return;
+    if (!requestedCustomerId) {
+      customerRequestIdRef.current += 1;
+      customerRequestControllerRef.current?.abort();
+      customerRequestControllerRef.current = null;
+      selectedCustomerRef.current = null;
+      setSelectedCustomerId(null);
+      setSelectedCustomer(null);
+      setFilteredLedgers([]);
+      setLoadingCustomer(false);
+      setLoadingCustomerHistory(false);
+      setShowCustomerList(true);
+      return;
+    }
     setSelectedCustomerId(requestedCustomerId);
     setShowCustomerList(false);
   }, [isLedgerView]);
@@ -1065,19 +1076,31 @@ export default function Dashboard({ view = "overview" }) {
 
   const loadCustomer = useCallback(async (id = selectedCustomerId) => {
     if (!id) {
+      customerRequestIdRef.current += 1;
+      customerRequestControllerRef.current?.abort();
+      customerRequestControllerRef.current = null;
+      selectedCustomerRef.current = null;
       setSelectedCustomer(null);
+      setLoadingCustomer(false);
+      setLoadingCustomerHistory(false);
       return;
     }
 
+    const requestId = customerRequestIdRef.current + 1;
+    customerRequestIdRef.current = requestId;
+    customerRequestControllerRef.current?.abort();
+    const controller = new AbortController();
+    customerRequestControllerRef.current = controller;
     if (!selectedCustomerRef.current || selectedCustomerRef.current.id !== id) setLoadingCustomer(true);
     setLoadingCustomerHistory(true);
     try {
       // Both requests are read-only; run them concurrently to avoid two full
       // network round trips when switching customers in the ledger.
       const [customer, transactionPage] = await Promise.all([
-        api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`),
-        api(`/api/customers/${id}/transactions?limit=50&offset=0&includeCount=false`),
+        api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`, { signal: controller.signal }),
+        api(`/api/customers/${id}/transactions?limit=50&offset=0&includeCount=false`, { signal: controller.signal }),
       ]);
+      if (requestId !== customerRequestIdRef.current) return;
       const nextCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] };
       customerCacheRef.current.set(id, nextCustomer);
       selectedCustomerRef.current = nextCustomer;
@@ -1085,11 +1108,16 @@ export default function Dashboard({ view = "overview" }) {
       setTransactionPagination(transactionPage.pagination || { offset: 0, limit: 50, total: 0, hasMore: false });
       setSelectedCustomerId(customer.id);
     } catch (error) {
+      if (error.name === "AbortError") return;
+      if (requestId !== customerRequestIdRef.current) return;
       setMessage(error.message);
       showAlert(error.message, "error");
     } finally {
-      setLoadingCustomer(false);
-      setLoadingCustomerHistory(false);
+      if (requestId === customerRequestIdRef.current) {
+        customerRequestControllerRef.current = null;
+        setLoadingCustomer(false);
+        setLoadingCustomerHistory(false);
+      }
     }
   }, [selectedCustomerId, showAlert]);
 
@@ -1211,6 +1239,9 @@ export default function Dashboard({ view = "overview" }) {
   }, [allCustomersForKPI, search]);
 
   const chooseCustomer = useCallback((customer) => {
+    customerRequestIdRef.current += 1;
+    customerRequestControllerRef.current?.abort();
+    customerRequestControllerRef.current = null;
     const cached = customerCacheRef.current.get(customer.id);
     const basicCustomer = cached || { ...customer, cashSales: [], ledgers: [] };
     selectedCustomerRef.current = basicCustomer;
