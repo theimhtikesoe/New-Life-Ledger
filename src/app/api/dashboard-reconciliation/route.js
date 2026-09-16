@@ -83,9 +83,21 @@ export async function GET() {
     });
 
     referencesByTarget.forEach((payments, targetId) => {
+      const target = targetById.get(targetId);
+      const linkedAmount = payments.reduce((sum, payment) => sum + rounded(payment.amount), 0);
+      if (target && target.type === "CREDIT" && linkedAmount !== rounded(target.amount)) {
+        settlementExceptions.push({
+          type: "LINKED_TOTAL_MISMATCH",
+          targetId,
+          paymentId: payments[0].id,
+          amount: linkedAmount,
+          targetAmount: rounded(target.amount),
+          targetDate: target.date,
+          customerId: target.customerId,
+          customerName: customerById.get(target.customerId) || "",
+        });
+      }
       if (payments.length > 1) {
-        const target = targetById.get(targetId);
-        const linkedAmount = payments.reduce((sum, payment) => sum + rounded(payment.amount), 0);
         settlementExceptions.push({
           type: "MULTIPLE_PAYMENTS",
           targetId,

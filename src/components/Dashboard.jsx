@@ -2544,6 +2544,10 @@ export default function Dashboard({ view = "overview" }) {
                     <p className="mt-1 text-lg font-black">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : `${customersWithBalanceCount.toLocaleString()} ယောက်`}</p>
                     <p className="mt-1 text-xs">အသေးစိတ်ကြည့်ရန် →</p>
                   </Link>
+                  <Link href="/debt-reconciliation" className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-3 text-sm text-cyan-900 hover:bg-cyan-100">
+                    <p className="font-bold">အကြွေးဟောင်း စာရင်းညှိရန်</p>
+                    <p className="mt-1 text-xs leading-5">Customer တစ်ယောက်ချင်းစီ၏ အကြွေးဟောင်း၊ မြေပြင်လက်ကျန်၊ ခြားနားချက် စစ်ရန် →</p>
+                  </Link>
                 </div>
               ) : null}
             </section>
@@ -3639,7 +3643,7 @@ export default function Dashboard({ view = "overview" }) {
               ) : dashboardReconciliation.settlementExceptions?.length ? (
                 <div className="space-y-2">
                   {dashboardReconciliation.settlementExceptions.map((row, index) => {
-                    const label = row.type === "ORPHAN_LINK" ? "မရှိတော့သော ledger ကို ချိတ်ထားသည်" : row.type === "WRONG_CUSTOMER" ? "Customer မတူသော ledger ကို ချိတ်ထားသည်" : row.type === "NOT_CREDIT" ? "အကြွေးတိုးမဟုတ်သော ledger ကို ချိတ်ထားသည်" : "";
+                    const label = row.type === "ORPHAN_LINK" ? "မရှိတော့သော ledger ကို ချိတ်ထားသည်" : row.type === "WRONG_CUSTOMER" ? "Customer မတူသော ledger ကို ချိတ်ထားသည်" : row.type === "NOT_CREDIT" ? "အကြွေးတိုးမဟုတ်သော ledger ကို ချိတ်ထားသည်" : row.type === "LINKED_TOTAL_MISMATCH" ? "ချိတ်ထားသော အကြွေးတိုးနှင့် ငွေချေစုစုပေါင်း မကိုက်ပါ" : row.type === "MULTIPLE_PAYMENTS" ? "အကြွေးတိုးတစ်ကြောင်းကို ငွေချေများစွာ ချိတ်ထားသည်" : "";
                     const customerId = row.customerId || null;
                     return <div key={`${row.type}-${row.paymentId || row.targetId || index}`} className="rounded-xl border border-amber-200 bg-amber-50/60 p-3"><div className="flex flex-wrap items-start justify-between gap-3"><div>{label ? <p className="text-xs font-semibold text-amber-800">{label}</p> : null}<p className={`${label ? "mt-1" : ""} text-sm font-black text-slate-900`}>{row.customerName || "Customer မသိရသေးပါ"}</p><p className="mt-1 text-lg font-black text-amber-700">{formatMoney(row.amount)}</p></div>{customerId ? <Link href={`/ledger?customerId=${encodeURIComponent(customerId)}`} onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:bg-violet-100">ပြင်ရန် Ledger →</Link> : null}</div>{row.targetAmount != null ? <p className="mt-2 text-xs text-amber-800">ချိတ်ထားသော အကြွေးတိုး: {formatMoney(row.targetAmount)} · ချိတ်ထားသောငွေချေစုစုပေါင်း: {formatMoney(row.amount)}</p> : null}</div>;
                   })}
