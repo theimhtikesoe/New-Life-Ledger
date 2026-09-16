@@ -1128,7 +1128,7 @@ export default function Dashboard({ view = "overview" }) {
         if (!controller.signal.aborted) setDashboardReconciliationLoading(false);
       });
     return () => controller.abort();
-  }, [showDashboardReconciliation, dashboardReconciliation, dashboardReconciliationLoading]);
+  }, [showDashboardReconciliation, dashboardReconciliation]);
 
   // Calculate summary metrics
   const totalBalance = useMemo(
