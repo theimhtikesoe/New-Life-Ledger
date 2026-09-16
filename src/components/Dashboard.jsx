@@ -410,6 +410,7 @@ export default function Dashboard({ view = "overview" }) {
   const [isSendingTelegramReport, setIsSendingTelegramReport] = useState(false);
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [expandedDashboardMenu, setExpandedDashboardMenu] = useState(null);
+  const [showDashboardAttention, setShowDashboardAttention] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
   const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
@@ -2424,6 +2425,39 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
             </>}
           </div>
+          {!isLedgerView && !isProductionDashboard ? (
+            <section className="mt-4 rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setShowDashboardAttention((current) => !current)}
+                aria-expanded={showDashboardAttention}
+                aria-controls="dashboard-attention-panel"
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-left text-sm font-bold text-cyan-900 hover:bg-cyan-100"
+              >
+                <span>အပိုဆောင်း အခြေအနေကြည့်ရန်</span>
+                <span className="text-xs" aria-hidden="true">{showDashboardAttention ? "⌃" : "⌄"}</span>
+              </button>
+              {showDashboardAttention ? (
+                <div id="dashboard-attention-panel" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <Link href="/balance-detail" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-800 hover:bg-rose-100">
+                    <p className="font-bold">အကြွေးအဟောင်း</p>
+                    <p className="mt-1 text-lg font-black">{Array.isArray(overdueDebts) ? overdueDebts.length.toLocaleString() : "ရယူနေသည်..."} ယောက်</p>
+                    <p className="mt-1 text-xs">အသေးစိတ်ကြည့်ရန် →</p>
+                  </Link>
+                  <Link href="/data-management" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900 hover:bg-amber-100">
+                    <p className="font-bold">KPay စစ်ရန်</p>
+                    <p className="mt-1 text-lg font-black">{pendingKpay.length.toLocaleString()} ခု</p>
+                    <p className="mt-1 text-xs">စုစုပေါင်း {formatMoney(totalPending)}</p>
+                  </Link>
+                  <Link href="/factory-stock" className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900 hover:bg-blue-100">
+                    <p className="font-bold">Stock သတိပေးချက်</p>
+                    <p className="mt-1 text-lg font-black">{factoryStockCards < 0 || factoryCapPieces < 0 || factoryTubePieces < 0 ? "စစ်ရန်လို" : "လက်ရှိအခြေအနေကောင်း"}</p>
+                    <p className="mt-1 text-xs">System-derived stock ကိုသာ ပြထားသည်</p>
+                  </Link>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
             </section>
           </>
         ) : null}
