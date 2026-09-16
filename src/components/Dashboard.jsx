@@ -300,6 +300,7 @@ export default function Dashboard({ view = "overview" }) {
   ));
   const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး";
   const isProductionDashboard = dashboardActorName === "ဇွဲဇွဲ" || dashboardActorName === "ဖြိုးကို";
+  const showOperationalDashboardSections = !isLedgerView && (!isProductionDashboard || isSangEulDashboard);
   const [customers, setCustomers] = useState(() => initialDashboardSnapshot?.customers || []);
   const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => initialDashboardSnapshot?.allCustomersForKPI || []);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
@@ -2458,7 +2459,7 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
             </>}
           </div>
-          {!isLedgerView && !isProductionDashboard ? (
+          {showOperationalDashboardSections ? (
             <section className="mt-4 rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm">
               <button
                 type="button"
@@ -2481,7 +2482,7 @@ export default function Dashboard({ view = "overview" }) {
               ) : null}
             </section>
           ) : null}
-          {!isLedgerView && !isProductionDashboard ? (
+          {showOperationalDashboardSections ? (
             <section className="mt-3 rounded-xl border border-violet-200 bg-white/90 p-3 shadow-sm">
               <button
                 type="button"
