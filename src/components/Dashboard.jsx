@@ -11,7 +11,7 @@ import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } fro
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
-import { buildSettlementNote } from "@/lib/ledger-settlement";
+import { buildSettlementNote, cleanSettlementNote } from "@/lib/ledger-settlement";
 import { normalizeCustomerName, normalizeCustomerPhone } from "@/lib/customer-identity";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
@@ -110,6 +110,11 @@ function formatBalanceAmount(value) {
 
 function formatDate(value) {
   return formatMyanmarDateTime(value);
+}
+
+function displayLedgerNote(note) {
+  const cleaned = cleanSettlementNote(note);
+  return cleaned || (String(note || "").includes("__SETTLES_CREDIT_LEDGER__") ? "ဆက်စပ်အကြွေးစာရင်း ချိတ်ထားသည်" : "-");
 }
 
 function formatMyanmarDateInputValue(value = new Date()) {
@@ -2934,11 +2939,11 @@ export default function Dashboard({ view = "overview" }) {
                               {canRecordPrepayment ? <option value={PREPAYMENT_OPTION} className="font-black text-cyan-700">ငွေကြိုချေ (အကြွေးမရှိ)</option> : null}
                               {paymentTargetLedgers.map((ledger) => (
                                 <option key={ledger.id} value={ledger.id} className="font-black text-rose-700">
-                                  {formatDate(ledger.date)} · {formatMoney(ledger.amount)}{ledger.note ? ` · ${ledger.note}` : ""}
+                                  {formatDate(ledger.date)} · {formatMoney(ledger.amount)}{ledger.note ? ` · ${displayLedgerNote(ledger.note)}` : ""}
                                 </option>
                               ))}
                             </ThemedSelect>
-                            <p className="mt-2 text-[11px] leading-4 text-emerald-800">{paymentTargetLedgerId === PREPAYMENT_OPTION ? "ဤငွေကို အကြွေးဟောင်းမချိတ်ဘဲ ငွေကြိုချေအဖြစ် မှတ်တမ်းတင်ပါမည်။" : "ရွေးထားသော အကြွေး ID ကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။"}</p>
+                            <p className="mt-2 text-[11px] leading-4 text-emerald-800">{paymentTargetLedgerId === PREPAYMENT_OPTION ? "ဤငွေကို အကြွေးဟောင်းမချိတ်ဘဲ ငွေကြိုချေအဖြစ် မှတ်တမ်းတင်ပါမည်။" : "ရွေးထားသော အကြွေးစာရင်းကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။"}</p>
                             {selectedPaymentTarget ? (
                               <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-2 text-xs sm:grid-cols-4">
                                 <div><p className="text-slate-500">မူရင်းအကြွေး</p><p className="font-black text-slate-900">{formatMoney(selectedPaymentTarget.originalAmount)}</p></div>
@@ -3164,7 +3169,7 @@ export default function Dashboard({ view = "overview" }) {
                       <p className={`mt-1.5 text-lg font-bold leading-tight ${ledger.type === "CASH_SALE" ? "text-cyan-600" : ledger.type === "CREDIT" ? "text-rose-600" : "text-emerald-600"}`}>{formatMoney(ledger.amount)}</p>
                       <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-[11px]">
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Payment</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.type === "CASH_SALE" ? `${paymentSplitLabel(getPaymentSplit(ledger)) || ledger.paymentType || "CASH"} · ${cashSaleTypeLabel(ledger.saleType)}` : ledger.paymentType || "-"}</p></div>
-                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{ledger.note || "-"}</p></div>
+                        <div className="min-w-0"><p className="text-[10px] text-slate-500">Note</p><p className="mt-0.5 truncate font-medium text-slate-700">{displayLedgerNote(ledger.note)}</p></div>
                       </div>
                       {saleItemsSummary(ledger.saleItems) ? <p className="mt-2 rounded-md bg-violet-50 px-2 py-1 text-[11px] font-medium leading-4 text-violet-900">ဗူး: {saleItemsSummary(ledger.saleItems)}</p> : null}
                       <div className="mt-2 grid grid-cols-2 gap-2">
@@ -3223,7 +3228,7 @@ export default function Dashboard({ view = "overview" }) {
                                 {ledger.type === "CASH_SALE" ? (paymentSplitLabel(getPaymentSplit(ledger)) || ledger.paymentType || "CASH") : ledger.paymentType || "-"}
                               </td>
                               <td className="px-4 py-3 text-xs text-slate-600 max-w-[200px]">
-                                <p className="truncate">{ledger.note || "-"}</p>
+                                <p className="truncate">{displayLedgerNote(ledger.note)}</p>
                                 {ledger.discountAmount > 0 ? <p className="mt-1 truncate font-semibold text-amber-700">လျှော့စျေး: {formatMoney(ledger.discountAmount)}{ledger.discountNote ? ` · ${ledger.discountNote}` : ""}</p> : null}
                                 {saleItemsSummary(ledger.saleItems) ? <p className="mt-1 max-w-[320px] truncate font-medium text-violet-800">ဗူး: {saleItemsSummary(ledger.saleItems)}</p> : null}
                               </td>
@@ -3436,7 +3441,7 @@ export default function Dashboard({ view = "overview" }) {
                           </div>
                           <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                             <div><span className="text-slate-500">ငွေပေးချေမှုအမျိုးအစား — </span><span className="font-medium text-slate-700">{ledger.paymentType || "မသတ်မှတ်ရသေးပါ"}</span></div>
-                            <div><span className="text-slate-500">မှတ်ချက် — </span><span className="font-medium text-slate-700">{ledger.note || "မရှိပါ"}</span></div>
+                            <div><span className="text-slate-500">မှတ်ချက် — </span><span className="font-medium text-slate-700">{displayLedgerNote(ledger.note)}</span></div>
                           </div>
                         </article>
                       )) : <p className="px-4 py-8 text-center text-sm text-slate-500">ငွေစာရင်း မရှိသေးပါ။</p>}
@@ -3644,7 +3649,7 @@ export default function Dashboard({ view = "overview" }) {
                         {payment.note && (
                           <div className="bg-white/50 rounded px-2 py-1.5 text-xs text-slate-700 border border-emerald-100">
                             <span className="text-slate-600 block text-xs mb-0.5">မှတ်ချက်</span>
-                            {payment.note}
+                            {displayLedgerNote(payment.note)}
                           </div>
                         )}
                       </div>
