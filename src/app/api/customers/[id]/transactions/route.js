@@ -20,6 +20,7 @@ export async function GET(request, { params }) {
     const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : 50, 1), 100);
     const requestedOffset = Number(searchParams.get("offset") || 0);
     const offset = Math.max(Number.isFinite(requestedOffset) ? Math.floor(requestedOffset) : 0, 0);
+    const includeCount = searchParams.get("includeCount") !== "false";
     const type = searchParams.get("type");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -39,9 +40,10 @@ export async function GET(request, { params }) {
     };
     // Production uses connection_limit=1; do not request the list and count
     // connections concurrently when another device is saving a transaction.
-    const items = await prisma.ledger.findMany({ where, select, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: limit });
-    const total = await prisma.ledger.count({ where });
-    return NextResponse.json({ data: { items, pagination: { offset, limit, total, hasMore: offset + items.length < total } } });
+    const rows = await prisma.ledger.findMany({ where, select, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: includeCount ? limit : limit + 1 });
+    const items = includeCount ? rows : rows.slice(0, limit);
+    const total = includeCount ? await prisma.ledger.count({ where }) : null;
+    return NextResponse.json({ data: { items, pagination: { offset, limit, total, hasMore: includeCount ? offset + items.length < total : rows.length > limit } } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }

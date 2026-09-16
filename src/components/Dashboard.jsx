@@ -310,6 +310,8 @@ export default function Dashboard({ view = "overview" }) {
   const [pendingKpay, setPendingKpay] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const customerCacheRef = useRef(new Map());
+  const selectedCustomerRef = useRef(null);
   const [search, setSearch] = useState("");
   const [matchingKpay, setMatchingKpay] = useState(null);
   const [matchCustomerId, setMatchCustomerId] = useState("");
@@ -356,6 +358,7 @@ export default function Dashboard({ view = "overview" }) {
   const [loadingStage, setLoadingStage] = useState(() => (Array.isArray(initialDashboardSnapshot?.customers) ? "" : "Dashboard data ရယူနေပါသည်"));
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
+  const [loadingCustomerHistory, setLoadingCustomerHistory] = useState(false);
   const [showCustomerList, setShowCustomerList] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -1047,15 +1050,19 @@ export default function Dashboard({ view = "overview" }) {
       return;
     }
 
-    setLoadingCustomer(true);
+    if (!selectedCustomerRef.current || selectedCustomerRef.current.id !== id) setLoadingCustomer(true);
+    setLoadingCustomerHistory(true);
     try {
       // Both requests are read-only; run them concurrently to avoid two full
       // network round trips when switching customers in the ledger.
       const [customer, transactionPage] = await Promise.all([
         api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`),
-        api(`/api/customers/${id}/transactions?limit=50&offset=0`),
+        api(`/api/customers/${id}/transactions?limit=50&offset=0&includeCount=false`),
       ]);
-      setSelectedCustomer({ ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] });
+      const nextCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] };
+      customerCacheRef.current.set(id, nextCustomer);
+      selectedCustomerRef.current = nextCustomer;
+      setSelectedCustomer(nextCustomer);
       setTransactionPagination(transactionPage.pagination || { offset: 0, limit: 50, total: 0, hasMore: false });
       setSelectedCustomerId(customer.id);
     } catch (error) {
@@ -1063,6 +1070,7 @@ export default function Dashboard({ view = "overview" }) {
       showAlert(error.message, "error");
     } finally {
       setLoadingCustomer(false);
+      setLoadingCustomerHistory(false);
     }
   }, [selectedCustomerId, showAlert]);
 
@@ -1164,6 +1172,13 @@ export default function Dashboard({ view = "overview" }) {
   }, [allCustomersForKPI, search]);
 
   const chooseCustomer = useCallback((customer) => {
+    const cached = customerCacheRef.current.get(customer.id);
+    const basicCustomer = cached || { ...customer, cashSales: [], ledgers: [] };
+    selectedCustomerRef.current = basicCustomer;
+    setSelectedCustomer(basicCustomer);
+    setTransactionPagination({ offset: 0, limit: 50, total: cached?.ledgers?.length || 0, hasMore: false });
+    setLoadingCustomer(false);
+    setLoadingCustomerHistory(!cached);
     setSelectedCustomerId(customer.id);
     setHighlightedCustomerId(customer.id);
     setShowAddCustomer(false);
@@ -2711,14 +2726,6 @@ export default function Dashboard({ view = "overview" }) {
               </div>
             ) : selectedCustomer ? (
               <div id="customer-details-section" className="relative scroll-mt-4">
-                {loadingCustomer ? (
-                  <div className="absolute inset-x-0 top-0 z-20 flex justify-center px-3 pt-2" role="status" aria-live="polite">
-                    <div className="flex items-center gap-2 rounded-full border border-cyan-200 bg-white/95 px-4 py-2 text-xs font-bold text-cyan-800 shadow-lg backdrop-blur-sm">
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" aria-hidden="true" />
-                      လုပ်ဆောင်နေပါသည်...
-                    </div>
-                  </div>
-                ) : null}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between pt-4">
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">{selectedCustomer.name}</h2>
@@ -3041,6 +3048,12 @@ export default function Dashboard({ view = "overview" }) {
                 <div className="mt-8">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းမှတ်တမ်း (Transactions)</h3>
+                    {loadingCustomerHistory ? (
+                      <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800" role="status" aria-live="polite">
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" aria-hidden="true" />
+                        မှတ်တမ်းများ ရယူနေသည်...
+                      </span>
+                    ) : null}
                   </div>
                   
                   <TransactionFilter 
