@@ -2036,7 +2036,9 @@ export default function Dashboard({ view = "overview" }) {
   const effectiveCashSaleType = ledgerForm.saleType || customerDefaultCashSaleType(selectedCustomer);
   const paymentTargetLedgers = useMemo(() => {
     const ledgers = selectedCustomer?.ledgers || [];
-      return ledgers
+    const customerBalance = Number(selectedCustomer?.current_balance || 0);
+    if (customerBalance <= 0) return [];
+    return ledgers
       .filter((ledger) => ledger.type === "CREDIT")
       .map((credit) => {
         const paidAmount = ledgers
@@ -2049,12 +2051,13 @@ export default function Dashboard({ view = "overview" }) {
           remainingAmount: Math.max(0, Number(credit.amount || 0) - paidAmount),
         };
       })
-      // This select is only a data link (which credit/bottle sale this payment
-      // relates to). It must not limit payment by one credit row's remainder;
-      // the customer balance is calculated from all CREDIT and DEBIT rows.
-      .filter((ledger) => formatMyanmarDateInputValue(ledger.date) <= currentMyanmarDate)
+      // This select is only a data link for a new payment. Do not show fully
+      // settled credits, and do not reopen old credits when the overall
+      // customer balance is already zero; those historical anomalies remain
+      // available through read-only reconciliation instead.
+      .filter((ledger) => ledger.remainingAmount > 0 && formatMyanmarDateInputValue(ledger.date) <= currentMyanmarDate)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [selectedCustomer?.ledgers, currentMyanmarDate]);
+  }, [selectedCustomer?.current_balance, selectedCustomer?.ledgers, currentMyanmarDate]);
   const selectedPaymentTarget = useMemo(
     () => paymentTargetLedgers.find((ledger) => ledger.id === paymentTargetLedgerId) || null,
     [paymentTargetLedgers, paymentTargetLedgerId],
