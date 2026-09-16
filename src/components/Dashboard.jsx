@@ -2118,14 +2118,14 @@ export default function Dashboard({ view = "overview" }) {
   }, [ledgerForm.saleItems, ledgerForm.cartons, ledgerForm.rate, ledgerForm.deductions, ledgerForm.type, ledgerForm.saleType]);
   const availableCustomerBalance = Math.max(0, Math.round(Number(selectedCustomer?.current_balance || 0)));
   const automaticLedgerAmount = ledgerForm.type === "DEBIT"
-    ? availableCustomerBalance
+    ? (selectedPaymentTarget ? Math.max(0, Math.round(Number(selectedPaymentTarget.remainingAmount || 0))) : availableCustomerBalance)
     : computedSaleAmount || 0;
   const paymentAmountPreview = Math.max(0, Math.round(Number(ledgerForm.manualAmount || automaticLedgerAmount || 0)));
   const paymentDiscountPreview = ledgerForm.type === "DEBIT"
     ? Math.max(0, Math.round(Number(ledgerForm.discountAmount || 0)))
     : 0;
   const paymentRemainingPreview = selectedPaymentTarget
-    ? Math.max(0, availableCustomerBalance - paymentAmountPreview - paymentDiscountPreview)
+    ? Math.max(0, Number(selectedPaymentTarget.remainingAmount || 0) - paymentAmountPreview - paymentDiscountPreview)
     : 0;
 
   // Calculate KPI metrics from the lightweight customer list and today's summary.
@@ -2962,7 +2962,7 @@ export default function Dashboard({ view = "overview" }) {
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ</p><p className="mt-1 text-2xl font-black text-cyan-950">{formatMoney(ledgerForm.type === "DEBIT" ? availableCustomerBalance : (getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0))}</p></div>
+                          <div className="rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-xs font-bold text-cyan-800">အလိုအလျောက်တွက်ထားသော ပမာဏ</p><p className="mt-1 text-2xl font-black text-cyan-950">{formatMoney(ledgerForm.type === "DEBIT" ? automaticLedgerAmount : (getSaleItemsTotal(ledgerForm.saleItems) || computedSaleAmount || ledgerForm.amount || 0))}</p></div>
                           <label className="text-[11px] uppercase tracking-wider font-bold text-slate-700 ml-1">{ledgerForm.type === "CASH_SALE" ? "ပမာဏ (Ks)" : "လူကိုယ်တိုင် ထည့်မည့်ပမာဏ (Ks)"}</label>
                           <input
                             type="number"
@@ -3006,9 +3006,10 @@ export default function Dashboard({ view = "overview" }) {
                             </ThemedSelect>
                             <p className="mt-2 text-[11px] leading-4 text-emerald-800">{paymentTargetLedgerId === PREPAYMENT_OPTION ? "ဤငွေကို အကြွေးဟောင်းမချိတ်ဘဲ ငွေကြိုချေအဖြစ် မှတ်တမ်းတင်ပါမည်။" : "ရွေးထားသော အကြွေးစာရင်းကို ငွေချေမှတ်တမ်းနဲ့ ချိတ်သိမ်းပါမည်။"}</p>
                             {selectedPaymentTarget ? (
-                              <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-2 text-xs sm:grid-cols-4">
+                              <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-2 text-xs sm:grid-cols-5">
                                 <div><p className="text-slate-500">မူရင်းအကြွေး</p><p className="font-black text-slate-900">{formatMoney(selectedPaymentTarget.originalAmount)}</p></div>
                                 <div><p className="text-slate-500">ယခင်ချေပြီး</p><p className="font-black text-emerald-700">{formatMoney(selectedPaymentTarget.paidAmount)}</p></div>
+                                <div><p className="text-slate-500">ယခင်ချေပြီး ကျန်ငွေ</p><p className="font-black text-amber-700">{formatMoney(selectedPaymentTarget.remainingAmount)}</p></div>
                                 <div><p className="text-slate-500">ယခုချေမည့်</p><p className="font-black text-cyan-700">{formatMoney(paymentAmountPreview)}</p></div>
                                 <div><p className="text-slate-500">ချေပြီးကျန်</p><p className="font-black text-rose-700">{formatMoney(paymentRemainingPreview)}</p></div>
                               </div>
