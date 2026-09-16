@@ -3168,12 +3168,6 @@ export default function Dashboard({ view = "overview" }) {
                 <div className="mt-8">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းမှတ်တမ်း (Transactions)</h3>
-                    {loadingCustomerHistory ? (
-                      <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800" role="status" aria-live="polite">
-                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600" aria-hidden="true" />
-                        မှတ်တမ်းများ ရယူနေသည်...
-                      </span>
-                    ) : null}
                   </div>
                   
                   <TransactionFilter 
