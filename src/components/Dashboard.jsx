@@ -12,6 +12,7 @@ import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
 import { buildSettlementNote } from "@/lib/ledger-settlement";
+import { normalizeCustomerName, normalizeCustomerPhone } from "@/lib/customer-identity";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
@@ -1141,6 +1142,36 @@ export default function Dashboard({ view = "overview" }) {
     const endIndex = startIndex + itemsPerPage;
     return customers.slice(startIndex, endIndex);
   }, [customers, currentPage, itemsPerPage]);
+
+  const newCustomerMatches = useMemo(() => {
+    const nameKey = normalizeCustomerName(newCustomer.name);
+    const phoneKey = normalizeCustomerPhone(newCustomer.phone);
+    if (nameKey.length < 3 && phoneKey.length < 4) return [];
+    return allCustomersForKPI
+      .filter((customer) => (
+        (nameKey && normalizeCustomerName(customer.name).includes(nameKey))
+        || (phoneKey && normalizeCustomerPhone(customer.phone).includes(phoneKey))
+      ))
+      .slice(0, 5);
+  }, [allCustomersForKPI, newCustomer.name, newCustomer.phone]);
+
+  const quickCustomerMatches = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("my-MM");
+    if (!query) return [];
+    return allCustomersForKPI
+      .filter((customer) => [customer.name, customer.phone, customer.routeTag].filter(Boolean).join(" ").toLocaleLowerCase("my-MM").includes(query))
+      .slice(0, 6);
+  }, [allCustomersForKPI, search]);
+
+  const chooseCustomer = useCallback((customer) => {
+    setSelectedCustomerId(customer.id);
+    setHighlightedCustomerId(customer.id);
+    setShowAddCustomer(false);
+    setShowCustomerList(false);
+    setSearch("");
+    setNewCustomer({ name: "", phone: "", routeTag: "", current_balance: "" });
+    window.setTimeout(() => setHighlightedCustomerId(null), 600);
+  }, []);
 
   const totalPages = Math.ceil(customers.length / itemsPerPage);
 
@@ -2426,6 +2457,20 @@ export default function Dashboard({ view = "overview" }) {
                 required
                 disabled={isSubmitting}
               />
+              {newCustomerMatches.length > 0 ? (
+                <div className="col-span-full rounded-xl border border-amber-300 bg-amber-50 p-3">
+                  <p className="text-sm font-black text-amber-900">ဆင်တူသော Customer ရှိပြီးသားပါ — အသစ်မထည့်မီ ရှိပြီးသားကို ရွေးပါ</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {newCustomerMatches.map((customer) => (
+                      <button key={`new-match-${customer.id}`} type="button" onClick={() => chooseCustomer(customer)} className="rounded-lg border border-amber-200 bg-white p-2 text-left hover:border-cyan-400 hover:bg-cyan-50">
+                        <span className="block text-sm font-black text-slate-900">{customer.name}</span>
+                        <span className="block text-xs text-slate-600">{[customer.phone, customer.routeTag].filter(Boolean).join(" / ") || "ဖုန်း/နေရာ မရှိ"}</span>
+                        <span className="mt-1 block text-xs font-bold text-cyan-700">ဒီ Customer ကို အသုံးပြုရန် →</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <input
                 className="min-h-12 rounded-md border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none focus:border-cyan-400"
                 inputMode="tel"
@@ -2446,9 +2491,9 @@ export default function Dashboard({ view = "overview" }) {
               />
               <button 
                 className="min-h-12 rounded-md bg-cyan-400 px-5 py-3 text-base font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
+                disabled={isSubmitting || newCustomerMatches.length > 0}
               >
-                {isSubmitting ? "Adding..." : "Add"}
+                {isSubmitting ? "Adding..." : newCustomerMatches.length > 0 ? "ရှိပြီးသားကို ရွေးပါ" : "Add"}
               </button>
             </form>
           ) : null}
@@ -2487,6 +2532,19 @@ export default function Dashboard({ view = "overview" }) {
               </button>
             )}
           </div>
+          {search.trim() && quickCustomerMatches.length > 0 ? (
+            <div className="mb-3 rounded-xl border border-cyan-200 bg-cyan-50/70 p-2">
+              <p className="px-1 pb-1 text-xs font-black text-cyan-800">အမြန်ရွေးရန် — {quickCustomerMatches.length} ယောက်</p>
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {quickCustomerMatches.map((customer) => (
+                  <button key={`quick-customer-${customer.id}`} type="button" onClick={() => chooseCustomer(customer)} className="rounded-lg border border-cyan-100 bg-white px-3 py-2 text-left hover:border-cyan-400 hover:bg-cyan-50">
+                    <span className="block truncate text-sm font-black text-slate-900">{customer.name}</span>
+                    <span className="block truncate text-[11px] text-slate-600">{[customer.phone, customer.routeTag].filter(Boolean).join(" / ") || "ဆက်သွယ်ရန်အချက်အလက်မရှိ"}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {showCustomerList && (
           <div className="rounded-xl border border-cyan-100 bg-cyan-50/30 p-2.5 shadow-inner sm:p-3">
             <div className="mb-2 flex items-center justify-between gap-2 px-1">
