@@ -165,9 +165,10 @@ async function fetchWithTimeout(path, options, parentSignal, timeoutMs = API_REQ
     return await fetch(path, { ...options, signal: controller.signal });
   } catch (error) {
     if (timedOut && error.name === "AbortError") {
-      error.name = "TimeoutError";
-      error.message = "Request timed out";
-      error.retryable = true;
+      const timeoutError = new Error("Request timed out");
+      timeoutError.name = "TimeoutError";
+      timeoutError.retryable = true;
+      throw timeoutError;
     }
     throw error;
   } finally {
