@@ -2455,11 +2455,6 @@ export default function Dashboard({ view = "overview" }) {
                     <p className="mt-1 text-lg font-black">{overdueDebtsLoaded ? `${Array.isArray(overdueDebts) ? overdueDebts.length.toLocaleString() : "0"} ယောက်` : "ရယူနေသည်..."}</p>
                     <p className="mt-1 text-xs">အသေးစိတ်ကြည့်ရန် →</p>
                   </Link>
-                  <Link href="/data-management" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900 hover:bg-amber-100">
-                    <p className="font-bold">KPay စစ်ရန်</p>
-                    <p className="mt-1 text-lg font-black">{pendingKpayLoaded ? `${pendingKpay.length.toLocaleString()} ခု` : "ရယူနေသည်..."}</p>
-                    <p className="mt-1 text-xs">စုစုပေါင်း {pendingKpayLoaded ? formatMoney(totalPending) : "ရယူနေသည်..."}</p>
-                  </Link>
                   <Link href="/factory-stock" className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900 hover:bg-blue-100">
                     <p className="font-bold">Stock သတိပေးချက်</p>
                     <p className="mt-1 text-lg font-black">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : negativeStockItems > 0 ? `${negativeStockItems} ခု စစ်ရန်လို` : "လက်ရှိအခြေအနေကောင်း"}</p>
