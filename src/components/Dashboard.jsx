@@ -3164,7 +3164,7 @@ export default function Dashboard({ view = "overview" }) {
                     </button>
                   </div>
 
-                  <div className="mt-3 space-y-2 md:hidden">{filteredLedgers.length ? filteredLedgers.map((ledger) => (
+                  <div className="mt-3 space-y-2 md:hidden">{loadingCustomerHistory ? <div className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-6 text-center text-sm font-semibold text-cyan-800" role="status" aria-live="polite"><span className="mr-2 inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600 align-[-2px]" aria-hidden="true" />Transaction များ ရယူနေသည်...</div> : filteredLedgers.length ? filteredLedgers.map((ledger) => (
                     <article key={`mobile-${ledger.id}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0"><p className="text-[10px] text-slate-500">Date</p><p className="mt-0.5 truncate text-xs font-medium text-slate-800">{formatDate(ledger.date)}</p></div>
@@ -3197,7 +3197,9 @@ export default function Dashboard({ view = "overview" }) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
-                        {filteredLedgers.length ? (
+                        {loadingCustomerHistory ? (
+                          <tr><td colSpan="7" className="px-4 py-10 text-center text-sm font-semibold text-cyan-800" role="status" aria-live="polite"><span className="mr-2 inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-600 align-[-2px]" aria-hidden="true" />Transaction များ ရယူနေသည်...</td></tr>
+                        ) : filteredLedgers.length ? (
                           filteredLedgers.map((ledger) => (
                             <tr key={ledger.id} className="hover:bg-slate-50/50 group">
                               <td className="whitespace-nowrap px-4 py-3 text-xs">
