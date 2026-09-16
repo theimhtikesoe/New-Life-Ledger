@@ -1154,10 +1154,6 @@ export default function Dashboard({ view = "overview" }) {
   const factoryTubePieces = Number(dashboardKpi?.factoryTubePieces || 0);
   const factoryTubePacks = Number(dashboardKpi?.factoryTubePacks || 0);
   const factoryCapPieces = Number(dashboardKpi?.factoryCapPieces || 0);
-  const negativeStockItems = Number(dashboardKpi?.negativeBottleStockItems || 0)
-    + Number(dashboardKpi?.negativeCapStockItems || 0)
-    + Number(dashboardKpi?.negativeTubeStockItems || 0);
-
     const hasKpiSnapshot = Boolean(dashboardKpi);
   const currentMyanmarDate = formatMyanmarDateInputValue(currentTime);
   const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;
@@ -2475,16 +2471,11 @@ export default function Dashboard({ view = "overview" }) {
                 <span className="text-xs" aria-hidden="true">{showDashboardAttention ? "⌃" : "⌄"}</span>
               </button>
               {showDashboardAttention ? (
-                <div id="dashboard-attention-panel" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div id="dashboard-attention-panel" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Link href="/balance-detail" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-800 hover:bg-rose-100">
                     <p className="font-bold">လက်ရှိအကြွေးကျန်သူ</p>
                     <p className="mt-1 text-lg font-black">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : `${customersWithBalanceCount.toLocaleString()} ယောက်`}</p>
                     <p className="mt-1 text-xs">အသေးစိတ်ကြည့်ရန် →</p>
-                  </Link>
-                  <Link href="/factory-stock" className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-900 hover:bg-blue-100">
-                    <p className="font-bold">Stock သတိပေးချက်</p>
-                    <p className="mt-1 text-lg font-black">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : negativeStockItems > 0 ? `${negativeStockItems} ခု စစ်ရန်လို` : "လက်ရှိအခြေအနေကောင်း"}</p>
-                    <p className="mt-1 text-xs">System-derived stock ကိုသာ ပြထားသည်</p>
                   </Link>
                 </div>
               ) : null}
@@ -2709,15 +2700,7 @@ export default function Dashboard({ view = "overview" }) {
                       ? "border-cyan-500 bg-cyan-500/5 ring-1 ring-cyan-500/20"
                       : "border-slate-200 bg-slate-50/40 hover:border-slate-300 hover:bg-slate-50/60"
                   }`}
-                  onClick={() => {
-                    setSelectedCustomerId(customer.id);
-                    setHighlightedCustomerId(customer.id);
-                    // Delay hiding the list to allow animation
-                    setTimeout(() => {
-                      setShowCustomerList(false);
-                      setHighlightedCustomerId(null);
-                    }, 400);
-                  }}
+                  onClick={() => chooseCustomer(customer)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
