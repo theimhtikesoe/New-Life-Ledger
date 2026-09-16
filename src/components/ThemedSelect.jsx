@@ -49,9 +49,9 @@ export default function ThemedSelect({ value = "", onChange, children, className
           event.stopPropagation();
           setOpen((current) => !current);
         }}
-        className={`relative flex w-full items-center justify-between gap-3 text-left transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+        className={`relative flex min-h-12 w-full items-center justify-between gap-3 py-2.5 text-left leading-6 transition-all focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
       >
-        <span className="min-w-0 flex-1 truncate">{selected.label}</span>
+        <span className="min-w-0 flex-1 whitespace-normal break-words">{selected.label}</span>
         <span className={`shrink-0 text-xs text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}>⌄</span>
       </button>
       {open && !disabled ? (
@@ -82,7 +82,7 @@ export default function ThemedSelect({ value = "", onChange, children, className
                   selectOption(option);
                 }
               }}
-              className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors ${option.value === String(value) ? "bg-cyan-100 text-cyan-950" : "text-slate-700 hover:bg-cyan-50 hover:text-cyan-950"} ${option.className} disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`min-h-12 w-full rounded-lg px-3 py-3 text-left text-sm font-semibold leading-6 whitespace-normal break-words transition-colors ${option.value === String(value) ? "bg-cyan-100 text-cyan-950" : "text-slate-700 hover:bg-cyan-50 hover:text-cyan-950"} ${option.className} disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {option.label}
             </button>
