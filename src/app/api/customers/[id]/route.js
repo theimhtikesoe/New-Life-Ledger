@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
+import { normalizeCustomerName, normalizeCustomerPhone, normalizeCustomerRoute } from "@/lib/customer-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -113,6 +114,27 @@ export async function PATCH(request, { params }) {
       data.settledOutsideLedgerBy = null;
     }
     if (body.restore === true) data.deletedAt = null;
+
+    if (data.name !== undefined || data.phone !== undefined || data.routeTag !== undefined || body.restore === true) {
+      const current = await prisma.customer.findUnique({ where: { id }, select: { name: true, phone: true, routeTag: true } });
+      if (!current) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+      const candidate = { ...current, ...data };
+      const possibleDuplicates = await prisma.customer.findMany({
+        where: { id: { not: id }, deletedAt: null },
+        select: { id: true, name: true, phone: true, routeTag: true },
+        take: 2000,
+      });
+      const duplicate = possibleDuplicates.find((existing) => (
+        (normalizeCustomerPhone(candidate.phone) && normalizeCustomerPhone(existing.phone) === normalizeCustomerPhone(candidate.phone))
+        || (normalizeCustomerName(candidate.name) && normalizeCustomerName(existing.name) === normalizeCustomerName(candidate.name))
+        || (normalizeCustomerName(candidate.name) === normalizeCustomerName(existing.name)
+          && normalizeCustomerRoute(candidate.routeTag)
+          && normalizeCustomerRoute(candidate.routeTag) === normalizeCustomerRoute(existing.routeTag))
+      ));
+      if (duplicate) {
+        return NextResponse.json({ error: `အမည်/ဖုန်းတူသော Customer ရှိပြီးသားပါ — ${duplicate.name}။`, code: "DUPLICATE_CUSTOMER", duplicate }, { status: 409 });
+      }
+    }
 
     const customer = await prisma.customer.update({
       where: { id },

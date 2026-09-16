@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
+import { normalizeCustomerName, normalizeCustomerPhone, normalizeCustomerRoute } from "@/lib/customer-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,30 @@ export async function POST(request) {
 
     if (!name) {
       return NextResponse.json({ error: "name is required" }, { status: 400 });
+    }
+
+    const normalizedName = normalizeCustomerName(name);
+    const normalizedPhone = normalizeCustomerPhone(body.phone);
+    const normalizedRoute = normalizeCustomerRoute(body.routeTag);
+    const possibleDuplicates = await prisma.customer.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true, phone: true, routeTag: true, current_balance: true },
+      orderBy: { name: "asc" },
+      take: 2000,
+    });
+    const duplicates = possibleDuplicates.filter((existing) => {
+      const samePhone = normalizedPhone && normalizeCustomerPhone(existing.phone) === normalizedPhone;
+      const sameName = normalizedName && normalizeCustomerName(existing.name) === normalizedName;
+      const sameRoute = normalizedRoute && normalizeCustomerRoute(existing.routeTag) === normalizedRoute;
+      return samePhone || sameName || (sameRoute && sameName);
+    });
+    if (duplicates.length > 0) {
+      const names = duplicates.map((duplicate) => `${duplicate.name}${duplicate.phone ? ` (${duplicate.phone})` : ""}`).join(", ");
+      return NextResponse.json({
+        error: `အမည်/ဖုန်းတူသော Customer ရှိပြီးသားပါ — ${names}။ Customer အသစ်မထည့်ဘဲ ရှိပြီးသားစာရင်းကို ရွေးအသုံးပြုပါ။`,
+        code: "DUPLICATE_CUSTOMER",
+        duplicates,
+      }, { status: 409 });
     }
 
     const currentBalance = Number(body.current_balance || 0);
