@@ -117,6 +117,10 @@ function displayLedgerNote(note) {
   return cleaned || (String(note || "").includes("__SETTLES_CREDIT_LEDGER__") ? "ဆက်စပ်အကြွေးစာရင်း ချိတ်ထားသည်" : "-");
 }
 
+function shortReference(value) {
+  return value ? String(value).slice(0, 8).toUpperCase() : "—";
+}
+
 function formatMyanmarDateInputValue(value = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
   const local = new Date(date.getTime() + (6 * 60 + 30) * 60 * 1000);
@@ -3583,7 +3587,7 @@ export default function Dashboard({ view = "overview" }) {
                   {dashboardReconciliation.settlementExceptions.map((row, index) => {
                     const label = row.type === "ORPHAN_LINK" ? "မရှိတော့သော ledger ကို ချိတ်ထားသည်" : row.type === "WRONG_CUSTOMER" ? "Customer မတူသော ledger ကို ချိတ်ထားသည်" : row.type === "NOT_CREDIT" ? "အကြွေးတိုးမဟုတ်သော ledger ကို ချိတ်ထားသည်" : "တစ်ကြောင်းကို ငွေချေမှုများစွာ ချိတ်ထားသည်";
                     const customerId = row.customerId || null;
-                    return <div key={`${row.type}-${row.paymentId || row.targetId || index}`} className="rounded-xl border border-amber-200 bg-amber-50/60 p-3"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold text-slate-900">{label}</p><p className="mt-1 text-sm text-slate-700">{row.customerName || "Customer မသိရသေးပါ"} · {formatMoney(row.amount)}</p><p className="mt-1 text-xs text-slate-500">Payment: {row.paymentId || "—"} · Target: {row.targetId || "—"}</p></div>{customerId ? <Link href={`/ledger?customerId=${encodeURIComponent(customerId)}`} onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:bg-violet-100">ပြင်ရန် Ledger →</Link> : null}</div>{row.targetAmount != null ? <p className="mt-2 text-xs text-amber-800">ချိတ်ထားသော အကြွေးတိုး: {formatMoney(row.targetAmount)} · ချိတ်ထားသောငွေချေစုစုပေါင်း: {formatMoney(row.amount)}</p> : null}</div>;
+                    return <div key={`${row.type}-${row.paymentId || row.targetId || index}`} className="rounded-xl border border-amber-200 bg-amber-50/60 p-3"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold text-slate-900">{label}</p><p className="mt-1 text-sm text-slate-700">{row.customerName || "Customer မသိရသေးပါ"} · {formatMoney(row.amount)}</p><p className="mt-1 text-xs text-slate-500">ငွေချေမှတ်တမ်း အမှတ် {shortReference(row.paymentId)} · အကြွေးစာရင်း အမှတ် {shortReference(row.targetId)}</p></div>{customerId ? <Link href={`/ledger?customerId=${encodeURIComponent(customerId)}`} onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:bg-violet-100">ပြင်ရန် Ledger →</Link> : null}</div>{row.targetAmount != null ? <p className="mt-2 text-xs text-amber-800">ချိတ်ထားသော အကြွေးတိုး: {formatMoney(row.targetAmount)} · ချိတ်ထားသောငွေချေစုစုပေါင်း: {formatMoney(row.amount)}</p> : null}</div>;
                   })}
                 </div>
               ) : <p className="py-12 text-center text-sm font-semibold text-emerald-700">Settlement link မကိုက်ညီမှု မတွေ့ပါ။</p>}
