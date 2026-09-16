@@ -417,6 +417,7 @@ export default function Dashboard({ view = "overview" }) {
   const [dashboardReconciliation, setDashboardReconciliation] = useState(null);
   const [dashboardReconciliationLoading, setDashboardReconciliationLoading] = useState(false);
   const [dashboardReconciliationError, setDashboardReconciliationError] = useState("");
+  const [reconciliationDetailType, setReconciliationDetailType] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
   const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
@@ -2507,16 +2508,16 @@ export default function Dashboard({ view = "overview" }) {
                   {dashboardReconciliationError ? <p className="rounded-lg bg-rose-50 px-3 py-3 text-sm text-rose-800">{dashboardReconciliationError}</p> : null}
                   {dashboardReconciliation ? (
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                      <div className={`rounded-lg border px-3 py-3 ${dashboardReconciliation.balanceMismatchCount ? "border-rose-200 bg-rose-50 text-rose-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
+                      <button type="button" onClick={() => setReconciliationDetailType("balance")} className={`rounded-lg border px-3 py-3 text-left ${dashboardReconciliation.balanceMismatchCount ? "border-rose-200 bg-rose-50 text-rose-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
                         <p className="font-bold">Customer လက်ကျန်နှိုင်းယှဉ်မှု</p>
                         <p className="mt-1 text-lg font-black">{dashboardReconciliation.balanceMismatchCount.toLocaleString()} ယောက် မကိုက်</p>
                         <p className="mt-1 text-xs">ကွာဟချက်စုစုပေါင်း {formatMoney(dashboardReconciliation.balanceMismatchAmount)}</p>
-                      </div>
-                      <div className={`rounded-lg border px-3 py-3 ${dashboardReconciliation.settlementExceptionCount ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
+                      </button>
+                      <button type="button" onClick={() => setReconciliationDetailType("settlement")} className={`rounded-lg border px-3 py-3 text-left ${dashboardReconciliation.settlementExceptionCount ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
                         <p className="font-bold">Settlement link စစ်ဆေးမှု</p>
                         <p className="mt-1 text-lg font-black">{dashboardReconciliation.settlementExceptionCount.toLocaleString()} ခု စစ်ရန်လို</p>
                         <p className="mt-1 text-xs">မကိုက်မှုများကိုသာ ပြထားသည်၊ အလိုအလျောက်မပြင်ပါ</p>
-                      </div>
+                      </button>
                     </div>
                   ) : null}
                 </div>
@@ -3563,6 +3564,46 @@ export default function Dashboard({ view = "overview" }) {
       )}
 
       {/* Today's Payments Modal */}
+      {reconciliationDetailType && dashboardReconciliation && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reconciliation-detail-title">
+          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-violet-200 bg-violet-50 px-5 py-4">
+              <div>
+                <h3 id="reconciliation-detail-title" className="text-lg font-black text-violet-950">{reconciliationDetailType === "balance" ? "Customer လက်ကျန် မကိုက်ညီမှု အသေးစိတ်" : "Settlement link မကိုက်ညီမှု အသေးစိတ်"}</h3>
+                <p className="mt-1 text-xs text-violet-700">အချက်အလက်ကိုသာ ပြသထားပြီး database ကို အလိုအလျောက်မပြင်ပါ။</p>
+              </div>
+              <button type="button" onClick={() => setReconciliationDetailType(null)} className="text-2xl leading-none text-violet-600 hover:text-violet-950" aria-label="ပိတ်ရန်">×</button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+              {reconciliationDetailType === "balance" ? (
+                dashboardReconciliation.balanceMismatches?.length ? (
+                  <div className="space-y-2">
+                    {dashboardReconciliation.balanceMismatches.map((row) => (
+                      <div key={row.customerId} className="rounded-xl border border-rose-200 bg-rose-50/60 p-3">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div><p className="font-bold text-slate-900">{row.customerName || "Customer မသိရသေးပါ"}</p><p className="mt-1 text-xs text-slate-500">Ledger {Number(row.ledgerCount || 0).toLocaleString()} ကြောင်း</p></div>
+                          <Link href={`/ledger?customerId=${encodeURIComponent(row.customerId)}`} onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:bg-violet-100">Ledger အသေးစိတ် →</Link>
+                        </div>
+                        <div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-3"><div><span className="block text-xs text-slate-500">System လက်ကျန်</span><strong>{formatMoney(row.actual)}</strong></div><div><span className="block text-xs text-slate-500">Ledger တွက်ချက်ချက်</span><strong>{formatMoney(row.expected)}</strong></div><div><span className="block text-xs text-slate-500">ကွာဟချက်</span><strong className="text-rose-700">{formatMoney(row.difference)}</strong></div></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className="py-12 text-center text-sm font-semibold text-emerald-700">လက်ကျန်မကိုက်ညီမှု မတွေ့ပါ။</p>
+              ) : dashboardReconciliation.settlementExceptions?.length ? (
+                <div className="space-y-2">
+                  {dashboardReconciliation.settlementExceptions.map((row, index) => {
+                    const label = row.type === "ORPHAN_LINK" ? "မရှိတော့သော ledger ကို ချိတ်ထားသည်" : row.type === "WRONG_CUSTOMER" ? "Customer မတူသော ledger ကို ချိတ်ထားသည်" : row.type === "NOT_CREDIT" ? "အကြွေးတိုးမဟုတ်သော ledger ကို ချိတ်ထားသည်" : "တစ်ကြောင်းကို ငွေချေမှုများစွာ ချိတ်ထားသည်";
+                    const customerId = row.customerId || null;
+                    return <div key={`${row.type}-${row.paymentId || row.targetId || index}`} className="rounded-xl border border-amber-200 bg-amber-50/60 p-3"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold text-slate-900">{label}</p><p className="mt-1 text-sm text-slate-700">{row.customerName || "Customer မသိရသေးပါ"} · {formatMoney(row.amount)}</p><p className="mt-1 text-xs text-slate-500">Payment: {row.paymentId || "—"} · Target: {row.targetId || "—"}</p></div>{customerId ? <Link href={`/ledger?customerId=${encodeURIComponent(customerId)}`} onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:bg-violet-100">ပြင်ရန် Ledger →</Link> : null}</div>{row.targetAmount != null ? <p className="mt-2 text-xs text-amber-800">ချိတ်ထားသော အကြွေးတိုး: {formatMoney(row.targetAmount)} · ချိတ်ထားသောငွေချေစုစုပေါင်း: {formatMoney(row.amount)}</p> : null}</div>;
+                  })}
+                </div>
+              ) : <p className="py-12 text-center text-sm font-semibold text-emerald-700">Settlement link မကိုက်ညီမှု မတွေ့ပါ။</p>}
+            </div>
+            <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-right"><button type="button" onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-violet-600 px-5 py-2 text-sm font-bold text-white hover:bg-violet-700">ပိတ်ရန်</button></div>
+          </div>
+        </div>
+      )}
+
       {showTodayPaymentsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-xl border border-emerald-200 bg-white shadow-2xl flex flex-col max-h-[90vh]">

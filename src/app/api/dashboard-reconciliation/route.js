@@ -59,7 +59,7 @@ export async function GET() {
     const targets = targetIds.length
       ? await prisma.ledger.findMany({
         where: { id: { in: targetIds } },
-        select: { id: true, customerId: true, type: true, amount: true },
+        select: { id: true, customerId: true, type: true, amount: true, date: true },
       })
       : [];
     const targetById = new Map(targets.map((row) => [row.id, row]));
@@ -73,11 +73,11 @@ export async function GET() {
         referencesByTarget.set(targetId, [...(referencesByTarget.get(targetId) || []), debit]);
         const target = targetById.get(targetId);
         if (!target) {
-          settlementExceptions.push({ type: "ORPHAN_LINK", paymentId: debit.id, targetId, amount: rounded(debit.amount), customerName: customerById.get(debit.customerId) || "" });
+          settlementExceptions.push({ type: "ORPHAN_LINK", paymentId: debit.id, targetId, amount: rounded(debit.amount), paymentDate: debit.date, customerId: debit.customerId, customerName: customerById.get(debit.customerId) || "" });
         } else if (target.customerId !== debit.customerId) {
-          settlementExceptions.push({ type: "WRONG_CUSTOMER", paymentId: debit.id, targetId, amount: rounded(debit.amount), customerName: customerById.get(debit.customerId) || "" });
+          settlementExceptions.push({ type: "WRONG_CUSTOMER", paymentId: debit.id, targetId, amount: rounded(debit.amount), paymentDate: debit.date, customerId: debit.customerId, customerName: customerById.get(debit.customerId) || "" });
         } else if (target.type !== "CREDIT") {
-          settlementExceptions.push({ type: "NOT_CREDIT", paymentId: debit.id, targetId, amount: rounded(debit.amount), customerName: customerById.get(debit.customerId) || "" });
+          settlementExceptions.push({ type: "NOT_CREDIT", paymentId: debit.id, targetId, amount: rounded(debit.amount), paymentDate: debit.date, customerId: debit.customerId, customerName: customerById.get(debit.customerId) || "" });
         }
       });
     });
@@ -92,6 +92,8 @@ export async function GET() {
           paymentId: payments[0].id,
           amount: linkedAmount,
           targetAmount: rounded(target?.amount),
+          targetDate: target?.date || null,
+          customerId: target?.customerId || null,
           customerName: customerById.get(target?.customerId) || "",
         });
       }
