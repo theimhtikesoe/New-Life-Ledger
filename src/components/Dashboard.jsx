@@ -11,7 +11,7 @@ import { formatMyanmarClock, formatMyanmarDateLabel, formatMyanmarDateTime } fro
 import { encodeActorHeader } from "@/lib/actor-header";
 import { cashSaleTypeLabel, customerDefaultCashSaleType } from "@/lib/cash-sale-utils";
 import { getPaymentSplit, hasPaymentBreakdownInput, paymentBreakdownValidationMessage, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
-import { buildSettlementNote, cleanSettlementNote } from "@/lib/ledger-settlement";
+import { buildSettlementNote, cleanSettlementNote, settlementTargetIds } from "@/lib/ledger-settlement";
 import { normalizeCustomerName, normalizeCustomerPhone } from "@/lib/customer-identity";
 import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
@@ -2038,19 +2038,46 @@ export default function Dashboard({ view = "overview" }) {
     const ledgers = selectedCustomer?.ledgers || [];
     const customerBalance = Number(selectedCustomer?.current_balance || 0);
     if (customerBalance <= 0) return [];
-    return ledgers
+    const credits = ledgers
       .filter((ledger) => ledger.type === "CREDIT")
-      .map((credit) => {
-        const paidAmount = ledgers
-          .filter((ledger) => ledger.type === "DEBIT" && String(ledger.note || "").includes(`__SETTLES_CREDIT_LEDGER__:${credit.id}`))
-          .reduce((sum, ledger) => sum + Number(ledger.amount || 0), 0);
-        return {
-          ...credit,
-          originalAmount: Number(credit.amount || 0),
-          paidAmount,
-          remainingAmount: Math.max(0, Number(credit.amount || 0) - paidAmount),
-        };
-      })
+      .map((credit) => ({
+        ...credit,
+        originalAmount: Math.max(0, Number(credit.amount || 0)),
+        paidAmount: 0,
+        remainingAmount: Math.max(0, Number(credit.amount || 0)),
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const creditById = new Map(credits.map((credit) => [String(credit.id), credit]));
+    let unlinkedPaymentPool = 0;
+    ledgers
+      .filter((ledger) => ledger.type === "DEBIT")
+      .forEach((payment) => {
+        const amount = Math.max(0, Number(payment.amount || 0));
+        const targetIds = settlementTargetIds(payment.note);
+        if (!targetIds.length) {
+          unlinkedPaymentPool += amount;
+          return;
+        }
+        // A linked payment is counted once against its selected target. If a
+        // historical note contains duplicate target IDs, do not multiply the
+        // payment across the same target.
+        const target = creditById.get(String(targetIds[0]));
+        if (target) {
+          target.paidAmount += amount;
+          target.remainingAmount = Math.max(0, target.originalAmount - target.paidAmount);
+        }
+      });
+    // Older payments were saved without a settlement marker. For selector
+    // display only, apply those payments FIFO to the oldest credits so paid
+    // historical rows disappear while the underlying ledger remains intact.
+    credits.forEach((credit) => {
+      if (unlinkedPaymentPool <= 0) return;
+      const applied = Math.min(credit.remainingAmount, unlinkedPaymentPool);
+      credit.paidAmount += applied;
+      credit.remainingAmount = Math.max(0, credit.remainingAmount - applied);
+      unlinkedPaymentPool -= applied;
+    });
+    return credits
       // This select is only a data link for a new payment. Do not show fully
       // settled credits, and do not reopen old credits when the overall
       // customer balance is already zero; those historical anomalies remain
