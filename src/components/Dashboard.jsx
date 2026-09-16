@@ -413,6 +413,10 @@ export default function Dashboard({ view = "overview" }) {
   const [showTodayPaymentsModal, setShowTodayPaymentsModal] = useState(false);
   const [expandedDashboardMenu, setExpandedDashboardMenu] = useState(null);
   const [showDashboardAttention, setShowDashboardAttention] = useState(false);
+  const [showDashboardReconciliation, setShowDashboardReconciliation] = useState(false);
+  const [dashboardReconciliation, setDashboardReconciliation] = useState(null);
+  const [dashboardReconciliationLoading, setDashboardReconciliationLoading] = useState(false);
+  const [dashboardReconciliationError, setDashboardReconciliationError] = useState("");
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
   const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
@@ -1109,6 +1113,22 @@ export default function Dashboard({ view = "overview" }) {
     () => pendingKpay.reduce((sum, item) => sum + item.amount, 0),
     [pendingKpay],
   );
+
+  useEffect(() => {
+    if (!showDashboardReconciliation || dashboardReconciliation || dashboardReconciliationLoading) return undefined;
+    const controller = new AbortController();
+    setDashboardReconciliationLoading(true);
+    setDashboardReconciliationError("");
+    api("/api/dashboard-reconciliation", { signal: controller.signal, background: true })
+      .then((result) => setDashboardReconciliation(result || null))
+      .catch((error) => {
+        if (error.name !== "AbortError") setDashboardReconciliationError(error.message || "စာရင်းစစ်ဆေးမှု မအောင်မြင်ပါ။");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setDashboardReconciliationLoading(false);
+      });
+    return () => controller.abort();
+  }, [showDashboardReconciliation, dashboardReconciliation, dashboardReconciliationLoading]);
 
   // Calculate summary metrics
   const totalBalance = useMemo(
@@ -2460,6 +2480,40 @@ export default function Dashboard({ view = "overview" }) {
                     <p className="mt-1 text-lg font-black">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : negativeStockItems > 0 ? `${negativeStockItems} ခု စစ်ရန်လို` : "လက်ရှိအခြေအနေကောင်း"}</p>
                     <p className="mt-1 text-xs">System-derived stock ကိုသာ ပြထားသည်</p>
                   </Link>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+          {!isLedgerView && !isProductionDashboard ? (
+            <section className="mt-3 rounded-xl border border-violet-200 bg-white/90 p-3 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setShowDashboardReconciliation((current) => !current)}
+                aria-expanded={showDashboardReconciliation}
+                aria-controls="dashboard-reconciliation-panel"
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-left text-sm font-bold text-violet-900 hover:bg-violet-100"
+              >
+                <span>စာရင်းစစ်ဆေးရန် (Read-only)</span>
+                <span className="text-xs" aria-hidden="true">{showDashboardReconciliation ? "⌃" : "⌄"}</span>
+              </button>
+              {showDashboardReconciliation ? (
+                <div id="dashboard-reconciliation-panel" className="mt-3">
+                  {dashboardReconciliationLoading ? <p className="rounded-lg bg-violet-50 px-3 py-3 text-sm text-violet-800">စာရင်းများကို စစ်ဆေးနေသည်...</p> : null}
+                  {dashboardReconciliationError ? <p className="rounded-lg bg-rose-50 px-3 py-3 text-sm text-rose-800">{dashboardReconciliationError}</p> : null}
+                  {dashboardReconciliation ? (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <div className={`rounded-lg border px-3 py-3 ${dashboardReconciliation.balanceMismatchCount ? "border-rose-200 bg-rose-50 text-rose-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
+                        <p className="font-bold">Customer လက်ကျန်နှိုင်းယှဉ်မှု</p>
+                        <p className="mt-1 text-lg font-black">{dashboardReconciliation.balanceMismatchCount.toLocaleString()} ယောက် မကိုက်</p>
+                        <p className="mt-1 text-xs">ကွာဟချက်စုစုပေါင်း {formatMoney(dashboardReconciliation.balanceMismatchAmount)}</p>
+                      </div>
+                      <div className={`rounded-lg border px-3 py-3 ${dashboardReconciliation.settlementExceptionCount ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>
+                        <p className="font-bold">Settlement link စစ်ဆေးမှု</p>
+                        <p className="mt-1 text-lg font-black">{dashboardReconciliation.settlementExceptionCount.toLocaleString()} ခု စစ်ရန်လို</p>
+                        <p className="mt-1 text-xs">မကိုက်မှုများကိုသာ ပြထားသည်၊ အလိုအလျောက်မပြင်ပါ</p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </section>
