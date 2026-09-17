@@ -102,13 +102,16 @@ describe("Telegram daily report CashSale data", () => {
     expect(html).toContain("စုစုပေါင်းဗူးထွက်ရှိမှု");
     expect(html).toContain("ဗူးပျက်စုစုပေါင်း");
     expect(html).toContain("Tube အရေအတွက် (ဗူးထုတ်ဖို့သုံး)");
+    expect(html).toContain("Tube ပျက် (ဗူးထုတ်လုပ်မှု)");
     expect(html).toContain("2.525");
     expect(html).toContain("Tube စုစုပေါင်း");
     expect(html).toContain("Tube အသေးစိတ်");
     expect(html).toContain("Worker A");
     expect(html.indexOf("ဗူးပျက်စုစုပေါင်း")).toBeLessThan(html.indexOf("Tube အကျဉ်းချုပ်"));
     expect(html.indexOf("Tube အရေအတွက် (ဗူးထုတ်ဖို့သုံး)")).toBeLessThan(html.indexOf("Tube အကျဉ်းချုပ်"));
-    expect(html.indexOf("Tube ပျက်")).toBeGreaterThan(html.indexOf("Tube အကျဉ်းချုပ်"));
+    expect(html.indexOf("Tube ပျက် (ဗူးထုတ်လုပ်မှု)")).toBeLessThan(html.indexOf("Tube အကျဉ်းချုပ်"));
+    expect(html.indexOf('<div class="tube-detail-label">Tube ပျက်</div>')).toBeGreaterThan(html.indexOf("Tube အကျဉ်းချုပ်"));
+    expect((html.match(/<div class="tube-detail-label">Tube ပျက်<\/div>/g) || []).length).toBe(1);
   });
 
   it("renders retail and wholesale cash-sale details on separate full lines", () => {
