@@ -26,7 +26,8 @@ describe("Dashboard loading recovery", () => {
 
   it("prioritizes the customer list before the expensive KPI stock rebuild", () => {
     expect(source).toContain("Customer data is the critical path for the Ledger");
-    expect(source).toContain("const [customerRows, allCustomersRows] = await Promise.all");
+    expect(source).toContain("let customerRows = [];");
+    expect(source).toContain("[customerRows, allCustomersRows] = await Promise.all");
     expect(source.indexOf("const customerRequest = api(")).toBeLessThan(source.indexOf("const kpiRequest = api("));
   });
 

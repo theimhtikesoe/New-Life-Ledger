@@ -858,17 +858,21 @@ export default function Dashboard({ view = "overview" }) {
       // expensive historical KPI/stock rebuild at the same time: production
       // uses connection_limit=1, so KPI could otherwise occupy the only
       // connection and make the customer screen appear stuck.
-      const [customerRows, allCustomersRows] = isProductionDashboard
-        ? [[], []]
-        : search
-          ? await Promise.all([
-            api(`/api/customers?includeLedgers=false&q=${encodeURIComponent(search)}`, { signal }),
-            api("/api/customers?includeLedgers=false", { signal }),
-          ])
-          : (() => {
-            const request = api("/api/customers?includeLedgers=false", { signal });
-            return request.then((rows) => [rows, rows]);
-          })();
+      let customerRows = [];
+      let allCustomersRows = [];
+      if (isProductionDashboard) {
+        customerRows = [];
+        allCustomersRows = [];
+      } else if (search) {
+        [customerRows, allCustomersRows] = await Promise.all([
+          api(`/api/customers?includeLedgers=false&q=${encodeURIComponent(search)}`, { signal }),
+          api("/api/customers?includeLedgers=false", { signal }),
+        ]);
+      } else {
+        const rows = await api("/api/customers?includeLedgers=false", { signal });
+        customerRows = rows;
+        allCustomersRows = rows;
+      }
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
       saveDashboardSnapshot({ customers: customerRows, allCustomersForKPI: allCustomersRows });
