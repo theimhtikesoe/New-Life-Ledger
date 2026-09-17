@@ -864,7 +864,7 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
-      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`, { signal, cache: "no-store", background: true })
+      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`, { signal, cache: "no-store", timeoutMs: 60000, background: true })
         .then((kpi) => {
           setDashboardKpi(kpi);
           setDashboardKpiError("");
