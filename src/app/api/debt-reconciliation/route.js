@@ -23,7 +23,8 @@ function buildCustomerDetail(customer, saved) {
       unlinkedPayments.push({ ...payment, legacyPayment: true });
       const paymentDay = new Date(payment.date).toISOString().slice(0, 10);
       const hasNearFutureMatchingCredit = credits.some((credit) => (
-        new Date(credit.date).toISOString().slice(0, 10) >= paymentDay
+        new Date(credit.date).toISOString().slice(0, 10) > paymentDay
+        && (new Date(`${new Date(credit.date).toISOString().slice(0, 10)}T00:00:00Z`).getTime() - new Date(`${paymentDay}T00:00:00Z`).getTime()) <= 3 * 24 * 60 * 60 * 1000
         && rounded(credit.amount) === rounded(payment.amount)
       ));
       if (String(payment.note || "").includes("__PREPAYMENT__") || hasNearFutureMatchingCredit) futurePrepayments.push({ payment, remaining: rounded(payment.amount) });

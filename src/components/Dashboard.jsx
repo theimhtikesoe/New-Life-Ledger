@@ -2069,7 +2069,8 @@ export default function Dashboard({ view = "overview" }) {
         if (!targetIds.length) {
           const paymentDay = formatMyanmarDateInputValue(payment.date);
           const hasNearFutureMatchingCredit = credits.some((credit) => (
-            formatMyanmarDateInputValue(credit.date) >= paymentDay
+            formatMyanmarDateInputValue(credit.date) > paymentDay
+            && (new Date(`${formatMyanmarDateInputValue(credit.date)}T00:00:00Z`).getTime() - new Date(`${paymentDay}T00:00:00Z`).getTime()) <= 3 * 24 * 60 * 60 * 1000
             && Math.abs(Number(credit.originalAmount || 0) - amount) < 1
           ));
           if (String(payment.note || "").includes("__PREPAYMENT__") || hasNearFutureMatchingCredit) futurePrepayments.push({ payment, remaining: amount });
