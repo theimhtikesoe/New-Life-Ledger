@@ -11,6 +11,10 @@ const migrationSource = fs.readFileSync(path.join(root, "prisma/migrations/20260
 const databaseSource = fs.readFileSync(path.join(root, "src/lib/database.js"), "utf8");
 
 describe("Production page enhancements", () => {
+  it("labels the history section according to the selected production category", () => {
+    expect(productionSource).toContain('{category === "tube" ? "Tube ထွက်ရှိမှုမှတ်တမ်းများ" : "ဗူး ထွက်ရှိမှုမှတ်တမ်းများ"}');
+  });
+
   it("supports both tube quantity units and persists the selected unit", () => {
     expect(productionSource).toContain('const [tubeQuantityUnit, setTubeQuantityUnit] = useState("အိတ်");');
     expect(productionSource).toContain('<option value="အိတ်">အိတ်</option>');
