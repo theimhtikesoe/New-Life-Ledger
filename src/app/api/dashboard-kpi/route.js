@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { aggregateStockMovements, ensureFactoryStockTable } from "@/lib/factory-stock";
-import { dedupeSettledBottleSaleItems, hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -27,12 +26,6 @@ export async function GET(request) {
     const customerStats = await prisma.customer.aggregate({ where: { deletedAt: null }, _count: { _all: true }, _sum: { current_balance: true } });
     const paymentStats = await prisma.ledger.aggregate({ where: { ...dayWhere, type: "DEBIT" }, _count: { _all: true }, _sum: { amount: true } });
     const cashSaleGroups = await prisma.cashSale.groupBy({ by: ["saleType"], where: dayWhere, _count: { _all: true }, _sum: { amount: true } });
-    const ledgerRows = typeof prisma.ledger.findMany === "function"
-      ? await prisma.ledger.findMany({ where: { ...dayWhere, type: { in: ["DEBIT", "CREDIT"] } }, select: { id: true, type: true, amount: true, note: true, saleItems: true } })
-      : [];
-    const cashSalesForItems = typeof prisma.cashSale.findMany === "function"
-      ? await prisma.cashSale.findMany({ where: dayWhere, select: { amount: true, saleItems: true } })
-      : [];
     // Keep the dashboard KPI endpoint compatible with older generated clients
     // while the factory-stock table is being rolled out. A missing optional
     // model should show zero stock, not take down every dashboard KPI.
@@ -75,53 +68,15 @@ export async function GET(request) {
         const capacity = Number(item.capacity || 0);
         return sum + (capacity ? (Number(item.currentBottles || 0) < 0 ? -Math.ceil(Math.abs(Number(item.currentBottles || 0)) / capacity) : Math.floor(Number(item.currentBottles || 0) / capacity)) : 0);
       }, 0);
-    const paidLedgers = dedupeSettledBottleSaleItems(await hydrateSettledBottleSaleItems(prisma, ledgerRows.filter((row) => row.type === "DEBIT")));
-    const creditLedgers = ledgerRows.filter((row) => row.type === "CREDIT");
-
-    const collectSaleItems = (rows = []) => {
-      const bottleItemMap = new Map();
-      let totalBottles = 0;
-      let totalBottleAmount = 0;
-      let totalPaidAmount = 0;
-      rows.forEach((row) => {
-        if (!Array.isArray(row.saleItems)) return;
-        totalPaidAmount += Math.max(0, Math.round(Number(row.amount || 0)));
-        row.saleItems.forEach((item) => {
-          if (item?.isCap || item?.productType === "cap" || item?.categoryKey === "CAP" || item?.productType === "tube" || item?.categoryKey === "TUBE") return;
-          const bottleCount = Math.max(0, Math.round(Number(item.bottleCount || 0)));
-          const totalAmount = Math.max(0, Math.round(Number(item.totalAmount || 0)));
-          if (!bottleCount && !totalAmount) return;
-          const key = String(item.productKey || `${item.productName || "ဗူး"}::${item.capacity || 0}`);
-          const current = bottleItemMap.get(key) || {
-            productKey: key,
-            categoryKey: item.categoryKey || null,
-            productName: item.productName || "ဗူး",
-            capacity: Number(item.capacity || 0),
-            bottleCount: 0,
-            totalAmount: 0,
-          };
-          current.bottleCount += bottleCount;
-          current.totalAmount += totalAmount;
-          bottleItemMap.set(key, current);
-          totalBottles += bottleCount;
-          totalBottleAmount += totalAmount;
-        });
-      });
-      return { totalBottles, totalAmount: totalBottleAmount, totalPaidAmount, items: [...bottleItemMap.values()].sort((a, b) => b.bottleCount - a.bottleCount) };
-    };
-    const paidBottleSales = collectSaleItems(paidLedgers);
-    const cashBottleSales = collectSaleItems(cashSalesForItems);
-    // Payments settle an existing credit order and must not create a second
-    // physical-sale count. Keep paidBottleSales for the payment breakdown,
-    // while the headline sale total uses cash sales plus debt increases.
-    const bottleSales = collectSaleItems(cashSalesForItems);
-    const creditBottleSales = collectSaleItems(creditLedgers);
-    const totalBottleSales = {
-      totalBottles: bottleSales.totalBottles + creditBottleSales.totalBottles,
-      totalAmount: bottleSales.totalAmount + creditBottleSales.totalAmount,
-      totalPaidAmount: bottleSales.totalPaidAmount,
-      items: [...bottleSales.items, ...creditBottleSales.items],
-    };
+    // Item-level sale details are intentionally omitted here. Loading JSON
+    // saleItems for every daily ledger/cash-sale row made this KPI endpoint
+    // scan a large payload on every dashboard open. Detail pages still load
+    // the canonical item breakdown when the user opens them.
+    const paidBottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
+    const cashBottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
+    const bottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
+    const creditBottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
+    const totalBottleSales = { ...bottleSales };
 
     const cashSales = cashSaleGroups.reduce((summary, group) => {
       const count = Number(group._count?._all || 0);
