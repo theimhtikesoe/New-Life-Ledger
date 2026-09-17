@@ -40,11 +40,19 @@ export async function GET(request) {
     // complete production/ledger/cash-sale history here makes every dashboard
     // open wait on a large historical scan. Detailed stock pages still perform
     // the canonical rebuild when they are opened.
-    const stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
-      ? await prisma.factoryStockMovement.findMany({
-        select: { id: true, movementDate: true, movementType: true, stockType: true, productKey: true, productName: true, capacity: true, quantityCards: true, quantityBottles: true, sourceType: true, sourceId: true, sourceVersion: true, reason: true, note: true, actorName: true, createdAt: true },
-        orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
-      })
+    const stockMovements = typeof prisma.factoryStockMovement?.groupBy === "function"
+      ? (await prisma.factoryStockMovement.groupBy({
+        by: ["productKey", "productName", "stockType", "capacity", "movementType"],
+        _sum: { quantityCards: true, quantityBottles: true },
+      })).map((row) => ({
+        productKey: row.productKey,
+        productName: row.productName,
+        stockType: row.stockType,
+        capacity: row.capacity,
+        movementType: row.movementType,
+        quantityCards: row._sum?.quantityCards || 0,
+        quantityBottles: row._sum?.quantityBottles || 0,
+      }))
       : [];
     const factoryStockSummary = aggregateStockMovements(stockMovements);
     const negativeBottleStockItems = factoryStockSummary.filter((item) => item.stockType === "BOTTLE" && Number(item.currentCards || 0) < 0).length;
