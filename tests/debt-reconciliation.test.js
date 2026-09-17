@@ -41,6 +41,9 @@ describe("debt reconciliation workflow", () => {
     expect(route).toContain("payments.length > 1 && (!target || linkedAmount < rounded(target.amount))");
     expect(dashboard).toContain("LINKED_PREPAYMENT");
     expect(dashboard).toContain("ကြိုတင်ငွေချေ");
+    expect(dashboard).toContain("ငွေချေမပြည့်သေးသော ခြားနားချက်");
+    expect(dashboard).toContain("ပိုငွေချေ / ပါးစပ်လျှော့စျေး ဖြစ်နိုင်သော ခြားနားချက်");
+    expect(dashboard).not.toContain("ချိတ်ထားသော အကြွေးတိုး: {formatMoney(row.targetAmount)}");
     expect(dashboard).toContain("LINKED_SURPLUS_CLEARED");
   });
 
