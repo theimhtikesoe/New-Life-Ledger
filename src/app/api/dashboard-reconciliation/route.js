@@ -64,6 +64,7 @@ export async function GET() {
       : [];
     const targetById = new Map(targets.map((row) => [row.id, row]));
     const customerById = new Map(customers.map((row) => [row.id, row.name]));
+    const balanceByCustomer = new Map(customers.map((row) => [row.id, rounded(row.current_balance)]));
     const referencesByTarget = new Map();
     const settlementExceptions = [];
 
@@ -87,14 +88,18 @@ export async function GET() {
       const linkedAmount = payments.reduce((sum, payment) => sum + rounded(payment.amount), 0);
       if (target && target.type === "CREDIT" && linkedAmount !== rounded(target.amount)) {
         const targetAmount = rounded(target.amount);
-        const isPrepayment = linkedAmount > targetAmount;
+        const surplusAmount = linkedAmount - targetAmount;
+        const isPrepayment = surplusAmount > 0 && (balanceByCustomer.get(target.customerId) || 0) < 0;
+        const isClearedSurplus = surplusAmount > 0 && !isPrepayment;
         settlementExceptions.push({
-          type: isPrepayment ? "LINKED_PREPAYMENT" : "LINKED_TOTAL_MISMATCH",
+          type: isPrepayment ? "LINKED_PREPAYMENT" : isClearedSurplus ? "LINKED_SURPLUS_CLEARED" : "LINKED_TOTAL_MISMATCH",
           targetId,
           paymentId: payments[0].id,
           amount: linkedAmount,
           targetAmount,
-          prepaymentAmount: isPrepayment ? linkedAmount - targetAmount : 0,
+          prepaymentAmount: isPrepayment ? surplusAmount : 0,
+          surplusAmount: isClearedSurplus ? surplusAmount : 0,
+          currentBalance: balanceByCustomer.get(target.customerId) || 0,
           targetDate: target.date,
           customerId: target.customerId,
           customerName: customerById.get(target.customerId) || "",

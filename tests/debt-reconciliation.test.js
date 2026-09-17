@@ -34,11 +34,14 @@ describe("debt reconciliation workflow", () => {
   it("adds only non-equal linked credit/payment totals to settlement diagnostics", () => {
     const route = readFileSync(resolve(process.cwd(), "src/app/api/dashboard-reconciliation/route.js"), "utf8");
     const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
-    expect(route).toContain('type: isPrepayment ? "LINKED_PREPAYMENT" : "LINKED_TOTAL_MISMATCH"');
+    expect(route).toContain('type: isPrepayment ? "LINKED_PREPAYMENT" : isClearedSurplus ? "LINKED_SURPLUS_CLEARED" : "LINKED_TOTAL_MISMATCH"');
+    expect(route).toContain('isClearedSurplus ? "LINKED_SURPLUS_CLEARED"');
+    expect(route).toContain("balanceByCustomer.get(target.customerId)");
     expect(route).toContain("linkedAmount !== rounded(target.amount)");
     expect(route).toContain("payments.length > 1 && (!target || linkedAmount < rounded(target.amount))");
     expect(dashboard).toContain("LINKED_PREPAYMENT");
     expect(dashboard).toContain("ကြိုတင်ငွေချေ");
+    expect(dashboard).toContain("LINKED_SURPLUS_CLEARED");
   });
 
   it("persists reconciliation as an audit record instead of deleting old ledgers", () => {
