@@ -36,6 +36,11 @@ export async function GET(request) {
       settledOutsideLedgerAt: true,
       settledOutsideLedgerBy: true,
       deletedAt: true,
+      outsideSettlements: {
+        select: { settledAt: true, actorName: true },
+        orderBy: { settledAt: "desc" },
+        take: 1,
+      },
     };
     if (includeLedgers) {
       select.ledgers = {
@@ -68,8 +73,16 @@ export async function GET(request) {
         orderBy: [{ date: "desc" }, { id: "desc" }],
       };
     }
+    if (!includeLedgers) {
+      select.ledgers = {
+        where: { type: "DEBIT" },
+        select: { date: true },
+        orderBy: [{ date: "desc" }, { id: "desc" }],
+        take: 1,
+      };
+    }
 
-    const customers = await prisma.customer.findMany({
+    let customers = await prisma.customer.findMany({
       where: {
         AND: [
           q
@@ -91,6 +104,18 @@ export async function GET(request) {
       },
       select,
       orderBy: [{ name: "asc" }],
+    });
+
+    customers = customers.map((customer) => {
+      const latestSettlement = customer.outsideSettlements?.[0];
+      const latestDebit = customer.ledgers?.[0];
+      const hasLaterPayment = latestSettlement && latestDebit && new Date(latestDebit.date) > new Date(latestSettlement.settledAt);
+      const restored = latestSettlement && !hasLaterPayment && !customer.settledOutsideLedgerAt
+        ? { settledOutsideLedgerAt: latestSettlement.settledAt, settledOutsideLedgerBy: latestSettlement.actorName }
+        : {};
+      const { outsideSettlements, ...rest } = customer;
+      if (!includeLedgers) delete rest.ledgers;
+      return { ...rest, ...restored };
     });
 
     // Post-process to sort startsWith matches first for better UX

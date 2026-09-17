@@ -102,8 +102,7 @@ export async function POST(request, { params }) {
         where: { id: customerId },
         data: {
           current_balance: { increment: type === "CREDIT" ? amount : -(amount + discountAmount) },
-          settledOutsideLedgerAt: null,
-          settledOutsideLedgerBy: null,
+          ...(type === "DEBIT" ? { settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : {}),
         },
         select: { id: true, name: true, phone: true, routeTag: true, current_balance: true, createdAt: true },
       });

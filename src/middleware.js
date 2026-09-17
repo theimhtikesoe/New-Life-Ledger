@@ -34,6 +34,7 @@ const LEDGER_BLOCKED_API_PATHS = new Set([
 ]);
 const SHARED_RECONCILIATION_API_PATHS = new Set([
   "/api/debt-reconciliation",
+  "/api/prepayment-reconciliation",
   "/api/dashboard-reconciliation",
 ]);
 

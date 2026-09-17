@@ -2581,6 +2581,10 @@ export default function Dashboard({ view = "overview" }) {
                     <p className="font-bold">အကြွေးဟောင်း စာရင်းညှိရန်</p>
                     <p className="mt-1 text-xs leading-5">Customer တစ်ယောက်ချင်းစီ၏ အကြွေးဟောင်း၊ မြေပြင်လက်ကျန်၊ ခြားနားချက် စစ်ရန် →</p>
                   </Link>
+                  <Link href="/prepayment-reconciliation" className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-3 text-sm text-violet-900 hover:bg-violet-100">
+                    <p className="font-bold">ငွေကြိုချေ စစ်ဆေးရန်</p>
+                    <p className="mt-1 text-xs leading-5">ကြိုတင်ငွေချေပြီး နောက်ရက်အကြွေးတိုးလာသော မှတ်တမ်းများ စစ်ရန် →</p>
+                  </Link>
                 </div>
               ) : null}
             </section>

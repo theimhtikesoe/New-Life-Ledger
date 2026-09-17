@@ -1,6 +1,7 @@
 export const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "ဖြိုးကို", "Rhyzoe", "သက်မွန်နှင်း"];
 export const MANAGER_ACTORS = ["ဖေဖေ/မေမေ"];
 export const RECONCILIATION_PAGE_PATH = "/debt-reconciliation";
+export const PREPAYMENT_RECONCILIATION_PAGE_PATH = "/prepayment-reconciliation";
 export const PERMISSION_PAGES = [
   { path: "/", label: "Dashboard" },
   { path: "/ledger", label: "ငွေရှင်းတမ်း / Customer Ledger" },
@@ -9,6 +10,7 @@ export const PERMISSION_PAGES = [
   { path: "/tube-production-history", label: "Tube ထုတ်လုပ်မှုမှတ်တမ်း" },
   { path: "/balance-detail", label: "လက်ကျန်ငွေ အသေးစိတ်" },
   { path: RECONCILIATION_PAGE_PATH, label: "အကြွေးဟောင်း စာရင်းညှိခြင်း" },
+  { path: PREPAYMENT_RECONCILIATION_PAGE_PATH, label: "ငွေကြိုချေ စစ်ဆေးခြင်း" },
   { path: "/daily-bottle-sales", label: "နေ့စဉ်ဗူးရောင်းစာရင်း" },
   { path: "/daily-sales-summary", label: "ယနေ့ လက်လီ / လက်ကား စုစုပေါင်း" },
   { path: "/daily-report-download", label: "နေ့စွဲအလိုက် Daily PDF Download" },
@@ -30,22 +32,23 @@ export const PERMISSION_PAGES = [
 ];
 
 export function defaultAllowedPaths(actorName) {
-  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/factory-stock", RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", RECONCILIATION_PAGE_PATH];
-  if (actorName === "သက်မွန်နှင်း") return ["/cap-stock", RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "သက်မွန်နှင်း") return ["/cap-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   return PERMISSION_PAGES.map((page) => page.path);
 }
 
 export function normalizeAllowedPaths(value, actorName) {
   const allowed = Array.isArray(value) ? value.filter((path) => PERMISSION_PAGES.some((page) => page.path === path)) : defaultAllowedPaths(actorName);
   if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") {
-    return [...new Set([...defaultAllowedPaths(actorName), RECONCILIATION_PAGE_PATH])];
+    return [...new Set([...defaultAllowedPaths(actorName), RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH])];
   }
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "ဆောင်းဦး" && actorName !== "သက်မွန်နှင်း" && !allowed.includes("/expenses")) allowed.push("/expenses");
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "သက်မွန်နှင်း" && allowed.includes("/") && !allowed.includes("/daily-sales-summary")) allowed.push("/daily-sales-summary");
   // Shared accounting control: do not redirect an authenticated actor away
   // from this page just because their legacy permission row predates it.
   if (!allowed.includes(RECONCILIATION_PAGE_PATH)) allowed.push(RECONCILIATION_PAGE_PATH);
+  if (!allowed.includes(PREPAYMENT_RECONCILIATION_PAGE_PATH)) allowed.push(PREPAYMENT_RECONCILIATION_PAGE_PATH);
   return [...new Set(allowed)];
 }

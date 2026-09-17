@@ -114,8 +114,7 @@ export async function PATCH(request, { params }) {
         where: { id: ledger.customerId },
         data: {
           current_balance: { increment: balanceAdjustment },
-          settledOutsideLedgerAt: null,
-          settledOutsideLedgerBy: null,
+          ...(type === "DEBIT" ? { settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : {}),
         },
         select: { current_balance: true, name: true },
       });
