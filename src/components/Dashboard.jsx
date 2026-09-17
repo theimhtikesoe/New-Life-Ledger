@@ -2582,11 +2582,6 @@ export default function Dashboard({ view = "overview" }) {
               </button>
               {showDashboardAttention ? (
                 <div id="dashboard-attention-panel" className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Link href="/balance-detail" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-800 hover:bg-rose-100">
-                    <p className="font-bold">လက်ရှိအကြွေးကျန်သူ</p>
-                    <p className="mt-1 text-lg font-black">{loading && !hasKpiSnapshot ? "ရယူနေသည်..." : `${customersWithBalanceCount.toLocaleString()} ယောက်`}</p>
-                    <p className="mt-1 text-xs">အသေးစိတ်ကြည့်ရန် →</p>
-                  </Link>
                   <Link href="/debt-reconciliation" className="rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-3 text-sm text-cyan-900 hover:bg-cyan-100">
                     <p className="font-bold">အကြွေးဟောင်း စာရင်းညှိရန်</p>
                     <p className="mt-1 text-xs leading-5">Customer တစ်ယောက်ချင်းစီ၏ အကြွေးဟောင်း၊ မြေပြင်လက်ကျန်၊ ခြားနားချက် စစ်ရန် →</p>
