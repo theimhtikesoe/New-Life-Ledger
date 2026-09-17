@@ -241,13 +241,16 @@ async function api(path, options) {
 }
 
 const DASHBOARD_SNAPSHOT_KEY = "new-life-ledger:dashboard-snapshot:v2";
+const DASHBOARD_SNAPSHOT_MAX_AGE_MS = 5 * 60 * 1000;
 
 function readDashboardSnapshot() {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(DASHBOARD_SNAPSHOT_KEY) || window.sessionStorage.getItem(DASHBOARD_SNAPSHOT_KEY);
     const snapshot = raw ? JSON.parse(raw) : null;
-    return snapshot && typeof snapshot === "object" ? snapshot : null;
+    if (!snapshot || typeof snapshot !== "object") return null;
+    const savedAt = Number(snapshot.savedAt || 0);
+    return savedAt > 0 && Date.now() - savedAt <= DASHBOARD_SNAPSHOT_MAX_AGE_MS ? snapshot : null;
   } catch {
     return null;
   }
