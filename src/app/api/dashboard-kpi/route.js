@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
+import { databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
@@ -9,7 +9,6 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   try {
-    await ensureDatabase();
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
     const { start, end } = getMyanmarDayRange(dateParam);
