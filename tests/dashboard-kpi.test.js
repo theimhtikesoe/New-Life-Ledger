@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   ledgerFindMany: vi.fn(),
   cashSaleGroupBy: vi.fn(),
   cashSaleFindMany: vi.fn(),
+  dashboardKpiFindUnique: vi.fn(),
+  dashboardKpiUpsert: vi.fn(),
   queryRaw: vi.fn(),
 }));
 
@@ -22,6 +24,7 @@ vi.mock("@/lib/prisma", () => ({
     customer: { aggregate: mocks.customerAggregate },
     ledger: { aggregate: mocks.ledgerAggregate, findMany: mocks.ledgerFindMany },
     cashSale: { groupBy: mocks.cashSaleGroupBy, findMany: mocks.cashSaleFindMany },
+    dashboardKpiSnapshot: { findUnique: mocks.dashboardKpiFindUnique, upsert: mocks.dashboardKpiUpsert },
   },
 }));
 vi.mock("@/lib/myanmar-time", () => ({
@@ -90,7 +93,7 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain('id="dashboard-kpi-date"');
     expect(dashboardSource).toContain('type="date"');
     expect(dashboardSource).toContain("{!isLedgerView ? (");
-    expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`');
+    expect(dashboardSource).toContain('api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}${forceRefresh ? "&refresh=1" : ""}`');
     expect(dashboardSource).toContain('new-life-ledger:cap-stock-updated-at');
     expect(dashboardSource).toContain('new-life-ledger:cap-stock-updated');
     expect(dashboardSource).toContain("DASHBOARD_LOADING_WATCHDOG_MS = 12000");
@@ -113,6 +116,8 @@ describe("Dashboard KPI aggregate route", () => {
 
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
+    mocks.dashboardKpiFindUnique.mockResolvedValue(null);
+    mocks.dashboardKpiUpsert.mockResolvedValue({});
     mocks.customerAggregate.mockResolvedValue({ _count: { _all: 12 }, _sum: { current_balance: 3400000 } });
     mocks.ledgerAggregate.mockResolvedValue({ _count: { _all: 4 }, _sum: { amount: 800000 } });
     mocks.ledgerFindMany.mockImplementation(({ where } = {}) => Promise.resolve(
@@ -157,5 +162,20 @@ describe("Dashboard KPI aggregate route", () => {
     });
     expect(mocks.customerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: { deletedAt: null } }));
     expect(mocks.ledgerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ type: "DEBIT" }) }));
+  });
+
+  it("serves a fresh durable snapshot without recomputing stock and ledger aggregates", async () => {
+    const payload = { date: "2026-08-27", totalCustomers: 12, factoryTubePacks: 4 };
+    mocks.customerAggregate.mockClear();
+    mocks.ledgerAggregate.mockClear();
+    mocks.cashSaleGroupBy.mockClear();
+    mocks.dashboardKpiUpsert.mockClear();
+    mocks.dashboardKpiFindUnique.mockResolvedValue({ payload, generatedAt: new Date() });
+    const response = await GET(new Request("http://localhost/api/dashboard-kpi?date=2026-08-27"));
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({ data: payload, cache: "hit" });
+    expect(mocks.customerAggregate).not.toHaveBeenCalled();
+    expect(mocks.dashboardKpiUpsert).not.toHaveBeenCalled();
   });
 });

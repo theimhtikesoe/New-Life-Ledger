@@ -813,7 +813,7 @@ export default function Dashboard({ view = "overview" }) {
     }
   }, []);
 
-  const loadDashboard = useCallback(async (signal) => {
+  const loadDashboard = useCallback(async (signal, forceRefresh = false) => {
     const requestId = dashboardRequestIdRef.current + 1;
     dashboardRequestIdRef.current = requestId;
     if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
@@ -878,7 +878,7 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       setDataLoadError("");
       clearAutoRetryTimers();
-      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}&refresh=${Date.now()}`, { signal, cache: "no-store", timeoutMs: 60000, background: true })
+      const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}${forceRefresh ? "&refresh=1" : ""}`, { signal, cache: "no-store", timeoutMs: 60000, background: true })
         .then((kpi) => {
           setDashboardKpi(kpi);
           setDashboardKpiError("");
@@ -1480,7 +1480,7 @@ export default function Dashboard({ view = "overview" }) {
           void loadCustomer(selectedCustomerId).catch((refreshError) => {
             console.warn("Customer refresh after edit was not completed:", refreshError);
           });
-          void loadDashboard().catch((refreshError) => {
+          void loadDashboard(undefined, true).catch((refreshError) => {
             console.warn("Dashboard refresh after edit was not completed:", refreshError);
           });
         }
@@ -1515,7 +1515,7 @@ export default function Dashboard({ view = "overview" }) {
         clearDashboardDraftFields(["ledgerForm"]);
         showAlert("လက်ငင်း Transaction ကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။", "success");
         void loadCustomer(selectedCustomerId).catch((refreshError) => console.warn("Customer refresh after cash-sale edit was not completed:", refreshError));
-        void loadDashboard().catch((refreshError) => console.warn("Dashboard refresh after cash-sale edit was not completed:", refreshError));
+        void loadDashboard(undefined, true).catch((refreshError) => console.warn("Dashboard refresh after cash-sale edit was not completed:", refreshError));
         return;
       }
 
@@ -1576,7 +1576,7 @@ export default function Dashboard({ view = "overview" }) {
       // The write has already succeeded at this point. Refresh the dashboard
       // in the background so a slow KPI/stock query cannot make a successful
       // save look like a failed save and cause the user to submit it again.
-      void loadDashboard().catch((refreshError) => {
+      void loadDashboard(undefined, true).catch((refreshError) => {
         console.warn("Dashboard refresh after save was not completed:", refreshError);
       });
       
@@ -1682,7 +1682,7 @@ export default function Dashboard({ view = "overview" }) {
 
       // KPI bottle totals come from the server-side saleItems aggregates, so
       // reload them after deletion instead of waiting for the date to change.
-      await loadDashboard();
+      await loadDashboard(undefined, true);
 
       showAlert(
         isCashSale

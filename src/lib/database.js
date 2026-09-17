@@ -19,6 +19,7 @@ const REQUIRED_TABLES = [
   "Expense",
   "OutsideLedgerSettlement",
   "DailySalesSummary",
+  "DashboardKpiSnapshot",
   "DailySalesSummarySource",
   "DailySalesOpening",
   "Order",
@@ -193,6 +194,8 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE TABLE IF NOT EXISTS "OutsideLedgerSettlement" ("id" UUID PRIMARY KEY DEFAULT gen_random_uuid(), "customerId" UUID NOT NULL REFERENCES "Customer"("id") ON DELETE CASCADE, "ledgerId" UUID, "amount" INTEGER NOT NULL, "paymentMethod" TEXT NOT NULL, "note" TEXT, "settledAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "actorName" TEXT NOT NULL)`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "OutsideLedgerSettlement_customerId_settledAt_idx" ON "OutsideLedgerSettlement"("customerId", "settledAt")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "OutsideLedgerSettlement_ledgerId_idx" ON "OutsideLedgerSettlement"("ledgerId")`);
+      await setupQuery(`CREATE TABLE IF NOT EXISTS "DashboardKpiSnapshot" ("id" UUID PRIMARY KEY DEFAULT gen_random_uuid(), "date" TEXT NOT NULL UNIQUE, "payload" JSONB NOT NULL, "generatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+      await setupQuery(`CREATE INDEX IF NOT EXISTS "DashboardKpiSnapshot_date_idx" ON "DashboardKpiSnapshot"("date")`);
 
       // Production requests normally arrive after migrations have already
       // created the complete schema. Avoid repeating many CREATE/ALTER/index

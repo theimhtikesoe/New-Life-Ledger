@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { databaseErrorResponse } from "@/lib/database";
+import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
@@ -8,12 +8,21 @@ import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
 
 export const dynamic = "force-dynamic";
+const DASHBOARD_KPI_CACHE_TTL_MS = 30_000;
 
 export async function GET(request) {
   try {
+    await ensureDatabase();
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || getMyanmarDayRange().dateLabel;
+    const forceRefresh = searchParams.has("refresh");
     const { start, end } = getMyanmarDayRange(dateParam);
+    if (!forceRefresh) {
+      const cached = await prisma.dashboardKpiSnapshot.findUnique({ where: { date: dateParam } });
+      if (cached && Date.now() - new Date(cached.generatedAt).getTime() < DASHBOARD_KPI_CACHE_TTL_MS) {
+        return NextResponse.json({ data: cached.payload, cache: "hit", generatedAt: cached.generatedAt });
+      }
+    }
     // Older form submissions stored a selected Myanmar date as 00:00 UTC.
     // Include that exact legacy timestamp so existing activity records still
     // appear in today's KPI after the date-storage fix is deployed.
@@ -99,8 +108,7 @@ export async function GET(request) {
       return summary;
     }, { count: 0, amount: 0, retailCount: 0, retailAmount: 0, wholesaleCount: 0, wholesaleAmount: 0 });
 
-    return NextResponse.json({
-      data: {
+    const data = {
         date: dateParam,
         totalCustomers: Number(customerStats._count?._all || 0),
         totalBalance: Number(customerStats._sum?.current_balance || 0),
@@ -119,8 +127,13 @@ export async function GET(request) {
         negativeBottleStockItems,
         negativeCapStockItems,
         negativeTubeStockItems,
-      },
+      };
+    await prisma.dashboardKpiSnapshot.upsert({
+      where: { date: dateParam },
+      create: { date: dateParam, payload: data },
+      update: { payload: data, generatedAt: new Date() },
     });
+    return NextResponse.json({ data, cache: "miss" });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }
