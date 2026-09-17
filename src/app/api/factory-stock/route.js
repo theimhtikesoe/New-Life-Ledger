@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { aggregateStockMovements, ensureFactoryStockTable, loadCanonicalFactoryStockMovements, productionMovementRows, saleMovementRows, MOVEMENT_TYPES, STOCK_TYPES } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable, invalidateFactoryStockCache, loadCanonicalFactoryStockMovements, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows, MOVEMENT_TYPES, STOCK_TYPES } from "@/lib/factory-stock";
 import { buildCatalog } from "@/lib/production-catalog";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
@@ -106,6 +106,7 @@ export async function POST(request) {
       if (!movements.length) return NextResponse.json({ error: "နေရာ၊ အဖုံးအရောင်၊ တစ်အိတ်ဆံ့နှင့် အိတ်အရေအတွက် မှန်ကန်စွာထည့်ပါ။" }, { status: 400 });
       await prisma.factoryStockMovement.createMany({ data: movements });
       await writeAuditLog({ db: prisma, actorName, action: "CAP_STOCK_ADD", entityType: "FactoryStockMovement", entityId: batchId, entityLabel: "Cap Stock", summary: `အဖုံး Stock ${movements.length} မျိုး ထည့်သွင်း`, metadata: { movementCount: movements.length } });
+      invalidateFactoryStockCache();
       return NextResponse.json({ data: { batchId, movementCount: movements.length } });
     }
     if (body.action !== "rebuild") return NextResponse.json({ error: "Factory Stock API action မမှန်ပါ။" }, { status: 400 });
@@ -130,6 +131,7 @@ export async function POST(request) {
       });
       return { movementCount: movements.length };
     });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: { ...result, calculationMode: "DATABASE_DERIVED", isPhysicalVerified: false } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
@@ -152,6 +154,7 @@ export async function PATCH(request) {
     if (!existing) return NextResponse.json({ error: "Manual Cap Stock မှတ်တမ်း မတွေ့ပါ။ ရောင်းထွက်စာရင်းကို တိုက်ရိုက်မပြင်နိုင်ပါ။" }, { status: 404 });
     const updated = await prisma.factoryStockMovement.update({ where: { id }, data: { movementDate: String(body.movementDate || existing.movementDate), productKey: `CAP::${location}::${color}::${packSize}`, productName: `${location} · ${color}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, note: String(body.note || "").trim() || null, actorName } });
     await writeAuditLog({ db: prisma, actorName, action: "CAP_STOCK_UPDATE", entityType: "FactoryStockMovement", entityId: id, entityLabel: "Cap Stock", summary: "အဖုံး Stock မှတ်တမ်း ပြင်ဆင်", metadata: { productKey: updated.productKey, packs } });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: { id, updated: true } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
@@ -170,6 +173,7 @@ export async function DELETE(request) {
     if (!existing) return NextResponse.json({ error: "Manual Cap Stock မှတ်တမ်း မတွေ့ပါ။ ရောင်းထွက်စာရင်းကို တိုက်ရိုက်မဖျက်နိုင်ပါ။" }, { status: 404 });
     await prisma.factoryStockMovement.delete({ where: { id } });
     await writeAuditLog({ db: prisma, actorName, action: "CAP_STOCK_DELETE", entityType: "FactoryStockMovement", entityId: id, entityLabel: "Cap Stock", summary: "အဖုံး Stock မှတ်တမ်း ဖျက်", metadata: { productKey: existing.productKey, quantityCards: existing.quantityCards } });
+    invalidateFactoryStockCache();
     return NextResponse.json({ data: { id, deleted: true } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });

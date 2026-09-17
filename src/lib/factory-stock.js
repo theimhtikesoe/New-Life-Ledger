@@ -22,7 +22,10 @@ export const MOVEMENT_TYPES = {
 let factoryStockTablePromise;
 let canonicalFactoryStockCache = null;
 let canonicalFactoryStockCachePromise = null;
-const CANONICAL_FACTORY_STOCK_CACHE_TTL_MS = 15000;
+// KPI and stock pages can share this in-memory result for a short period. All
+// stock write handlers invalidate it, so this improves repeated reads without
+// allowing a successful stock write to remain stale.
+const CANONICAL_FACTORY_STOCK_CACHE_TTL_MS = 60000;
 
 export function invalidateFactoryStockCache() {
   canonicalFactoryStockCache = null;
@@ -111,8 +114,13 @@ export async function loadCanonicalFactoryStockMovements({ actorName = "system" 
   if (canonicalFactoryStockCachePromise) return canonicalFactoryStockCachePromise;
 
   canonicalFactoryStockCachePromise = (async () => {
+  const derivedSourceTypes = ["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION", "BOTTLE_PRODUCTION_WASTE", "LEDGER", "CASH_SALE"];
   const existing = typeof prisma.factoryStockMovement?.findMany === "function"
-    ? await prisma.factoryStockMovement.findMany({ orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }] })
+    ? await prisma.factoryStockMovement.findMany({
+      where: { sourceType: { notIn: derivedSourceTypes } },
+      select: { id: true, movementDate: true, movementType: true, stockType: true, productKey: true, productName: true, capacity: true, quantityCards: true, quantityBottles: true, sourceType: true, sourceId: true, sourceVersion: true, reason: true, note: true, actorName: true, createdAt: true },
+      orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+    })
     : [];
   const canLoadDerived = typeof prisma.productionReport?.findMany === "function"
     && typeof prisma.ledger?.findMany === "function"
@@ -129,8 +137,7 @@ export async function loadCanonicalFactoryStockMovements({ actorName = "system" 
   // Derived records are the source of truth for production and sales. Do not
   // retain stale persisted sale rows after a transaction is edited/deleted or
   // after the cap-unit calculation changes. Manual stock adjustments remain.
-  const derivedSourceTypes = new Set(["PRODUCTION", "TUBE_PRODUCTION", "BOTTLE_PRODUCTION", "BOTTLE_PRODUCTION_WASTE", "LEDGER", "CASH_SALE"]);
-  const manualExisting = existing.filter((movement) => !derivedSourceTypes.has(movement.sourceType));
+  const manualExisting = existing;
   const value = {
     movements: [...manualExisting, ...derived],
     dataSource: existing.length ? "MOVEMENT_LEDGER_PLUS_LIVE_DERIVED_STOCK" : "LIVE_DERIVED_FALLBACK",
