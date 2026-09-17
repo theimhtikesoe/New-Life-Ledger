@@ -2060,13 +2060,20 @@ export default function Dashboard({ view = "overview" }) {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const creditById = new Map(credits.map((credit) => [String(credit.id), credit]));
     let unlinkedPaymentPool = 0;
+    const futurePrepayments = [];
     ledgers
       .filter((ledger) => ledger.type === "DEBIT")
       .forEach((payment) => {
         const amount = Math.max(0, Number(payment.amount || 0));
         const targetIds = settlementTargetIds(payment.note);
         if (!targetIds.length) {
-          unlinkedPaymentPool += amount;
+          const paymentDay = formatMyanmarDateInputValue(payment.date);
+          const hasNearFutureMatchingCredit = credits.some((credit) => (
+            formatMyanmarDateInputValue(credit.date) >= paymentDay
+            && Math.abs(Number(credit.originalAmount || 0) - amount) < 1
+          ));
+          if (String(payment.note || "").includes("__PREPAYMENT__") || hasNearFutureMatchingCredit) futurePrepayments.push({ payment, remaining: amount });
+          else unlinkedPaymentPool += amount;
           return;
         }
         // A linked payment is counted once against its selected target. If a
@@ -2087,6 +2094,20 @@ export default function Dashboard({ view = "overview" }) {
       credit.paidAmount += applied;
       credit.remainingAmount = Math.max(0, credit.remainingAmount - applied);
       unlinkedPaymentPool -= applied;
+    });
+    // A payment explicitly recorded as a prepayment belongs to the next
+    // debt increase on/after its payment date. Never consume it against an
+    // older credit; otherwise it appears to disappear before the future debt
+    // is entered and the user may accidentally pay twice.
+    futurePrepayments.forEach(({ payment, remaining: initialRemaining }) => {
+      let remaining = initialRemaining;
+      credits.forEach((credit) => {
+        if (remaining <= 0 || formatMyanmarDateInputValue(credit.date) < formatMyanmarDateInputValue(payment.date)) return;
+        const applied = Math.min(credit.remainingAmount, remaining);
+        credit.paidAmount += applied;
+        credit.remainingAmount = Math.max(0, credit.remainingAmount - applied);
+        remaining -= applied;
+      });
     });
     return credits
       // This select is only a data link for a new payment. Do not show fully

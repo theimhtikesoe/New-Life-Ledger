@@ -14,13 +14,20 @@ function buildCustomerDetail(customer, saved) {
   const creditById = new Map(credits.map((credit) => [String(credit.id), credit]));
   const payments = customer.ledgers.filter((row) => row.type === "DEBIT");
   const unlinkedPayments = [];
+  const futurePrepayments = [];
   let unlinkedPaymentPool = 0;
 
   payments.forEach((payment) => {
     const targets = settlementTargetIds(payment.note).filter((id) => creditById.has(String(id)));
     if (!targets.length) {
       unlinkedPayments.push({ ...payment, legacyPayment: true });
-      unlinkedPaymentPool += rounded(payment.amount);
+      const paymentDay = new Date(payment.date).toISOString().slice(0, 10);
+      const hasNearFutureMatchingCredit = credits.some((credit) => (
+        new Date(credit.date).toISOString().slice(0, 10) >= paymentDay
+        && rounded(credit.amount) === rounded(payment.amount)
+      ));
+      if (String(payment.note || "").includes("__PREPAYMENT__") || hasNearFutureMatchingCredit) futurePrepayments.push({ payment, remaining: rounded(payment.amount) });
+      else unlinkedPaymentPool += rounded(payment.amount);
       return;
     }
     const target = creditById.get(String(targets[0]));
@@ -37,6 +44,16 @@ function buildCustomerDetail(customer, saved) {
     credit.legacyPaid += applied;
     credit.remaining = Math.max(0, credit.remaining - applied);
     unlinkedPaymentPool -= applied;
+  });
+  futurePrepayments.forEach(({ payment, remaining: initialRemaining }) => {
+    let remaining = initialRemaining;
+    credits.forEach((credit) => {
+      if (remaining <= 0 || new Date(credit.date).getTime() < new Date(payment.date).getTime()) return;
+      const applied = Math.min(credit.remaining, remaining);
+      credit.legacyPaid += applied;
+      credit.remaining = Math.max(0, credit.remaining - applied);
+      remaining -= applied;
+    });
   });
 
   const websiteBalance = rounded(customer.current_balance);

@@ -20,12 +20,15 @@ describe("debt reconciliation workflow", () => {
     expect(dashboard).toContain("allLedgers.push");
   });
 
-  it("uses old unlinked payments only as display-only FIFO evidence", () => {
+  it("keeps prepayments for the next matching debt instead of older debt", () => {
+    const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
     const route = readFileSync(resolve(process.cwd(), "src/app/api/debt-reconciliation/route.js"), "utf8");
-    expect(route).toContain("unlinkedPaymentPool");
-    expect(route).toContain("legacyPaid");
+    expect(dashboard).toContain("futurePrepayments");
+    expect(dashboard).toContain("hasNearFutureMatchingCredit");
+    expect(dashboard).toContain("__PREPAYMENT__");
+    expect(route).toContain("futurePrepayments");
+    expect(route).toContain("hasNearFutureMatchingCredit");
     expect(route).toContain("Do not rewrite old payment notes");
-    expect(route).toContain('links: []');
   });
 
   it("adds only non-equal linked credit/payment totals to settlement diagnostics", () => {
