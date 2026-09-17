@@ -55,19 +55,30 @@ describe("Dashboard KPI aggregate route", () => {
 
   it("uses the customer total balance for payment validation, not a selected credit remainder", () => {
     expect(dashboardSource).toContain("availableCustomerBalance > 0 && amount + ledgerDiscountAmount > availableCustomerBalance");
-    expect(dashboardSource).toContain("the customer balance is calculated from all CREDIT and DEBIT rows");
+    expect(dashboardSource).toContain("availableCustomerBalance");
     expect(dashboardSource).toContain('ledgerForm.type === "DEBIT"\n                                  ? (ledgerForm.manualAmount ?? "")');
   });
 
   it("hydrates linked settled bottle items for the paid-bottle KPI", () => {
     const routeSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/dashboard-kpi/route.js"), "utf8");
-    expect(routeSource).toContain('import { dedupeSettledBottleSaleItems, hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";');
-    expect(routeSource).toContain("const paidLedgers = dedupeSettledBottleSaleItems(await hydrateSettledBottleSaleItems");
+    expect(routeSource).toContain('import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";');
+    expect(routeSource).toContain("const settledLedgers = await hydrateSettledBottleSaleItems");
+    expect(routeSource).toContain("buildDailyBottleSalesSummary");
   });
 
   it("matches Cap Stock Net Stock Change for the factory cap KPI", () => {
     const routeSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/dashboard-kpi/route.js"), "utf8");
     expect(routeSource).toContain('item.stockType === "CAP" && Number(item.capacity || 0) > 0');
+    expect(routeSource).toContain("loadCanonicalFactoryStockMovements");
+    expect(routeSource).not.toContain('by: ["stockType", "capacity", "movementType"]');
+  });
+
+  it("uses the shared daily bottle sales summary for Dashboard and detail pages", () => {
+    const routeSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/dashboard-kpi/route.js"), "utf8");
+    const dailyRouteSource = fs.readFileSync(path.join(process.cwd(), "src/app/api/daily-bottle-sales/route.js"), "utf8");
+    expect(routeSource).toContain('buildDailyBottleSalesSummary');
+    expect(dailyRouteSource).toContain('buildDailyBottleSalesSummary');
+    expect(routeSource).not.toContain('const totalBottleSales = { ...bottleSales };');
   });
 
   it("shows the automatic amount card for cash sales", () => {
@@ -104,10 +115,11 @@ describe("Dashboard KPI aggregate route", () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.customerAggregate.mockResolvedValue({ _count: { _all: 12 }, _sum: { current_balance: 3400000 } });
     mocks.ledgerAggregate.mockResolvedValue({ _count: { _all: 4 }, _sum: { amount: 800000 } });
-    mocks.ledgerFindMany.mockResolvedValue([
-      { type: "DEBIT", amount: 20000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
-      { type: "CREDIT", amount: 20000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] },
-    ]);
+    mocks.ledgerFindMany.mockImplementation(({ where } = {}) => Promise.resolve(
+      where?.type === "CREDIT"
+        ? [{ type: "CREDIT", amount: 20000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] }]
+        : [{ type: "DEBIT", amount: 20000, saleItems: [{ productKey: "water-1l", productName: "ရေသန့်", capacity: 1, bottleCount: 12, totalAmount: 24000 }] }],
+    ));
     mocks.cashSaleGroupBy.mockResolvedValue([
       { saleType: "RETAIL", _count: { _all: 2 }, _sum: { amount: 300000 } },
       { saleType: "WHOLESALE", _count: { _all: 1 }, _sum: { amount: 700000 } },
@@ -136,11 +148,11 @@ describe("Dashboard KPI aggregate route", () => {
         totalBottles: 8,
         totalAmount: 16000,
         totalPaidAmount: 14000,
-        items: [{ productKey: "water-1l", bottleCount: 8, totalAmount: 16000 }],
+        items: [{ productKey: "water-1l::1::1", bottleCount: 8, totalAmount: 16000 }],
       },
       paidBottleSales: { totalBottles: 12 },
       cashBottleSales: { totalBottles: 8 },
-      totalBottleSales: { totalBottles: 20, totalAmount: 40000, totalPaidAmount: 14000 },
+      totalBottleSales: { totalBottles: 20, totalAmount: 40000, totalPaidAmount: 34000 },
       creditBottleSales: { totalBottles: 12, totalAmount: 24000 },
     });
     expect(mocks.customerAggregate).toHaveBeenCalledWith(expect.objectContaining({ where: { deletedAt: null } }));

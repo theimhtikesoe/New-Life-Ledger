@@ -8,9 +8,8 @@ const route = fs.readFileSync(path.join(root, "src/app/api/daily-bottle-sales/ro
 
 describe("Daily Bottle Sales combined totals", () => {
   it("uses physical sales only for the headline totals", () => {
-    expect(route).toContain("const overallSummary = summarizeRows(customers);");
-    expect(route).toContain("totalBottles: overallSummary.totalBottles");
-    expect(route).toContain("totalAmount: overallSummary.totalAmount");
+    expect(route).toContain("buildDailyBottleSalesSummary");
+    expect(fs.readFileSync(path.join(root, "src/lib/daily-bottle-sales.js"), "utf8")).toContain("const overallSummary = summarizeRows(customers);");
   });
 
   it("explains that the headline excludes duplicate payment bottles", () => {
@@ -30,8 +29,8 @@ describe("Daily Bottle Sales combined totals", () => {
   });
 
   it("keeps payment-only ledger rows visible even without saved bottle items", () => {
-    expect(route).toContain("function buildCustomerRows(rows, { includeEmpty = false } = {})");
-    expect(route).toContain("const paidCustomers = buildCustomerRows(ledgers, { includeEmpty: true });");
+    expect(fs.readFileSync(path.join(root, "src/lib/daily-bottle-sales.js"), "utf8")).toContain("function buildCustomerRows(rows, { includeEmpty = false } = {})");
+    expect(fs.readFileSync(path.join(root, "src/lib/daily-bottle-sales.js"), "utf8")).toContain("const paidCustomers = buildCustomerRows(dedupeSettledBottleSaleItems(ledgers), { includeEmpty: true });");
     expect(page).toContain("data?.paidBottleSales?.totalPaidAmount");
     expect(page).toContain("data?.paidBottleSales?.customers?.length > 0");
   });
@@ -42,9 +41,9 @@ describe("Daily Bottle Sales combined totals", () => {
   });
 
   it("keeps payment rows out of the headline physical-sale customers", () => {
-    expect(route).toContain("const customers = buildCustomerRows([...cashSales, ...creditLedgers]);");
-    expect(route).toContain("const paidCustomers = buildCustomerRows(ledgers, { includeEmpty: true });");
-    expect(route).toContain("const overallSummary = summarizeRows(customers);");
+    expect(route).toContain("buildDailyBottleSalesSummary({ ledgers, creditLedgers, cashSales })");
+    expect(fs.readFileSync(path.join(root, "src/lib/daily-bottle-sales.js"), "utf8")).toContain("const customers = buildCustomerRows([...cashSales, ...creditLedgers]);");
+    expect(fs.readFileSync(path.join(root, "src/lib/daily-bottle-sales.js"), "utf8")).toContain("const overallSummary = summarizeRows(customers);");
   });
 });
 

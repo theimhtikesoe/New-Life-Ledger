@@ -3,7 +3,9 @@ import { databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { aggregateStockMovements } from "@/lib/factory-stock";
+import { aggregateStockMovements, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
+import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
+import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
 
 export const dynamic = "force-dynamic";
 
@@ -24,27 +26,13 @@ export async function GET(request) {
     const customerStats = await prisma.customer.aggregate({ where: { deletedAt: null }, _count: { _all: true }, _sum: { current_balance: true } });
     const paymentStats = await prisma.ledger.aggregate({ where: { ...dayWhere, type: "DEBIT" }, _count: { _all: true }, _sum: { amount: true } });
     const cashSaleGroups = await prisma.cashSale.groupBy({ by: ["saleType"], where: dayWhere, _count: { _all: true }, _sum: { amount: true } });
-    // Keep the dashboard KPI endpoint compatible with older generated clients
-    // while the factory-stock table is being rolled out. A missing optional
-    // model should show zero stock, not take down every dashboard KPI.
-    // The main KPI request must stay light. Rebuilding derived stock from the
-    // complete production/ledger/cash-sale history here makes every dashboard
-    // open wait on a large historical scan. Detailed stock pages still perform
-    // the canonical rebuild when they are opened.
-    const stockMovements = typeof prisma.factoryStockMovement?.groupBy === "function"
-      ? (await prisma.factoryStockMovement.groupBy({
-        by: ["stockType", "capacity", "movementType"],
-        _sum: { quantityCards: true, quantityBottles: true },
-      })).map((row) => ({
-        productKey: `${row.stockType}:${row.capacity || 0}`,
-        productName: row.stockType,
-        stockType: row.stockType,
-        capacity: row.capacity,
-        movementType: row.movementType,
-        quantityCards: row._sum?.quantityCards || 0,
-        quantityBottles: row._sum?.quantityBottles || 0,
-      }))
-      : [];
+    // Dashboard stock cards must use the same canonical movement source as the
+    // linked stock pages. Never compact by stockType/capacity alone: productKey
+    // is part of the identity and stale persisted derived rows are excluded by
+    // loadCanonicalFactoryStockMovements.
+    const { movements: stockMovements } = typeof prisma.productionReport?.findMany === "function"
+      ? await loadCanonicalFactoryStockMovements()
+      : { movements: [] };
     const factoryStockSummary = aggregateStockMovements(stockMovements);
     const negativeBottleStockItems = factoryStockSummary.filter((item) => item.stockType === "BOTTLE" && Number(item.currentCards || 0) < 0).length;
     const negativeCapStockItems = factoryStockSummary.filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0 && Number(item.currentCards || 0) < 0).length;
@@ -57,24 +45,44 @@ export async function GET(request) {
     const factoryCapPieces = factoryStockSummary
       .filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0)
       .reduce((sum, item) => sum + Number(item.currentCards || 0), 0);
-    const factoryTubePieces = stockMovements
-      .filter((movement) => movement.stockType === "TUBE")
-      .reduce((sum, movement) => sum + Number(movement.quantityBottles || 0), 0);
+    const factoryTubePieces = factoryStockSummary
+      .filter((item) => item.stockType === "TUBE")
+      .reduce((sum, item) => sum + Number(item.currentBottles || 0), 0);
     const factoryTubePacks = factoryStockSummary
       .filter((item) => item.stockType === "TUBE")
       .reduce((sum, item) => {
         const capacity = Number(item.capacity || 0);
         return sum + (capacity ? (Number(item.currentBottles || 0) < 0 ? -Math.ceil(Math.abs(Number(item.currentBottles || 0)) / capacity) : Math.floor(Number(item.currentBottles || 0) / capacity)) : 0);
       }, 0);
-    // Item-level sale details are intentionally omitted here. Loading JSON
-    // saleItems for every daily ledger/cash-sale row made this KPI endpoint
-    // scan a large payload on every dashboard open. Detail pages still load
-    // the canonical item breakdown when the user opens them.
-    const paidBottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
-    const cashBottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
-    const bottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
-    const creditBottleSales = { totalBottles: 0, totalAmount: 0, totalPaidAmount: 0, items: [] };
-    const totalBottleSales = { ...bottleSales };
+    const dayLedgers = await prisma.ledger.findMany({
+      where: { ...dayWhere, type: "DEBIT" },
+      select: { id: true, amount: true, date: true, type: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      orderBy: { date: "desc" },
+    });
+    const settledLedgers = await hydrateSettledBottleSaleItems(prisma, dayLedgers);
+    const creditLedgers = await prisma.ledger.findMany({
+      where: { ...dayWhere, type: "CREDIT" },
+      select: { id: true, amount: true, date: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      orderBy: { date: "desc" },
+    });
+    const dayCashSales = await prisma.cashSale.findMany({
+      where: dayWhere,
+      select: { id: true, amount: true, date: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
+      orderBy: { date: "desc" },
+    });
+    const bottleSalesSummary = buildDailyBottleSalesSummary({ ledgers: settledLedgers, creditLedgers, cashSales: dayCashSales });
+    const paidBottleSales = bottleSalesSummary.paidBottleSales;
+    const cashBottleSales = bottleSalesSummary.cashBottleSales;
+    const creditBottleSales = bottleSalesSummary.creditBottleSales;
+    const totalBottleSales = {
+      totalBottles: bottleSalesSummary.totalBottles,
+      totalAmount: bottleSalesSummary.totalAmount,
+      totalPaidAmount: bottleSalesSummary.totalPaidAmount,
+      items: [...bottleSalesSummary.cashBottleSales.items, ...bottleSalesSummary.creditBottleSales.items],
+    };
+    // Keep the legacy bottleSales field as the cash-sale subset; the linked
+    // daily-bottle-sales card uses totalBottleSales for cash plus credit sales.
+    const bottleSales = cashBottleSales;
 
     const cashSales = cashSaleGroups.reduce((summary, group) => {
       const count = Number(group._count?._all || 0);

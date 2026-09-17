@@ -12,7 +12,7 @@ const dashboardRouteSource = fs.readFileSync(path.join(root, "src/app/api/dashbo
 describe("factory stock and dashboard loading contract", () => {
   it("does not render an initial production zero before the first request", () => {
     expect(dashboardSource).toContain("const hasKpiSnapshot = Boolean(dashboardKpi);");
-    expect(dashboardSource).toContain("const bottleSalesLoading = (dashboardKpiLoading && !dashboardKpi) || kpiDateLoading;");
+    expect(dashboardSource).toContain("const bottleSalesLoading = dashboardKpiLoading || kpiDateLoading;");
     expect(dashboardSource).toContain("productionLoading || kpiDateLoading");
     expect(dashboardSource).toContain("dashboardKpiLoading || !dashboardKpi");
   });
@@ -23,7 +23,7 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryRouteSource).toContain("loadCanonicalFactoryStockMovements");
     expect(dashboardRouteSource).toContain("loadCanonicalFactoryStockMovements");
     expect(dashboardRouteSource).toContain("factoryTubePieces");
-    expect(dashboardRouteSource).toContain('movement.stockType === "TUBE"');
+    expect(dashboardRouteSource).toContain('item.stockType === "TUBE"');
     expect(dashboardSource).toContain("စက်ရုံ Tube လက်ကျန်");
     expect(factoryRouteSource).toContain("buildCatalog().filter((entry) => entry.productType === \"bottle\" &&");
     expect(factoryRouteSource).toContain("Factory Stock is an Item-level inventory view");
