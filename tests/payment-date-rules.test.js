@@ -7,10 +7,11 @@ const editRoute = readFileSync(resolve(process.cwd(), "src/app/api/transactions/
 const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
 
 describe("Payment date rules", () => {
-  it("defaults new ledger entries to today and rejects future dates on the server", () => {
+  it("defaults new ledger entries to today and rejects future dates except explicit prepayments", () => {
     expect(createRoute).toContain("const todayMyanmar = getMyanmarDateInputValue();");
     expect(createRoute).toContain("const ledgerDate = body.date || todayMyanmar;");
-    expect(createRoute).toContain("if (ledgerDate > todayMyanmar)");
+    expect(createRoute).toContain("const isPrepayment = type === \"DEBIT\" && String(body.note || \"\").includes(\"__PREPAYMENT__\");");
+    expect(createRoute).toContain("if (ledgerDate > todayMyanmar && !isPrepayment)");
     expect(createRoute).toContain("date: getMyanmarDayRange(ledgerDate).start");
   });
 
@@ -22,7 +23,8 @@ describe("Payment date rules", () => {
   it("does not offer future credit ledgers as payment targets", () => {
     expect(dashboard).toContain("formatMyanmarDateInputValue(ledger.date) <= currentMyanmarDate");
     expect(dashboard).toContain("value={ledgerForm.date || currentMyanmarDate}");
-    expect(dashboard).toContain("max={currentMyanmarDate}");
+    expect(dashboard).toContain("max={ledgerForm.type === \"DEBIT\" && paymentTargetLedgerId === PREPAYMENT_OPTION ? undefined : currentMyanmarDate}");
+    expect(dashboard).toContain("ငွေကြိုချေကို နောက်လာမည့်ရက်အတွက် ကြိုတင်မှတ်တမ်းတင်နိုင်ပါသည်။");
   });
 
   it("allows a payment on the same date as its credit and rejects later payment dates", () => {

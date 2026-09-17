@@ -65,7 +65,8 @@ export async function POST(request, { params }) {
     const saleItems = type === "CREDIT" && Array.isArray(body.saleItems) && body.saleItems.length ? body.saleItems : null;
     const todayMyanmar = getMyanmarDateInputValue();
     const ledgerDate = body.date || todayMyanmar;
-    if (ledgerDate > todayMyanmar) {
+    const isPrepayment = type === "DEBIT" && String(body.note || "").includes("__PREPAYMENT__");
+    if (ledgerDate > todayMyanmar && !isPrepayment) {
       return NextResponse.json({ error: "အနာဂတ်ရက်စွဲဖြင့် စာရင်းသိမ်း၍မရပါ။ ဒီနေ့ သို့မဟုတ် အတိတ်ရက်ကိုသာ ရွေးပါ။" }, { status: 400 });
     }
     if (!amount || amount <= 0) {

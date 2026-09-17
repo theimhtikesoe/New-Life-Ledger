@@ -1394,7 +1394,8 @@ export default function Dashboard({ view = "overview" }) {
 
     setLedgerFormError("");
     const selectedLedgerDate = ledgerForm.date || currentMyanmarDate;
-    if (selectedLedgerDate > currentMyanmarDate) {
+    const recordingPrepayment = ledgerForm.type === "DEBIT" && paymentTargetLedgerId === PREPAYMENT_OPTION;
+    if (selectedLedgerDate > currentMyanmarDate && !recordingPrepayment) {
       setLedgerFormError("အနာဂတ်ရက်စွဲဖြင့် စာရင်းသိမ်း၍မရပါ။ ဒီနေ့ သို့မဟုတ် အတိတ်ရက်ကိုသာ ရွေးပါ။");
       return;
     }
@@ -1410,7 +1411,6 @@ export default function Dashboard({ view = "overview" }) {
       setMessage("");
       const type = ledgerForm.type;
       const isCashSale = type === "CASH_SALE";
-      const recordingPrepayment = type === "DEBIT" && paymentTargetLedgerId === PREPAYMENT_OPTION;
       const canRecordPrepayment = paymentTargetLedgers.length === 0 || Number(selectedCustomer?.current_balance || 0) <= 0;
       if (type === "DEBIT" && paymentTargetLedgers.length > 0 && !paymentTargetLedgerId && !canRecordPrepayment) {
         throw new Error("ငွေချေမည့် အကြွေးအဟောင်းကို အရင်ရွေးပါ။");
@@ -3027,10 +3027,11 @@ export default function Dashboard({ view = "overview" }) {
                               className="w-full h-12 rounded-lg border border-slate-300 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all appearance-none"
                               style={{ colorScheme: 'dark' }}
                               value={ledgerForm.date || currentMyanmarDate}
-                              max={currentMyanmarDate}
+                              max={ledgerForm.type === "DEBIT" && paymentTargetLedgerId === PREPAYMENT_OPTION ? undefined : currentMyanmarDate}
                               onChange={(e) => setLedgerForm({ ...ledgerForm, date: e.target.value })}
                               disabled={isSubmitting}
                             />
+                            {ledgerForm.type === "DEBIT" && paymentTargetLedgerId === PREPAYMENT_OPTION ? <p className="mt-1 text-[11px] font-semibold text-cyan-700">ငွေကြိုချေကို နောက်လာမည့်ရက်အတွက် ကြိုတင်မှတ်တမ်းတင်နိုင်ပါသည်။</p> : null}
                           </div>
                         </div>
                         <div className="space-y-1.5">
