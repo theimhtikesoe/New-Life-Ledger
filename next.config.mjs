@@ -45,6 +45,24 @@ const nextConfig = {
         ],
       },
       {
+        source: '/',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+      {
+        source: '/(cap-stock|factory-stock|tube-stock|daily-bottle-sales)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+      {
         source: '/api/:path*',
         headers: [
           {

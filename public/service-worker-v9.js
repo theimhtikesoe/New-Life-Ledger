@@ -1,4 +1,4 @@
-const CACHE_NAME = 'new-life-ledger-v9';
+const CACHE_NAME = 'new-life-ledger-v10';
 const PAGE_TIMEOUT_MS = 20_000;
 const urlsToCache = [
   '/',
