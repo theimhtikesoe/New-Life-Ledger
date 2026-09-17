@@ -1102,6 +1102,13 @@ export default function Dashboard({ view = "overview" }) {
         api(`/api/customers/${id}/transactions?limit=100&offset=0&includeCount=true`, { signal: controller.signal }),
       ]);
       if (requestId !== customerRequestIdRef.current) return;
+      // Show the selected customer and ledger form immediately. Full history
+      // pagination continues below for the payment selector and transaction list.
+      const firstPageCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] };
+      selectedCustomerRef.current = firstPageCustomer;
+      setSelectedCustomer(firstPageCustomer);
+      setTransactionPagination(transactionPage.pagination || { offset: firstPageCustomer.ledgers.length, limit: 100, total: firstPageCustomer.ledgers.length, hasMore: false });
+      setSelectedCustomerId(customer.id);
       // The payment selector must see historical credits too. The API is
       // paginated, so load every page for the selected customer rather than
       // silently limiting settlement calculation to the newest 50 rows.
