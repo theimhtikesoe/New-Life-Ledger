@@ -13,8 +13,22 @@ export default function PrepaymentReconciliationPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/prepayment-reconciliation", { cache: "no-store" })
-      .then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "စာရင်းရယူ၍မရပါ။"); return body.data || []; })
+    const load = async () => {
+      let lastError;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          const response = await fetch("/api/prepayment-reconciliation", { cache: "no-store" });
+          const body = await response.json();
+          if (!response.ok) throw new Error(body.error || "စာရင်းရယူ၍မရပါ။");
+          return body.data || [];
+        } catch (error) {
+          lastError = error;
+          if (attempt < 2) await new Promise((resolve) => window.setTimeout(resolve, 700 * (attempt + 1)));
+        }
+      }
+      throw lastError || new Error("စာရင်းရယူ၍မရပါ။");
+    };
+    load()
       .then((rows) => { setCustomers(rows); if (rows.length) setSelectedId(rows[0].id); })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
