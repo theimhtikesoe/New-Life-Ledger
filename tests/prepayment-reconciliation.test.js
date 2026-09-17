@@ -6,8 +6,9 @@ describe("prepayment reconciliation and outside settlement status", () => {
   it("adds a dedicated prepayment page and dashboard button", () => {
     const page = readFileSync(resolve(process.cwd(), "src/app/prepayment-reconciliation/page.js"), "utf8");
     const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
-    expect(page).toContain("ကြိုတင်ငွေချေ စစ်ရန်");
-    expect(page).toContain("အကြွေးတိုး");
+    expect(page).toContain("လက်ရှိ ကြိုတင်ငွေချေ စာရင်း");
+    expect(page).toContain("အကြွေးဟောင်းတွေနဲ့ မရောဘဲ");
+    expect(page).toContain("လက်ရှိကြိုတင်ငွေချေလက်ကျန်");
     expect(dashboard).toContain('href="/prepayment-reconciliation"');
   });
 
