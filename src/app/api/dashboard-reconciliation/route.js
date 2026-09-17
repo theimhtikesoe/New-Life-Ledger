@@ -97,7 +97,10 @@ export async function GET() {
           customerName: customerById.get(target.customerId) || "",
         });
       }
-      if (payments.length > 1) {
+      // Split payments are valid when their combined amount fully settles the
+      // target. Only surface this condition when the split is also incomplete
+      // or over-linked; exact totals are not reconciliation exceptions.
+      if (payments.length > 1 && (!target || linkedAmount !== rounded(target.amount))) {
         settlementExceptions.push({
           type: "MULTIPLE_PAYMENTS",
           targetId,

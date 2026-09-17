@@ -36,6 +36,7 @@ describe("debt reconciliation workflow", () => {
     const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
     expect(route).toContain('type: "LINKED_TOTAL_MISMATCH"');
     expect(route).toContain("linkedAmount !== rounded(target.amount)");
+    expect(route).toContain("payments.length > 1 && (!target || linkedAmount !== rounded(target.amount))");
     expect(dashboard).toContain("ချိတ်ထားသော အကြွေးတိုးနှင့် ငွေချေစုစုပေါင်း မကိုက်ပါ");
   });
 
