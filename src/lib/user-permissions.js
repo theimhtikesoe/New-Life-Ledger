@@ -2,6 +2,13 @@ export const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", 
 export const MANAGER_ACTORS = ["ဖေဖေ/မေမေ"];
 export const RECONCILIATION_PAGE_PATH = "/debt-reconciliation";
 export const PREPAYMENT_RECONCILIATION_PAGE_PATH = "/prepayment-reconciliation";
+export const USER_ROLES = ["Manager", "Accountant", "Production", "Sales", "Viewer"];
+export function defaultUserRole(actorName) {
+  if (actorName === "ဖေဖေ/မေမေ") return "Manager";
+  if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") return "Production";
+  if (actorName === "ဆောင်းဦး") return "Accountant";
+  return "Sales";
+}
 export const PERMISSION_PAGES = [
   { path: "/", label: "Dashboard" },
   { path: "/ledger", label: "ငွေရှင်းတမ်း / Customer Ledger" },

@@ -61,6 +61,10 @@ model UserPermission {
   id          Int      @id @default(autoincrement())
   actorName   String   @unique
   allowedPaths Json
+  role        String   @default("Viewer")
+  active      Boolean  @default(true)
+  note        String?
+  lastSeenAt  DateTime?
   updatedBy   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
