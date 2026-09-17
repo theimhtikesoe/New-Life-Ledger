@@ -389,10 +389,10 @@ export default function Dashboard({ view = "overview" }) {
   const [factoryStock] = useState(() => initialDashboardSnapshot?.factoryStock || null);
   const [overdueDebts, setOverdueDebts] = useState(() => initialDashboardSnapshot?.overdueDebts || null);
   const [overdueDebtsLoaded, setOverdueDebtsLoaded] = useState(() => Array.isArray(initialDashboardSnapshot?.overdueDebts));
-  const [dashboardKpi, setDashboardKpi] = useState(() => initialDashboardSnapshot?.dashboardKpi || null);
-  // A cached KPI may be stale. Start in loading state so the bottle card never
-  // presents a cached/empty 0 as the current result before the fresh request.
-  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
+  // Stock and sales KPI values can change outside this browser tab. Never
+  // hydrate them from localStorage; wait for the current server response.
+  const [dashboardKpi, setDashboardKpi] = useState(null);
+  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(true);
   const [dashboardKpiError, setDashboardKpiError] = useState("");
   const [productionRows, setProductionRows] = useState([]);
   const [tubeProductionRows, setTubeProductionRows] = useState([]);
@@ -423,13 +423,9 @@ export default function Dashboard({ view = "overview" }) {
   const [reconciliationDetailType, setReconciliationDetailType] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
-  const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
+  const [kpiDateLoading, setKpiDateLoading] = useState(true);
   const [kpiDateError, setKpiDateError] = useState("");
-  const hasCachedDashboardForSelectedDate = Boolean(
-    initialDashboardSnapshot?.dashboardKpi?.date === selectedKpiDate
-      && Array.isArray(initialDashboardSnapshot?.customers)
-      && Array.isArray(initialDashboardSnapshot?.allCustomersForKPI),
-  );
+  const hasCachedDashboardForSelectedDate = false;
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === "undefined" ? true : navigator.onLine
   ));
@@ -883,7 +879,6 @@ export default function Dashboard({ view = "overview" }) {
         .then((kpi) => {
           setDashboardKpi(kpi);
           setDashboardKpiError("");
-          saveDashboardSnapshot({ dashboardKpi: kpi });
           return kpi;
         })
         .catch((error) => {
