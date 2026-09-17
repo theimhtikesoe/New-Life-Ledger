@@ -3,7 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { aggregateStockMovements, ensureFactoryStockTable, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
+import { aggregateStockMovements, ensureFactoryStockTable } from "@/lib/factory-stock";
 import { dedupeSettledBottleSaleItems, hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 
 export const dynamic = "force-dynamic";
@@ -36,9 +36,16 @@ export async function GET(request) {
     // Keep the dashboard KPI endpoint compatible with older generated clients
     // while the factory-stock table is being rolled out. A missing optional
     // model should show zero stock, not take down every dashboard KPI.
-    const { movements: stockMovements } = typeof prisma.productionReport?.findMany === "function"
-      ? await loadCanonicalFactoryStockMovements()
-      : { movements: [] };
+    // The main KPI request must stay light. Rebuilding derived stock from the
+    // complete production/ledger/cash-sale history here makes every dashboard
+    // open wait on a large historical scan. Detailed stock pages still perform
+    // the canonical rebuild when they are opened.
+    const stockMovements = typeof prisma.factoryStockMovement?.findMany === "function"
+      ? await prisma.factoryStockMovement.findMany({
+        select: { id: true, movementDate: true, movementType: true, stockType: true, productKey: true, productName: true, capacity: true, quantityCards: true, quantityBottles: true, sourceType: true, sourceId: true, sourceVersion: true, reason: true, note: true, actorName: true, createdAt: true },
+        orderBy: [{ movementDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      })
+      : [];
     const factoryStockSummary = aggregateStockMovements(stockMovements);
     const negativeBottleStockItems = factoryStockSummary.filter((item) => item.stockType === "BOTTLE" && Number(item.currentCards || 0) < 0).length;
     const negativeCapStockItems = factoryStockSummary.filter((item) => item.stockType === "CAP" && Number(item.capacity || 0) > 0 && Number(item.currentCards || 0) < 0).length;
