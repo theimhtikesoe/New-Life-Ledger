@@ -429,7 +429,7 @@ export default function Dashboard({ view = "overview" }) {
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
   const [kpiDateLoading, setKpiDateLoading] = useState(true);
   const [kpiDateError, setKpiDateError] = useState("");
-  const hasCachedDashboardForSelectedDate = false;
+  const hasCachedDashboardForSelectedDate = Array.isArray(initialDashboardSnapshot?.customers);
   const [isOnline, setIsOnline] = useState(() => (
     typeof navigator === "undefined" ? true : navigator.onLine
   ));

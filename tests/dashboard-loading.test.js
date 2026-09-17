@@ -20,6 +20,7 @@ describe("Dashboard loading recovery", () => {
 
   it("does not show the global data spinner over an already populated dashboard", () => {
     expect(source).toContain("loading && !loadingTimedOut && !dashboardKpi && customers.length === 0 && allCustomersForKPI.length === 0");
+    expect(source).toContain("const hasCachedDashboardForSelectedDate = Array.isArray(initialDashboardSnapshot?.customers);");
     expect(source).toContain("setLoading(false);");
     expect(source).toContain('setLoadingStage("");');
   });
