@@ -825,10 +825,21 @@ export default function Dashboard({ view = "overview" }) {
     // Even when a cached dashboard exists, the KPI request is still running.
     // Do not render an old/missing bottleSales field as a misleading 0.
     setKpiDateLoading(true);
-    setKpiDateError("");
-    setDashboardKpiLoading(true);
-    setDashboardKpiError("");
-    setLoadingTimedOut(false);
+      setKpiDateError("");
+      setDashboardKpiLoading(true);
+      setDashboardKpiError("");
+      // Customer and report snapshots may remain useful, but stock values must
+      // never remain visible while the canonical KPI request is refreshing.
+      // Otherwise Safari/localStorage can keep showing an old bottle, Tube, or
+      // cap balance even though the linked stock pages already have new data.
+      setDashboardKpi((current) => current ? {
+        ...current,
+        factoryStockCards: undefined,
+        factoryTubePacks: undefined,
+        factoryTubePieces: undefined,
+        factoryCapPieces: undefined,
+      } : null);
+      setLoadingTimedOut(false);
     setDataLoadError("");
     setMessage("");
     dashboardLoadingWatchdogRef.current = window.setTimeout(() => {
@@ -2567,8 +2578,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-pink-800 sm:text-base">စက်ရုံအဖုံး လက်ကျန်</p>
-                <p className="mt-2 text-2xl font-black text-pink-950">{factoryCapPieces.toLocaleString()} အိတ်</p>
-                <p className="mt-1 text-sm font-bold text-pink-700">အဖုံးအရောင်အလိုက် လက်ကျန်ပမာဏ</p>
+                <p className="mt-2 text-2xl font-black text-pink-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi?.factoryCapPieces ? "ရယူနေသည်..." : `${factoryCapPieces.toLocaleString()} အိတ်`}</p>
+                <p className="mt-1 text-sm font-bold text-pink-700">{dashboardKpiLoading || kpiDateLoading ? "Canonical stock data ရယူနေသည်..." : "အဖုံးအရောင်အလိုက် လက်ကျန်ပမာဏ"}</p>
               </div>
               <p className="pt-2 text-sm font-bold text-pink-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>

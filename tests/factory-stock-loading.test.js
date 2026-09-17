@@ -47,7 +47,7 @@ describe("factory stock and dashboard loading contract", () => {
     expect(capPageSource).toContain('role="dialog"');
     expect(capPageSource).toContain('aria-labelledby="cap-stock-detail-title"');
     expect(capPageSource).toContain("max-h-[65dvh]");
-    expect(dashboardSource).toContain("factoryCapPieces.toLocaleString()} အိတ်");
+    expect(dashboardSource).toContain("dashboardKpiLoading || kpiDateLoading || !dashboardKpi?.factoryCapPieces");
     expect(capPageSource).toContain("Edit");
     expect(capPageSource).toContain("Delete");
     expect(factoryRouteSource).toContain("export async function PATCH(request)");
