@@ -830,6 +830,7 @@ export default function Dashboard({ view = "overview" }) {
     setDashboardKpiError("");
     setLoadingTimedOut(false);
     setDataLoadError("");
+    setMessage("");
     dashboardLoadingWatchdogRef.current = window.setTimeout(() => {
       if (dashboardRequestIdRef.current !== requestId) return;
       dashboardLoadingWatchdogRef.current = null;
@@ -2417,7 +2418,7 @@ export default function Dashboard({ view = "overview" }) {
             </div>
             ) : null}
           </div>
-          {message ? (
+          {message && (!dataLoadError || customers.length === 0) ? (
             <div className="mt-4 flex flex-col gap-3 rounded-md border border-rose-900 bg-rose-950/60 px-3 py-3 text-sm text-rose-200 sm:flex-row sm:items-center sm:justify-between">
               <span className="flex-1">
                 <span>{message}</span>
@@ -3694,9 +3695,10 @@ export default function Dashboard({ view = "overview" }) {
                     const isClearedSurplus = row.type === "LINKED_SURPLUS_CLEARED";
                     const amountDifference = row.targetAmount != null ? Number(row.targetAmount) - Number(row.amount || 0) : 0;
                     const detailText = isPrepayment ? `လက်ရှိကြိုချေလက်ကျန်: ${formatMoney(row.prepaymentAmount)}` : isClearedSurplus ? `အရင်ကပိုငွေချေ: ${formatMoney(row.surplusAmount)} · လက်ရှိလက်ကျန်: ${formatMoney(row.currentBalance)}` : row.type === "LINKED_TOTAL_MISMATCH" ? (amountDifference > 0 ? `ငွေချေမပြည့်သေးသော ခြားနားချက်: ${formatMoney(amountDifference)}` : `ပိုငွေချေ / ပါးစပ်လျှော့စျေး ဖြစ်နိုင်သော ခြားနားချက်: ${formatMoney(Math.abs(amountDifference))}`) : row.type === "MULTIPLE_PAYMENTS" ? "ငွေချေကို အကြိမ်ခွဲချိတ်ထားသည်" : "";
+                    const referenceText = row.targetAmount != null && row.amount != null ? `ချိတ်ထားသော အကြွေးတိုး: ${formatMoney(row.targetAmount)} · ချိတ်ထားသောငွေချေစုစုပေါင်း: ${formatMoney(row.amount)}` : "";
                     const label = isPrepayment ? "ကြိုတင်ငွေချေ — လက်ရှိလက်ကျန်ရှိသည်" : isClearedSurplus ? "အရင်ကပိုငွေချေခဲ့သော်လည်း လက်ရှိကြိုချေလက်ကျန် မရှိပါ" : row.type === "ORPHAN_LINK" ? "မရှိတော့သော ledger ကို ချိတ်ထားသည်" : row.type === "WRONG_CUSTOMER" ? "Customer မတူသော ledger ကို ချိတ်ထားသည်" : row.type === "NOT_CREDIT" ? "အကြွေးတိုးမဟုတ်သော ledger ကို ချိတ်ထားသည်" : row.type === "LINKED_TOTAL_MISMATCH" ? "ချိတ်ထားသော အကြွေးတိုးနှင့် ငွေချေစုစုပေါင်း မကိုက်ပါ" : row.type === "MULTIPLE_PAYMENTS" ? "အကြွေးတိုးတစ်ကြောင်းကို ငွေချေများစွာ ချိတ်ထားသည်" : "";
                     const customerId = row.customerId || null;
-                    return <div key={`${row.type}-${row.paymentId || row.targetId || index}`} className={`rounded-xl border p-3 ${isPrepayment ? "border-emerald-200 bg-emerald-50/70" : "border-amber-200 bg-amber-50/60"}`}><div className="flex flex-wrap items-start justify-between gap-3"><div>{label ? <p className={`text-xs font-semibold ${isPrepayment ? "text-emerald-800" : "text-amber-800"}`}>{label}</p> : null}<p className={`${label ? "mt-1" : ""} text-sm font-black text-slate-900`}>{row.customerName || "Customer မသိရသေးပါ"}</p><p className={`mt-1 text-lg font-black ${isPrepayment ? "text-emerald-700" : "text-amber-700"}`}>{detailText}</p></div>{customerId ? <Link href={`/ledger?customerId=${encodeURIComponent(customerId)}`} onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:bg-violet-100">Ledger →</Link> : null}</div></div>;
+                    return <div key={`${row.type}-${row.paymentId || row.targetId || index}`} className={`rounded-xl border p-3 ${isPrepayment ? "border-emerald-200 bg-emerald-50/70" : "border-amber-200 bg-amber-50/60"}`}><div className="flex flex-wrap items-start justify-between gap-3"><div>{label ? <p className={`text-xs font-semibold ${isPrepayment ? "text-emerald-800" : "text-amber-800"}`}>{label}</p> : null}<p className={`${label ? "mt-1" : ""} text-sm font-black text-slate-900`}>{row.customerName || "Customer မသိရသေးပါ"}</p><p className={`mt-1 text-lg font-black ${isPrepayment ? "text-emerald-700" : "text-amber-700"}`}>{detailText}</p>{referenceText ? <p className="mt-1 text-[11px] text-slate-400">{referenceText}</p> : null}</div>{customerId ? <Link href={`/ledger?customerId=${encodeURIComponent(customerId)}`} onClick={() => setReconciliationDetailType(null)} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 underline decoration-violet-300 underline-offset-2 hover:bg-violet-100">Ledger →</Link> : null}</div></div>;
                   })}
                 </div>
               ) : <p className="py-12 text-center text-sm font-semibold text-emerald-700">Settlement link မကိုက်ညီမှု မတွေ့ပါ။</p>}
