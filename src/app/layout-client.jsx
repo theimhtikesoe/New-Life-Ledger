@@ -257,7 +257,7 @@ const PAGE_HEADERS = {
   '/cap-stock': 'စက်ရုံအဖုံးလက်ကျန်',
   '/customer-management': 'Customer Management',
   '/debt-reconciliation': 'အကြွေးဟောင်း စာရင်းညှိခြင်း',
-  '/prepayment-reconciliation': 'ငွေကြိုချေ စစ်ဆေးခြင်း',
+  '/prepayment-reconciliation': 'လက်ရှိ ကြိုတင်ငွေချေ စာရင်း',
   '/user-management': 'User Management',
   '/daily-bottle-sales': 'တစ်နေ့တာ ဗူးရောင်းစာရင်း',
   '/daily-sales-summary': 'ယနေ့ လက်လီ / လက်ကား စုစုပေါင်း',
