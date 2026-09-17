@@ -8,6 +8,7 @@ const MUSIC_VOLUME = 0.04;
 const OVERDUE_LAST_PLAYED_DAY_KEY = "new-life-ledger:overdue-alert-audio-played-day-v2";
 const OVERDUE_LAST_AUTO_ATTEMPT_DAY_KEY = "new-life-ledger:overdue-alert-audio-auto-attempt-day-v2";
 const OVERDUE_AUDIO_STATUS_KEY = "new-life-ledger:overdue-alert-audio-status-v1";
+const BIRTHDAY_DATE = "2026-09-21";
 
 const TRACKS = [
   { name: "New Life", src: "/audio/new-life.mp3" },
@@ -142,6 +143,12 @@ export default function BackgroundMusicPlayer({ settingsOpen = false }) {
   }, []);
 
   const startMusic = useCallback(() => {
+    if (getMyanmarDayKey() === BIRTHDAY_DATE) {
+      shouldPlayRef.current = false;
+      audioRef.current?.pause();
+      setPlayState("waiting");
+      return;
+    }
     shouldPlayRef.current = true;
     if (mutedRef.current) {
       setPlayState("muted");
@@ -207,6 +214,20 @@ export default function BackgroundMusicPlayer({ settingsOpen = false }) {
     audio.load();
     void playCurrentTrack();
   }, [playCurrentTrack, trackIndex]);
+
+  useEffect(() => {
+    const handleBirthdayAudioActive = () => pauseMusic("birthday");
+    const handleBirthdayAudioEnded = () => {
+      if (getMyanmarDayKey() !== BIRTHDAY_DATE) startMusic();
+    };
+    window.addEventListener("new-life-ledger:birthday-audio-active", handleBirthdayAudioActive);
+    window.addEventListener("new-life-ledger:birthday-audio-ended", handleBirthdayAudioEnded);
+    if (getMyanmarDayKey() === BIRTHDAY_DATE) pauseMusic("birthday");
+    return () => {
+      window.removeEventListener("new-life-ledger:birthday-audio-active", handleBirthdayAudioActive);
+      window.removeEventListener("new-life-ledger:birthday-audio-ended", handleBirthdayAudioEnded);
+    };
+  }, [pauseMusic, startMusic]);
 
   useEffect(() => {
     const handleOverdueStarted = () => {
