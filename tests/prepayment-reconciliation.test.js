@@ -18,7 +18,7 @@ describe("prepayment reconciliation and outside settlement status", () => {
     const customerRoute = readFileSync(resolve(process.cwd(), "src/app/api/customers/route.js"), "utf8");
     expect(createRoute).toContain('...(type === "DEBIT" ? { settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : {})');
     expect(updateRoute).toContain('...(type === "DEBIT" ? { settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : {})');
-    expect(settlementRoute).toContain("settledOutsideLedgerAt: settlement.settledAt");
+    expect(settlementRoute).toContain("settledOutsideLedgerAt: latest.settledAt");
     expect(customerRoute).toContain("latestSettlement");
     expect(customerRoute).toContain("hasLaterPayment");
   });

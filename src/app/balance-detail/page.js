@@ -30,6 +30,33 @@ function formatDebtOption(ledger) {
   return `${dateLabel} · ${formatMoney(ledger.amount)} · ${saleType} အကြွေး`;
 }
 
+function outstandingDebtRows(transactions = []) {
+  const credits = transactions.filter((row) => row.type === "CREDIT").map((row) => ({ ...row, remaining: Number(row.amount || 0) })).sort((a, b) => new Date(a.date) - new Date(b.date));
+  const debits = transactions.filter((row) => row.type === "DEBIT").sort((a, b) => new Date(a.date) - new Date(b.date));
+  for (const debit of debits) {
+    const linked = String(debit.note || "").match(/^__SETTLES_CREDIT_LEDGER__:(\S+)$/);
+    if (linked) {
+      const target = credits.find((credit) => String(credit.id) === linked[1]);
+      if (target) target.remaining = 0;
+      continue;
+    }
+    let remaining = Number(debit.amount || 0);
+    const paymentDate = new Date(debit.date).getTime();
+    const future = credits.find((credit) => {
+      const gap = (new Date(credit.date).getTime() - paymentDate) / (24 * 60 * 60 * 1000);
+      return credit.remaining > 0 && gap > 0 && gap <= 3 && Number(credit.amount || 0) === remaining;
+    });
+    if (future) { future.remaining = 0; continue; }
+    for (const credit of credits) {
+      if (remaining <= 0) break;
+      const applied = Math.min(credit.remaining, remaining);
+      credit.remaining -= applied;
+      remaining -= applied;
+    }
+  }
+  return credits.filter((credit) => credit.remaining > 0).sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
 const BALANCE_SNAPSHOT_KEY = "new-life-ledger:balance-detail-snapshot:v1";
 
 function readBalanceSnapshot() {
@@ -208,6 +235,7 @@ export default function BalanceDetailPage() {
   const [settlementNote, setSettlementNote] = useState("");
   const [settlementSaving, setSettlementSaving] = useState(false);
   const [settlementLoading, setSettlementLoading] = useState(false);
+  const [settlementEditingId, setSettlementEditingId] = useState(null);
   const isSettlementReadOnly = typeof window !== "undefined" && window.localStorage.getItem("actorName") === "ဆောင်းဦး";
 
   useEffect(() => {
@@ -247,21 +275,23 @@ export default function BalanceDetailPage() {
   }, []);
 
   async function openSettlement(customer) {
-    setSettlementCustomer(customer); setSettlementAmount(String(Math.round(Number(customer.current_balance || 0)))); setSettlementLedgerId(""); setSettlementNote("");
+    setSettlementCustomer(customer); setSettlementAmount(String(Math.round(Number(customer.current_balance || 0)))); setSettlementLedgerId(""); setSettlementNote(""); setSettlementEditingId(null);
     setSettlementLoading(true);
     try { const [customerData, settlements] = await Promise.all([fetchJson(`/api/customers/${encodeURIComponent(customer.id)}?includeLedgers=true&includeCashSales=true`), fetchJson(`/api/outside-settlements?customerId=${encodeURIComponent(customer.id)}`)]); setSettlementTransactions([...(customerData?.ledgers || []), ...(customerData?.cashSales || [])].sort((a,b) => new Date(b.date)-new Date(a.date))); setSettlementCustomer((current) => ({ ...current, ...customerData, settlements: settlements || [] })); } catch (error) { setError(error.message || "Transaction ရယူ၍ မရပါ။"); } finally { setSettlementLoading(false); }
   }
-  async function undoLatestSettlement() {
-    const latest = settlementCustomer?.settlements?.[0];
-    if (!latest) return;
+  async function deleteSettlement(item) {
+    if (!item) return;
     setSettlementSaving(true); setError("");
-    try { await fetchJson(`/api/outside-settlements?id=${encodeURIComponent(latest.id)}`, { method: "DELETE", maxAttempts: 1 }); await updateOutsideLedgerReminder(settlementCustomer.id, false); setCustomers((current) => current.map((row) => row.id === settlementCustomer.id ? { ...row, settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : row)); setSettlementCustomer(null); }
+    try { await fetchJson(`/api/outside-settlements?id=${encodeURIComponent(item.id)}`, { method: "DELETE", maxAttempts: 1 }); const remaining = (settlementCustomer.settlements || []).filter((row) => row.id !== item.id); setSettlementCustomer((current) => ({ ...current, settlements: remaining })); if (!remaining.length) { await updateOutsideLedgerReminder(settlementCustomer.id, false); setCustomers((current) => current.map((row) => row.id === settlementCustomer.id ? { ...row, settledOutsideLedgerAt: null, settledOutsideLedgerBy: null } : row)); } }
     catch (error) { setError(error.message || "မှတ်ချက်ဖြုတ်၍ မရပါ။"); } finally { setSettlementSaving(false); }
+  }
+  function editSettlement(item) {
+    setSettlementEditingId(item.id); setSettlementAmount(String(item.amount || "")); setSettlementMethod(item.paymentMethod || "ငွေသား"); setSettlementLedgerId(item.ledgerId || ""); setSettlementNote(item.note || "");
   }
   async function saveSettlement() {
     if (!settlementCustomer) return; setSettlementSaving(true); setError("");
-    try { const savedSettlement = await fetchJson("/api/outside-settlements", { method: "POST", headers: { "Content-Type": "application/json", "x-actor-name": encodeActorHeader(localStorage.getItem("actorName") || "") }, body: JSON.stringify({ customerId: settlementCustomer.id, ledgerId: settlementLedgerId || null, amount: settlementAmount, paymentMethod: settlementMethod, note: settlementNote }) });
-      const updated = await updateOutsideLedgerReminder(settlementCustomer.id, true); setCustomers((current) => current.map((row) => row.id === settlementCustomer.id ? { ...row, ...updated } : row)); setSettlementCustomer((current) => ({ ...current, ...updated, settlements: [savedSettlement, ...(current?.settlements || [])] }));
+    try { const payload = { customerId: settlementCustomer.id, ledgerId: settlementLedgerId || null, amount: settlementAmount, paymentMethod: settlementMethod, note: settlementNote }; const savedSettlement = await fetchJson(settlementEditingId ? `/api/outside-settlements?id=${encodeURIComponent(settlementEditingId)}` : "/api/outside-settlements", { method: settlementEditingId ? "PATCH" : "POST", headers: { "Content-Type": "application/json", "x-actor-name": encodeActorHeader(localStorage.getItem("actorName") || "") }, body: JSON.stringify(payload) });
+      const updated = await updateOutsideLedgerReminder(settlementCustomer.id, true); setCustomers((current) => current.map((row) => row.id === settlementCustomer.id ? { ...row, ...updated } : row)); setSettlementCustomer((current) => ({ ...current, ...updated, settlements: settlementEditingId ? (current?.settlements || []).map((row) => row.id === settlementEditingId ? savedSettlement : row) : [savedSettlement, ...(current?.settlements || [])] })); setSettlementEditingId(null);
     } catch (error) { setError(error.message || "မြေပြင်ငွေချေမှတ်တမ်း သိမ်း၍ မရပါ။"); } finally { setSettlementSaving(false); }
   }
   async function toggleOutsideLedgerReminder(customer) {
@@ -411,8 +441,8 @@ export default function BalanceDetailPage() {
           ) : <div className="mt-4 rounded-xl border border-slate-200 px-4 py-10 text-center text-sm text-slate-500">ကိုက်ညီသော customer မတွေ့ပါ။</div>}
         </section>
       {settlementCustomer ? <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4"><div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl"><div className="flex items-center justify-between"><h2 className="text-xl font-black">{settlementCustomer.name} — မြေပြင်ငွေချေ</h2><button onClick={() => setSettlementCustomer(null)} className="text-2xl">×</button></div><p className="mt-1 text-sm text-slate-500">ငွေချေပြီးကြောင်း မှတ်မည့် အကြွေးနှင့် အမှန်တကယ် ချေငွေကို သီးခြားရွေး/ထည့်ပါ။</p>{settlementLoading ? <div className="mt-4 rounded-xl bg-slate-50 p-3 text-center text-sm font-bold text-slate-600">ယခင်မှတ်တမ်းများ ရယူနေသည်...</div> : null}{isSettlementReadOnly ? null : <>
-<label className="mt-4 block text-sm font-bold text-slate-800">ဘယ်အကြွေးကို ငွေချေမှာလဲ<ThemedSelect id="outside-settlement-ledger" ariaLabel="ငွေချေမည့် အကြွေးစာရင်း" disabled={settlementLoading} value={settlementLedgerId} onChange={e => setSettlementLedgerId(e.target.value)} className="mt-1 min-h-12 rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm"><option value="">အကြွေးလက်ကျန်အားလုံး / သီးခြားမရွေး</option>{settlementTransactions.filter(t => t.type === "CREDIT" || !t.type).map(t => <option key={t.id} value={t.id}>{formatDebtOption(t)}</option>)}</ThemedSelect></label><label className="mt-3 block text-sm font-bold text-slate-800">ဘာနဲ့ ချေသလဲ<ThemedSelect id="outside-settlement-method" ariaLabel="ငွေချေမည့် နည်းလမ်း" value={settlementMethod} onChange={e => setSettlementMethod(e.target.value)} className="mt-1 min-h-12 rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm"><option>ငွေသား</option><option>KPay</option><option>Wave</option><option>ဘဏ်လွှဲ</option><option>အခြား</option></ThemedSelect></label><label className="mt-3 block text-sm font-bold text-slate-800">တကယ် ချေတဲ့ငွေ (Ks)<input inputMode="numeric" value={settlementAmount} onChange={e => setSettlementAmount(e.target.value.replace(/[^0-9,]/g, ""))} className="mt-1 min-h-12 w-full rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-base font-semibold text-slate-800 shadow-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100" /></label><label className="mt-3 block text-sm font-bold text-slate-800">အသေးစိတ်မှတ်ချက်<textarea value={settlementNote} onChange={e => setSettlementNote(e.target.value)} className="mt-1 min-h-24 w-full rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100" rows="2" placeholder="လိုအပ်ပါက ငွေချေမှုအကြောင်း ရေးပါ" /></label></>}
-    {settlementCustomer.settlements?.length ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3"><p className="text-sm font-black text-emerald-900">ယခင် မြေပြင်ငွေချေမှတ်တမ်း</p>{settlementCustomer.settlements.map((item) => <div key={item.id} className="mt-2 rounded-lg bg-white p-2 text-xs text-slate-700"><p><b>{Number(item.amount || 0).toLocaleString()} Ks</b> · {item.paymentMethod} · {new Date(item.settledAt).toLocaleString("en-GB")}</p>{item.ledgerId ? <p className="mt-1 rounded-md bg-slate-50 px-2 py-1 font-medium text-slate-700">ဆက်စပ်အကြွေးစာရင်း — {formatLedgerReference(item.ledgerId, settlementTransactions)}</p> : <p className="mt-1 rounded-md bg-cyan-50 px-2 py-1 font-medium text-cyan-800">အကြွေးစာရင်းတစ်ခုချင်း မရွေးထားပါ — အကြွေးလက်ကျန်စုစုပေါင်းအတွက် မှတ်တမ်း</p>}{item.note ? <p className="mt-1 text-slate-600">မှတ်ချက် — {item.note}</p> : null}</div>)}{!isSettlementReadOnly ? <button type="button" onClick={undoLatestSettlement} disabled={settlementSaving} className="mt-3 text-xs font-bold text-rose-700 underline">အမှားနှိပ်မိလျှင် နောက်ဆုံးမှတ်ချက်ကို ဖြုတ်မည်</button> : null}</div> : null}<div className="mt-5 flex gap-3"><button onClick={() => setSettlementCustomer(null)} className="flex-1 rounded-xl bg-slate-100 py-3 font-bold">မလုပ်တော့</button>{!isSettlementReadOnly ? <button disabled={settlementSaving} onClick={saveSettlement} className="flex-1 rounded-xl bg-emerald-600 py-3 font-black text-white">{settlementSaving ? "သိမ်းနေသည်..." : "ငွေချေပြီး မှတ်မည်"}</button> : null}</div></div></div> : null}
+<label className="mt-4 block text-sm font-bold text-slate-800">ဘယ်အကြွေးကို ငွေချေမှာလဲ<ThemedSelect id="outside-settlement-ledger" ariaLabel="ငွေချေမည့် အကြွေးစာရင်း" disabled={settlementLoading} value={settlementLedgerId} onChange={e => setSettlementLedgerId(e.target.value)} className="mt-1 min-h-12 rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm"><option value="">အကြွေးလက်ကျန်အားလုံး / သီးခြားမရွေး</option>{outstandingDebtRows(settlementTransactions).map(t => <option key={t.id} value={t.id}>{formatDebtOption(t)}</option>)}</ThemedSelect></label><div className="mt-2 rounded-lg border border-rose-100 bg-rose-50 p-2 text-xs"><p className="font-black text-rose-800">လက်ကျန်ရှိနေသေးသော အကြွေးများသာ</p>{outstandingDebtRows(settlementTransactions).slice(0, 8).map(t => <p key={t.id} className="mt-1 text-rose-700">{formatDebtOption(t)}</p>)}{!outstandingDebtRows(settlementTransactions).length ? <p className="mt-1 text-emerald-700">ကျေပြီးသား အကြွေးများ မပြတော့ပါ။</p> : null}</div><label className="mt-3 block text-sm font-bold text-slate-800">ဘာနဲ့ ချေသလဲ<ThemedSelect id="outside-settlement-method" ariaLabel="ငွေချေမည့် နည်းလမ်း" value={settlementMethod} onChange={e => setSettlementMethod(e.target.value)} className="mt-1 min-h-12 rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm"><option>ငွေသား</option><option>KPay</option><option>Wave</option><option>ဘဏ်လွှဲ</option><option>အခြား</option></ThemedSelect></label><label className="mt-3 block text-sm font-bold text-slate-800">တကယ် ချေတဲ့ငွေ (Ks)<input inputMode="numeric" value={settlementAmount} onChange={e => setSettlementAmount(e.target.value.replace(/[^0-9,]/g, ""))} className="mt-1 min-h-12 w-full rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-base font-semibold text-slate-800 shadow-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100" /></label><label className="mt-3 block text-sm font-bold text-slate-800">အသေးစိတ်မှတ်ချက်<textarea value={settlementNote} onChange={e => setSettlementNote(e.target.value)} className="mt-1 min-h-24 w-full rounded-xl border border-cyan-200 bg-cyan-50/50 px-3 py-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100" rows="2" placeholder="လိုအပ်ပါက ငွေချေမှုအကြောင်း ရေးပါ" /></label></>}
+    {settlementCustomer.settlements?.length ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3"><p className="text-sm font-black text-emerald-900">ယခင် မြေပြင်ငွေချေမှတ်တမ်း</p>{settlementCustomer.settlements.map((item) => <div key={item.id} className="mt-2 rounded-lg bg-white p-2 text-xs text-slate-700"><p><b>{Number(item.amount || 0).toLocaleString()} Ks</b> · {item.paymentMethod} · {new Date(item.settledAt).toLocaleString("en-GB")}</p>{item.ledgerId ? <p className="mt-1 rounded-md bg-slate-50 px-2 py-1 font-medium text-slate-700">ဆက်စပ်အကြွေးစာရင်း — {formatLedgerReference(item.ledgerId, settlementTransactions)}</p> : <p className="mt-1 rounded-md bg-cyan-50 px-2 py-1 font-medium text-cyan-800">အကြွေးစာရင်းတစ်ခုချင်း မရွေးထားပါ — အကြွေးလက်ကျန်စုစုပေါင်းအတွက် မှတ်တမ်း</p>}{item.note ? <p className="mt-1 text-slate-600">မှတ်ချက် — {item.note}</p> : null}{!isSettlementReadOnly ? <div className="mt-2 flex gap-2"><button type="button" onClick={() => editSettlement(item)} className="rounded-md bg-cyan-50 px-2 py-1 text-xs font-bold text-cyan-800">ပြင်မည်</button><button type="button" onClick={() => deleteSettlement(item)} disabled={settlementSaving} className="rounded-md bg-rose-50 px-2 py-1 text-xs font-bold text-rose-700">ဖျက်မည်</button></div> : null}</div>)}{!isSettlementReadOnly ? <p className="mt-3 text-xs font-bold text-slate-500">မှတ်တမ်းတစ်ခုချင်းစီကို အောက်က ပြင်/ဖျက် ခလုတ်ဖြင့် စီမံပါ။</p> : null}</div> : null}<div className="mt-5 flex gap-3"><button onClick={() => setSettlementCustomer(null)} className="flex-1 rounded-xl bg-slate-100 py-3 font-bold">မလုပ်တော့</button>{!isSettlementReadOnly ? <button disabled={settlementSaving} onClick={saveSettlement} className="flex-1 rounded-xl bg-emerald-600 py-3 font-black text-white">{settlementSaving ? "သိမ်းနေသည်..." : settlementEditingId ? "ပြင်ဆင်ပြီး သိမ်းမည်" : "ငွေချေပြီး မှတ်မည်"}</button> : null}</div></div></div> : null}
       </div>
     </main>
   );
