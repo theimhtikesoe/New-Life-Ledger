@@ -16,6 +16,9 @@ describe("သက်မွန်နှင်း Dashboard and Cap Stock access", 
     expect(layoutSource).toContain("<Link href=\"/\"");
     expect(dashboardSource).toContain('href="/cap-stock"');
     expect(dashboardSource).toContain("စက်ရုံအဖုံး လက်ကျန်");
+    expect(dashboardSource).toContain('const isCapStockDashboard = dashboardActorName === "သက်မွန်နှင်း";');
+    expect(dashboardSource).toContain("{isCapStockDashboard ? (");
+    expect(dashboardSource).toContain("!isLedgerView && !isCapStockDashboard ? (");
   });
 
   it("gives menu links a palette distinct from the KPI cards", () => {

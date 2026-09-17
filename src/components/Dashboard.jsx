@@ -308,7 +308,8 @@ export default function Dashboard({ view = "overview" }) {
   ));
   const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး";
   const isProductionDashboard = dashboardActorName === "ဇွဲဇွဲ" || dashboardActorName === "ဖြိုးကို";
-  const showOperationalDashboardSections = !isLedgerView && (!isProductionDashboard || isSangEulDashboard);
+  const isCapStockDashboard = dashboardActorName === "သက်မွန်နှင်း";
+  const showOperationalDashboardSections = !isLedgerView && !isCapStockDashboard && (!isProductionDashboard || isSangEulDashboard);
   const [customers, setCustomers] = useState(() => initialDashboardSnapshot?.customers || []);
   const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => initialDashboardSnapshot?.allCustomersForKPI || []);
   const [deletedCustomers, setDeletedCustomers] = useState([]);
@@ -2306,7 +2307,7 @@ export default function Dashboard({ view = "overview" }) {
                 <span>ငွေရှင်းတမ်း</span>
               </Link>
             </div> : null}
-            {!isLedgerView && !isSangEulDashboard && !isProductionDashboard ? (
+            {!isLedgerView && !isSangEulDashboard && !isProductionDashboard && !isCapStockDashboard ? (
             <div className="neon-control-deck order-3 grid w-full min-w-0 max-w-none grid-cols-2 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50/90 to-white p-1.5 shadow-sm lg:order-none lg:max-w-[360px] lg:justify-self-end">
               <div className="col-span-2 flex min-w-0 [&>button]:w-full">
                 <OverdueNotificationBell
@@ -2464,7 +2465,7 @@ export default function Dashboard({ view = "overview" }) {
 
 
 
-        {!isLedgerView ? (
+        {!isLedgerView && !isCapStockDashboard ? (
           <>
             {/* Compact Summary Box */}
             <section className={`neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4 ${isProductionDashboard ? "hidden" : ""}`}>
@@ -2658,7 +2659,24 @@ export default function Dashboard({ view = "overview" }) {
           </>
         ) : null}
 
-        {isProductionDashboard ? (
+        {isCapStockDashboard ? (
+          <section className="neon-surface neon-sweep rounded-2xl border border-pink-300/80 bg-gradient-to-br from-white/95 via-pink-50/80 to-rose-50/70 p-4">
+            <div className="grid grid-cols-1 gap-3">
+              <Link
+                href="/cap-stock"
+                aria-label="စက်ရုံအဖုံးလက်ကျန် အသေးစိတ်ကြည့်ရန်"
+                className="neon-card neon-sweep flex min-h-[180px] w-full flex-col items-start justify-between rounded-xl border border-pink-300 bg-pink-50/95 p-5 text-left shadow-sm transition-all hover:border-pink-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-300"
+              >
+                <div>
+                  <p className="text-base font-black tracking-wide text-pink-800">စက်ရုံအဖုံး လက်ကျန်</p>
+                  <p className="mt-3 text-3xl font-black text-pink-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi?.factoryCapPieces ? "ရယူနေသည်..." : `${factoryCapPieces.toLocaleString()} အိတ်`}</p>
+                  <p className="mt-2 text-sm font-bold text-pink-700">{dashboardKpiLoading || kpiDateLoading ? "Canonical stock data ရယူနေပါသည်..." : "အဖုံးအရောင်အလိုက် လက်ကျန်ပမာဏ"}</p>
+                </div>
+                <p className="pt-3 text-sm font-black text-pink-700">အသေးစိတ်ကြည့်ရန် →</p>
+              </Link>
+            </div>
+          </section>
+        ) : isProductionDashboard ? (
           <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
             <div className="dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2">
               {dashboardActorName === "ဇွဲဇွဲ" ? <>
@@ -2672,7 +2690,7 @@ export default function Dashboard({ view = "overview" }) {
           </section>
         ) : null}
 
-        {!isLedgerView && !isSangEulDashboard && !isProductionDashboard ? (
+        {!isLedgerView && !isSangEulDashboard && !isProductionDashboard && !isCapStockDashboard ? (
           <LedgerPulse data={ledgerPulse} loading={ledgerPulseLoading} error={ledgerPulseError} />
         ) : null}
 
