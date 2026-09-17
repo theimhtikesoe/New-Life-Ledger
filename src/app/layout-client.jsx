@@ -302,7 +302,7 @@ function ActorSwitcher({ actorName }) {
 function SharedPageHeader({ pathname, actorName }) {
   const title = PAGE_HEADERS[pathname];
   const normalizedActorName = String(actorName || '').trim();
-  const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဖြိုးကို' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail');
+  const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဖြိုးကို' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail' || pathname === '/debt-reconciliation' || pathname === '/prepayment-reconciliation');
   const [currentTime, setCurrentTime] = useState(() => new Date());
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);

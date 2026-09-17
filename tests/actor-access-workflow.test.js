@@ -106,7 +106,7 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("router.replace('/production')");
     expect(layoutSource).toContain("pathname === '/production'");
     expect(layoutSource).toContain("const normalizedActorName = String(actorName || '').trim();");
-    expect(layoutSource).toContain("const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဖြိုးကို' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail');");
+    expect(layoutSource).toContain("const showDashboardLink = normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဖြိုးကို' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail' || pathname === '/debt-reconciliation' || pathname === '/prepayment-reconciliation');");
     expect(layoutSource).toContain('<Link href="/"');
     expect(productionSource).not.toContain('ထွက်ရှိမှု မှတ်တမ်းတင်ရန်</h1>');
     expect(middlewareSource).toContain('PRODUCTION_API_PATHS');
