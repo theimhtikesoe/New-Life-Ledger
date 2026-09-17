@@ -888,11 +888,11 @@ export default function Dashboard({ view = "overview" }) {
           }
         });
       void kpiRequest;
-      if (!isProductionDashboard) window.setTimeout(() => { void loadOverdueDebts(); }, 900);
+      if (!isProductionDashboard) void loadOverdueDebts();
 
       // Detailed daily values are intentionally background work.
       setLoadingStage("Data ရယူနေပါသည်");
-      if (!isProductionDashboard) window.setTimeout(() => { void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
+      if (!isProductionDashboard) void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
         .then((summary) => {
           const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
           const payments = (summary.transactions || [])
@@ -911,11 +911,11 @@ export default function Dashboard({ view = "overview" }) {
         })
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Today summary was not loaded:", error);
-        }); }, 1200);
+        });
 
       // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
       setLoadingStage("Data ရယူနေပါသည်");
-      if (!isProductionDashboard) window.setTimeout(() => { void api("/api/unverified-kpay?status=PENDING", { signal, background: true })
+      if (!isProductionDashboard) void api("/api/unverified-kpay?status=PENDING", { signal, background: true })
         .then((kpayRows) => {
           setPendingKpay(Array.isArray(kpayRows) ? kpayRows : []);
           setPendingKpayLoaded(true);
@@ -923,13 +923,13 @@ export default function Dashboard({ view = "overview" }) {
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Pending KPay data was not loaded:", error);
           if (error.name !== "AbortError") setPendingKpayLoaded(true);
-        }); }, 1500);
+        });
 
       // Stage 6: the visual pulse is non-critical and loads after the main data.
       if (isProductionDashboard) return;
       setLedgerPulseLoading(true);
       setLedgerPulseError("");
-      window.setTimeout(() => { void api("/api/dashboard-pulse?days=7", { signal, cache: "no-store", timeoutMs: 20000, background: true })
+      void api("/api/dashboard-pulse?days=7", { signal, cache: "no-store", timeoutMs: 20000, background: true })
         .then((payload) => {
           const pulse = payload || null;
           setLedgerPulse(pulse);
@@ -940,7 +940,7 @@ export default function Dashboard({ view = "overview" }) {
           console.warn("Ledger Pulse data was not loaded:", error);
           setLedgerPulseError(error.message || "Ledger Pulse data မရသေးပါ။");
         })
-        .finally(() => setLedgerPulseLoading(false)); }, 1800);
+        .finally(() => setLedgerPulseLoading(false));
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (error.code === "AUTH_REQUIRED" || error.status === 401) {
