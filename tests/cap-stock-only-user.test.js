@@ -7,16 +7,15 @@ const pinSource = fs.readFileSync(path.join(root, "src/components/PINLogin.jsx")
 const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"), "utf8");
 const dashboardSource = fs.readFileSync(path.join(root, "src/components/Dashboard.jsx"), "utf8");
 
-describe("သက်မွန်နှင်း Cap Stock-only access", () => {
-  it("registers the actor and restricts the shell to Cap Stock", () => {
+describe("သက်မွန်နှင်း Dashboard and Cap Stock access", () => {
+  it("registers the actor and routes the actor to Dashboard", () => {
     expect(pinSource).toContain("သက်မွန်နှင်း");
-    expect(pinSource).toContain("if (CAP_STOCK_ONLY_ACTORS.includes(actorName))");
     expect(pinSource).toContain("completeActorSelection(actorName);");
-    expect(layoutSource).toContain("const isCapStockOnlyActor = actorName === 'သက်မွန်နှင်း';");
-    expect(layoutSource).toContain("isCapStockOnlyActor && pathname !== '/cap-stock'");
-    expect(layoutSource).toContain("isCapStockOnlyActor && pathname === '/cap-stock'");
-    expect(layoutSource).toContain("(isCapStockOnlyActor && pathname === '/cap-stock')");
-    expect(layoutSource).toContain("normalizedActorName !== 'သက်မွန်နှင်း'");
+    expect(layoutSource).toContain("if (normalizedActor === 'သက်မွန်နှင်း') return '/';");
+    expect(layoutSource).toContain("normalizedActorName !== 'ဇွဲဇွဲ' && normalizedActorName !== 'ဖြိုးကို'");
+    expect(layoutSource).toContain("<Link href=\"/\"");
+    expect(dashboardSource).toContain('href="/cap-stock"');
+    expect(dashboardSource).toContain("စက်ရုံအဖုံး လက်ကျန်");
   });
 
   it("gives menu links a palette distinct from the KPI cards", () => {

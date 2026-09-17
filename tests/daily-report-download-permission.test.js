@@ -17,4 +17,9 @@ describe("Daily PDF download permissions", () => {
     expect(defaultAllowedPaths("ဖြိုးကို")).not.toContain("/daily-report-download");
     expect(defaultAllowedPaths("ဆောင်းဦး")).not.toContain("/daily-report-download");
   });
+
+  it("gives သက်မွန်နှင်း Dashboard and cap-stock access", () => {
+    expect(defaultAllowedPaths("သက်မွန်နှင်း")).toEqual(expect.arrayContaining(["/", "/cap-stock"]));
+    expect(normalizeAllowedPaths(["/cap-stock"], "သက်မွန်နှင်း")).toEqual(expect.arrayContaining(["/", "/cap-stock"]));
+  });
 });

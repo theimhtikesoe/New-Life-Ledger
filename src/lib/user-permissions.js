@@ -42,13 +42,16 @@ export function defaultAllowedPaths(actorName) {
   if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "သက်မွန်နှင်း") return ["/cap-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   return PERMISSION_PAGES.map((page) => page.path);
 }
 
 export function normalizeAllowedPaths(value, actorName) {
   const allowed = Array.isArray(value) ? value.filter((path) => PERMISSION_PAGES.some((page) => page.path === path)) : defaultAllowedPaths(actorName);
   if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") {
+    return [...new Set([...defaultAllowedPaths(actorName), RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH])];
+  }
+  if (actorName === "သက်မွန်နှင်း") {
     return [...new Set([...defaultAllowedPaths(actorName), RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH])];
   }
   if (actorName !== "ဇွဲဇွဲ" && actorName !== "ဖြိုးကို" && actorName !== "ဆောင်းဦး" && actorName !== "သက်မွန်နှင်း" && !allowed.includes("/expenses")) allowed.push("/expenses");
