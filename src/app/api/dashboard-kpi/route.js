@@ -33,11 +33,11 @@ export async function GET(request) {
     // the canonical rebuild when they are opened.
     const stockMovements = typeof prisma.factoryStockMovement?.groupBy === "function"
       ? (await prisma.factoryStockMovement.groupBy({
-        by: ["productKey", "productName", "stockType", "capacity", "movementType"],
+        by: ["stockType", "capacity", "movementType"],
         _sum: { quantityCards: true, quantityBottles: true },
       })).map((row) => ({
-        productKey: row.productKey,
-        productName: row.productName,
+        productKey: `${row.stockType}:${row.capacity || 0}`,
+        productName: row.stockType,
         stockType: row.stockType,
         capacity: row.capacity,
         movementType: row.movementType,
