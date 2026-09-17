@@ -1234,6 +1234,7 @@ export default function Dashboard({ view = "overview" }) {
   const displayedTotalBalance = dashboardKpi?.totalBalance ?? totalBalance;
   const displayedCustomerCount = dashboardKpi?.totalCustomers ?? customerCount;
   const todayTransactions = dashboardKpi?.todayPaidCount ?? todayPaymentsList.length;
+  const dashboardSummaryLoading = dashboardKpiLoading || kpiDateLoading || productionLoading;
   const todayCashAmount = dashboardKpi?.amount ?? todayCashSales.reduce((sum, sale) => sum + Number(sale.amount || 0), 0);
   const todayCashCount = dashboardKpi?.count ?? todayCashSales.length;
   const todayCashRetail = dashboardKpi?.retailCount ?? todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length;
@@ -2467,6 +2468,12 @@ export default function Dashboard({ view = "overview" }) {
           <>
             {/* Compact Summary Box */}
             <section className={`neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4 ${isProductionDashboard ? "hidden" : ""}`}>
+          {dashboardSummaryLoading ? (
+            <div className="mb-3 flex items-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-800" role="status" aria-live="polite">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-700" aria-hidden="true" />
+              <span>Dashboard data များ ရယူနေပါသည် — ရရှိလာသည့်အပိုင်းများကို တဖြည်းဖြည်း ပြသနေပါသည်။</span>
+            </div>
+          ) : null}
           <div className="dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {/* Customer and balance overview */}
             {isSangEulDashboard ? <Link
@@ -2501,7 +2508,7 @@ export default function Dashboard({ view = "overview" }) {
               className={`neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
             >
               <p className="text-sm font-medium text-emerald-600 tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေထားသော စာရင်း</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">{todayTransactions}</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-700">{dashboardSummaryLoading ? "ရယူနေသည်..." : todayTransactions}</p>
               <p className="mt-1 text-sm text-emerald-500">အသေးစိတ်ကြည့်ရန် နှိပ်ပါ</p>
             </button>
 
@@ -2512,11 +2519,11 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-orange-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုတ်လုပ်ပြီးသော ဗူး</p>
-                <p className="mt-2 text-2xl font-black text-orange-800">{productionSummary.totalPieces.toLocaleString()} ဗူး</p>
+                <p className="mt-2 text-2xl font-black text-orange-800">{dashboardSummaryLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
               </div>
               <div className="mt-2 space-y-0.5 text-sm font-bold text-orange-700 sm:text-base">
-                <p>ကောင်းသောဗူး {productionSummary.goodPieces.toLocaleString()} ဗူး</p>
-                <p>ပျက်စီးသောဗူး {productionSummary.wasteQuantity.toLocaleString()} ဗူး</p>
+                <p>{dashboardSummaryLoading ? "Data ရယူနေသည်..." : `ကောင်းသောဗူး ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p>
+                <p>{dashboardSummaryLoading ? "ခဏစောင့်ပါ..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p>
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2527,8 +2534,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုတ်လုပ်ပြီးသော Tube</p>
-                <p className="mt-2 text-3xl font-black text-cyan-900">{tubeProductionSummary.totalPacks.toLocaleString()} အိတ်</p>
-                <p className="mt-1 text-sm font-bold text-cyan-700">{tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား {tubeProductionSummary.rows.length} မျိုး</p>
+                <p className="mt-2 text-3xl font-black text-cyan-900">{dashboardSummaryLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p>
+                <p className="mt-1 text-sm font-bold text-cyan-700">{dashboardSummaryLoading ? "Data ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p>
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2556,8 +2563,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-blue-800 sm:text-base">စက်ရုံ Tube လက်ကျန်</p>
-                <p className="mt-2 text-3xl font-black text-blue-950">{factoryTubePacks.toLocaleString()} အိတ်</p>
-                <p className="mt-1 text-sm font-bold text-blue-700">{factoryTubePieces.toLocaleString()} pcs · ထုတ်လုပ်ဝင်ပြီးနောက် ကျန်သော Tube</p>
+                <p className="mt-2 text-3xl font-black text-blue-950">{dashboardSummaryLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePacks.toLocaleString()} အိတ်`}</p>
+                <p className="mt-1 text-sm font-bold text-blue-700">{dashboardSummaryLoading || !dashboardKpi ? "Canonical stock data ရယူနေသည်..." : `${factoryTubePieces.toLocaleString()} pcs · ထုတ်လုပ်ဝင်ပြီးနောက် ကျန်သော Tube`}</p>
               </div>
               <p className="pt-2 text-sm font-bold text-blue-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2568,8 +2575,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူး လက်ကျန်</p>
-                <p className="mt-2 text-2xl font-black text-amber-950">{factoryStockCards.toLocaleString()} ကဒ်</p>
-                <p className="mt-1 text-sm font-bold text-amber-800">စက်ရုံထုတ်လုပ်ဝင်ပြီး ရောင်းထွက်သွားပြီးနောက် ကျန်သောကဒ်</p>
+                <p className="mt-2 text-2xl font-black text-amber-950">{dashboardSummaryLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
+                <p className="mt-1 text-sm font-bold text-amber-800">{dashboardSummaryLoading || !dashboardKpi ? "Canonical stock data ရယူနေသည်..." : "စက်ရုံထုတ်လုပ်ဝင်ပြီး ရောင်းထွက်သွားပြီးနောက် ကျန်သောကဒ်"}</p>
               </div>
               <p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
