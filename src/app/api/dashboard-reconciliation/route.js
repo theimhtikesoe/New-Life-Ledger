@@ -86,12 +86,15 @@ export async function GET() {
       const target = targetById.get(targetId);
       const linkedAmount = payments.reduce((sum, payment) => sum + rounded(payment.amount), 0);
       if (target && target.type === "CREDIT" && linkedAmount !== rounded(target.amount)) {
+        const targetAmount = rounded(target.amount);
+        const isPrepayment = linkedAmount > targetAmount;
         settlementExceptions.push({
-          type: "LINKED_TOTAL_MISMATCH",
+          type: isPrepayment ? "LINKED_PREPAYMENT" : "LINKED_TOTAL_MISMATCH",
           targetId,
           paymentId: payments[0].id,
           amount: linkedAmount,
-          targetAmount: rounded(target.amount),
+          targetAmount,
+          prepaymentAmount: isPrepayment ? linkedAmount - targetAmount : 0,
           targetDate: target.date,
           customerId: target.customerId,
           customerName: customerById.get(target.customerId) || "",
@@ -100,7 +103,7 @@ export async function GET() {
       // Split payments are valid when their combined amount fully settles the
       // target. Only surface this condition when the split is also incomplete
       // or over-linked; exact totals are not reconciliation exceptions.
-      if (payments.length > 1 && (!target || linkedAmount !== rounded(target.amount))) {
+      if (payments.length > 1 && (!target || linkedAmount < rounded(target.amount))) {
         settlementExceptions.push({
           type: "MULTIPLE_PAYMENTS",
           targetId,
