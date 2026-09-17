@@ -848,10 +848,15 @@ export default function Dashboard({ view = "overview" }) {
       // connection and make the customer screen appear stuck.
       const [customerRows, allCustomersRows] = isProductionDashboard
         ? [[], []]
-        : await Promise.all([
-          api(`/api/customers?includeLedgers=false${search ? `&q=${encodeURIComponent(search)}` : ""}`, { signal }),
-          search ? api("/api/customers?includeLedgers=false", { signal }) : api(`/api/customers?includeLedgers=false`, { signal }),
-        ]);
+        : search
+          ? await Promise.all([
+            api(`/api/customers?includeLedgers=false&q=${encodeURIComponent(search)}`, { signal }),
+            api("/api/customers?includeLedgers=false", { signal }),
+          ])
+          : (() => {
+            const request = api("/api/customers?includeLedgers=false", { signal });
+            return request.then((rows) => [rows, rows]);
+          })();
       setCustomers(customerRows);
       setAllCustomersForKPI(allCustomersRows);
       saveDashboardSnapshot({ customers: customerRows, allCustomersForKPI: allCustomersRows });

@@ -41,7 +41,9 @@ function currentPrepayments(ledgers) {
 export async function GET() {
   try {
     await ensureDatabase();
-    const customers = await prisma.customer.findMany({ where: { deletedAt: null }, select: { id: true, name: true, phone: true, routeTag: true, current_balance: true }, orderBy: { name: "asc" } });
+    // Only customers with a negative current balance can appear on this page.
+    // Filtering before loading ledger history avoids scanning settled customers.
+    const customers = await prisma.customer.findMany({ where: { deletedAt: null, current_balance: { lt: 0 } }, select: { id: true, name: true, phone: true, routeTag: true, current_balance: true }, orderBy: { name: "asc" } });
     const ledgers = await prisma.ledger.findMany({
       where: { type: { in: ["CREDIT", "DEBIT"] }, customerId: { in: customers.map((customer) => customer.id) } },
       select: { id: true, customerId: true, date: true, type: true, amount: true, note: true, paymentType: true },
