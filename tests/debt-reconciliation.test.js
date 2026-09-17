@@ -8,8 +8,24 @@ describe("debt reconciliation workflow", () => {
     const page = readFileSync(resolve(process.cwd(), "src/app/debt-reconciliation/page.js"), "utf8");
     expect(dashboard).toContain('href="/debt-reconciliation"');
     expect(page).toContain("မြေပြင်နောက်ဆုံးလက်ကျန်");
-    expect(page).toContain("စာရင်းညှိ သိမ်းမည်");
-    expect(page).toContain("မူရင်း transaction မပျက်ပါ");
+    expect(page).toContain("နောက်ဆုံးစာရင်းညှိ သိမ်းမည်");
+    expect(page).toContain("အဟောင်းငွေချေများကို ပြန်မချိတ်ပါ");
+    expect(page).toContain("grid-cols-2");
+  });
+
+  it("loads all selected-customer ledger pages for payment target calculation", () => {
+    const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
+    expect(dashboard).toContain("limit=100&offset=0&includeCount=true");
+    expect(dashboard).toContain("while (nextPage.pagination?.hasMore)");
+    expect(dashboard).toContain("allLedgers.push");
+  });
+
+  it("uses old unlinked payments only as display-only FIFO evidence", () => {
+    const route = readFileSync(resolve(process.cwd(), "src/app/api/debt-reconciliation/route.js"), "utf8");
+    expect(route).toContain("unlinkedPaymentPool");
+    expect(route).toContain("legacyPaid");
+    expect(route).toContain("Do not rewrite old payment notes");
+    expect(route).toContain('links: []');
   });
 
   it("adds only non-equal linked credit/payment totals to settlement diagnostics", () => {

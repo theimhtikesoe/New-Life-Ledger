@@ -8,43 +8,45 @@ export const dynamic = "force-dynamic";
 const rounded = (value) => Math.round(Number(value || 0));
 
 function buildCustomerDetail(customer, saved) {
-  const credits = customer.ledgers.filter((row) => row.type === "CREDIT");
+  const credits = customer.ledgers.filter((row) => row.type === "CREDIT")
+    .map((credit) => ({ ...credit, paid: 0, legacyPaid: 0, remaining: rounded(credit.amount), linkedPayments: [] }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || String(a.id).localeCompare(String(b.id)));
+  const creditById = new Map(credits.map((credit) => [String(credit.id), credit]));
   const payments = customer.ledgers.filter((row) => row.type === "DEBIT");
-  const paymentsByCredit = new Map();
   const unlinkedPayments = [];
+  let unlinkedPaymentPool = 0;
+
   payments.forEach((payment) => {
-    const targets = settlementTargetIds(payment.note).filter((id) => credits.some((credit) => credit.id === id));
-    if (!targets.length) unlinkedPayments.push(payment);
-    targets.forEach((targetId) => {
-      paymentsByCredit.set(targetId, [...(paymentsByCredit.get(targetId) || []), payment]);
-    });
+    const targets = settlementTargetIds(payment.note).filter((id) => creditById.has(String(id)));
+    if (!targets.length) {
+      unlinkedPayments.push({ ...payment, legacyPayment: true });
+      unlinkedPaymentPool += rounded(payment.amount);
+      return;
+    }
+    const target = creditById.get(String(targets[0]));
+    target.paid += rounded(payment.amount);
+    target.remaining = Math.max(0, rounded(target.amount) - target.paid - target.legacyPaid);
+    target.linkedPayments.push(payment);
   });
-  const oldDebts = credits.map((credit) => {
-    const linkedPayments = paymentsByCredit.get(credit.id) || [];
-    const paid = linkedPayments.reduce((sum, payment) => sum + rounded(payment.amount), 0);
-    return {
-      ...credit,
-      paid,
-      remaining: Math.max(0, rounded(credit.amount) - paid),
-      linkedPaymentIds: linkedPayments.map((payment) => payment.id),
-      linkedPayments,
-    };
+
+  // Do not rewrite old payment notes or create retroactive links. This FIFO
+  // allocation is display-only evidence that older credits were already paid.
+  credits.forEach((credit) => {
+    if (unlinkedPaymentPool <= 0) return;
+    const applied = Math.min(credit.remaining, unlinkedPaymentPool);
+    credit.legacyPaid += applied;
+    credit.remaining = Math.max(0, credit.remaining - applied);
+    unlinkedPaymentPool -= applied;
   });
+
   const websiteBalance = rounded(customer.current_balance);
   const savedGroundTruth = saved?.metadata?.groundTruthBalance;
   const groundTruthBalance = Number.isFinite(Number(savedGroundTruth)) ? rounded(savedGroundTruth) : websiteBalance;
   return {
-    id: customer.id,
-    name: customer.name,
-    phone: customer.phone,
-    routeTag: customer.routeTag,
-    websiteBalance,
-    groundTruthBalance,
-    difference: groundTruthBalance - websiteBalance,
-    oldDebts,
-    unlinkedPayments,
-    savedAt: saved?.createdAt || null,
-    savedNote: saved?.metadata?.note || "",
+    id: customer.id, name: customer.name, phone: customer.phone, routeTag: customer.routeTag,
+    websiteBalance, groundTruthBalance, difference: groundTruthBalance - websiteBalance,
+    oldDebts: credits, unlinkedPayments, payments,
+    savedAt: saved?.createdAt || null, savedNote: saved?.metadata?.note || "",
   };
 }
 
@@ -57,25 +59,19 @@ export async function GET(request) {
       where: { deletedAt: null, ...(customerId ? { id: customerId } : { current_balance: { gt: 0 } }) },
       select: {
         id: true, name: true, phone: true, routeTag: true, current_balance: true,
-        ledgers: {
-          select: { id: true, date: true, type: true, amount: true, discountAmount: true, note: true, paymentType: true, saleType: true },
-          orderBy: [{ date: "asc" }, { id: "asc" }],
-        },
+        ledgers: { select: { id: true, date: true, type: true, amount: true, discountAmount: true, note: true, paymentType: true, saleType: true }, orderBy: [{ date: "asc" }, { id: "asc" }] },
       },
       orderBy: { name: "asc" },
     });
     const ids = customers.map((customer) => customer.id);
     const savedRows = ids.length ? await prisma.auditLog.findMany({
       where: { action: "DEBT_RECONCILIATION_SAVE", entityType: "Customer", entityId: { in: ids } },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: Math.max(100, ids.length * 3),
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: Math.max(100, ids.length * 3),
     }) : [];
     const latest = new Map();
     savedRows.forEach((row) => { if (!latest.has(row.entityId)) latest.set(row.entityId, row); });
     return NextResponse.json({ data: customers.map((customer) => buildCustomerDetail(customer, latest.get(customer.id))) });
-  } catch (error) {
-    return NextResponse.json(databaseErrorResponse(error), { status: 500 });
-  }
+  } catch (error) { return NextResponse.json(databaseErrorResponse(error), { status: 500 }); }
 }
 
 export async function POST(request) {
@@ -87,24 +83,11 @@ export async function POST(request) {
     if (!customerId || groundTruthBalance < 0) return NextResponse.json({ error: "Customer နှင့် မြေပြင်လက်ကျန်ကို မှန်ကန်စွာ ထည့်ပါ။" }, { status: 400 });
     const customer = await prisma.customer.findUnique({ where: { id: customerId }, select: { id: true, name: true, current_balance: true } });
     if (!customer) return NextResponse.json({ error: "Customer မတွေ့ပါ။" }, { status: 404 });
-    const selectedLinks = Array.isArray(body.links) ? body.links : [];
     const saved = await writeAuditLog({
-      actorName: getActorName(request),
-      action: "DEBT_RECONCILIATION_SAVE",
-      entityType: "Customer",
-      entityId: customer.id,
-      entityLabel: customer.name,
-      summary: `${customer.name} အကြွေးဟောင်း စာရင်းညှိသိမ်း (${groundTruthBalance.toLocaleString()} Ks)`,
-      metadata: {
-        groundTruthBalance,
-        websiteBalance: rounded(customer.current_balance),
-        difference: groundTruthBalance - rounded(customer.current_balance),
-        links: selectedLinks,
-        note: String(body.note || "").trim().slice(0, 500),
-      },
+      actorName: getActorName(request), action: "DEBT_RECONCILIATION_SAVE", entityType: "Customer", entityId: customer.id,
+      entityLabel: customer.name, summary: `${customer.name} အကြွေးဟောင်း စာရင်းညှိသိမ်း (${groundTruthBalance.toLocaleString()} Ks)`,
+      metadata: { groundTruthBalance, websiteBalance: rounded(customer.current_balance), difference: groundTruthBalance - rounded(customer.current_balance), links: [], note: String(body.note || "").trim().slice(0, 500) },
     });
     return NextResponse.json({ data: saved }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(databaseErrorResponse(error), { status: 400 });
-  }
+  } catch (error) { return NextResponse.json(databaseErrorResponse(error), { status: 400 }); }
 }

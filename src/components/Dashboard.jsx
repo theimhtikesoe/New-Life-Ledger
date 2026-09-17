@@ -1099,14 +1099,25 @@ export default function Dashboard({ view = "overview" }) {
       // network round trips when switching customers in the ledger.
       const [customer, transactionPage] = await Promise.all([
         api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`, { signal: controller.signal }),
-        api(`/api/customers/${id}/transactions?limit=50&offset=0&includeCount=false`, { signal: controller.signal }),
+        api(`/api/customers/${id}/transactions?limit=100&offset=0&includeCount=true`, { signal: controller.signal }),
       ]);
       if (requestId !== customerRequestIdRef.current) return;
-      const nextCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: transactionPage.items || [] };
+      // The payment selector must see historical credits too. The API is
+      // paginated, so load every page for the selected customer rather than
+      // silently limiting settlement calculation to the newest 50 rows.
+      const allLedgers = [...(transactionPage.items || [])];
+      let nextPage = transactionPage;
+      while (nextPage.pagination?.hasMore) {
+        nextPage = await api(`/api/customers/${id}/transactions?limit=100&offset=${allLedgers.length}&includeCount=true`, { signal: controller.signal });
+        allLedgers.push(...(nextPage.items || []));
+        if (!nextPage.items?.length) break;
+      }
+      if (requestId !== customerRequestIdRef.current) return;
+      const nextCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: allLedgers };
       customerCacheRef.current.set(id, nextCustomer);
       selectedCustomerRef.current = nextCustomer;
       setSelectedCustomer(nextCustomer);
-      setTransactionPagination(transactionPage.pagination || { offset: 0, limit: 50, total: 0, hasMore: false });
+      setTransactionPagination({ offset: allLedgers.length, limit: 100, total: allLedgers.length, hasMore: false });
       setSelectedCustomerId(customer.id);
     } catch (error) {
       if (error.name === "AbortError") return;
