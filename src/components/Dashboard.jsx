@@ -395,15 +395,18 @@ export default function Dashboard({ view = "overview" }) {
   const [overdueDebtsLoaded, setOverdueDebtsLoaded] = useState(() => Array.isArray(initialDashboardSnapshot?.overdueDebts));
   // Stock and sales KPI values can change outside this browser tab. Never
   // hydrate them from localStorage; wait for the current server response.
-  const [dashboardKpi, setDashboardKpi] = useState(null);
-  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(true);
+  const [dashboardKpi, setDashboardKpi] = useState(() => initialDashboardSnapshot?.dashboardKpi || null);
+  const dashboardKpiRef = useRef(initialDashboardSnapshot?.dashboardKpi || null);
+  const [dashboardKpiLoading, setDashboardKpiLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
   const [dashboardKpiError, setDashboardKpiError] = useState("");
-  const [productionRows, setProductionRows] = useState([]);
-  const [tubeProductionRows, setTubeProductionRows] = useState([]);
+  const hasInitialProductionSnapshot = initialDashboardSnapshot?.productionDate === today
+    && Array.isArray(initialDashboardSnapshot?.productionRows);
+  const [productionRows, setProductionRows] = useState(() => hasInitialProductionSnapshot ? initialDashboardSnapshot.productionRows : []);
+  const [tubeProductionRows, setTubeProductionRows] = useState(() => hasInitialProductionSnapshot ? (initialDashboardSnapshot.tubeProductionRows || []) : []);
   const [salesCatalog, setSalesCatalog] = useState([]);
   const [salesCatalogError, setSalesCatalogError] = useState("");
   const [productionDate, setProductionDate] = useState(() => formatMyanmarDateInputValue());
-  const [productionLoading, setProductionLoading] = useState(true);
+  const [productionLoading, setProductionLoading] = useState(() => !hasInitialProductionSnapshot);
   const [productionError, setProductionError] = useState("");
   const [showProductionModal, setShowProductionModal] = useState(false);
   const [ledgerPulse, setLedgerPulse] = useState(() => initialDashboardSnapshot?.ledgerPulse || null);
@@ -427,7 +430,7 @@ export default function Dashboard({ view = "overview" }) {
   const [reconciliationDetailType, setReconciliationDetailType] = useState(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [selectedKpiDate, setSelectedKpiDate] = useState(() => formatMyanmarDateInputValue());
-  const [kpiDateLoading, setKpiDateLoading] = useState(true);
+  const [kpiDateLoading, setKpiDateLoading] = useState(() => !initialDashboardSnapshot?.dashboardKpi);
   const [kpiDateError, setKpiDateError] = useState("");
   const hasCachedDashboardForSelectedDate = Array.isArray(initialDashboardSnapshot?.customers);
   const [isOnline, setIsOnline] = useState(() => (
@@ -475,15 +478,20 @@ export default function Dashboard({ view = "overview" }) {
   useEffect(() => {
     if (!productionDate) return undefined;
     const controller = new AbortController();
-    setProductionLoading(true);
+    const hasCachedProduction = productionDate === initialDashboardSnapshot?.productionDate
+      && Array.isArray(initialDashboardSnapshot?.productionRows);
+    setProductionLoading(!hasCachedProduction);
     setProductionError("");
     Promise.all([
       api(`/api/production-reports?date=${encodeURIComponent(productionDate)}&category=bottle`, { signal: controller.signal, cache: "no-store" }),
       api(`/api/production-reports?date=${encodeURIComponent(productionDate)}&category=tube`, { signal: controller.signal, cache: "no-store" }),
     ])
       .then(([bottleRows, tubeRows]) => {
-        setProductionRows(Array.isArray(bottleRows) ? bottleRows.filter((row) => row.category !== "tube") : []);
-        setTubeProductionRows(Array.isArray(tubeRows) ? tubeRows.filter((row) => row.category === "tube") : []);
+        const nextProductionRows = Array.isArray(bottleRows) ? bottleRows.filter((row) => row.category !== "tube") : [];
+        const nextTubeProductionRows = Array.isArray(tubeRows) ? tubeRows.filter((row) => row.category === "tube") : [];
+        setProductionRows(nextProductionRows);
+        setTubeProductionRows(nextTubeProductionRows);
+        saveDashboardSnapshot({ productionDate, productionRows: nextProductionRows, tubeProductionRows: nextTubeProductionRows });
       })
       .catch((error) => {
         if (error.name !== "AbortError") {
@@ -821,24 +829,14 @@ export default function Dashboard({ view = "overview" }) {
     lastDashboardAttemptAtRef.current = Date.now();
     // Stale-while-revalidate: a previous successful snapshot is already usable
     // UI data. Keep it visible while the fresh server response runs silently.
+    const hasCachedKpi = Boolean(dashboardKpiRef.current);
     setLoading(!hasCachedDashboardForSelectedDate);
-    // Even when a cached dashboard exists, the KPI request is still running.
-    // Do not render an old/missing bottleSales field as a misleading 0.
-    setKpiDateLoading(true);
+    // Keep the last successful KPI snapshot visible during revalidation. This
+    // prevents every route change/refresh from flashing “ရယူနေသည်...” or 0.
+    setKpiDateLoading(!hasCachedKpi);
       setKpiDateError("");
-      setDashboardKpiLoading(true);
+      setDashboardKpiLoading(!hasCachedKpi);
       setDashboardKpiError("");
-      // Customer and report snapshots may remain useful, but stock values must
-      // never remain visible while the canonical KPI request is refreshing.
-      // Otherwise Safari/localStorage can keep showing an old bottle, Tube, or
-      // cap balance even though the linked stock pages already have new data.
-      setDashboardKpi((current) => current ? {
-        ...current,
-        factoryStockCards: undefined,
-        factoryTubePacks: undefined,
-        factoryTubePieces: undefined,
-        factoryCapPieces: undefined,
-      } : null);
       setLoadingTimedOut(false);
     setDataLoadError("");
     setMessage("");
@@ -881,7 +879,9 @@ export default function Dashboard({ view = "overview" }) {
       clearAutoRetryTimers();
       const kpiRequest = api(`/api/dashboard-kpi?date=${encodeURIComponent(selectedKpiDate)}${forceRefresh ? "&refresh=1" : ""}`, { signal, cache: "no-store", timeoutMs: 60000, background: true })
         .then((kpi) => {
+          dashboardKpiRef.current = kpi;
           setDashboardKpi(kpi);
+          saveDashboardSnapshot({ dashboardKpi: kpi });
           setDashboardKpiError("");
           return kpi;
         })
@@ -889,7 +889,7 @@ export default function Dashboard({ view = "overview" }) {
           if (error.name !== "AbortError") {
             console.warn("Dashboard KPI was not loaded:", error);
             if (dashboardRequestIdRef.current === requestId) {
-              if (!dashboardKpi) setDashboardKpiError("KPI data မရသေးပါ");
+              if (!dashboardKpiRef.current) setDashboardKpiError("KPI data မရသေးပါ");
               setKpiDateError("KPI data ပြောင်းလဲရာတွင် အမှားရှိပါသည်။");
             }
           }

@@ -59,7 +59,8 @@ describe("factory stock and dashboard loading contract", () => {
     expect(capPageSource).toContain("border-emerald-300 bg-emerald-50");
     expect(capPageSource).toContain('"x-actor-name": encodeActorHeader(actorName)');
     expect(capPageSource).toContain('value="500">500 ဆံ့ / အိတ်');
-    expect(capPageSource).toContain('source.filter((item) => !standardKeys.has(item.productKey))');
+    expect(capPageSource).toContain('source.filter((item) => !standardKeys.has(item.productKey) && !catalogKeys.has(item.productKey))');
+    expect(capPageSource).toContain("အဖုံးအမျိုးအစား");
     expect(fs.readFileSync(path.join(root, "src/components/SalesItemPicker.jsx"), "utf8")).toContain('value="500">500 ဆံ့ / အိတ်');
     expect(fs.readFileSync(path.join(root, "src/lib/audit.js"), "utf8")).toContain("သက်မွန်နှင်း");
   });
