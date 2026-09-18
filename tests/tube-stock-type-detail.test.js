@@ -22,6 +22,7 @@ describe("Tube stock type detail", () => {
     expect(route).toContain("currentPieces");
     expect(route).toContain("systemCurrentPieces");
     expect(route).toContain("unrecordedOpeningPacks");
+    expect(route).toContain("Math.ceil(unrecordedOpeningPieces / item.capacity)");
     expect(route).toContain("Math.max(0, systemCurrentPieces)");
     expect(page).toContain("နဂို Tube သုံးပြီး");
     expect(page).toContain("unrecordedOpeningPieces");

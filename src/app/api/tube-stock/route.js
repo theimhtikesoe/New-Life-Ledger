@@ -115,7 +115,7 @@ export async function GET(request) {
         currentPacks: packEquivalent(currentPieces, item.capacity),
         openingPieces: 0,
         unrecordedOpeningPieces,
-        unrecordedOpeningPacks: packEquivalent(unrecordedOpeningPieces, item.capacity),
+        unrecordedOpeningPacks: item.capacity ? Math.ceil(unrecordedOpeningPieces / item.capacity) : 0,
       };
     }).sort((a, b) => b.currentPieces - a.currentPieces);
     return NextResponse.json({
