@@ -28,4 +28,16 @@ describe("piece-based cap pricing", () => {
     expect(quantity).toBe(10);
     expect(quantity * 400).toBe(4000);
   });
+
+  it("labels gauk caps as individual ခု units", () => {
+    const line = makeLine({
+      productKey: "CAP_PRESS_FLIP",
+      categoryKey: "CAP",
+      productType: "cap",
+      productName: "ဂေါက် - နှိပ်",
+      effectivePrice: { pricePerBottle: 3000, source: "ITEM" },
+    }, 10, null, "မန္တလေး", 5000, true);
+    expect(line.unitLabel).toBe("ခု");
+    expect(line.totalAmount).toBe(30000);
+  });
 });
