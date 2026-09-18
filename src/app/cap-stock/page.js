@@ -12,7 +12,7 @@ function todayValue() { const now = new Date(); const local = new Date(now.getTi
 function movementLabel(type) { return ({ SALE_OUT: "ရောင်းထွက် / ဗူးတွင်သုံး", ADJUSTMENT_IN: "စာရင်းညှိဝင်", ADJUSTMENT_OUT: "စာရင်းညှိထွက်", REVERSAL: "ပြန်လှန်" })[type] || type; }
 function actorHeaders(headers = {}) { const actorName = typeof window !== "undefined" ? window.localStorage.getItem("actorName") || "" : ""; return { ...headers, "x-actor-name": encodeActorHeader(actorName) }; }
 function notifyCapStockChanged() { if (typeof window !== "undefined") { localStorage.setItem("new-life-ledger:cap-stock-updated-at", String(Date.now())); window.dispatchEvent(new Event("new-life-ledger:cap-stock-updated")); } }
-const CAP_LOCATIONS = ["မန္တလေး", "အေးသာယာ", "Soe"];
+const CAP_LOCATIONS = ["မန္တလေး", "အေးသာယာ", "Soe", "အခြား"];
 const CAP_COLORS = ["ပြာ", "ဝါ", "စိမ်း", "နီ", "ဖြူ", "ပန်း", "နက်/အမဲ"];
 const EMPTY_FORM = { location: "မန္တလေး", color: "ပြာ", capProductKey: "CAP_BLUE", capProductName: "အဖုံး - ပြာ", packSize: "5000", packs: "", note: "", movementDate: todayValue() };
 
