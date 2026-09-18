@@ -208,6 +208,7 @@ export function normalizeTubeIdentity(value, capacity = 0) {
   const aliases = {
     "1 လီတာ ဖြူ": "24g W (အဖြူ)",
     "1 လီတာ ပြာ": "24g B (S+1)",
+    "24g B (S+S)": "24g B (S+S)",
     ".3 ဖြူ": "13g W (အဖြူ)",
     ".3 ပြာ (S+S)": "13g (S+S)",
     ".3 B (S+1)": ".3 ပြာ (S+1)",
