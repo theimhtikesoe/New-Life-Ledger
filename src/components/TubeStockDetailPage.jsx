@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const TUBE_STOCK_CACHE_KEY = "new-life-ledger:tube-stock-v1";
+const TUBE_STOCK_CACHE_KEY = "new-life-ledger:tube-stock-v2";
 
 function number(value) {
   return Number(value || 0).toLocaleString();

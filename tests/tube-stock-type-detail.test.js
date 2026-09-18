@@ -14,6 +14,8 @@ describe("Tube stock type detail", () => {
     expect(route).toContain("validLimit");
     expect(route).toContain("take: validLimit");
     expect(route).toContain("loadDerivedFactoryStockMovements");
+    expect(route).toContain('import { TUBE_ITEMS } from "@/lib/production-catalog";');
+    expect(route).toContain("new Map(TUBE_ITEMS.map");
     expect(route).toContain("movements");
     expect(route).toContain("productionPacks");
     expect(route).toContain("usedPieces");

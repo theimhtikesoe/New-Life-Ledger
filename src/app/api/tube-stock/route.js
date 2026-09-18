@@ -3,6 +3,7 @@ import { databaseErrorResponse, ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { loadDerivedFactoryStockMovements, normalizeTubeIdentity, STOCK_TYPES } from "@/lib/factory-stock";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
+import { TUBE_ITEMS } from "@/lib/production-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,17 @@ export async function GET(request) {
       usageByType.set(movement.productKey, row);
     }
     const dailyUsage = [...usageByType.values()];
-    const byType = new Map();
+    const byType = new Map(TUBE_ITEMS.map((item) => [item.productKey, {
+      tubeType: item.productName,
+      capacity: Number(item.capacity || 0),
+      productionPacks: 0,
+      productionPieces: 0,
+      usedPacks: 0,
+      usedPieces: 0,
+      adjustmentPieces: 0,
+      currentPieces: 0,
+      currentPacks: 0,
+    }]));
     let totalPacks = 0;
     let totalPieces = 0;
     let totalUsedPacks = 0;
