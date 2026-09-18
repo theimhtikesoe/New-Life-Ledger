@@ -404,6 +404,7 @@ export default function Dashboard({ view = "overview" }) {
   const [productionRows, setProductionRows] = useState(() => hasInitialProductionSnapshot ? initialDashboardSnapshot.productionRows : []);
   const [tubeProductionRows, setTubeProductionRows] = useState(() => hasInitialProductionSnapshot ? (initialDashboardSnapshot.tubeProductionRows || []) : []);
   const [salesCatalog, setSalesCatalog] = useState([]);
+  const [salesCatalogLoading, setSalesCatalogLoading] = useState(false);
   const [salesCatalogError, setSalesCatalogError] = useState("");
   const [productionDate, setProductionDate] = useState(() => formatMyanmarDateInputValue());
   const [productionLoading, setProductionLoading] = useState(() => !hasInitialProductionSnapshot);
@@ -508,6 +509,7 @@ export default function Dashboard({ view = "overview" }) {
     if (!showAddCustomer && !selectedCustomerId) return undefined;
     const priceDate = ledgerForm.date || formatMyanmarDateInputValue();
     const controller = new AbortController();
+    setSalesCatalogLoading(true);
     setSalesCatalogError("");
     api(`/api/price-settings?date=${encodeURIComponent(priceDate)}`, { signal: controller.signal, cache: "no-store" })
       .then((data) => setSalesCatalog(Array.isArray(data?.catalog) ? data.catalog : []))
@@ -516,7 +518,8 @@ export default function Dashboard({ view = "overview" }) {
           setSalesCatalog([]);
           setSalesCatalogError(error.message || "ဗူးနှင့် စျေးနှုန်း catalog ရယူ၍မရပါ။");
         }
-    });
+      })
+      .finally(() => setSalesCatalogLoading(false));
     return () => controller.abort();
   }, [ledgerForm.date, selectedCustomerId, showAddCustomer]);
 
@@ -3142,6 +3145,7 @@ export default function Dashboard({ view = "overview" }) {
                         {salesCatalogError ? <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-5 text-amber-800">{salesCatalogError}</p> : null}
                         <SalesItemPicker
                           catalog={salesCatalog}
+                          catalogLoading={salesCatalogLoading}
                           saleItems={ledgerForm.saleItems || []}
                           onChange={(saleItems) => setLedgerForm((current) => ({ ...current, saleItems }))}
                           disabled={isSubmitting}
