@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 function todayValue() {
   const now = new Date();
@@ -50,7 +51,7 @@ export default function DailyBottleSalesPage() {
             <div>
               <p className="text-sm text-slate-600">Customer တစ်ဦးချင်းအလိုက် ရောင်းထားသော item၊ ဆံ့၊ ဗူးအရေအတွက်နှင့် စုစုပေါင်းငွေ</p>
             </div>
-            <label className="flex shrink-0 flex-col gap-2 text-sm font-bold text-slate-700">ရက်စွဲ<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 rounded-xl border-2 border-slate-300 bg-slate-50 px-3 text-base font-black" /></label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end"><label className="flex shrink-0 flex-col gap-2 text-sm font-bold text-slate-700">ရက်စွဲ<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 rounded-xl border-2 border-slate-300 bg-slate-50 px-3 text-base font-black" /></label><Link href={`/monthly-bottle-sales?month=${encodeURIComponent(date.slice(0, 7))}`} className="inline-flex h-12 items-center justify-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white hover:bg-violet-700">တစ်လစာ ကြည့်ရန်</Link></div>
           </div>
         </section>
 
