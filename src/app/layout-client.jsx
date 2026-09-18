@@ -42,12 +42,19 @@ function WeatherOverlay() {
   if (weather === null) return null;
   const rainy = (weather >= 51 && weather <= 82) || weather >= 95;
   const sunny = weather <= 2;
+  const currentHour = new Date().getHours();
+  const sunnyMorning = sunny && currentHour >= 6 && currentHour < 12;
   if (!rainy && !sunny) return null;
   return rainy ? (
     <div className="weather-overlay weather-rain" aria-hidden="true">
-      {Array.from({ length: 42 }, (_, index) => <i key={index} style={{ '--rain-left': `${(index * 23) % 100}%`, '--rain-delay': `${(index % 11) * -0.22}s`, '--rain-duration': `${0.75 + (index % 5) * 0.12}s` }} />)}
+      {Array.from({ length: 72 }, (_, index) => <i key={index} style={{ '--rain-left': `${(index * 23) % 100}%`, '--rain-delay': `${(index % 17) * -0.18}s`, '--rain-duration': `${0.68 + (index % 6) * 0.1}s` }} />)}
     </div>
-  ) : <div className="weather-overlay weather-sun" aria-hidden="true" />;
+  ) : <>
+    <div className="weather-overlay weather-sun" aria-hidden="true" />
+    {sunnyMorning ? <div className="weather-overlay weather-leaves" aria-hidden="true">
+      {Array.from({ length: 24 }, (_, index) => <i key={index} style={{ '--leaf-left': `${(index * 29) % 100}%`, '--leaf-delay': `${(index % 12) * -0.9}s`, '--leaf-duration': `${8 + (index % 6) * 1.1}s`, '--leaf-rotate': `${-45 + (index % 8) * 16}deg`, '--leaf-size': `${0.78 + (index % 5) * 0.12}` }}>🍁</i>)}
+    </div> : null}
+  </>;
 }
 
 function clampAppZoom(value) {

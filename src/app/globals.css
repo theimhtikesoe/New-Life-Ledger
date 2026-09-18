@@ -1178,9 +1178,11 @@ textarea {
   position: absolute;
   top: -12vh;
   left: var(--rain-left);
-  width: 1px;
-  height: 26px;
-  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.48));
+  width: 2px;
+  height: 34px;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, transparent, rgba(37, 99, 235, 0.76));
+  box-shadow: 0 0 3px rgba(96, 165, 250, 0.38);
   transform: rotate(15deg);
   animation: weatherRain var(--rain-duration) linear var(--rain-delay) infinite;
 }
@@ -1199,8 +1201,32 @@ textarea {
   background: radial-gradient(ellipse at center, rgba(253, 224, 71, 0.24), rgba(251, 191, 36, 0.08) 42%, transparent 72%);
   opacity: 0.7;
 }
+.weather-leaves i {
+  position: absolute;
+  top: -8vh;
+  left: var(--leaf-left);
+  display: block;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-size: clamp(1.15rem, 2.8vw, 2rem);
+  line-height: 1;
+  opacity: 0;
+  transform-origin: 50% 45%;
+  scale: var(--leaf-size);
+  filter: drop-shadow(0 2px 3px rgba(120, 53, 15, 0.24));
+  animation: weatherLeafFall var(--leaf-duration) ease-in var(--leaf-delay) infinite;
+  will-change: transform, opacity;
+}
+@keyframes weatherLeafFall {
+  0% { opacity: 0; transform: translate3d(-2vw, -8vh, 0) rotate(var(--leaf-rotate)) rotateX(0deg) rotateY(0deg); }
+  9% { opacity: 0.92; }
+  24% { transform: translate3d(5vw, 22vh, 0) rotate(calc(var(--leaf-rotate) + 85deg)) rotateX(42deg) rotateY(18deg); }
+  48% { transform: translate3d(-6vw, 52vh, 0) rotate(calc(var(--leaf-rotate) + 205deg)) rotateX(118deg) rotateY(70deg); }
+  72% { transform: translate3d(8vw, 79vh, 0) rotate(calc(var(--leaf-rotate) + 290deg)) rotateX(205deg) rotateY(145deg); }
+  100% { opacity: 0; transform: translate3d(-4vw, 115vh, 0) rotate(calc(var(--leaf-rotate) + 420deg)) rotateX(320deg) rotateY(260deg); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .weather-rain i { animation: none; display: none; }
+  .weather-rain i,
+  .weather-leaves i { animation: none; display: none; }
 }
 
 .music-mini-player { line-height: 1; }
