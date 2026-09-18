@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const FACTORY_STOCK_CACHE_KEY = "new-life-ledger:factory-stock-v1";
+const FACTORY_STOCK_CACHE_KEY = "new-life-ledger:factory-stock-v2";
 
 function todayValue() {
   const now = new Date();
