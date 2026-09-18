@@ -99,7 +99,7 @@ function CapBreakdownEditor({ item, onUpdate, onAdd, onRemove, capItems, disable
   </div>;
 }
 
-export default function SalesItemPicker({ catalog = [], catalogLoading = false, saleItems = [], onChange, disabled = false }) {
+export default function SalesItemPicker({ catalog = [], saleItems = [], onChange, disabled = false }) {
   const [open, setOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState("product");
   const [activeCategory, setActiveCategory] = useState("");
@@ -286,8 +286,8 @@ export default function SalesItemPicker({ catalog = [], catalogLoading = false, 
   return (
     <section className="space-y-3 rounded-xl border-2 border-violet-300 bg-violet-50/80 p-3 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div><p className="text-sm font-black text-violet-950">ရောင်းသည့်ဗူးများ / အဖုံး</p>{catalogLoading ? <p className="mt-0.5 text-[11px] font-semibold text-slate-500" role="status" aria-live="polite">Catalog ရယူနေသည်...</p> : null}</div>
-        <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={toggleProductPicker} disabled={disabled} aria-expanded={open && pickerMode === "product"} className="shrink-0 rounded-lg bg-violet-700 px-3 py-2 text-xs font-black text-white shadow-sm hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50">{open && pickerMode === "product" ? "ဗူး/အဖုံး ပိတ်ရန် −" : "ဗူး/အဖုံး ထည့်ရန် +"}</button><button type="button" onClick={toggleTubePicker} disabled={disabled} aria-expanded={open && pickerMode === "tube"} className="shrink-0 rounded-lg bg-cyan-700 px-3 py-2 text-xs font-black text-white shadow-sm hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-50">{open && pickerMode === "tube" ? "Tube ပိတ်ရန် −" : "Tube ထည့်ရန် +"}</button></div>
+        <div><p className="text-sm font-black text-violet-950">ရောင်းသည့်ဗူးများ / အဖုံး</p></div>
+        <div className="flex flex-wrap justify-end gap-2"><button type="button" onClick={toggleProductPicker} disabled={disabled || !catalog.some((item) => !isTubeItem(item))} aria-expanded={open && pickerMode === "product"} className="shrink-0 rounded-lg bg-violet-700 px-3 py-2 text-xs font-black text-white shadow-sm hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50">{open && pickerMode === "product" ? "ဗူး/အဖုံး ပိတ်ရန် −" : "ဗူး/အဖုံး ထည့်ရန် +"}</button><button type="button" onClick={toggleTubePicker} disabled={disabled || !catalog.some(isTubeItem)} aria-expanded={open && pickerMode === "tube"} className="shrink-0 rounded-lg bg-cyan-700 px-3 py-2 text-xs font-black text-white shadow-sm hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-50">{open && pickerMode === "tube" ? "Tube ပိတ်ရန် −" : "Tube ထည့်ရန် +"}</button></div>
       </div>
 
       {saleItems.length ? <div className="space-y-2">{saleItems.map((item) => {
