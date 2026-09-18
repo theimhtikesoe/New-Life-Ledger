@@ -3,6 +3,7 @@ import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { PRICE_GROUPS, buildCatalog, normalizeBottleProductKey } from "@/lib/production-catalog";
+import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,11 +58,20 @@ export async function GET(request) {
     const date = parseDate(new URL(request.url).searchParams.get("date"));
     const exactRows = await prisma.priceSetting.findMany({ where: { priceDate: date }, orderBy: [{ scope: "asc" }, { productName: "asc" }, { capacity: "asc" }] });
     const priorRows = await prisma.priceSetting.findMany({ where: { priceDate: { lte: date } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
+    // Historical ledger entries must remain usable even when that old date
+    // predates the price-setting table. The current/latest saved price is the
+    // business-approved fallback for old bottle, cap, and Tube entries.
+    const latestRows = await prisma.priceSetting.findMany({ where: { priceDate: { lte: getMyanmarDateInputValue() } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
 
     const effectiveByKey = new Map();
     for (const row of priorRows) {
       const key = `${row.scope}:${row.scope === "ITEM" ? normalizeBottleProductKey(row.productKey) : row.productKey}`;
       if (!effectiveByKey.has(key)) effectiveByKey.set(key, serialize(row));
+    }
+    const latestByKey = new Map();
+    for (const row of latestRows) {
+      const key = `${row.scope}:${row.scope === "ITEM" ? normalizeBottleProductKey(row.productKey) : row.productKey}`;
+      if (!latestByKey.has(key)) latestByKey.set(key, serialize(row));
     }
 
     const exactCategoryPrices = {};
@@ -73,8 +83,14 @@ export async function GET(request) {
     }
 
     const catalog = buildCatalog().map((item) => {
-      const itemPriceRow = effectiveByKey.get(`ITEM:${item.productKey}`);
-      const categoryPrice = effectiveByKey.get(`CATEGORY:${item.categoryKey}`);
+      const latestItemRow = latestByKey.get(`ITEM:${item.productKey}`);
+      const latestCategoryRow = latestByKey.get(`CATEGORY:${item.categoryKey}`);
+      const itemPriceRow = latestItemRow && Number(latestItemRow.pricePerBottle || 0) > 0
+        ? latestItemRow
+        : effectiveByKey.get(`ITEM:${item.productKey}`);
+      const categoryPrice = latestCategoryRow && Number(latestCategoryRow.pricePerBottle || 0) > 0
+        ? latestCategoryRow
+        : effectiveByKey.get(`CATEGORY:${item.categoryKey}`);
       // A mapping-only ITEM row is intentionally stored with price 0. It must
       // not hide a valid category price used by settlement sales.
       const itemPrice = itemPriceRow && Number(itemPriceRow.pricePerBottle || 0) > 0 ? itemPriceRow : null;
@@ -83,7 +99,7 @@ export async function GET(request) {
         ...item,
         tubeType: itemPriceRow?.tubeType || "",
         effectivePrice: effective
-          ? { ...effective, source: itemPrice ? "ITEM" : "CATEGORY" }
+          ? { ...effective, source: itemPrice ? (itemPriceRow === latestItemRow ? "LATEST_ITEM" : "ITEM") : (categoryPrice === latestCategoryRow ? "LATEST_CATEGORY" : "CATEGORY") }
           : (item.defaultPrice !== undefined ? { pricePerBottle: item.defaultPrice, pricePerCard: item.defaultPrice, source: "DEFAULT" } : null),
       };
     });

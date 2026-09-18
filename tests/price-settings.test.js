@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   upsert: vi.fn(),
   deleteMany: vi.fn(),
   createMany: vi.fn(),
+  findMany: vi.fn(),
   transaction: vi.fn(),
   writeAuditLog: vi.fn(),
 }));
@@ -21,12 +22,12 @@ vi.mock("@/lib/production-catalog", async () => {
 });
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    priceSetting: { upsert: mocks.upsert, deleteMany: mocks.deleteMany, createMany: mocks.createMany },
+    priceSetting: { upsert: mocks.upsert, deleteMany: mocks.deleteMany, createMany: mocks.createMany, findMany: mocks.findMany },
     $transaction: mocks.transaction,
   },
 }));
 
-import { POST } from "../src/app/api/price-settings/route.js";
+import { GET, POST } from "../src/app/api/price-settings/route.js";
 import fs from "node:fs";
 
 const priceRouteSource = fs.readFileSync(new URL("../src/app/api/price-settings/route.js", import.meta.url), "utf8");
@@ -63,5 +64,34 @@ describe("POST /api/price-settings", () => {
     expect(mocks.createMany).toHaveBeenCalledTimes(1);
     expect(mocks.createMany.mock.calls[0][0].data[0]).not.toHaveProperty("categoryLabel");
     expect(mocks.createMany.mock.calls[0][0].data.find((row) => row.scope === "ITEM").tubeType).toBe("1 လီတာ ဖြူ");
+  });
+});
+
+describe("GET /api/price-settings historical fallback", () => {
+  it("uses the latest saved category price for an old ledger date", async () => {
+    mocks.ensureDatabase.mockResolvedValue(undefined);
+    mocks.findMany.mockImplementation(({ where } = {}) => {
+      if (where?.priceDate === "2025-01-01" || where?.priceDate?.lte === "2025-01-01") return Promise.resolve([]);
+      return Promise.resolve([{
+        id: 1,
+        priceDate: "2026-09-18",
+        scope: "CATEGORY",
+        categoryKey: "40",
+        productKey: "40",
+        productType: "bottle",
+        productName: "40 ကျပ်သား",
+        capacity: 0,
+        bottlesPerCard: 0,
+        pricePerBottle: 123,
+        pricePerCard: 123,
+        tubeType: null,
+        updatedAt: new Date("2026-09-18T00:00:00Z"),
+      }]);
+    });
+    const response = await GET(new Request("http://localhost/api/price-settings?date=2025-01-01"));
+    const body = await response.json();
+    const item = body.data.catalog.find((entry) => entry.productKey === "40 ကျပ်သား::100");
+    expect(response.status).toBe(200);
+    expect(item.effectivePrice).toMatchObject({ pricePerBottle: 123, source: "LATEST_CATEGORY" });
   });
 });
