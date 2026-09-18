@@ -3,7 +3,7 @@ import { ensureDatabase, databaseErrorResponse } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { aggregateStockMovements, ensureFactoryStockTable, invalidateFactoryStockCache, loadCanonicalFactoryStockMovements, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows, MOVEMENT_TYPES, STOCK_TYPES } from "@/lib/factory-stock";
-import { buildCatalog } from "@/lib/production-catalog";
+import { loadCatalogWithCustomItems } from "@/lib/custom-catalog";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 export const runtime = "nodejs";
@@ -39,7 +39,11 @@ export async function GET(request) {
     // configured in Price Settings even when it has no production or sale
     // movement yet, so the table is a complete catalog rather than a movement
     // history filtered down to only active products.
-    for (const item of buildCatalog().filter((entry) => entry.productType === "bottle" && (!requestedStockType || requestedStockType === STOCK_TYPES.BOTTLE))) {
+    // Legacy contract: buildCatalog().filter((entry) => entry.productType === "bottle" &&
+    // the merged catalog below now includes custom items too.
+    // created from Price Settings so new products flow into stock automatically.
+    const catalog = await loadCatalogWithCustomItems();
+    for (const item of catalog.filter((entry) => entry.productType === "bottle" && (!requestedStockType || requestedStockType === STOCK_TYPES.BOTTLE))) {
       if (!summaryByKey.has(item.productKey)) {
         summary.push({
           productKey: item.productKey,
@@ -66,7 +70,7 @@ export async function GET(request) {
         });
       }
     }
-    for (const item of buildCatalog().filter((entry) => entry.productType === "cap" && (!requestedStockType || requestedStockType === STOCK_TYPES.CAP))) {
+    for (const item of catalog.filter((entry) => entry.productType === "cap" && (!requestedStockType || requestedStockType === STOCK_TYPES.CAP))) {
       if (!summaryByKey.has(item.productKey)) {
         summary.push({ productKey: item.productKey, stockType: STOCK_TYPES.CAP, productName: item.productName, capacity: 0, productionCards: 0, soldCards: 0, adjustmentCards: 0, currentCards: 0, productionBottles: 0, soldBottles: 0, usedBottles: 0, usedCards: 0, adjustmentBottles: 0, wastedBottles: 0, systemCurrentCards: 0, systemCurrentBottles: 0, openingStockCards: 0, openingStockBottles: 0, unrecordedOpeningStockCards: 0, unrecordedOpeningStockBottles: 0, currentBottles: 0 });
       }

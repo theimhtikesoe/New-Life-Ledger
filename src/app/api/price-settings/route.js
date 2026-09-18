@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { PRICE_GROUPS, buildCatalog, normalizeBottleProductKey } from "@/lib/production-catalog";
+import { PRICE_GROUPS, normalizeBottleProductKey } from "@/lib/production-catalog";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
+import { CUSTOM_CATALOG_DATE, customCategoriesFromRows, loadCatalogWithCustomItems, loadCustomCatalogRows } from "@/lib/custom-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,7 @@ export async function GET(request) {
   try {
     await ensureDatabase();
     const date = parseDate(new URL(request.url).searchParams.get("date"));
+    const customRows = await loadCustomCatalogRows();
     const exactRows = await prisma.priceSetting.findMany({ where: { priceDate: date }, orderBy: [{ scope: "asc" }, { productName: "asc" }, { capacity: "asc" }] });
     const priorRows = await prisma.priceSetting.findMany({ where: { priceDate: { lte: date } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
     // Historical ledger entries must remain usable even when that old date
@@ -82,7 +84,7 @@ export async function GET(request) {
       else if (serialized.pricePerBottle > 0) exactItemPrices[normalizeBottleProductKey(row.productKey)] = serialized;
     }
 
-    const catalog = buildCatalog().map((item) => {
+    const catalog = (await loadCatalogWithCustomItems()).map((item) => {
       const latestItemRow = latestByKey.get(`ITEM:${item.productKey}`);
       const latestCategoryRow = latestByKey.get(`CATEGORY:${item.categoryKey}`);
       const itemPriceRow = latestItemRow && Number(latestItemRow.pricePerBottle || 0) > 0
@@ -106,7 +108,7 @@ export async function GET(request) {
 
     const tubeMappings = {};
     for (const item of catalog) if (item.tubeType) tubeMappings[item.productKey] = item.tubeType;
-    return NextResponse.json({ data: { date, categories: PRICE_GROUPS, catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices, tubeMappings } });
+    return NextResponse.json({ data: { date, categories: [...PRICE_GROUPS, ...customCategoriesFromRows(customRows)], catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices, tubeMappings } });
   } catch (error) {
     console.error("Price settings read failed", error);
     if (/connection pool|Timed out fetching a new connection/i.test(String(error?.message || ""))) {
@@ -122,14 +124,45 @@ export async function POST(request) {
   try {
     await ensureDatabase();
     const body = await request.json();
+    const action = String(body.action || "").trim();
+    if (action === "addCategory" || action === "addItem") {
+      const label = String(body.label || body.name || "").trim();
+      if (!label) return NextResponse.json({ error: "Category/Item အမည် ထည့်ပါ။" }, { status: 400 });
+      const normalizedKey = String(body.key || label).trim().toLowerCase().replace(/[^a-z0-9\u1000-\u109f]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
+      const key = normalizedKey || `custom-${Date.now()}`;
+      const productType = ["bottle", "cap", "tube"].includes(String(body.productType)) ? String(body.productType) : "bottle";
+      const categoryKey = action === "addCategory" ? key : String(body.categoryKey || "").trim();
+      if (!categoryKey) return NextResponse.json({ error: "Item အတွက် Category ရွေးပါ။" }, { status: 400 });
+      const capacity = Math.max(0, Math.round(Number(body.capacity || 0)));
+      const productKey = action === "addCategory" ? key : `${key}::${capacity || 1}`;
+      const categoryRows = await loadCustomCatalogRows();
+      if (categoryRows.some((row) => row.productKey === productKey || (action === "addCategory" && row.categoryKey === categoryKey))) return NextResponse.json({ error: "ဒီ Category/Item ရှိပြီးသားပါ။" }, { status: 409 });
+      await prisma.priceSetting.create({ data: {
+        priceDate: CUSTOM_CATALOG_DATE,
+        scope: action === "addCategory" ? "CUSTOM_CATEGORY" : "CUSTOM_ITEM",
+        categoryKey,
+        productKey,
+        productType,
+        productName: label,
+        capacity,
+        bottlesPerCard: capacity || 1,
+        pricePerBottle: 0,
+        pricePerCard: 0,
+        tubeType: null,
+      } });
+      await writeAuditLog({ db: prisma, actorName: getActorName(request), action: action === "addCategory" ? "CUSTOM_PRICE_CATEGORY_ADD" : "CUSTOM_PRICE_ITEM_ADD", entityType: "PriceSetting", entityId: productKey, entityLabel: label, summary: `${label} custom catalog ထည့်သွင်း`, metadata: { categoryKey, productType, capacity } });
+      return NextResponse.json({ data: { key: productKey, categoryKey, label, productType, capacity } });
+    }
     const priceDate = parseDate(body.priceDate);
     const categoryPrices = body.categoryPrices && typeof body.categoryPrices === "object" ? body.categoryPrices : {};
     const itemPrices = body.itemPrices && typeof body.itemPrices === "object" ? body.itemPrices : {};
     const tubeMappings = body.tubeMappings && typeof body.tubeMappings === "object" ? body.tubeMappings : {};
-    const catalog = buildCatalog();
+    const customRows = await loadCustomCatalogRows();
+    const categories = [...PRICE_GROUPS, ...customCategoriesFromRows(customRows)];
+    const catalog = await loadCatalogWithCustomItems();
     const rows = [];
 
-    for (const category of PRICE_GROUPS) {
+    for (const category of categories) {
       const raw = categoryPrices[category.key];
       if (raw === "" || raw === null || raw === undefined) continue;
       const pricePerBottle = positiveInt(raw, `${category.label} စျေးနှုန်း`);

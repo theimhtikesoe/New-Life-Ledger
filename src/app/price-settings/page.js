@@ -18,6 +18,7 @@ function money(value) {
 
 export default function PriceSettingsPage() {
   const [date, setDate] = useState(todayValue);
+  const [categories, setCategories] = useState(PRICE_GROUPS);
   const [activeCategory, setActiveCategory] = useState(PRICE_GROUPS[0]?.key || "");
   const [catalog, setCatalog] = useState([]);
   const [categoryPrices, setCategoryPrices] = useState({});
@@ -27,6 +28,8 @@ export default function PriceSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [newCategory, setNewCategory] = useState({ label: "", productType: "bottle" });
+  const [newItem, setNewItem] = useState({ label: "", categoryKey: PRICE_GROUPS[0]?.key || "", productType: "bottle", capacity: "" });
 
   async function loadPrices(nextDate = date) {
     setLoading(true);
@@ -36,6 +39,10 @@ export default function PriceSettingsPage() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "စျေးနှုန်းစာရင်း ရယူ၍မရပါ။");
       const data = body.data || {};
+      const nextCategories = Array.isArray(data.categories) && data.categories.length ? data.categories : PRICE_GROUPS;
+      setCategories(nextCategories);
+      setActiveCategory((current) => nextCategories.some((category) => category.key === current) ? current : nextCategories[0]?.key || "");
+      setNewItem((current) => ({ ...current, categoryKey: nextCategories.some((category) => category.key === current.categoryKey) ? current.categoryKey : nextCategories[0]?.key || "" }));
       setCatalog(Array.isArray(data.catalog) ? data.catalog : []);
       const nextCategoryPrices = {};
       for (const category of data.categories || []) {
@@ -114,6 +121,24 @@ export default function PriceSettingsPage() {
     }
   }
 
+  async function addCatalogEntry(event, action) {
+    event.preventDefault();
+    const source = action === "addCategory" ? newCategory : newItem;
+    setError("");
+    setMessage("");
+    try {
+      const response = await fetch("/api/price-settings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ...source }) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Catalog ထည့်၍မရပါ။");
+      setMessage(`${source.label} ကို Catalog ထဲ ထည့်ပြီးပါပြီ။ သက်ဆိုင်ရာ Select၊ Price၊ Stock နေရာတွေမှာ အလိုအလျောက် ချိတ်သွားပါမယ်။`);
+      if (action === "addCategory") setNewCategory({ label: "", productType: "bottle" });
+      else setNewItem({ label: "", categoryKey: categories[0]?.key || "", productType: "bottle", capacity: "" });
+      await loadPrices(date);
+    } catch (entryError) {
+      setError(entryError.message || "Catalog ထည့်၍မရပါ။");
+    }
+  }
+
   return (
     <main className="app-page-main">
       <div className="app-page-container space-y-4">
@@ -140,7 +165,7 @@ export default function PriceSettingsPage() {
               <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-800">ဗူးတစ်လုံးစျေး</span>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {PRICE_GROUPS.map((category) => (
+              {categories.map((category) => (
                 <label key={category.key} className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 text-sm font-bold text-slate-800">
                   <span className="block">{category.label}</span><span className="mt-1 block text-[11px] font-normal text-slate-500">{category.description}</span>
                   <div className="mt-2 flex items-center gap-2"><input type="number" min="0" step="1" inputMode="numeric" value={categoryPrices[category.key] || ""} onChange={(event) => setCategoryPrice(category.key, event.target.value)} placeholder="မသတ်မှတ်ရသေး" aria-label={`${category.label} category price`} className="h-11 min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 text-right font-black" /><span className="text-xs font-black">Ks/{category.key === "CAP" ? "ဖုံး" : category.key === "TUBE" ? "Tube" : "ဗူး"}</span></div>
@@ -148,12 +173,27 @@ export default function PriceSettingsPage() {
                 </label>
               ))}
             </div>
+            <div className="mt-4 grid gap-3 rounded-xl border border-dashed border-violet-300 bg-violet-50/50 p-3 sm:grid-cols-2">
+              <form onSubmit={(event) => addCatalogEntry(event, "addCategory")} className="space-y-2 rounded-lg bg-white p-3">
+                <p className="text-sm font-black text-violet-900">+ Category အသစ်ထည့်ရန်</p>
+                <input value={newCategory.label} onChange={(event) => setNewCategory((current) => ({ ...current, label: event.target.value }))} placeholder="ဥပမာ - 20 လီတာ အဖုံး" className="h-10 w-full rounded-lg border border-violet-200 px-3 text-sm font-bold" required />
+                <ThemedSelect value={newCategory.productType} onChange={(event) => setNewCategory((current) => ({ ...current, productType: event.target.value }))} className="h-10 w-full rounded-lg border border-violet-200 px-3 text-sm font-bold"><option value="bottle">ဗူး</option><option value="cap">အဖုံး</option><option value="tube">Tube</option></ThemedSelect>
+                <button type="submit" className="rounded-lg bg-violet-700 px-3 py-2 text-xs font-black text-white">Category သိမ်းမည်</button>
+              </form>
+              <form onSubmit={(event) => addCatalogEntry(event, "addItem")} className="space-y-2 rounded-lg bg-white p-3">
+                <p className="text-sm font-black text-cyan-900">+ Item အသစ်ထည့်ရန်</p>
+                <input value={newItem.label} onChange={(event) => setNewItem((current) => ({ ...current, label: event.target.value }))} placeholder="ဥပမာ - အဖုံး အစိမ်းကြီး" className="h-10 w-full rounded-lg border border-cyan-200 px-3 text-sm font-bold" required />
+                <div className="grid grid-cols-2 gap-2"><ThemedSelect value={newItem.categoryKey} onChange={(event) => setNewItem((current) => ({ ...current, categoryKey: event.target.value }))} className="h-10 w-full rounded-lg border border-cyan-200 px-2 text-xs font-bold">{categories.map((category) => <option key={category.key} value={category.key}>{category.label}</option>)}</ThemedSelect><input type="number" min="0" value={newItem.capacity} onChange={(event) => setNewItem((current) => ({ ...current, capacity: event.target.value }))} placeholder="ဆံ့/pcs" className="h-10 w-full rounded-lg border border-cyan-200 px-2 text-sm font-bold" /></div>
+                <ThemedSelect value={newItem.productType} onChange={(event) => setNewItem((current) => ({ ...current, productType: event.target.value }))} className="h-10 w-full rounded-lg border border-cyan-200 px-3 text-sm font-bold"><option value="bottle">ဗူး</option><option value="cap">အဖုံး</option><option value="tube">Tube</option></ThemedSelect>
+                <button type="submit" className="rounded-lg bg-cyan-700 px-3 py-2 text-xs font-black text-white">Item သိမ်းမည်</button>
+              </form>
+            </div>
           </section>
 
           <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div><h3 className="text-lg font-black text-slate-900">2. Item တစ်ခုချင်းစီအလိုက် စျေးပြင်ရန်</h3><p className="mt-1 text-xs leading-5 text-slate-500">Item Override မထည့်ထားလျှင် Category စျေးကို အလိုအလျောက်သုံးပါမယ်။ Customer စျေးကွာလျှင် ငွေရှင်းတမ်းထဲမှာ အဲဒီ transaction အတွက် စျေးကို ပြန်ညှိနိုင်ပါမယ်။</p></div>
-              <ThemedSelect value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)} className="h-11 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-3 text-sm font-black text-cyan-950">{PRICE_GROUPS.map((category) => <option key={category.key} value={category.key}>{category.label}</option>)}</ThemedSelect>
+              <ThemedSelect value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)} className="h-11 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-3 text-sm font-black text-cyan-950">{categories.map((category) => <option key={category.key} value={category.key}>{category.label}</option>)}</ThemedSelect>
             </div>
             {loading ? <p className="py-10 text-center text-sm text-slate-500">Catalog နှင့် စျေးနှုန်းများ ရယူနေသည်...</p> : <div className="mt-4 space-y-2">{visibleItems.map((item) => {
               const categoryPrice = categoryPrices[item.categoryKey];

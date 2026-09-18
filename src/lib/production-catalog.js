@@ -80,6 +80,10 @@ export const CAP_ITEMS = [
   ["အစိမ်း", "CAP_GREEN"],
   ["အမဲ", "CAP_BLACK"],
   ["ရောင်စုံ", "CAP_MIXED"],
+  ["20 လီတာ အဖုံး (အနောက်)", "CAP_20L_BACK"],
+  ["20 လီတာ အဖုံး (အကြည်)", "CAP_20L_CLEAR"],
+  ["နှိပ်ဂေါက်", "CAP_PRESS_FLIP"],
+  ["လှည့်ဂေါက်", "CAP_TWIST_FLIP"],
 ].map(([color, productKey]) => ({
   productKey,
   categoryKey: CAP_GROUP.key,
