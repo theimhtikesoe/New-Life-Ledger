@@ -49,6 +49,12 @@ export function defaultAllowedPaths(actorName) {
 
 export function normalizeAllowedPaths(value, actorName) {
   const allowed = Array.isArray(value) ? value.filter((path) => PERMISSION_PAGES.some((page) => page.path === path)) : defaultAllowedPaths(actorName);
+  // Keep the bottle-sales reports reachable for the parent/manager account even
+  // when its stored permission row predates these pages.
+  if (actorName === "ဖေဖေ/မေမေ") {
+    if (!allowed.includes("/daily-bottle-sales")) allowed.push("/daily-bottle-sales");
+    if (!allowed.includes("/monthly-bottle-sales")) allowed.push("/monthly-bottle-sales");
+  }
   if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") {
     return [...new Set([...defaultAllowedPaths(actorName), RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH])];
   }
