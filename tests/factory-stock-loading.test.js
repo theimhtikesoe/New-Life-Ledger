@@ -79,6 +79,10 @@ describe("cap stock unit accounting", () => {
     expect(rows[0]).toMatchObject({ capacity: 5000, quantityBottles: -5000, productKey: "CAP::ပြာ::5000" });
   });
 
+  it("keeps plugs and 20-liter caps as individual pieces", () => {
+    expect(normalizeCapIdentity({ productName: "ဂေါက် - နှိပ်", productKey: "CAP_PRESS_FLIP", packSize: 5000 })).toMatchObject({ capacity: 1, productKey: "CAP::ဂေါက် - နှိပ်::1" });
+  });
+
   it("treats one bottle as one cap and converts 5000 caps to one bag", () => {
     const rows = saleMovementRows([{ id: "sale-1", date: "2026-09-11", saleItems: [{ productType: "bottle", productName: ".3 ဖြူ", productKey: ".3 ဖြူ::100", capacity: 100, bottleCount: 200, cardCount: 2, capNormalCount: 200, capExtraCount: 0, capProductKey: "ပြာ", capProductName: "ပြာ", capLocation: "မန္တလေး", capPackSize: 5000 }] }]);
     const cap = rows.find((row) => row.stockType === "CAP");

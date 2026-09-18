@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
-import { normalizeBottleProductKey, normalizeBottleType } from "@/lib/production-catalog";
+import { isPieceCapProduct, normalizeBottleProductKey, normalizeBottleType } from "@/lib/production-catalog";
 
 export const STOCK_TYPES = {
   BOTTLE: "BOTTLE",
@@ -190,7 +190,8 @@ export function normalizeCapIdentity({ productName, productKey, location, packSi
   // Older direct cap-sale rows did not persist capPackSize. Treat them as the
   // standard 5000-cap bag rather than creating a zero-capacity stock row whose
   // piece count is incorrectly displayed as the number of bags.
-  const normalizedPackSize = positiveInteger(packSize) || 5000;
+  const pieceBased = isPieceCapProduct(rawKey) || isPieceCapProduct(rawName);
+  const normalizedPackSize = pieceBased ? 1 : (positiveInteger(packSize) || 5000);
   if (normalizedLocation && normalizedPackSize) {
     return { productName: `${normalizedLocation} · ${color}`, capacity: normalizedPackSize, productKey: `CAP::${normalizedLocation}::${color}::${normalizedPackSize}` };
   }

@@ -5,11 +5,12 @@ import { getActorName, writeAuditLog } from "@/lib/audit";
 import { aggregateStockMovements, ensureFactoryStockTable, invalidateFactoryStockCache, loadCanonicalFactoryStockMovements, loadDerivedFactoryStockMovements, productionMovementRows, saleMovementRows, MOVEMENT_TYPES, STOCK_TYPES } from "@/lib/factory-stock";
 import { loadCatalogWithCustomItems } from "@/lib/custom-catalog";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
+import { isPieceCapProduct } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CAP_COLOR_NAMES = new Set(["ဖြူ", "နီ", "ပြာ", "ဝါ", "စိမ်း", "ပန်း", "နက်/အမဲ", "ခရမ်း", "အပန်း", "ရောင်စုံ"]);
+const CAP_COLOR_NAMES = new Set(["ဖြူ", "နီ", "ပြာ", "ဝါ", "စိမ်း", "ပန်း", "နက်/အမဲ", "ခရမ်း", "အပန်း"]);
 
 function dateFilter(searchParams) {
   const movementDate = {};
@@ -107,8 +108,9 @@ export async function POST(request) {
         const capProductKey = String(row.capProductKey || "").trim();
         const capProductName = String(row.capProductName || "").trim();
         const isCatalogCap = capProductKey && capProductName && !CAP_COLOR_NAMES.has(capProductName.replace(/^အဖုံး\s*-\s*/, ""));
+        const pieceBased = isPieceCapProduct(capProductKey) || isPieceCapProduct(capProductName);
         const stockColor = isCatalogCap ? capProductName.replace(/^အဖုံး\s*-\s*/, "") : color;
-        const packSize = Math.round(Number(row.packSize || 0));
+        const packSize = pieceBased ? 1 : Math.round(Number(row.packSize || 0));
         const packs = Math.round(Number(row.packs || 0));
         if (!location || !stockColor || !Number.isFinite(packSize) || packSize <= 0 || !Number.isFinite(packs) || packs <= 0) return null;
         return { movementDate: String(body.date || getMyanmarDateInputValue()), movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, stockType: STOCK_TYPES.CAP, productKey: isCatalogCap ? `CAP::${stockColor}` : `CAP::${location}::${stockColor}::${packSize}`, productName: isCatalogCap ? capProductName : `${location} · ${stockColor}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, sourceType: "CAP_OPENING", sourceId: batchId, sourceVersion: "cap-opening-v1", reason: "အဖုံး လက်ရှိ/အသစ်ဝင် Stock ထည့်ခြင်း", note: String(row.note || "").trim() || null, actorName };

@@ -94,6 +94,14 @@ export const CAP_ITEMS = [
   defaultPrice: CAP_GROUP.defaultPrice,
 }));
 
+export const PIECE_CAP_PRODUCT_KEYS = new Set(["CAP_20L_BACK", "CAP_20L_CLEAR", "CAP_PRESS_FLIP", "CAP_TWIST_FLIP"]);
+
+export function isPieceCapProduct(itemOrKey) {
+  const key = typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.productKey;
+  return PIECE_CAP_PRODUCT_KEYS.has(String(key || ""))
+    || ["20 လီတာ အဖုံး (အနောက်)", "20 လီတာ အဖုံး (အကြည်)", "ဂေါက် - နှိပ်", "ဂေါက် - လှည့်"].some((name) => String(itemOrKey?.productName || itemOrKey || "").includes(name));
+}
+
 export const TUBE_GROUP = { key: "TUBE", label: "Tube", description: "Tube တစ်လုံးစျေး", productType: "tube" };
 export const PRICE_GROUPS = [...BOTTLE_GROUPS, CAP_GROUP, TUBE_GROUP];
 
