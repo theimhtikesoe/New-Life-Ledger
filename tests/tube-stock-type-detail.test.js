@@ -20,6 +20,11 @@ describe("Tube stock type detail", () => {
     expect(route).toContain("productionPacks");
     expect(route).toContain("usedPieces");
     expect(route).toContain("currentPieces");
+    expect(route).toContain("systemCurrentPieces");
+    expect(route).toContain("unrecordedOpeningPacks");
+    expect(route).toContain("Math.max(0, systemCurrentPieces)");
+    expect(page).toContain("နဂို Tube သုံးပြီး");
+    expect(page).toContain("unrecordedOpeningPieces");
   });
 
   it("collapses weight details and shows summary KPIs", () => {

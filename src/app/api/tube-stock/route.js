@@ -104,11 +104,20 @@ export async function GET(request) {
       current.currentPacks = packEquivalent(current.currentPieces, current.capacity);
       byType.set(movement.productKey, current);
     }
-    const byTypeRows = [...byType.values()].map((item) => ({
-      ...item,
-      openingPieces: 0,
-      unrecordedOpeningPieces: Math.max(0, -item.currentPieces),
-    })).sort((a, b) => b.currentPieces - a.currentPieces);
+    const byTypeRows = [...byType.values()].map((item) => {
+      const systemCurrentPieces = item.currentPieces;
+      const unrecordedOpeningPieces = Math.max(0, -systemCurrentPieces);
+      const currentPieces = Math.max(0, systemCurrentPieces);
+      return {
+        ...item,
+        systemCurrentPieces,
+        currentPieces,
+        currentPacks: packEquivalent(currentPieces, item.capacity),
+        openingPieces: 0,
+        unrecordedOpeningPieces,
+        unrecordedOpeningPacks: packEquivalent(unrecordedOpeningPieces, item.capacity),
+      };
+    }).sort((a, b) => b.currentPieces - a.currentPieces);
     return NextResponse.json({
       data: {
         totalPacks,
