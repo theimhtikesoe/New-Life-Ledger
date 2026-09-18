@@ -14,6 +14,12 @@ function packEquivalent(pieces, capacity) {
   return value < 0 ? -Math.ceil(Math.abs(value) / unit) : Math.floor(value / unit);
 }
 
+function usagePackEquivalent(pieces, capacity) {
+  const value = Math.abs(Number(pieces || 0));
+  const unit = Number(capacity || 0);
+  return unit ? Math.ceil(value / unit) : 0;
+}
+
 export async function GET(request) {
   try {
     await ensureDatabase();
@@ -60,7 +66,7 @@ export async function GET(request) {
       } else if (movement.movementType === "PRODUCTION_USE_OUT") {
         const pieces = Math.abs(Number(movement.quantityBottles || 0));
         dailyUsedPieces += pieces;
-        dailyUsedPacks += packEquivalent(pieces, movement.capacity);
+        dailyUsedPacks += usagePackEquivalent(pieces, movement.capacity);
       }
     }
     for (const movement of allTubeMovements.filter((row) => row.movementDate === usageDate && row.movementType === "PRODUCTION_USE_OUT")) {
@@ -95,8 +101,8 @@ export async function GET(request) {
         totalPieces += pieces;
       } else if (movement.movementType === "PRODUCTION_USE_OUT") {
         current.usedPieces += Math.abs(pieces);
-        current.usedPacks = packEquivalent(current.usedPieces, current.capacity);
-        totalUsedPacks += packEquivalent(pieces, current.capacity);
+        current.usedPacks = usagePackEquivalent(current.usedPieces, current.capacity);
+        totalUsedPacks += usagePackEquivalent(pieces, current.capacity);
       } else {
         current.adjustmentPieces += pieces;
       }
