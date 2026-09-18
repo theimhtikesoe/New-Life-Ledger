@@ -23,6 +23,12 @@ function isPieceCapItem(item) {
   return isCapItem(item) && (isPieceCapProduct(item) || name.includes("20 လီတာ") || name.includes("ဂေါက်"));
 }
 
+export function getCapUnitCount(item, quantity, packSize = 5000) {
+  const count = Math.max(0, Math.round(Number(quantity || 0)));
+  if (!isCapItem(item)) return 0;
+  return count * (isPieceCapItem(item) ? 1 : Math.max(1, Math.round(Number(packSize || 5000))));
+}
+
 function isTubeItem(item) {
   return item?.productType === "tube" || item?.categoryKey === "TUBE";
 }
@@ -36,7 +42,7 @@ export function makeLine(item, cardCount, capItem = null, capLocation = "မန�
   const pricePerUnit = Number(item.effectivePrice?.pricePerBottle || 0);
   const bottlesPerCard = Number(item.bottlesPerCard || item.capacity || 0);
   const capPack = Math.max(1, Math.round(Number(capPackSize || 5000)));
-  const bottleCount = isCap ? (capOnly ? quantity * (pieceCap ? 1 : capPack) : 0) : quantity * bottlesPerCard;
+  const bottleCount = isCap ? (capOnly ? getCapUnitCount(item, quantity, capPack) : 0) : quantity * bottlesPerCard;
   return {
     id: `${item.productKey}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     productKey: item.productKey,
@@ -120,8 +126,10 @@ export default function SalesItemPicker({ catalog = [], saleItems = [], onChange
   const editingItem = saleItems.find((item) => item.id === editingItemId) || null;
   const selectedPrice = Number(selectedItem?.effectivePrice?.pricePerBottle || 0);
   const previewCards = Math.max(0, Math.round(Number(cardCount || 0)));
-  const previewBottles = isCapItem(selectedItem) ? previewCards * (saleMode === "cap" ? Number(defaultCapPackSize || 5000) : 1) : previewCards * Number(selectedItem?.bottlesPerCard || 0);
-  const previewTotal = (isCapItem(selectedItem) ? previewBottles : previewBottles) * selectedPrice;
+  const previewBottles = isCapItem(selectedItem)
+    ? (saleMode === "cap" ? getCapUnitCount(selectedItem, previewCards, defaultCapPackSize) : previewCards)
+    : previewCards * Number(selectedItem?.bottlesPerCard || 0);
+  const previewTotal = previewBottles * selectedPrice;
   const totalAmount = saleItems.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
   const totalBottles = saleItems.reduce((sum, item) => sum + Number(item.bottleCount || 0), 0);
   const totalCaps = saleItems.reduce((sum, item) => sum + (isCapItem(item) ? Number(item.unitCount || item.cardCount || 0) : 0), 0);
