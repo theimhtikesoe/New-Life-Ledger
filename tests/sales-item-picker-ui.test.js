@@ -19,4 +19,12 @@ describe("sales item picker selection controls", () => {
   it("hides the product category selector for cap-only mode", () => {
     expect(picker).toContain('pickerMode === "product" && saleMode !== "cap" ? <ThemedSelect value={currentCategory}');
   });
+
+  it("shows cap selection, location, and pack size inline for bottle sales", () => {
+    expect(picker).toContain('saleMode === "bottle" && selectedItem && !isTubeItem(selectedItem) && capItems.length');
+    expect(picker).toContain("အဖုံး setting");
+    expect(picker).toContain("အဖုံး ရွေးပါ");
+    expect(picker).toContain("တစ်အိတ်ဆံ့");
+    expect(picker).toContain("defaultCapLocation");
+  });
 });
