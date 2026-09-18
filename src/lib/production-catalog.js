@@ -79,7 +79,6 @@ export const CAP_ITEMS = [
   ["အပန်း", "CAP_PINK"],
   ["အစိမ်း", "CAP_GREEN"],
   ["အမဲ", "CAP_BLACK"],
-  ["ရောင်စုံ", "CAP_MIXED"],
   ["20 လီတာ အဖုံး (အနောက်)", "CAP_20L_BACK"],
   ["20 လီတာ အဖုံး (အကြည်)", "CAP_20L_CLEAR"],
   ["ဂေါက် - နှိပ်", "CAP_PRESS_FLIP"],

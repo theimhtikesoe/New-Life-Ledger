@@ -187,14 +187,17 @@ export function normalizeCapIdentity({ productName, productKey, location, packSi
   const namedColor = rawName.replace(/^အဖုံး\s*[-·:]\s*/, "").trim();
   const color = aliasColor || namedColor || rawKey;
   const normalizedLocation = clean(location);
-  const normalizedPackSize = positiveInteger(packSize);
+  // Older direct cap-sale rows did not persist capPackSize. Treat them as the
+  // standard 5000-cap bag rather than creating a zero-capacity stock row whose
+  // piece count is incorrectly displayed as the number of bags.
+  const normalizedPackSize = positiveInteger(packSize) || 5000;
   if (normalizedLocation && normalizedPackSize) {
     return { productName: `${normalizedLocation} · ${color}`, capacity: normalizedPackSize, productKey: `CAP::${normalizedLocation}::${color}::${normalizedPackSize}` };
   }
   return {
     productName: color,
-    capacity: 0,
-    productKey: `CAP::${color}`,
+    capacity: normalizedPackSize,
+    productKey: `CAP::${color}::${normalizedPackSize}`,
   };
 }
 
@@ -264,7 +267,7 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
         // actual pieces that must be deducted from CAP stock.
         const capCount = positiveInteger(item?.capOnly ? (item?.unitCount || item?.bottleCount) : (item?.cardCount || item?.unitCount || item?.bottleCount));
         if (!capCount) continue;
-        const identity = normalizeCapIdentity({ productName: item?.productName, productKey: item?.productKey, location: item?.capLocation, packSize: item?.capPackSize });
+        const identity = normalizeCapIdentity({ productName: item?.productName, productKey: item?.productKey, location: item?.capLocation, packSize: item?.capPackSize || item?.capacity });
         movements.push({ movementDate: getMyanmarDateInputValue(row.date), movementType: MOVEMENT_TYPES.SALE_OUT, stockType: STOCK_TYPES.CAP, ...identity, quantityCards: item?.capOnly ? 0 : -capCount, quantityBottles: -capCount, sourceType, sourceId: clean(row.id), sourceVersion, reason: "အဖုံးရောင်းစာရင်း", note: item?.capOnly ? `${positiveInteger(item?.cardCount)} အိတ် × ${identity.capacity} ဆံ့` : null, actorName: clean(actorName) || "system" });
         continue;
       }

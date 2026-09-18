@@ -67,8 +67,18 @@ describe("factory stock and dashboard loading contract", () => {
 });
 
 
-import { saleMovementRows, aggregateStockMovements } from "../src/lib/factory-stock.js";
+import { saleMovementRows, aggregateStockMovements, normalizeCapIdentity } from "../src/lib/factory-stock.js";
 describe("cap stock unit accounting", () => {
+  it("normalizes legacy direct cap sales to 5000-cap bags", () => {
+    expect(normalizeCapIdentity({ productName: "ပြာ", productKey: "ပြာ" })).toMatchObject({
+      productKey: "CAP::ပြာ::5000",
+      productName: "ပြာ",
+      capacity: 5000,
+    });
+    const rows = saleMovementRows([{ id: "legacy-cap-sale", date: "2026-09-15", saleItems: [{ isCap: true, productName: "ပြာ", productKey: "ပြာ", capOnly: true, cardCount: 1, unitCount: 5000 }] }]);
+    expect(rows[0]).toMatchObject({ capacity: 5000, quantityBottles: -5000, productKey: "CAP::ပြာ::5000" });
+  });
+
   it("treats one bottle as one cap and converts 5000 caps to one bag", () => {
     const rows = saleMovementRows([{ id: "sale-1", date: "2026-09-11", saleItems: [{ productType: "bottle", productName: ".3 ဖြူ", productKey: ".3 ဖြူ::100", capacity: 100, bottleCount: 200, cardCount: 2, capNormalCount: 200, capExtraCount: 0, capProductKey: "ပြာ", capProductName: "ပြာ", capLocation: "မန္တလေး", capPackSize: 5000 }] }]);
     const cap = rows.find((row) => row.stockType === "CAP");
