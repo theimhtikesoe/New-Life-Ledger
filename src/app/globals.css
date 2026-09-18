@@ -1178,11 +1178,11 @@ textarea {
   position: absolute;
   top: -12vh;
   left: var(--rain-left);
-  width: 2px;
-  height: 34px;
+  width: 1px;
+  height: 26px;
   border-radius: 999px;
-  background: linear-gradient(to bottom, transparent, rgba(37, 99, 235, 0.76));
-  box-shadow: 0 0 3px rgba(96, 165, 250, 0.38);
+  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.42));
+  box-shadow: 0 0 2px rgba(96, 165, 250, 0.2);
   transform: rotate(15deg);
   animation: weatherRain var(--rain-duration) linear var(--rain-delay) infinite;
 }
@@ -1207,18 +1207,18 @@ textarea {
   left: var(--leaf-left);
   display: block;
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-  font-size: clamp(1.15rem, 2.8vw, 2rem);
+  font-size: clamp(0.95rem, 2.2vw, 1.55rem);
   line-height: 1;
   opacity: 0;
   transform-origin: 50% 45%;
   scale: var(--leaf-size);
-  filter: drop-shadow(0 2px 3px rgba(120, 53, 15, 0.24));
+  filter: drop-shadow(0 1px 2px rgba(120, 53, 15, 0.14));
   animation: weatherLeafFall var(--leaf-duration) ease-in var(--leaf-delay) infinite;
   will-change: transform, opacity;
 }
 @keyframes weatherLeafFall {
   0% { opacity: 0; transform: translate3d(-2vw, -8vh, 0) rotate(var(--leaf-rotate)) rotateX(0deg) rotateY(0deg); }
-  9% { opacity: 0.92; }
+  9% { opacity: 0.58; }
   24% { transform: translate3d(5vw, 22vh, 0) rotate(calc(var(--leaf-rotate) + 85deg)) rotateX(42deg) rotateY(18deg); }
   48% { transform: translate3d(-6vw, 52vh, 0) rotate(calc(var(--leaf-rotate) + 205deg)) rotateX(118deg) rotateY(70deg); }
   72% { transform: translate3d(8vw, 79vh, 0) rotate(calc(var(--leaf-rotate) + 290deg)) rotateX(205deg) rotateY(145deg); }
