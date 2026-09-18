@@ -372,6 +372,8 @@ export function aggregateStockMovements(movements = []) {
     const adjustmentCards = item.stockType === STOCK_TYPES.CAP ? item.adjustmentBottles / capUnit : item.adjustmentCards;
     const unrecordedOpeningStockCards = Math.max(0, -systemCurrentCards);
     const unrecordedOpeningStockBottles = Math.max(0, -systemCurrentBottles);
+    const currentCards = Math.max(0, systemCurrentCards);
+    const currentBottles = Math.max(0, systemCurrentBottles);
     return {
       ...item,
       systemCurrentCards,
@@ -382,8 +384,10 @@ export function aggregateStockMovements(movements = []) {
       openingStockBottles: 0,
       unrecordedOpeningStockCards,
       unrecordedOpeningStockBottles,
-      currentCards: systemCurrentCards,
-      currentBottles: systemCurrentBottles,
+      // Keep the raw negative balance in systemCurrent* for reconciliation,
+      // but never display a physically impossible negative stock balance.
+      currentCards,
+      currentBottles,
     };
   }).sort((a, b) => a.productName.localeCompare(b.productName, "my"));
 }
