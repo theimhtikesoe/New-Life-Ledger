@@ -31,6 +31,7 @@ export const BOTTLE_ITEMS = [
   { type: "25 ကျပ်သား အဖြူ", capacities: [100, 210] },
   { type: "25 ကျပ်သား အပြာ", capacities: [100, 210] },
   { type: "30 ကျပ်သား", capacities: [100, 320] },
+  { type: "40 ကျပ်သား", capacities: [100] },
   { type: "နွားသေး", capacities: [100, 250] },
   { type: "နွားကြီး", capacities: [100, 250] },
   { type: "0.85", capacities: [100] },
@@ -59,6 +60,7 @@ export const BOTTLE_GROUPS = [
   { key: "25-white", label: "25 ကျပ်သား အဖြူ", description: "25 ကျပ်သား အဖြူ" },
   { key: "25-blue", label: "25 ကျပ်သား အပြာ", description: "25 ကျပ်သား အပြာ" },
   { key: "30", label: "30 ကျပ်သား", description: "30 ကျပ်သား" },
+  { key: "40", label: "40 ကျပ်သား", description: "40 ကျပ်သား" },
   { key: "45", label: "45 ကျပ်သား", description: "45 ကျပ်သား" },
   { key: "cow", label: "နွား", description: "နွားသေး / နွားကြီး" },
   { key: "085", label: ".85", description: "0.85" },
@@ -110,6 +112,7 @@ export function getBottleGroup(type) {
   if (value === "25 ကျပ်သား အဖြူ") return "25-white";
   if (value === "25 ကျပ်သား အပြာ") return "25-blue";
   if (value.startsWith("30 ")) return "30";
+  if (value.startsWith("40 ")) return "40";
   if (value.startsWith("45 ")) return "45";
   if (value.startsWith("နွား")) return "cow";
   if (value === "0.85") return "085";
