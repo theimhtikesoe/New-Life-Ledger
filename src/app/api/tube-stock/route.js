@@ -14,10 +14,10 @@ function packEquivalent(pieces, capacity) {
   return value < 0 ? -Math.ceil(Math.abs(value) / unit) : Math.floor(value / unit);
 }
 
-function usagePackEquivalent(pieces, capacity) {
-  const value = Math.abs(Number(pieces || 0));
+function decimalPackEquivalent(pieces, capacity) {
+  const value = Number(pieces || 0);
   const unit = Number(capacity || 0);
-  return unit ? Math.ceil(value / unit) : 0;
+  return unit ? Number((value / unit).toFixed(2)) : 0;
 }
 
 export async function GET(request) {
@@ -66,7 +66,7 @@ export async function GET(request) {
       } else if (movement.movementType === "PRODUCTION_USE_OUT") {
         const pieces = Math.abs(Number(movement.quantityBottles || 0));
         dailyUsedPieces += pieces;
-        dailyUsedPacks += usagePackEquivalent(pieces, movement.capacity);
+        dailyUsedPacks += decimalPackEquivalent(pieces, movement.capacity);
       }
     }
     for (const movement of allTubeMovements.filter((row) => row.movementDate === usageDate && row.movementType === "PRODUCTION_USE_OUT")) {
@@ -101,8 +101,8 @@ export async function GET(request) {
         totalPieces += pieces;
       } else if (movement.movementType === "PRODUCTION_USE_OUT") {
         current.usedPieces += Math.abs(pieces);
-        current.usedPacks = usagePackEquivalent(current.usedPieces, current.capacity);
-        totalUsedPacks += usagePackEquivalent(pieces, current.capacity);
+        current.usedPacks = decimalPackEquivalent(current.usedPieces, current.capacity);
+        totalUsedPacks += decimalPackEquivalent(pieces, current.capacity);
       } else {
         current.adjustmentPieces += pieces;
       }
@@ -118,10 +118,10 @@ export async function GET(request) {
         ...item,
         systemCurrentPieces,
         currentPieces,
-        currentPacks: packEquivalent(currentPieces, item.capacity),
+        currentPacks: decimalPackEquivalent(currentPieces, item.capacity),
         openingPieces: 0,
         unrecordedOpeningPieces,
-        unrecordedOpeningPacks: item.capacity ? Math.ceil(unrecordedOpeningPieces / item.capacity) : 0,
+        unrecordedOpeningPacks: decimalPackEquivalent(unrecordedOpeningPieces, item.capacity),
       };
     }).sort((a, b) => b.currentPieces - a.currentPieces);
     return NextResponse.json({
