@@ -18,13 +18,16 @@ function capDisplayName(value) {
   return String(value || "").replace(/^အဖုံး\s*[-·:]\s*/, "").trim();
 }
 
-function isPieceCapItem(item) { return isCapItem(item) && isPieceCapProduct(item); }
+function isPieceCapItem(item) {
+  const name = String(item?.productName || "");
+  return isCapItem(item) && (isPieceCapProduct(item) || name.includes("20 လီတာ") || name.includes("ဂေါက်"));
+}
 
 function isTubeItem(item) {
   return item?.productType === "tube" || item?.categoryKey === "TUBE";
 }
 
-function makeLine(item, cardCount, capItem = null, capLocation = "မန္တလေး", capPackSize = 5000, capOnly = false) {
+export function makeLine(item, cardCount, capItem = null, capLocation = "မန္တလေး", capPackSize = 5000, capOnly = false) {
   const quantity = Math.max(1, Math.round(Number(cardCount || 0)));
   const isCap = isCapItem(item);
   const isTube = isTubeItem(item);
