@@ -59,7 +59,6 @@ export default function ThemedSelect({ value = "", onChange, children, className
           role="listbox"
           aria-labelledby={id}
           onPointerDownCapture={(event) => event.stopPropagation()}
-          onClickCapture={(event) => event.preventDefault()}
           onWheel={(event) => event.stopPropagation()}
           onTouchMove={(event) => event.stopPropagation()}
           className="pointer-events-auto absolute left-0 right-0 top-[calc(100%+0.35rem)] z-[9999] max-h-64 touch-pan-y overflow-y-auto overscroll-contain rounded-xl border border-cyan-200 bg-white p-1.5 shadow-[0_18px_45px_rgba(15,23,42,0.28)] backdrop-blur-xl"
