@@ -8,7 +8,7 @@ import { ensureDatabase } from "@/lib/database";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 import { cashSaleTypeLabel, normalizeCashSaleType, summarizeCashSalesByType } from "@/lib/cash-sale-utils";
 import { accountingAuditLogWhere, isEditActivity, isOrderWorkflowActivity, isProductionReportSubmitActivity, isProductionWorkerCreateActivity } from "@/lib/accounting-activity";
-import { getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
+import { getCashReceivedAmount, getPaymentSplit, paymentSplitLabel } from "@/lib/payment-split";
 import { getBottleDisplayName } from "@/lib/production-catalog";
 import { dedupeSettledBottleSaleItems, hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { hydrateSettlementSaleTypes, isWholesaleSettlement } from "@/lib/ledger-settlement";
@@ -95,7 +95,7 @@ function summarizeLedgers(ledgers) {
     const isPaid = ledger.type === "DEBIT";
     if (isPaid) {
       summary.paidCount += 1;
-      summary.paidAmount += ledger.amount;
+      summary.paidAmount += getCashReceivedAmount(ledger);
     } else {
       summary.debtCount += 1;
       summary.debtAmount += ledger.amount;
@@ -122,7 +122,7 @@ function summarizeLedgers(ledgers) {
     };
     if (isPaid) {
       current.paidCount += 1;
-      current.paidAmount += ledger.amount;
+      current.paidAmount += getCashReceivedAmount(ledger);
     } else {
       current.debtCount += 1;
       current.debtAmount += ledger.amount;

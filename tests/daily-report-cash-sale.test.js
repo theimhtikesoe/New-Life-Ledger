@@ -251,6 +251,23 @@ describe("Telegram daily report CashSale data", () => {
     expect(report.activityLogs.find((log) => log.entityType === "CashSale")).toMatchObject({ action: "CASH_SALE", entityLabel: "လက်ငင်း Customer" });
   });
 
+  it("does not add a settlement discount to wholesale cash totals", async () => {
+    mocks.ledgerFindMany.mockResolvedValue([{
+      ...ledger,
+      id: "settlement-1",
+      type: "DEBIT",
+      amount: 100000,
+      discountAmount: 900000,
+      paymentType: "CASH",
+      note: "__SETTLES_CREDIT_LEDGER__:credit-1",
+    }]);
+    mocks.cashSaleFindMany.mockResolvedValue([]);
+    const report = await getDailyReportData(period);
+
+    expect(report.summary.paidAmount).toBe(100000);
+    expect(report.summary.paymentTypes).toEqual({ CASH: 100000 });
+  });
+
   it("uses the accounting-only Activity History scope and excludes Order workflow records", async () => {
     mocks.auditFindMany.mockResolvedValue([
       { id: "order", action: "ORDER_DRAFT", entityType: "Order", entityId: "order-1", hiddenAt: null, createdAt: ledger.createdAt },

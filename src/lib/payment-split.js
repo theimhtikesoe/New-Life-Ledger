@@ -63,6 +63,14 @@ export function getPaymentSplit(row) {
   return parsed;
 }
 
+// Ledger DEBIT rows store two different accounting concepts:
+// `amount` is money actually received, while `discountAmount` reduces the
+// customer's outstanding balance without being cash received. Report totals
+// must therefore use amount only and must never add the discount.
+export function getCashReceivedAmount(row) {
+  return toAmount(row?.amount);
+}
+
 export function paymentSplitTotal(split) {
   return PAYMENT_KEYS.reduce((sum, key) => sum + toAmount(split?.[key]), 0);
 }

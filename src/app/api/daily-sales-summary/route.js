@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
-import { getPaymentSplit, hasPaymentBreakdownInput } from "@/lib/payment-split";
+import { getCashReceivedAmount, getPaymentSplit, hasPaymentBreakdownInput } from "@/lib/payment-split";
 import { buildDailyReconciliation } from "@/lib/daily-summary-review";
 import { hydrateSettlementSaleTypes, isWholesaleSettlement } from "@/lib/ledger-settlement";
 
@@ -129,7 +129,7 @@ function summarizeLedgerPayments(ledgers) {
   const summary = emptySummary();
   for (const ledger of ledgers) {
     if (!isWholesaleSettlementLedger(ledger)) continue;
-    const amount = toAmount(ledger.amount);
+    const amount = getCashReceivedAmount(ledger);
     const split = getPaymentSplit(ledger);
     summary.recordCount += 1;
     summary.wholesaleTotal += amount;

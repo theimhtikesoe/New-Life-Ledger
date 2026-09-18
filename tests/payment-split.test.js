@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPaymentSplit, paymentSplitForInput, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
+import { getCashReceivedAmount, getPaymentSplit, paymentSplitForInput, paymentSplitLabel, paymentSplitTotal } from "@/lib/payment-split";
 
 describe("payment split", () => {
   it("parses a legacy mixed-payment note without changing the full total", () => {
@@ -45,5 +45,12 @@ describe("payment split", () => {
   it("falls back to the selected payment type for legacy single-payment rows", () => {
     const split = getPaymentSplit({ amount: 500000, paymentType: "KPAY", note: null });
     expect(split).toEqual({ CASH: 0, KPAY: 500000, BANK: 0, WAVE: 0, SPECIAL: 0 });
+  });
+
+  it("does not add a settlement discount to cash received", () => {
+    const settlement = { type: "DEBIT", amount: 100000, discountAmount: 900000, paymentType: "CASH" };
+
+    expect(getCashReceivedAmount(settlement)).toBe(100000);
+    expect(getPaymentSplit(settlement)).toEqual({ CASH: 100000, KPAY: 0, BANK: 0, WAVE: 0, SPECIAL: 0 });
   });
 });

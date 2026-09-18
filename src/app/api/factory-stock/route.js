@@ -9,6 +9,8 @@ import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const CAP_COLOR_NAMES = new Set(["ဖြူ", "နီ", "ပြာ", "ဝါ", "စိမ်း", "ပန်း", "နက်/အမဲ", "ခရမ်း", "အပန်း", "ရောင်စုံ"]);
+
 function dateFilter(searchParams) {
   const movementDate = {};
   const from = String(searchParams.get("from") || "").trim();
@@ -102,10 +104,14 @@ export async function POST(request) {
       const movements = rows.map((row) => {
         const location = String(row.location || "").trim();
         const color = String(row.color || "").trim();
+        const capProductKey = String(row.capProductKey || "").trim();
+        const capProductName = String(row.capProductName || "").trim();
+        const isCatalogCap = capProductKey && capProductName && !CAP_COLOR_NAMES.has(capProductName.replace(/^အဖုံး\s*-\s*/, ""));
+        const stockColor = isCatalogCap ? capProductName.replace(/^အဖုံး\s*-\s*/, "") : color;
         const packSize = Math.round(Number(row.packSize || 0));
         const packs = Math.round(Number(row.packs || 0));
-        if (!location || !color || !Number.isFinite(packSize) || packSize <= 0 || !Number.isFinite(packs) || packs <= 0) return null;
-        return { movementDate: String(body.date || getMyanmarDateInputValue()), movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, stockType: STOCK_TYPES.CAP, productKey: `CAP::${location}::${color}::${packSize}`, productName: `${location} · ${color}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, sourceType: "CAP_OPENING", sourceId: batchId, sourceVersion: "cap-opening-v1", reason: "အဖုံး လက်ရှိ/အသစ်ဝင် Stock ထည့်ခြင်း", note: String(row.note || "").trim() || null, actorName };
+        if (!location || !stockColor || !Number.isFinite(packSize) || packSize <= 0 || !Number.isFinite(packs) || packs <= 0) return null;
+        return { movementDate: String(body.date || getMyanmarDateInputValue()), movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, stockType: STOCK_TYPES.CAP, productKey: isCatalogCap ? `CAP::${stockColor}` : `CAP::${location}::${stockColor}::${packSize}`, productName: isCatalogCap ? capProductName : `${location} · ${stockColor}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, sourceType: "CAP_OPENING", sourceId: batchId, sourceVersion: "cap-opening-v1", reason: "အဖုံး လက်ရှိ/အသစ်ဝင် Stock ထည့်ခြင်း", note: String(row.note || "").trim() || null, actorName };
       }).filter(Boolean);
       if (!movements.length) return NextResponse.json({ error: "နေရာ၊ အဖုံးအရောင်၊ တစ်အိတ်ဆံ့နှင့် အိတ်အရေအတွက် မှန်ကန်စွာထည့်ပါ။" }, { status: 400 });
       await prisma.factoryStockMovement.createMany({ data: movements });
@@ -156,7 +162,7 @@ export async function PATCH(request) {
     if (!id || !location || !color || packSize <= 0 || packs <= 0) return NextResponse.json({ error: "ပြင်ဆင်ရန် အချက်အလက် မပြည့်စုံပါ။" }, { status: 400 });
     const existing = await prisma.factoryStockMovement.findFirst({ where: { id, stockType: STOCK_TYPES.CAP, movementType: MOVEMENT_TYPES.ADJUSTMENT_IN, sourceType: "CAP_OPENING" } });
     if (!existing) return NextResponse.json({ error: "Manual Cap Stock မှတ်တမ်း မတွေ့ပါ။ ရောင်းထွက်စာရင်းကို တိုက်ရိုက်မပြင်နိုင်ပါ။" }, { status: 404 });
-    const updated = await prisma.factoryStockMovement.update({ where: { id }, data: { movementDate: String(body.movementDate || existing.movementDate), productKey: `CAP::${location}::${color}::${packSize}`, productName: `${location} · ${color}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, note: String(body.note || "").trim() || null, actorName } });
+    const updated = await prisma.factoryStockMovement.update({ where: { id }, data: { movementDate: String(body.movementDate || existing.movementDate), productKey: isCatalogCap ? `CAP::${stockColor}` : `CAP::${location}::${stockColor}::${packSize}`, productName: isCatalogCap ? capProductName : `${location} · ${stockColor}`, capacity: packSize, quantityCards: packs, quantityBottles: packs * packSize, note: String(body.note || "").trim() || null, actorName } });
     await writeAuditLog({ db: prisma, actorName, action: "CAP_STOCK_UPDATE", entityType: "FactoryStockMovement", entityId: id, entityLabel: "Cap Stock", summary: "အဖုံး Stock မှတ်တမ်း ပြင်ဆင်", metadata: { productKey: updated.productKey, packs } });
     invalidateFactoryStockCache();
     return NextResponse.json({ data: { id, updated: true } });
