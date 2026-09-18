@@ -6,6 +6,7 @@ const root = process.cwd();
 const route = fs.readFileSync(path.join(root, "src/app/api/monthly-bottle-sales/route.js"), "utf8");
 const page = fs.readFileSync(path.join(root, "src/app/monthly-bottle-sales/page.js"), "utf8");
 const dailyPage = fs.readFileSync(path.join(root, "src/app/daily-bottle-sales/page.js"), "utf8");
+const permissions = fs.readFileSync(path.join(root, "src/lib/user-permissions.js"), "utf8");
 
 describe("monthly bottle sales report", () => {
   it("uses Myanmar month boundaries and the shared no-double-counting summary", () => {
@@ -30,5 +31,10 @@ describe("monthly bottle sales report", () => {
   it("links the daily report to the matching month", () => {
     expect(dailyPage).toContain("/monthly-bottle-sales?month=");
     expect(dailyPage).toContain("တစ်လစာ ကြည့်ရန်");
+  });
+
+  it("registers the page in the permission system", () => {
+    expect(permissions).toContain('path: "/monthly-bottle-sales"');
+    expect(permissions).toContain('actorName === "ဆောင်းဦး"');
   });
 });
