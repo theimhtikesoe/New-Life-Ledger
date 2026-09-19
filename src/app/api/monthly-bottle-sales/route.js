@@ -5,6 +5,7 @@ import { getMyanmarDateInputValue, getMyanmarDayRange, getMyanmarDateParts } fro
 import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
 import { DEFAULT_TUBE_MAPPINGS, getHistoricalBottleDisplayName, TUBE_PRODUCT_TYPES, serializeTubeTypes } from "@/lib/production-catalog";
+import { loadCatalogWithCustomItems } from "@/lib/custom-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,25 @@ function compactCustomerRows(customers = []) {
   return { customers: compactCustomers, items: [...items.values()].sort((a, b) => b.bottleCount - a.bottleCount) };
 }
 
+function mergeCatalogItems(catalog = [], soldItems = [], tubeMappings = new Map()) {
+  const merged = new Map(soldItems.map((item) => [`${item.productKey}::${item.capacity}`, item]));
+  for (const item of catalog) {
+    const key = `${item.productKey}::${item.capacity}`;
+    if (merged.has(key)) continue;
+    merged.set(key, {
+      productKey: item.productKey,
+      categoryKey: item.categoryKey || null,
+      productName: item.productName,
+      tubeType: serializeTubeTypes(tubeMappings.get(item.productKey)) || null,
+      capacity: Number(item.capacity || 0),
+      cardCount: 0,
+      bottleCount: 0,
+      totalAmount: 0,
+    });
+  }
+  return [...merged.values()].sort((a, b) => b.bottleCount - a.bottleCount || String(a.productName).localeCompare(String(b.productName), "my") || Number(a.capacity || 0) - Number(b.capacity || 0));
+}
+
 export async function GET(request) {
   try {
     await ensureDatabase();
@@ -99,6 +119,8 @@ export async function GET(request) {
       return { date, customers: day.totalCustomers, bottles: day.totalBottles, amount: day.totalAmount, paidAmount: day.totalPaidAmount, creditBottles: day.creditBottleSales.totalBottles };
     });
     const compactRows = compactCustomerRows(summary.customers);
+    const catalog = await loadCatalogWithCustomItems();
+    const itemSummary = mergeCatalogItems(catalog, compactRows.items, tubeMappings);
     return NextResponse.json({ data: {
       month,
       firstDate: first,
@@ -109,7 +131,7 @@ export async function GET(request) {
       totalDifference: summary.totalDifference,
       creditBottleSales: { totalBottles: summary.creditBottleSales.totalBottles },
       customers: compact ? compactRows.customers : summary.customers,
-      items: compact ? compactRows.items : [...summary.cashBottleSales.items, ...summary.creditBottleSales.items],
+      items: itemSummary,
       daily,
       tubeTypes: TUBE_PRODUCT_TYPES,
       tubeBottleMappings: [...tubeBottleMap.values()],
