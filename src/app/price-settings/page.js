@@ -40,7 +40,6 @@ export default function PriceSettingsPage() {
       const nextCategories = Array.isArray(data.categories) && data.categories.length ? data.categories : PRICE_GROUPS;
       setCategories(nextCategories);
       setActiveCategory((current) => nextCategories.some((category) => category.key === current) ? current : nextCategories[0]?.key || "");
-      setNewItem((current) => ({ ...current, categoryKey: nextCategories.some((category) => category.key === current.categoryKey) ? current.categoryKey : nextCategories[0]?.key || "" }));
       setCatalog(Array.isArray(data.catalog) ? data.catalog : []);
       const nextCategoryPrices = {};
       for (const category of data.categories || []) {

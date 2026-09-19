@@ -51,7 +51,6 @@ function normalizeRows(body) {
       outputUnit: category === "tube" ? "အိတ်" : getBottleUnit(row.bottleType),
       outputCapacity: String(capacity),
       bottleType: category === "bottle" ? String(row.bottleType) : null,
-      tubeType: category === "bottle" ? (String(row.tubeType || "").trim() || null) : null,
       tubeG: category === "tube" ? String(row.tubeG) : null,
       tubeColor: category === "tube" ? String(row.tubeColor) : null,
     };

@@ -89,7 +89,7 @@ export async function loadDerivedFactoryStockMovements({ actorName = "system" } 
   // sequential so stock pages and Trace Center do not queue competing pool
   // connections and time out while rebuilding derived movements.
   const productionRows = await prisma.productionReport.findMany({
-    select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true, wasteQuantity: true, tubeDamageQuantity: true },
+    select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true, wasteQuantity: true, tubeDamageQuantity: true },
     orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }],
   });
   const ledgerRows = await prisma.ledger.findMany({

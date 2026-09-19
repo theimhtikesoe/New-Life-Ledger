@@ -399,7 +399,6 @@ model ProductionReport {
   outputUnit         String
   outputCapacity     String?
   bottleType         String?
-  tubeType           String?
   tubeG              String?
   tubeColor          String?
   wasteQuantity      Int      @default(0)
