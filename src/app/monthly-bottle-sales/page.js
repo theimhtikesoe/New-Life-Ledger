@@ -10,8 +10,12 @@ function currentMonth() {
 function money(value) { return `${Number(value || 0).toLocaleString()} Ks`; }
 function number(value) { return Number(value || 0).toLocaleString(); }
 function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
-function tubeGroup(tubeType) {
+function normalizeReportTubeType(tubeType) {
   const value = String(tubeType || "").trim();
+  return value === "16g B (S+S)" ? "16g (S+S)" : value;
+}
+function tubeGroup(tubeType) {
+  const value = normalizeReportTubeType(tubeType);
   const grams = value.match(/(13g|16g|24g)/i)?.[1]?.toLowerCase() || "မသတ်မှတ်ရသေး";
   const color = /\bW\b|အဖြူ/i.test(value) ? "အဖြူ" : /\bB\b|ပြာ|S\+1|S\+S/i.test(value) ? "အပြာ" : "မသတ်မှတ်ရသေး";
   return { grams, color, label: value || "Tube မသတ်မှတ်ရသေး" };
@@ -46,13 +50,13 @@ export default function MonthlyBottleSalesPage() {
     for (const tubeType of data?.tubeTypes || []) {
       const group = tubeGroup(tubeType);
       const key = `${group.grams}::${group.color}::${group.label}`;
-      map.set(key, { ...group, tubeType, bottleCount: 0, cardCount: 0, totalAmount: 0 });
+      map.set(key, { ...group, tubeType: group.label, bottleCount: 0, cardCount: 0, totalAmount: 0 });
     }
     for (const item of items) {
       const group = tubeGroup(item.tubeType);
       if (!item.tubeType) continue;
       const key = `${group.grams}::${group.color}::${group.label}`;
-      const current = map.get(key) || { ...group, tubeType: item.tubeType, bottleCount: 0, cardCount: 0, totalAmount: 0 };
+      const current = map.get(key) || { ...group, tubeType: group.label, bottleCount: 0, cardCount: 0, totalAmount: 0 };
       current.bottleCount += Number(item.bottleCount || 0);
       current.cardCount += Number(item.cardCount || 0);
       current.totalAmount += Number(item.totalAmount || 0);
@@ -65,10 +69,10 @@ export default function MonthlyBottleSalesPage() {
     const groups = new Map();
     for (const mapping of data?.tubeBottleMappings || []) {
       const group = tubeGroup(mapping.tubeType);
-      const current = groups.get(mapping.tubeType) || { ...group, bottles: [] };
+      const current = groups.get(group.label) || { ...group, bottles: [] };
       const sold = soldByKey.get(`${mapping.productKey}::${mapping.capacity}`) || soldByKey.get(mapping.productKey);
       current.bottles.push({ ...mapping, bottleCount: sold?.bottleCount || 0, totalAmount: sold?.totalAmount || 0 });
-      groups.set(mapping.tubeType, current);
+      groups.set(group.label, current);
     }
     return [...groups.values()].sort((a, b) => a.grams.localeCompare(b.grams) || a.color.localeCompare(b.color) || a.label.localeCompare(b.label));
   }, [data, items]);
