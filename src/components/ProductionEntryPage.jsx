@@ -457,7 +457,7 @@ export default function ProductionEntryPage() {
     const summary = `နေ့စွဲ: ${reportDate}\nအမျိုးအစား: ${category === "tube" ? "Tube" : "ဗူးခွံ"}\nပူးတွဲဆင်းသူ: ${workerNames.join(", ") || "မဖြည့်ရသေး"}\n\n${category === "tube" ? tubeSummary : `${typeLines}\n\nဗူးပျက်: ${formatNumber(damagedPieces)}\nTube ပျက်: ${formatNumber(Number(tubeDamageQuantity || 0))}\nTube အရေအတွက်: ${formatNumber(Number(tubeQuantity || 0))} ${tubeQuantityUnit}`}`;
     setSubmitting(true);
     try {
-      const actorName = localStorage.getItem("actorName") || "Rhyzoe";
+      const actorName = category === "tube" ? "ဖြိုးကို" : (localStorage.getItem("actorName") || "Rhyzoe");
       const response = await fetch("/api/production-reports", {
         method: editingSubmissionId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json", "x-actor-name": encodeURIComponent(actorName) },

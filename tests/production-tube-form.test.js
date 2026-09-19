@@ -54,4 +54,9 @@ describe("Tube production entry", () => {
     expect(page).toContain("pcs");
     expect(audit).toContain("ဖြိုးကို");
   });
+
+  it("attributes Tube submissions to ဖြိုးကို when the actor header is unavailable", () => {
+    expect(route).toContain('getActorName(request, requestedCategory === "tube" ? "ဖြိုးကို" : "Rhyzoe")');
+    expect(page).toContain('const actorName = category === "tube" ? "ဖြိုးကို" : (localStorage.getItem("actorName") || "Rhyzoe");');
+  });
 });

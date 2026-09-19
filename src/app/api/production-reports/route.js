@@ -109,7 +109,7 @@ export async function POST(request) {
     const tubeQuantityValue = decimalTubeQuantity(body.tubeQuantityValue ?? body.tubeQuantity);
     const tubeQuantity = Math.trunc(Number(tubeQuantityValue));
     const tubeQuantityUnitValue = tubeQuantityUnit(body.tubeQuantityUnit);
-    const actorName = getActorName(request);
+    const actorName = getActorName(request, requestedCategory === "tube" ? "ဖြိုးကို" : "Rhyzoe");
     const submissionId = crypto.randomUUID();
     const involvedWorkers = Array.isArray(body.involvedWorkers)
       ? body.involvedWorkers.map((value) => String(value).trim()).filter(Boolean).slice(0, 20)
@@ -183,7 +183,7 @@ export async function PATCH(request) {
     const tubeQuantityValue = decimalTubeQuantity(body.tubeQuantityValue ?? body.tubeQuantity);
     const tubeQuantity = Math.trunc(Number(tubeQuantityValue));
     const tubeQuantityUnitValue = tubeQuantityUnit(body.tubeQuantityUnit);
-    const actorName = getActorName(request);
+    const actorName = getActorName(request, requestedCategory === "tube" ? "ဖြိုးကို" : "Rhyzoe");
     const involvedWorkers = Array.isArray(body.involvedWorkers) ? body.involvedWorkers.map((value) => String(value).trim()).filter(Boolean).slice(0, 20) : [];
     const notes = String(body.notes || "").trim() || null;
     const data = rows.map((row, index) => ({
