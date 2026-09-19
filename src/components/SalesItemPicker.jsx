@@ -53,6 +53,7 @@ export function makeLine(item, cardCount, capItem = null, capLocation = "မန�
     categoryKey: item.categoryKey,
     categoryLabel: item.categoryLabel,
     productName: item.productName,
+    tubeType: item.tubeType || null,
     isCap,
     capacity: isCap ? (capOnly ? (pieceCap ? 1 : capPack) : 0) : bottlesPerCard,
     cardCount: quantity,

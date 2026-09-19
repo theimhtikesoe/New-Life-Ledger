@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
-import { isPieceCapProduct, normalizeBottleProductKey, normalizeBottleType } from "@/lib/production-catalog";
+import { DEFAULT_TUBE_MAPPINGS, isPieceCapProduct, normalizeBottleProductKey, normalizeBottleType } from "@/lib/production-catalog";
 
 export const STOCK_TYPES = {
   BOTTLE: "BOTTLE",
@@ -73,6 +73,7 @@ export async function loadTubeMappings() {
   if (typeof prisma.priceSetting?.findMany !== "function") return new Map();
   const rows = await prisma.priceSetting.findMany({ where: { scope: "ITEM", tubeType: { not: null } }, select: { productKey: true, tubeType: true }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
   const mappings = new Map();
+  for (const [productKey, tubeType] of Object.entries(DEFAULT_TUBE_MAPPINGS)) mappings.set(productKey, tubeType);
   for (const row of rows) {
     const productKey = normalizeBottleProductKey(row.productKey);
     if (!mappings.has(productKey) && row.tubeType) mappings.set(productKey, row.tubeType);

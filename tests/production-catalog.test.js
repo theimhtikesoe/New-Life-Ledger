@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOTTLE_ITEMS, getBottleDisplayName, getBottleGroup, getBottleUnit } from "@/lib/production-catalog";
+import { BOTTLE_ITEMS, DEFAULT_TUBE_MAPPINGS, getBottleDisplayName, getBottleGroup, getBottleUnit } from "@/lib/production-catalog";
 
 describe("Production bottle catalog", () => {
   it("includes the ဒိန်သေး (S+S) 250 ဆံ့ card in the dairy group", () => {
@@ -51,5 +51,14 @@ describe("Production bottle catalog", () => {
   it("includes both 100 and 210 ဆံ့ cards for 25 ကျပ်သား", () => {
     expect(BOTTLE_ITEMS).toContainEqual({ type: "25 ကျပ်သား", capacities: [100, 210] });
     expect(getBottleGroup("25 ကျပ်သား")).toBe("25");
+  });
+
+  it("includes 30 ကျပ်သား အပြာ in all bottle selectors with 24g B mappings", () => {
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "30 ကျပ်သား အပြာ", capacities: [100, 320] });
+    expect(getBottleGroup("30 ကျပ်သား အပြာ")).toBe("30");
+    expect(DEFAULT_TUBE_MAPPINGS).toMatchObject({
+      "30 ကျပ်သား အပြာ::100": "24g B (S+1)",
+      "30 ကျပ်သား အပြာ::320": "24g B (S+1)",
+    });
   });
 });

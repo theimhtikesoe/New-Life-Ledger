@@ -16,11 +16,13 @@ function addItems(target, saleItems) {
       productKey,
       categoryKey: item.categoryKey || null,
       productName: item.productName || "ဗူး",
+      tubeType: item.tubeType || null,
       capacity,
       cardCount: 0,
       bottleCount: 0,
       totalAmount: 0,
     };
+    if (!current.tubeType && item.tubeType) current.tubeType = item.tubeType;
     current.cardCount += cardCount;
     current.bottleCount += bottleCount;
     current.totalAmount += totalAmount;

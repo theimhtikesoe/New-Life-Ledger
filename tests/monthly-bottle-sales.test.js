@@ -16,6 +16,8 @@ describe("monthly bottle sales report", () => {
     expect(route).toContain("buildDailyBottleSalesSummary");
     expect(route).toContain("creditBottleSales.totalBottles");
     expect(route).toContain("daily");
+    expect(route).toContain("enrichTubeTypes");
+    expect(route).toContain("prisma.priceSetting.findMany");
   });
 
   it("provides a headed month page with CSV export and all requested breakdowns", () => {
@@ -25,6 +27,9 @@ describe("monthly bottle sales report", () => {
     expect(page).toContain("ရက်စွဲအလိုက် စုစုပေါင်း");
     expect(page).toContain("Item အလိုက် စုစုပေါင်း");
     expect(page).toContain("Customer အလိုက် စုစုပေါင်း");
+    expect(page).toContain("Tube အလိုက် စုစုပေါင်းဗူး");
+    expect(page).toContain("13g / 16g / 24g Tube");
+    expect(page).toContain("အဖြူ / အပြာ");
     expect(page).toContain("monthly-bottle-sales-${month}.csv");
   });
 

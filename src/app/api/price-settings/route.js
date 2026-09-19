@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
-import { PRICE_GROUPS, normalizeBottleProductKey } from "@/lib/production-catalog";
+import { DEFAULT_TUBE_MAPPINGS, PRICE_GROUPS, normalizeBottleProductKey } from "@/lib/production-catalog";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 import { CUSTOM_CATALOG_DATE, customCategoriesFromRows, loadCatalogWithCustomItems, loadCustomCatalogRows } from "@/lib/custom-catalog";
 
@@ -99,7 +99,7 @@ export async function GET(request) {
       const effective = itemPrice || categoryPrice || null;
       return {
         ...item,
-        tubeType: itemPriceRow?.tubeType || "",
+        tubeType: itemPriceRow?.tubeType || DEFAULT_TUBE_MAPPINGS[item.productKey] || "",
         effectivePrice: effective
           ? { ...effective, source: itemPrice ? (itemPriceRow === latestItemRow ? "LATEST_ITEM" : "ITEM") : (categoryPrice === latestCategoryRow ? "LATEST_CATEGORY" : "CATEGORY") }
           : (item.defaultPrice !== undefined ? { pricePerBottle: item.defaultPrice, pricePerCard: item.defaultPrice, source: "DEFAULT" } : null),
@@ -173,12 +173,12 @@ export async function POST(request) {
       const raw = itemPrices[item.productKey];
       if (raw === "" || raw === null || raw === undefined) continue;
       const pricePerBottle = positiveInt(raw, `${item.productName} ${item.capacity} စျေးနှုန်း`);
-      rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard, tubeType: String(tubeMappings[item.productKey] || "").trim() || null });
+      rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard, tubeType: String(tubeMappings[item.productKey] || DEFAULT_TUBE_MAPPINGS[item.productKey] || "").trim() || null });
     }
 
     for (const item of catalog) {
       if (item.productType === "cap" || itemPrices[item.productKey] !== undefined) continue;
-      const tubeType = String(tubeMappings[item.productKey] || "").trim();
+      const tubeType = String(tubeMappings[item.productKey] || DEFAULT_TUBE_MAPPINGS[item.productKey] || "").trim();
       if (!tubeType) continue;
       rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle: 0, pricePerCard: 0, tubeType });
     }

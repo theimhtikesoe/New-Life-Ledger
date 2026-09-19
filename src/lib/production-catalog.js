@@ -31,6 +31,7 @@ export const BOTTLE_ITEMS = [
   { type: "25 ကျပ်သား အဖြူ", capacities: [100, 210] },
   { type: "25 ကျပ်သား အပြာ", capacities: [100, 210] },
   { type: "30 ကျပ်သား", capacities: [100, 320] },
+  { type: "30 ကျပ်သား အပြာ", capacities: [100, 320] },
   { type: "40 ကျပ်သား", capacities: [100] },
   { type: "နွားသေး", capacities: [100, 250] },
   { type: "နွားကြီး", capacities: [100, 250] },
@@ -190,6 +191,11 @@ export const TUBE_PRODUCT_TYPES = [
   "13g (S+1)",
   "13g (S+S)",
 ];
+
+export const DEFAULT_TUBE_MAPPINGS = {
+  "30 ကျပ်သား အပြာ::100": "24g B (S+1)",
+  "30 ကျပ်သား အပြာ::320": "24g B (S+1)",
+};
 
 export const TUBE_BY_MACHINE = {
   TB1: [
