@@ -13,12 +13,15 @@ describe("debt reconciliation workflow", () => {
     expect(page).toContain("grid-cols-2");
   });
 
-  it("shows the first ledger page without waiting for all history pages", () => {
+  it("loads only open credits initially and lazy-loads full history on demand", () => {
     const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
-    expect(dashboard).toContain("limit=100&offset=0&includeCount=false");
+    const transactionsRoute = readFileSync(resolve(process.cwd(), "src/app/api/customers/[id]/transactions/route.js"), "utf8");
+    expect(dashboard).toContain("transactions?openOnly=true");
+    expect(dashboard).toContain("loadAllTransactions");
+    expect(dashboard).toContain("includeCount=false");
     expect(dashboard).toContain("setLoadingCustomerHistory(false)");
-    expect(dashboard).toContain("while (nextPage.pagination?.hasMore)");
-    expect(dashboard).toContain("allLedgers.push");
+    expect(transactionsRoute).toContain('searchParams.get("openOnly") === "true"');
+    expect(transactionsRoute).toContain("getOpenCreditRows");
   });
 
   it("keeps prepayments for the next matching debt instead of older debt", () => {

@@ -4,12 +4,60 @@ import { prisma } from "@/lib/prisma";
 import { getActorName, writeAuditLog } from "@/lib/audit";
 import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { getWholesaleTracking } from "@/lib/wholesale-tracking";
-import { normalizeSettlementNote } from "@/lib/ledger-settlement";
+import { normalizeSettlementNote, settlementTargetIds } from "@/lib/ledger-settlement";
 import { invalidateFactoryStockCache, saleMovementRows } from "@/lib/factory-stock";
 import { getMyanmarDateInputValue, getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const dynamic = "force-dynamic";
 const SALE_TYPE_REQUIRED_FROM = "2026-09-12";
+
+function getOpenCreditRows(rows, currentBalance) {
+  if (Number(currentBalance || 0) <= 0) return [];
+  const credits = rows
+    .filter((row) => row.type === "CREDIT")
+    .map((credit) => ({ ...credit, remaining: Math.max(0, Math.round(Number(credit.amount || 0))) }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || String(a.id).localeCompare(String(b.id)));
+  const creditById = new Map(credits.map((credit) => [String(credit.id), credit]));
+  let unlinkedPaymentPool = 0;
+  const futurePrepayments = [];
+  rows.filter((row) => row.type === "DEBIT").forEach((payment) => {
+    const targets = settlementTargetIds(payment.note).filter((id) => creditById.has(String(id)));
+    const amount = Math.max(0, Math.round(Number(payment.amount || 0)));
+    if (targets.length) {
+      const target = creditById.get(String(targets[0]));
+      target.remaining = Math.max(0, target.remaining - amount);
+      return;
+    }
+    const paymentDay = new Date(payment.date).toISOString().slice(0, 10);
+    const hasNearFutureMatchingCredit = credits.some((credit) => {
+      const creditDay = new Date(credit.date).toISOString().slice(0, 10);
+      return creditDay > paymentDay
+        && new Date(`${creditDay}T00:00:00Z`).getTime() - new Date(`${paymentDay}T00:00:00Z`).getTime() <= 3 * 24 * 60 * 60 * 1000
+        && Math.round(Number(credit.amount || 0)) === amount;
+    });
+    if (String(payment.note || "").includes("__PREPAYMENT__") || hasNearFutureMatchingCredit) futurePrepayments.push({ payment, amount });
+    else unlinkedPaymentPool += amount;
+  });
+  credits.forEach((credit) => {
+    if (unlinkedPaymentPool <= 0) return;
+    const applied = Math.min(credit.remaining, unlinkedPaymentPool);
+    credit.remaining -= applied;
+    unlinkedPaymentPool -= applied;
+  });
+  futurePrepayments.forEach(({ payment, amount }) => {
+    let remaining = amount;
+    credits.forEach((credit) => {
+      if (remaining <= 0 || new Date(credit.date).getTime() < new Date(payment.date).getTime()) return;
+      const applied = Math.min(credit.remaining, remaining);
+      credit.remaining -= applied;
+      remaining -= applied;
+    });
+  });
+  return credits
+    .filter((credit) => credit.remaining > 0)
+    .sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime() || String(b.id).localeCompare(String(a.id)))
+    .map(({ remaining, ...credit }) => ({ ...credit, remainingAmount: remaining }));
+}
 
 export async function GET(request, { params }) {
   try {
@@ -21,6 +69,7 @@ export async function GET(request, { params }) {
     const requestedOffset = Number(searchParams.get("offset") || 0);
     const offset = Math.max(Number.isFinite(requestedOffset) ? Math.floor(requestedOffset) : 0, 0);
     const includeCount = searchParams.get("includeCount") !== "false";
+    const openOnly = searchParams.get("openOnly") === "true";
     const type = searchParams.get("type");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -38,6 +87,12 @@ export async function GET(request, { params }) {
       discountAmount: true, discountNote: true, note: true,
       paymentType: true, saleItems: true,
     };
+    if (openOnly) {
+      const customer = await prisma.customer.findUnique({ where: { id: customerId }, select: { current_balance: true } });
+      const rows = await prisma.ledger.findMany({ where: { customerId }, select, orderBy: [{ date: "asc" }, { id: "asc" }] });
+      const items = getOpenCreditRows(rows, customer?.current_balance);
+      return NextResponse.json({ data: { items, pagination: { offset: 0, limit: items.length, total: items.length, hasMore: false } } });
+    }
     // Production uses connection_limit=1; do not request the list and count
     // connections concurrently when another device is saving a transaction.
     const rows = await prisma.ledger.findMany({ where, select, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: offset, take: includeCount ? limit : limit + 1 });

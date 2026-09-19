@@ -389,6 +389,7 @@ export default function Dashboard({ view = "overview" }) {
   const [alert, setAlert] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredLedgers, setFilteredLedgers] = useState([]);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
   const [transactionPagination, setTransactionPagination] = useState({ offset: 0, limit: 50, total: 0, hasMore: false });
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
@@ -1123,36 +1124,21 @@ export default function Dashboard({ view = "overview" }) {
       // network round trips when switching customers in the ledger.
       const customer = await api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`, { signal: controller.signal });
       if (requestId !== customerRequestIdRef.current) return;
-      // Show the selected customer and ledger form immediately. Full history
-      // pagination continues below for the payment selector and transaction list.
+      // Show the selected customer and ledger form immediately. Settled history
+      // is intentionally not fetched on entry; it is loaded only on demand.
       const firstPageCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: [] };
       selectedCustomerRef.current = firstPageCustomer;
       setSelectedCustomer(firstPageCustomer);
       setSelectedCustomerId(customer.id);
-      setLoadingCustomerHistory(true);
-      const transactionPage = await api(`/api/customers/${id}/transactions?limit=100&offset=0&includeCount=false`, { signal: controller.signal });
+      const transactionPage = await api(`/api/customers/${id}/transactions?openOnly=true`, { signal: controller.signal });
       if (requestId !== customerRequestIdRef.current) return;
       const firstPageWithTransactions = { ...firstPageCustomer, ledgers: transactionPage.items || [] };
       selectedCustomerRef.current = firstPageWithTransactions;
       setSelectedCustomer(firstPageWithTransactions);
-      setTransactionPagination(transactionPage.pagination || { offset: firstPageWithTransactions.ledgers.length, limit: 100, total: firstPageWithTransactions.ledgers.length, hasMore: false });
+      setTransactionPagination({ offset: firstPageWithTransactions.ledgers.length, limit: 100, total: firstPageWithTransactions.ledgers.length, hasMore: false });
       setLoadingCustomerHistory(false);
-      // The payment selector must see historical credits too. The API is
-      // paginated. Continue loading older pages in the background so the
-      // first customer view and sales-item picker are not blocked by history.
-      const allLedgers = [...(transactionPage.items || [])];
-      let nextPage = transactionPage;
-      while (nextPage.pagination?.hasMore) {
-        nextPage = await api(`/api/customers/${id}/transactions?limit=100&offset=${allLedgers.length}&includeCount=false`, { signal: controller.signal });
-        allLedgers.push(...(nextPage.items || []));
-        if (!nextPage.items?.length) break;
-      }
-      if (requestId !== customerRequestIdRef.current) return;
-      const nextCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: allLedgers };
-      customerCacheRef.current.set(id, nextCustomer);
-      selectedCustomerRef.current = nextCustomer;
-      setSelectedCustomer(nextCustomer);
-      setTransactionPagination({ offset: allLedgers.length, limit: 100, total: allLedgers.length, hasMore: false });
+      customerCacheRef.current.set(id, firstPageWithTransactions);
+      selectedCustomerRef.current = firstPageWithTransactions;
       setSelectedCustomerId(customer.id);
     } catch (error) {
       if (error.name === "AbortError") return;
@@ -1182,6 +1168,28 @@ export default function Dashboard({ view = "overview" }) {
       setLoadingMoreTransactions(false);
     }
   }, [selectedCustomerId, selectedCustomer, transactionPagination, loadingMoreTransactions, showAlert]);
+
+  const loadAllTransactions = useCallback(async () => {
+    if (!selectedCustomerId || loadingMoreTransactions || showAllTransactions) return;
+    setLoadingMoreTransactions(true);
+    try {
+      const allLedgers = [];
+      let offset = 0;
+      let page;
+      do {
+        page = await api(`/api/customers/${selectedCustomerId}/transactions?limit=100&offset=${offset}&includeCount=false`, { timeoutMs: 60000 });
+        allLedgers.push(...(page.items || []));
+        offset = allLedgers.length;
+      } while (page.pagination?.hasMore && page.items?.length);
+      setSelectedCustomer((prev) => prev ? { ...prev, ledgers: allLedgers } : prev);
+      setTransactionPagination({ offset: allLedgers.length, limit: 100, total: allLedgers.length, hasMore: false });
+      setShowAllTransactions(true);
+    } catch (error) {
+      showAlert(error.message, "error");
+    } finally {
+      setLoadingMoreTransactions(false);
+    }
+  }, [selectedCustomerId, loadingMoreTransactions, showAllTransactions, showAlert]);
 
   useEffect(() => {
     loadCustomer().catch((error) => {
@@ -2089,9 +2097,9 @@ export default function Dashboard({ view = "overview" }) {
       .filter((ledger) => ledger.type === "CREDIT")
       .map((credit) => ({
         ...credit,
-        originalAmount: Math.max(0, Number(credit.amount || 0)),
+        originalAmount: Math.max(0, Number(credit.remainingAmount ?? credit.amount ?? 0)),
         paidAmount: 0,
-        remainingAmount: Math.max(0, Number(credit.amount || 0)),
+        remainingAmount: Math.max(0, Number(credit.remainingAmount ?? credit.amount ?? 0)),
       }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const creditById = new Map(credits.map((credit) => [String(credit.id), credit]));
@@ -2161,6 +2169,7 @@ export default function Dashboard({ view = "overview" }) {
   const canRecordPrepayment = paymentTargetLedgers.length === 0 || Number(selectedCustomer?.current_balance || 0) <= 0;
   useEffect(() => {
     setPaymentTargetLedgerId("");
+    setShowAllTransactions(false);
   }, [selectedCustomerId]);
   const cashSaleBreakdownInput = ledgerForm.paymentBreakdown || EMPTY_PAYMENT_BREAKDOWN;
   const hasCashSaleBreakdown = hasPaymentBreakdownInput(cashSaleBreakdownInput);
@@ -2208,6 +2217,13 @@ export default function Dashboard({ view = "overview" }) {
     () => mergeTransactionsWithCashSales(selectedCustomer?.ledgers || [], selectedCustomer?.cashSales || []),
     [selectedCustomer?.ledgers, selectedCustomer?.cashSales],
   );
+  const activeTransactions = useMemo(() => {
+    const openCreditIds = new Set(paymentTargetLedgers.map((ledger) => String(ledger.id)));
+    return unifiedTransactions.filter((transaction) => (
+      transaction.type === "CREDIT" && openCreditIds.has(String(transaction.id))
+    ));
+  }, [paymentTargetLedgers, unifiedTransactions]);
+  const transactionRowsForFilter = showAllTransactions ? unifiedTransactions : activeTransactions;
 
   // Handle filter changes from TransactionFilter component
   const handleFilterChange = useCallback((filtered) => {
@@ -2216,8 +2232,8 @@ export default function Dashboard({ view = "overview" }) {
 
   // Reset filtered ledgers when selected customer changes
   useEffect(() => {
-    setFilteredLedgers(unifiedTransactions);
-  }, [unifiedTransactions]);
+    setFilteredLedgers(transactionRowsForFilter);
+  }, [transactionRowsForFilter]);
 
   const deletedCustomerLedgers = deletedCustomerDetail?.ledgers || [];
   const deletedCustomerLedgerSummary = deletedCustomerLedgers.reduce(
@@ -3295,10 +3311,18 @@ export default function Dashboard({ view = "overview" }) {
                 <div className="mt-8">
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းမှတ်တမ်း (Transactions)</h3>
+                    <button
+                      type="button"
+                      onClick={showAllTransactions ? () => setShowAllTransactions(false) : loadAllTransactions}
+                      disabled={loadingMoreTransactions}
+                      className="min-h-10 rounded-md border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100"
+                    >
+                      {loadingMoreTransactions ? "အဟောင်းစာရင်း ရယူနေသည်..." : showAllTransactions ? "လက်ကျန်စာရင်းပဲ ပြရန်" : "အဟောင်းမှတ်တမ်းများ ကြည့်ရန်"}
+                    </button>
                   </div>
                   
                   <TransactionFilter 
-                    transactions={unifiedTransactions}
+                    transactions={transactionRowsForFilter}
                     onFilterChange={handleFilterChange}
                   />
 
