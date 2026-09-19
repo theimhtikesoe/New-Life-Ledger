@@ -193,8 +193,8 @@ export const TUBE_PRODUCT_TYPES = [
 ];
 
 export const DEFAULT_TUBE_MAPPINGS = {
-  "30 ကျပ်သား အပြာ::100": "24g B (S+1)",
-  "30 ကျပ်သား အပြာ::320": "24g B (S+1)",
+  "30 ကျပ်သား အပြာ::100": "24g B (S+S)",
+  "30 ကျပ်သား အပြာ::320": "24g B (S+S)",
 };
 
 export const TUBE_BY_MACHINE = {

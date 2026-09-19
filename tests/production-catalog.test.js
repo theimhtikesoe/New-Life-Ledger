@@ -57,8 +57,8 @@ describe("Production bottle catalog", () => {
     expect(BOTTLE_ITEMS).toContainEqual({ type: "30 ကျပ်သား အပြာ", capacities: [100, 320] });
     expect(getBottleGroup("30 ကျပ်သား အပြာ")).toBe("30");
     expect(DEFAULT_TUBE_MAPPINGS).toMatchObject({
-      "30 ကျပ်သား အပြာ::100": "24g B (S+1)",
-      "30 ကျပ်သား အပြာ::320": "24g B (S+1)",
+      "30 ကျပ်သား အပြာ::100": "24g B (S+S)",
+      "30 ကျပ်သား အပြာ::320": "24g B (S+S)",
     });
   });
 });
