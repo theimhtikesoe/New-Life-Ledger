@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { normalizeTubeTypes } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ function addMaterial(target, source) {
 }
 
 function tubeLabel(row) {
-  return `${row.tubeG || "Tube"} ${row.tubeColor || ""}`.trim();
+  return normalizeTubeTypes(`${row.tubeG || "Tube"} ${row.tubeColor || ""}`)[0] || "Tube";
 }
 
 function serializeRow(row) {
