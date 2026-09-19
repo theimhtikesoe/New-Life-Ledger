@@ -192,9 +192,26 @@ export const TUBE_PRODUCT_TYPES = [
   "13g (S+S)",
 ];
 
+export const TUBE_MAPPING_SEPARATOR = "||";
+
+export function normalizeTubeTypes(value) {
+  const values = Array.isArray(value) ? value : String(value || "").split(TUBE_MAPPING_SEPARATOR);
+  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+export function serializeTubeTypes(value) {
+  return normalizeTubeTypes(value).join(TUBE_MAPPING_SEPARATOR);
+}
+
 export const DEFAULT_TUBE_MAPPINGS = {
   "30 ကျပ်သား အပြာ::100": "24g B (S+S)",
   "30 ကျပ်သား အပြာ::320": "24g B (S+S)",
+  "25 ကျပ်သား အပြာ::100": "16g B (S+S)",
+  "25 ကျပ်သား အပြာ::210": "16g B (S+S)",
+  "0.9 ပြာ::100": ["24g B (S+1)", "24g B (S+S)"],
+  "0.9 ပြာ::170": ["24g B (S+1)", "24g B (S+S)"],
+  "1 လီတာ ပြာ::100": ["24g B (S+1)", "24g B (S+S)"],
+  "1 လီတာ ပြာ::160": ["24g B (S+1)", "24g B (S+S)"],
 };
 
 export const TUBE_BY_MACHINE = {

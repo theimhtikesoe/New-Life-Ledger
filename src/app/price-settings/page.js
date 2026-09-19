@@ -4,7 +4,7 @@ import ThemedSelect from "@/components/ThemedSelect";
 
 
 import { useEffect, useMemo, useState } from "react";
-import { PRICE_GROUPS, TUBE_PRODUCT_TYPES } from "@/lib/production-catalog";
+import { PRICE_GROUPS, TUBE_PRODUCT_TYPES, normalizeTubeTypes } from "@/lib/production-catalog";
 
 function todayValue() {
   const now = new Date();
@@ -59,7 +59,7 @@ export default function PriceSettingsPage() {
         if (Number(exact?.pricePerBottle || 0) > 0) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
         else if (effectiveItemPrice > 0) nextItemPrices[item.productKey] = String(effectiveItemPrice);
         const tubeType = data.tubeMappings?.[item.productKey] || item.tubeType || "";
-        if (tubeType) nextTubeMappings[item.productKey] = tubeType;
+        if (tubeType) nextTubeMappings[item.productKey] = normalizeTubeTypes(tubeType);
       }
       setCategoryPrices(nextCategoryPrices);
       setItemPrices(nextItemPrices);
@@ -89,6 +89,12 @@ export default function PriceSettingsPage() {
 
   function setTubeMapping(key, value) {
     setTubeMappings((current) => ({ ...current, [key]: value }));
+  }
+
+  function toggleTubeMapping(key, tubeType, checked) {
+    const current = normalizeTubeTypes(tubeMappings[key]);
+    const next = checked ? [...new Set([...current, tubeType])] : current.filter((value) => value !== tubeType);
+    setTubeMapping(key, next);
   }
 
   function clearItemPrice(key) {
@@ -204,7 +210,8 @@ export default function PriceSettingsPage() {
               const unitLabel = isCap ? "ဖုံး" : isTube ? "Tube" : "ဗူး";
               const quantityLabel = isCap ? "အဖုံးတစ်ဖုံး" : isTube ? "တစ်အိတ်" : "ကဒ်တစ်ကဒ်";
               const unitTotal = isCap ? Number(effectivePrice || 0) : Number(effectivePrice || 0) * item.capacity;
-              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_180px_150px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{isCap ? "အဖုံး သီးသန့်" : isTube ? `${item.capacity} pcs / အိတ်` : `${item.capacity} ဆံ့ / ကဒ်`}</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {effectivePrice ? `${money(effectivePrice)}/${unitLabel}` : "စျေးမသတ်မှတ်ရသေး"}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">{quantityLabel}<br /><span className="font-black">{effectivePrice ? money(unitTotal) : "—"}</span></div><label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/{unitLabel}</span> : null}</label><label className="text-xs font-bold text-slate-700">သတ်မှတ် Tube<ThemedSelect value={isCap || isTube ? "" : (tubeMappings[item.productKey] || "")} onChange={(event) => setTubeMapping(item.productKey, event.target.value)} disabled={isCap || isTube} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 font-black disabled:bg-slate-100"><option value="">{isCap || isTube ? "မသက်ဆိုင်" : "Tube ရွေးရန်"}</option>{TUBE_PRODUCT_TYPES.map((tubeType) => <option key={tubeType} value={tubeType}>{tubeType}</option>)}</ThemedSelect></label><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!itemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
+              const mappedTubeTypes = normalizeTubeTypes(tubeMappings[item.productKey]);
+              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_180px_190px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{isCap ? "အဖုံး သီးသန့်" : isTube ? `${item.capacity} pcs / အိတ်` : `${item.capacity} ဆံ့ / ကဒ်`}</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {effectivePrice ? `${money(effectivePrice)}/${unitLabel}` : "စျေးမသတ်မှတ်ရသေး"}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">{quantityLabel}<br /><span className="font-black">{effectivePrice ? money(unitTotal) : "—"}</span></div><label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/{unitLabel}</span> : null}</label><fieldset disabled={isCap || isTube} className="rounded-lg border border-cyan-200 bg-white p-2 disabled:bg-slate-100"><legend className="px-1 text-xs font-bold text-slate-700">သတ်မှတ် Tube</legend><div className="grid grid-cols-1 gap-1">{TUBE_PRODUCT_TYPES.map((tubeType) => <label key={tubeType} className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={mappedTubeTypes.includes(tubeType)} onChange={(event) => toggleTubeMapping(item.productKey, tubeType, event.target.checked)} /><span>{tubeType}</span></label>)}</div></fieldset><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!itemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
             })}</div>}
           </section>
 

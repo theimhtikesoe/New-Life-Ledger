@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
-import { DEFAULT_TUBE_MAPPINGS, isPieceCapProduct, normalizeBottleProductKey, normalizeBottleType } from "@/lib/production-catalog";
+import { DEFAULT_TUBE_MAPPINGS, isPieceCapProduct, normalizeBottleProductKey, normalizeBottleType, normalizeTubeTypes } from "@/lib/production-catalog";
 
 export const STOCK_TYPES = {
   BOTTLE: "BOTTLE",
@@ -73,10 +73,13 @@ export async function loadTubeMappings() {
   if (typeof prisma.priceSetting?.findMany !== "function") return new Map();
   const rows = await prisma.priceSetting.findMany({ where: { scope: "ITEM", tubeType: { not: null } }, select: { productKey: true, tubeType: true }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
   const mappings = new Map();
-  for (const [productKey, tubeType] of Object.entries(DEFAULT_TUBE_MAPPINGS)) mappings.set(productKey, tubeType);
+  for (const [productKey, tubeType] of Object.entries(DEFAULT_TUBE_MAPPINGS)) mappings.set(productKey, normalizeTubeTypes(tubeType));
   for (const row of rows) {
     const productKey = normalizeBottleProductKey(row.productKey);
-    if (!mappings.has(productKey) && row.tubeType) mappings.set(productKey, row.tubeType);
+    if (!row.tubeType) continue;
+    const savedTypes = normalizeTubeTypes(row.tubeType);
+    const defaultTypes = normalizeTubeTypes(DEFAULT_TUBE_MAPPINGS[productKey]);
+    mappings.set(productKey, defaultTypes.length > 1 ? [...new Set([...defaultTypes, ...savedTypes])] : (defaultTypes.length ? defaultTypes : savedTypes));
   }
   return mappings;
 }
@@ -86,7 +89,7 @@ export async function loadDerivedFactoryStockMovements({ actorName = "system" } 
   // sequential so stock pages and Trace Center do not queue competing pool
   // connections and time out while rebuilding derived movements.
   const productionRows = await prisma.productionReport.findMany({
-    select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true, wasteQuantity: true, tubeDamageQuantity: true },
+    select: { reportDate: true, category: true, outputQuantity: true, outputCapacity: true, bottleType: true, tubeType: true, tubeG: true, tubeColor: true, submissionId: true, notes: true, actorName: true, wasteQuantity: true, tubeDamageQuantity: true },
     orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }],
   });
   const ledgerRows = await prisma.ledger.findMany({
@@ -244,8 +247,9 @@ export function productionMovementRows(rows = [], { actorName = "system", source
       const wastePieces = positiveInteger(row.wasteQuantity);
       movements.push({ movementDate: clean(row.reportDate), movementType: MOVEMENT_TYPES.PRODUCTION_IN, stockType: STOCK_TYPES.BOTTLE, ...bottleIdentity, quantityCards: cards, quantityBottles: cards * capacity, sourceType: "PRODUCTION", sourceId: reportId, sourceVersion, reason: "ထုတ်လုပ်မှုမှတ်တမ်း", note: clean(row.notes) || null, actorName: clean(actorName) || "system" });
       const mapped = tubeMappings.get(bottleIdentity.productKey);
-      if (mapped) {
-        const tubeIdentity = normalizeTubeIdentity(mapped, 0);
+      const mappedTubeType = String(row.tubeType || "").trim() || normalizeTubeTypes(mapped)[0];
+      if (mappedTubeType) {
+        const tubeIdentity = normalizeTubeIdentity(mappedTubeType, 0);
         const outputPieces = cards * capacity;
         const tubeDamagePieces = positiveInteger(row.tubeDamageQuantity);
         const totalTubeUse = outputPieces + wastePieces + tubeDamagePieces;

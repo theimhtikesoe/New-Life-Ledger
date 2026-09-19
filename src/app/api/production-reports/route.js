@@ -51,6 +51,7 @@ function normalizeRows(body) {
       outputUnit: category === "tube" ? "အိတ်" : getBottleUnit(row.bottleType),
       outputCapacity: String(capacity),
       bottleType: category === "bottle" ? String(row.bottleType) : null,
+      tubeType: category === "bottle" ? (String(row.tubeType || "").trim() || null) : null,
       tubeG: category === "tube" ? String(row.tubeG) : null,
       tubeColor: category === "tube" ? String(row.tubeColor) : null,
     };
@@ -126,6 +127,7 @@ export async function POST(request) {
       outputUnit: row.outputUnit,
       outputCapacity: row.outputCapacity,
       bottleType: row.bottleType,
+      tubeType: row.tubeType,
       tubeG: row.tubeG,
       tubeColor: row.tubeColor,
       wasteQuantity: index === 0 ? wasteQuantity : 0,
@@ -188,7 +190,7 @@ export async function PATCH(request) {
     const data = rows.map((row, index) => ({
       submissionId, reportDate, actorName, machineCode: machine.code, machineName: machine.name,
       category: row.category, outputQuantity: row.outputQuantity, outputUnit: row.outputUnit,
-      outputCapacity: row.outputCapacity, bottleType: row.bottleType, tubeG: row.tubeG, tubeColor: row.tubeColor,
+      outputCapacity: row.outputCapacity, bottleType: row.bottleType, tubeType: row.tubeType, tubeG: row.tubeG, tubeColor: row.tubeColor,
       wasteQuantity: index === 0 ? wasteQuantity : 0, wasteNote: index === 0 ? (String(body.wasteNote || "").trim() || null) : null,
       damagedPieces: index === 0 ? wasteQuantity : 0,
       tubeDamageQuantity: index === 0 ? tubeDamageQuantity : 0,
