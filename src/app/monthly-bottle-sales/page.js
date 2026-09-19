@@ -24,16 +24,17 @@ export default function MonthlyBottleSalesPage() {
   const [error, setError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
     setLoading(true); setError("");
-    fetch(`/api/monthly-bottle-sales?month=${encodeURIComponent(month)}`, { cache: "no-store", signal: controller.signal })
+    fetch(`/api/monthly-bottle-sales?month=${encodeURIComponent(month)}&compact=1`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "လစဉ် ဗူးရောင်းစာရင်း ရယူ၍မရပါ။"); setData(body.data); })
-      .catch((fetchError) => { if (fetchError.name !== "AbortError") setError(fetchError.message); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
+      .catch((fetchError) => { if (fetchError.name === "AbortError") setError("လစဉ် ဗူးရောင်းစာရင်း ရယူချိန်ကျော်သွားပါသည်။ Refresh ပြန်လုပ်ပါ။"); else setError(fetchError.message); })
+      .finally(() => setLoading(false));
+    return () => { window.clearTimeout(timeoutId); controller.abort(); };
   }, [month]);
   const items = useMemo(() => {
     const map = new Map();
-    for (const customer of data?.customers || []) for (const item of customer.items || []) {
+    for (const item of data?.items || []) {
       const key = `${item.productKey}::${item.capacity}`;
       const current = map.get(key) || { ...item, cardCount: 0, bottleCount: 0, totalAmount: 0 };
       current.cardCount += Number(item.cardCount || 0); current.bottleCount += Number(item.bottleCount || 0); current.totalAmount += Number(item.totalAmount || 0); map.set(key, current);

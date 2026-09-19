@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue, getMyanmarDayRange, getMyanmarDateParts } from "@/lib/myanmar-time";
 import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
-import { DEFAULT_TUBE_MAPPINGS, TUBE_PRODUCT_TYPES, serializeTubeTypes } from "@/lib/production-catalog";
+import { DEFAULT_TUBE_MAPPINGS, getHistoricalBottleDisplayName, TUBE_PRODUCT_TYPES, serializeTubeTypes } from "@/lib/production-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -30,16 +30,34 @@ function enrichTubeTypes(rows, tubeMappings) {
     saleItems: Array.isArray(row.saleItems)
       ? row.saleItems.map((item) => ({
         ...item,
+        productName: getHistoricalBottleDisplayName(item.productName),
         tubeType: serializeTubeTypes(item.tubeType || tubeMappings.get(String(item.productKey || ""))) || null,
       }))
       : row.saleItems,
   }));
 }
 
+function compactCustomerRows(customers = []) {
+  const items = new Map();
+  const compactCustomers = customers.map((row) => {
+    for (const item of row.items || []) {
+      const key = `${item.productKey}::${item.capacity}`;
+      const current = items.get(key) || { ...item, cardCount: 0, bottleCount: 0, totalAmount: 0 };
+      current.cardCount += Number(item.cardCount || 0);
+      current.bottleCount += Number(item.bottleCount || 0);
+      current.totalAmount += Number(item.totalAmount || 0);
+      items.set(key, current);
+    }
+    return { customer: row.customer, totalPaidAmount: row.totalPaidAmount, totalBottles: row.totalBottles, totalAmount: row.totalAmount, transactions: row.transactions };
+  });
+  return { customers: compactCustomers, items: [...items.values()].sort((a, b) => b.bottleCount - a.bottleCount) };
+}
+
 export async function GET(request) {
   try {
     await ensureDatabase();
     const params = new URL(request.url).searchParams;
+    const compact = params.get("compact") === "1";
     const now = getMyanmarDateParts();
     const month = params.get("month") || `${now.year}-${String(now.month).padStart(2, "0")}`;
     const { start, end, first, next } = monthRange(month);
@@ -80,7 +98,22 @@ export async function GET(request) {
       });
       return { date, customers: day.totalCustomers, bottles: day.totalBottles, amount: day.totalAmount, paidAmount: day.totalPaidAmount, creditBottles: day.creditBottleSales.totalBottles };
     });
-    return NextResponse.json({ data: { month, firstDate: first, ...summary, daily, items: [...summary.cashBottleSales.items, ...summary.creditBottleSales.items], tubeTypes: TUBE_PRODUCT_TYPES, tubeBottleMappings: [...tubeBottleMap.values()] } });
+    const compactRows = compactCustomerRows(summary.customers);
+    return NextResponse.json({ data: {
+      month,
+      firstDate: first,
+      totalCustomers: summary.totalCustomers,
+      totalBottles: summary.totalBottles,
+      totalAmount: summary.totalAmount,
+      totalPaidAmount: summary.totalPaidAmount,
+      totalDifference: summary.totalDifference,
+      creditBottleSales: { totalBottles: summary.creditBottleSales.totalBottles },
+      customers: compact ? compactRows.customers : summary.customers,
+      items: compact ? compactRows.items : [...summary.cashBottleSales.items, ...summary.creditBottleSales.items],
+      daily,
+      tubeTypes: TUBE_PRODUCT_TYPES,
+      tubeBottleMappings: [...tubeBottleMap.values()],
+    } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }

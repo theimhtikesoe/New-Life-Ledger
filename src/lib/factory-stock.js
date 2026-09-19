@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
-import { DEFAULT_TUBE_MAPPINGS, isPieceCapProduct, normalizeBottleProductKey, normalizeBottleType, normalizeTubeTypes } from "@/lib/production-catalog";
+import { DEFAULT_TUBE_MAPPINGS, getHistoricalBottleDisplayName, isPieceCapProduct, normalizeBottleProductKey, normalizeBottleType, normalizeTubeTypes } from "@/lib/production-catalog";
 
 export const STOCK_TYPES = {
   BOTTLE: "BOTTLE",
@@ -324,10 +324,13 @@ export function saleMovementRows(rows = [], { actorName = "system", sourceType =
 export function aggregateStockMovements(movements = []) {
   const summary = new Map();
   for (const movement of movements) {
+    const displayName = movement.stockType === STOCK_TYPES.BOTTLE
+      ? getHistoricalBottleDisplayName(movement.productName)
+      : movement.productName;
     const current = summary.get(movement.productKey) || {
       productKey: movement.productKey,
       stockType: movement.stockType,
-      productName: movement.productName,
+      productName: displayName,
       capacity: movement.capacity,
       productionCards: 0,
       soldCards: 0,

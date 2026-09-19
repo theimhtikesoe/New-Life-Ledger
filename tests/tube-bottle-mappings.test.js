@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TUBE_MAPPINGS, TUBE_BY_MACHINE, TUBE_PRODUCT_TYPES, normalizeTubeTypes } from "@/lib/production-catalog";
+import { BOTTLE_ITEMS, DEFAULT_TUBE_MAPPINGS, getHistoricalBottleDisplayName, TUBE_BY_MACHINE, TUBE_PRODUCT_TYPES, normalizeTubeTypes } from "@/lib/production-catalog";
 
 describe("requested bottle-to-tube mappings", () => {
+  it("keeps legacy blue bottle names report-only and out of new entry", () => {
+    expect(getHistoricalBottleDisplayName("0.25 ပြာ")).toBe("0.25 ပြာ အဟောင်း");
+    expect(getHistoricalBottleDisplayName("1 လီတာ ပြာ")).toBe("1 လီတာ ပြာ အဟောင်း");
+    expect(BOTTLE_ITEMS.map((item) => item.type)).not.toContain("0.25 ပြာ");
+    expect(BOTTLE_ITEMS.map((item) => item.type)).not.toContain("1 လီတာ ပြာ");
+  });
+
   it("maps both 25 ကျပ်သား အပြာ capacities to 16g (S+S) only", () => {
     expect(DEFAULT_TUBE_MAPPINGS["25 ကျပ်သား အပြာ::100"]).toBe("16g (S+S)");
     expect(DEFAULT_TUBE_MAPPINGS["25 ကျပ်သား အပြာ::210"]).toBe("16g (S+S)");

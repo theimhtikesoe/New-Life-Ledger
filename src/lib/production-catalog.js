@@ -47,6 +47,13 @@ export const BOTTLE_ITEMS = [
   { type: "45 ကျပ်သား", capacities: [200] },
 ];
 
+// These names belong to historical records only. They intentionally do not
+// appear in BOTTLE_ITEMS, so new production or sales entry cannot select them.
+export const LEGACY_BOTTLE_LABELS = {
+  "0.25 ပြာ": "0.25 ပြာ အဟောင်း",
+  "1 လီတာ ပြာ": "1 လီတာ ပြာ အဟောင်း",
+};
+
 export const BOTTLE_GROUPS = [
   { key: "03-white", label: ".3 ဖြူ", description: "0.3 ဖြူ" },
   { key: "03-blue", label: ".3 ပြာ", description: "0.3 ပြာ" },
@@ -156,6 +163,11 @@ export function getBottleUnit(type) {
 export function getBottleDisplayName(type) {
   const value = String(type || "") === "သေးရှည်" ? "ဒိန်ဝိုင်းအလတ်" : String(type || "");
   return normalizeBottleType(value);
+}
+
+export function getHistoricalBottleDisplayName(type) {
+  const value = getBottleDisplayName(type);
+  return LEGACY_BOTTLE_LABELS[value] || value;
 }
 
 export function buildCatalog() {
