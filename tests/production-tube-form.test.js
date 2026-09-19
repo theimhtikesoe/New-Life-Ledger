@@ -37,6 +37,12 @@ describe("Tube production entry", () => {
     expect(page.indexOf('value=".6 အဖြူ"')).toBeLessThan(page.indexOf('value=".3 ဖြူ"'));
   });
 
+  it("auto-selects the mapped Tube type when a Tube card is chosen", () => {
+    expect(page).toContain("TUBE_CARD_TYPE_MAPPINGS");
+    expect(page).toContain("selectTubeCard(entry)");
+    expect(page).toContain("onChange={(event) => updateTubeMetric(\"tubeType\", event.target.value)}");
+  });
+
   it("submits selected Tube workers and persists the metrics", () => {
     expect(page).toContain("DEFAULT_TUBE_WORKERS");
     expect(page).toContain("involvedWorkers: workerNames");

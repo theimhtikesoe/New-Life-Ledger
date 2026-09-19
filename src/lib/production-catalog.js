@@ -211,6 +211,18 @@ export const TUBE_PRODUCT_TYPES = [
   "13g (S+S)",
 ];
 
+export const TUBE_CARD_TYPE_MAPPINGS = {
+  "24g W (အဖြူ)": "1 လီတာ ဖြူ",
+  "24g B (S+1)": "1 လီတာ (S+1)",
+  "24g B (S+S)": "1 လီတာ (S+S)",
+  "16g W (အဖြူ)": ".6 အဖြူ",
+  "16g (S+1)": ".6 (S+1)",
+  "16g (S+S)": ".6 (S+S)",
+  "13g W (အဖြူ)": ".3 ဖြူ",
+  "13g (S+S)": ".3 ပြာ (S+S)",
+  "13g (S+1)": ".3 ပြာ (S+1)",
+};
+
 export const TUBE_MAPPING_SEPARATOR = "||";
 
 // Historical labels are normalized before mappings are stored or displayed so

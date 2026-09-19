@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOTTLE_ITEMS, DEFAULT_TUBE_MAPPINGS, getBottleDisplayName, getBottleGroup, getBottleUnit } from "@/lib/production-catalog";
+import { BOTTLE_ITEMS, DEFAULT_TUBE_MAPPINGS, getBottleDisplayName, getBottleGroup, getBottleUnit, TUBE_CARD_TYPE_MAPPINGS } from "@/lib/production-catalog";
 
 describe("Production bottle catalog", () => {
   it("includes the ဒိန်သေး (S+S) 250 ဆံ့ card in the dairy group", () => {
@@ -59,6 +59,20 @@ describe("Production bottle catalog", () => {
     expect(DEFAULT_TUBE_MAPPINGS).toMatchObject({
       "30 ကျပ်သား အပြာ::100": "24g B (S+S)",
       "30 ကျပ်သား အပြာ::320": "24g B (S+S)",
+    });
+  });
+
+  it("keeps the confirmed Tube card-to-select mappings", () => {
+    expect(TUBE_CARD_TYPE_MAPPINGS).toEqual({
+      "24g W (အဖြူ)": "1 လီတာ ဖြူ",
+      "24g B (S+1)": "1 လီတာ (S+1)",
+      "24g B (S+S)": "1 လီတာ (S+S)",
+      "16g W (အဖြူ)": ".6 အဖြူ",
+      "16g (S+1)": ".6 (S+1)",
+      "16g (S+S)": ".6 (S+S)",
+      "13g W (အဖြူ)": ".3 ဖြူ",
+      "13g (S+S)": ".3 ပြာ (S+S)",
+      "13g (S+1)": ".3 ပြာ (S+1)",
     });
   });
 });
