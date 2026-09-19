@@ -88,8 +88,7 @@ export default function MonthlyBottleSalesPage() {
     <main className="app-page-main">
       <div className="app-page-container space-y-4">
         <header className="rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 via-white to-violet-50 p-5 shadow-sm sm:p-7">
-          <h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">တစ်လစာ ဗူးရောင်းစာရင်း</h1>
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><label className="flex flex-col gap-2 text-sm font-black text-slate-700">လ ရွေးရန်<input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className="h-12 rounded-xl border-2 border-cyan-300 bg-white px-3 text-base font-black" /></label><button type="button" onClick={exportCsv} disabled={loading || !data} className="h-12 rounded-xl bg-emerald-600 px-5 font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50">CSV ပြန်ထုတ်ရန်</button></div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><label className="flex flex-col gap-2 text-sm font-black text-slate-700">လ ရွေးရန်<input type="month" value={month} onChange={(event) => setMonth(event.target.value)} className="h-12 rounded-xl border-2 border-cyan-300 bg-white px-3 text-base font-black" /></label><button type="button" onClick={exportCsv} disabled={loading || !data} className="h-12 rounded-xl bg-emerald-600 px-5 font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50">CSV ပြန်ထုတ်ရန်</button></div>
         </header>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{error}</div> : null}
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

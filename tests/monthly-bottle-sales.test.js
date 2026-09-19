@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const route = fs.readFileSync(path.join(root, "src/app/api/monthly-bottle-sales/route.js"), "utf8");
 const page = fs.readFileSync(path.join(root, "src/app/monthly-bottle-sales/page.js"), "utf8");
+const layoutClient = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"), "utf8");
 const dailyPage = fs.readFileSync(path.join(root, "src/app/daily-bottle-sales/page.js"), "utf8");
 const permissions = fs.readFileSync(path.join(root, "src/lib/user-permissions.js"), "utf8");
 
@@ -23,7 +24,8 @@ describe("monthly bottle sales report", () => {
   });
 
   it("provides a headed month page with CSV export and all requested breakdowns", () => {
-    expect(page).toContain("တစ်လစာ ဗူးရောင်းစာရင်း");
+    expect(layoutClient).toContain("'/monthly-bottle-sales': 'တစ်လစာ ဗူးရောင်းစာရင်း'");
+    expect(page).not.toContain('<h1 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">တစ်လစာ ဗူးရောင်းစာရင်း</h1>');
     expect(page).toContain('type="month"');
     expect(page).toContain("CSV ပြန်ထုတ်ရန်");
     expect(page).toContain("ရက်စွဲအလိုက် စုစုပေါင်း");
