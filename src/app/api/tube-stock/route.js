@@ -26,6 +26,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const recentDate = String(searchParams.get("date") || "").trim();
     const tubeType = String(searchParams.get("type") || "").trim();
+    const summaryOnly = searchParams.get("summaryOnly") === "1";
     const validDate = /^\d{4}-\d{2}-\d{2}$/.test(recentDate) ? recentDate : "";
     const validLimit = Math.min(100, Math.max(1, Number(searchParams.get("limit") || 30) || 30));
     const rows = await prisma.productionReport.findMany({
@@ -33,7 +34,7 @@ export async function GET(request) {
       orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
       select: { outputQuantity: true, outputCapacity: true, tubeG: true, tubeColor: true },
     });
-    const recentRows = await prisma.productionReport.findMany({
+    const recentRows = summaryOnly ? [] : await prisma.productionReport.findMany({
       where: { category: "tube", ...(validDate ? { reportDate: validDate } : {}), ...(tubeType ? { OR: [{ tubeG: tubeType.split(" ")[0], tubeColor: tubeType.split(" ").slice(1).join(" ") }, { tubeG: tubeType }] } : {}) },
       orderBy: [{ reportDate: "desc" }, { createdAt: "desc" }],
       take: validLimit,
@@ -102,7 +103,7 @@ export async function GET(request) {
       } else if (movement.movementType === "PRODUCTION_USE_OUT") {
         current.usedPieces += Math.abs(pieces);
         current.usedPacks = decimalPackEquivalent(current.usedPieces, current.capacity);
-        totalUsedPacks += decimalPackEquivalent(pieces, current.capacity);
+        totalUsedPacks += decimalPackEquivalent(Math.abs(pieces), current.capacity);
       } else {
         current.adjustmentPieces += pieces;
       }
@@ -138,10 +139,10 @@ export async function GET(request) {
         recentDate: validDate || null,
         recentType: tubeType || null,
         recentLimit: validLimit,
-        movements,
+        movements: summaryOnly ? [] : movements,
         dailyUsage,
         usageDate,
-        recent: recentRows.map((row) => ({
+        recent: summaryOnly ? [] : recentRows.map((row) => ({
           id: row.id,
           reportDate: row.reportDate,
           tubeType: `${row.tubeG || "Tube"} ${row.tubeColor || ""}`.trim(),

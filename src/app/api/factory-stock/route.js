@@ -28,6 +28,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const productKey = String(searchParams.get("productKey") || "").trim();
     const requestedStockType = String(searchParams.get("stockType") || "").trim().toUpperCase();
+    const summaryOnly = searchParams.get("summaryOnly") === "1";
     const canonical = !productKey && !Object.keys(dateFilter(searchParams)).length
       ? await loadCanonicalFactoryStockMovements({ actorName: getActorName(request) })
       : { movements: await prisma.factoryStockMovement.findMany({
@@ -85,7 +86,7 @@ export async function GET(request) {
       isPhysicalVerified: false,
       dataSource,
       summary,
-      movements: displayMovements,
+      movements: summaryOnly ? [] : displayMovements,
       warnings: ["ဤလက်ကျန်သည် Database မှတွက်ထားသော System Stock ဖြစ်ပြီး မြေပြင်လက်ကျန်နှင့် ကွာနိုင်ပါသည်။"],
     } });
   } catch (error) {

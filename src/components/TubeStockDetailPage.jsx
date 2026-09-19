@@ -33,6 +33,7 @@ export default function TubeStockDetailPage() {
 
   useEffect(() => {
     const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
     try {
       const cached = JSON.parse(window.sessionStorage.getItem(TUBE_STOCK_CACHE_KEY) || "null");
       if (cached?.data) {
@@ -42,7 +43,7 @@ export default function TubeStockDetailPage() {
     } catch {
       // Ignore unavailable or malformed session cache.
     }
-    fetch("/api/tube-stock", { cache: "no-store", signal: controller.signal })
+    fetch("/api/tube-stock?summaryOnly=1", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "Tube လက်ကျန် ရယူ၍မရပါ။");
@@ -53,9 +54,9 @@ export default function TubeStockDetailPage() {
           // The live response is still rendered normally.
         }
       })
-      .catch((fetchError) => { if (fetchError.name !== "AbortError") setError(fetchError.message); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
+      .catch((fetchError) => { if (fetchError.name === "AbortError") setError("Tube လက်ကျန် ရယူချိန်ကျော်သွားပါသည်။ Refresh ပြန်လုပ်ပါ။"); else setError(fetchError.message); })
+      .finally(() => setLoading(false));
+    return () => { window.clearTimeout(timeoutId); controller.abort(); };
   }, []);
 
   async function openTypeDetails(row) {
