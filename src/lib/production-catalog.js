@@ -40,7 +40,8 @@ export const BOTTLE_ITEMS = [
   { type: "0.9 ပြာ (S+1)", capacities: [100, 170] },
   { type: "0.9 ပြာ (S+S)", capacities: [100, 170] },
   { type: "1 လီတာ ဖြူ", capacities: [100, 160] },
-  { type: "1 လီတာ ပြာ", capacities: [100, 160] },
+  { type: "1 လီတာ ပြာ (S+1)", capacities: [100, 160] },
+  { type: "1 လီတာ ပြာ (S+S)", capacities: [100, 160] },
   { type: "1 လီတာ အဝိုင်း", capacities: [100] },
   { type: "45 ကျပ်သား", capacities: [200] },
 ];
@@ -213,8 +214,10 @@ export const DEFAULT_TUBE_MAPPINGS = {
   "0.9 ပြာ (S+1)::170": "24g B (S+1)",
   "0.9 ပြာ (S+S)::100": "24g B (S+S)",
   "0.9 ပြာ (S+S)::170": "24g B (S+S)",
-  "1 လီတာ ပြာ::100": ["24g B (S+1)", "24g B (S+S)"],
-  "1 လီတာ ပြာ::160": ["24g B (S+1)", "24g B (S+S)"],
+  "1 လီတာ ပြာ (S+1)::100": "24g B (S+1)",
+  "1 လီတာ ပြာ (S+1)::160": "24g B (S+1)",
+  "1 လီတာ ပြာ (S+S)::100": "24g B (S+S)",
+  "1 လီတာ ပြာ (S+S)::160": "24g B (S+S)",
 };
 
 export const TUBE_BY_MACHINE = {

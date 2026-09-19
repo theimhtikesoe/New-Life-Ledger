@@ -16,12 +16,10 @@ describe("requested bottle-to-tube mappings", () => {
     }
   });
 
-  it("maps both 1 လီတာ ပြာ capacities to either 24g blue tube type", () => {
+  it("maps 1 လီတာ ပြာ S+1 and S+S variants to their matching 24g blue tube", () => {
     for (const capacity of [100, 160]) {
-      expect(normalizeTubeTypes(DEFAULT_TUBE_MAPPINGS[`1 လီတာ ပြာ::${capacity}`])).toEqual([
-        "24g B (S+1)",
-        "24g B (S+S)",
-      ]);
+      expect(normalizeTubeTypes(DEFAULT_TUBE_MAPPINGS[`1 လီတာ ပြာ (S+1)::${capacity}`])).toEqual(["24g B (S+1)"]);
+      expect(normalizeTubeTypes(DEFAULT_TUBE_MAPPINGS[`1 လီတာ ပြာ (S+S)::${capacity}`])).toEqual(["24g B (S+S)"]);
     }
   });
 
