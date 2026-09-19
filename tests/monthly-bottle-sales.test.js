@@ -38,6 +38,13 @@ describe("monthly bottle sales report", () => {
     expect(page).toContain("monthly-bottle-sales-${month}.csv");
   });
 
+  it("keeps report tables collapsed until their section heading is clicked", () => {
+    expect((page.match(/<details className="group/g) || []).length).toBe(5);
+    expect((page.match(/<summary className=/g) || []).length).toBe(5);
+    expect(page).toContain("group-open:rotate-90");
+    expect(page).not.toContain("<section className=\"rounded-2xl border border-orange-200");
+  });
+
   it("links the daily report to the matching month", () => {
     expect(dailyPage).toContain("/monthly-bottle-sales?month=");
     expect(dailyPage).toContain("တစ်လစာ ကြည့်ရန်");
