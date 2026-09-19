@@ -145,7 +145,7 @@ export async function GET(request) {
         recent: summaryOnly ? [] : recentRows.map((row) => ({
           id: row.id,
           reportDate: row.reportDate,
-          tubeType: `${row.tubeG || "Tube"} ${row.tubeColor || ""}`.trim(),
+          tubeType: normalizeTubeIdentity(`${row.tubeG || "Tube"} ${row.tubeColor || ""}`).productName,
           packs: Number(row.outputQuantity || 0),
           capacity: Number(row.outputCapacity || 0),
           pieces: Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0),
