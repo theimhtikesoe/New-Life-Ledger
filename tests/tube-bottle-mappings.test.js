@@ -9,12 +9,10 @@ describe("requested bottle-to-tube mappings", () => {
     expect(TUBE_PRODUCT_TYPES).not.toContain("16g B (S+S)");
   });
 
-  it("maps both 0.9 ပြာ capacities to either 24g blue tube type", () => {
+  it("maps 0.9 ပြာ S+1 and S+S variants to their matching 24g blue tube", () => {
     for (const capacity of [100, 170]) {
-      expect(normalizeTubeTypes(DEFAULT_TUBE_MAPPINGS[`0.9 ပြာ::${capacity}`])).toEqual([
-        "24g B (S+1)",
-        "24g B (S+S)",
-      ]);
+      expect(normalizeTubeTypes(DEFAULT_TUBE_MAPPINGS[`0.9 ပြာ (S+1)::${capacity}`])).toEqual(["24g B (S+1)"]);
+      expect(normalizeTubeTypes(DEFAULT_TUBE_MAPPINGS[`0.9 ပြာ (S+S)::${capacity}`])).toEqual(["24g B (S+S)"]);
     }
   });
 
