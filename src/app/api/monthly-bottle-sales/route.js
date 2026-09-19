@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue, getMyanmarDayRange, getMyanmarDateParts } from "@/lib/myanmar-time";
 import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
-import { DEFAULT_TUBE_MAPPINGS, TUBE_PRODUCT_TYPES } from "@/lib/production-catalog";
+import { DEFAULT_TUBE_MAPPINGS, TUBE_PRODUCT_TYPES, serializeTubeTypes } from "@/lib/production-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +30,7 @@ function enrichTubeTypes(rows, tubeMappings) {
     saleItems: Array.isArray(row.saleItems)
       ? row.saleItems.map((item) => ({
         ...item,
-        tubeType: item.tubeType || tubeMappings.get(String(item.productKey || "")) || null,
+        tubeType: serializeTubeTypes(item.tubeType || tubeMappings.get(String(item.productKey || ""))) || null,
       }))
       : row.saleItems,
   }));
@@ -53,13 +53,15 @@ export async function GET(request) {
     const tubeBottleMap = new Map();
     for (const [productKey, tubeType] of Object.entries(DEFAULT_TUBE_MAPPINGS)) {
       const [productName, capacity] = productKey.split("::");
-      tubeMappings.set(productKey, tubeType);
-      tubeBottleMap.set(productKey, { productKey, productName, capacity: Number(capacity), tubeType });
+      const serializedTubeType = serializeTubeTypes(tubeType);
+      tubeMappings.set(productKey, serializedTubeType);
+      tubeBottleMap.set(productKey, { productKey, productName, capacity: Number(capacity), tubeType: serializedTubeType });
     }
     for (const row of mappingRows) {
       if (row.tubeType && !tubeMappings.has(row.productKey)) {
-        tubeMappings.set(row.productKey, row.tubeType);
-        tubeBottleMap.set(row.productKey, { productKey: row.productKey, productName: row.productName, capacity: row.capacity, tubeType: row.tubeType });
+        const serializedTubeType = serializeTubeTypes(row.tubeType);
+        tubeMappings.set(row.productKey, serializedTubeType);
+        tubeBottleMap.set(row.productKey, { productKey: row.productKey, productName: row.productName, capacity: row.capacity, tubeType: serializedTubeType });
       }
     }
     let ledgers = await prisma.ledger.findMany({ where: { date: { gte: start, lt: end }, type: "DEBIT" }, select, orderBy: { date: "desc" } });

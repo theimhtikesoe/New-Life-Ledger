@@ -186,15 +186,32 @@ export const TUBE_PRODUCT_TYPES = [
   "24g B (S+S)",
   "16g W (အဖြူ)",
   "16g (S+1)",
-  "16g B (S+S)",
+  "16g (S+S)",
   "13g W (အဖြူ)",
   "13g (S+1)",
   "13g (S+S)",
 ];
 
+export const TUBE_MAPPING_SEPARATOR = "||";
+
+export function normalizeTubeTypes(value) {
+  const values = Array.isArray(value) ? value : String(value || "").split(TUBE_MAPPING_SEPARATOR);
+  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+export function serializeTubeTypes(value) {
+  return normalizeTubeTypes(value).join(TUBE_MAPPING_SEPARATOR);
+}
+
 export const DEFAULT_TUBE_MAPPINGS = {
   "30 ကျပ်သား အပြာ::100": "24g B (S+S)",
   "30 ကျပ်သား အပြာ::320": "24g B (S+S)",
+  "25 ကျပ်သား အပြာ::100": "16g (S+S)",
+  "25 ကျပ်သား အပြာ::210": "16g (S+S)",
+  "0.9 ပြာ::100": ["24g B (S+1)", "24g B (S+S)"],
+  "0.9 ပြာ::170": ["24g B (S+1)", "24g B (S+S)"],
+  "1 လီတာ ပြာ::100": ["24g B (S+1)", "24g B (S+S)"],
+  "1 လီတာ ပြာ::160": ["24g B (S+1)", "24g B (S+S)"],
 };
 
 export const TUBE_BY_MACHINE = {
@@ -204,7 +221,7 @@ export const TUBE_BY_MACHINE = {
     { g: "24g", color: "B (S+S)", pcsPerBag: 1500, label: "24g B (S+S)" },
     { g: "16g", color: "W", pcsPerBag: 2000, label: "16g W (အဖြူ)" },
     { g: "16g", color: "S+1", pcsPerBag: 2000, label: "16g (S+1)" },
-    { g: "16g", color: "B (S+S)", pcsPerBag: 2000, label: "16g B (S+S)" },
+    { g: "16g", color: "S+S", pcsPerBag: 2000, label: "16g (S+S)" },
   ],
   TB2: [
     { g: "13g", color: "W", pcsPerBag: 2500, label: "13g W (အဖြူ)" },
