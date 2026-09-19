@@ -213,9 +213,18 @@ export const TUBE_PRODUCT_TYPES = [
 
 export const TUBE_MAPPING_SEPARATOR = "||";
 
+// Historical labels are normalized before mappings are stored or displayed so
+// equivalent Tube identities aggregate into one row everywhere.
+export const TUBE_TYPE_ALIASES = {
+  "16g B (S+S)": "16g (S+S)",
+};
+
 export function normalizeTubeTypes(value) {
   const values = Array.isArray(value) ? value : String(value || "").split(TUBE_MAPPING_SEPARATOR);
-  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))];
+  return [...new Set(values.map((item) => {
+    const label = String(item || "").trim();
+    return TUBE_TYPE_ALIASES[label] || label;
+  }).filter(Boolean))];
 }
 
 export function serializeTubeTypes(value) {

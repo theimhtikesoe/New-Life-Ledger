@@ -47,4 +47,9 @@ describe("requested bottle-to-tube mappings", () => {
       label: "16g (S+S)",
     });
   });
+
+  it("merges the historical 16g B (S+S) alias into the canonical Tube label", () => {
+    expect(normalizeTubeTypes(["16g B (S+S)", "16g (S+S)"])).toEqual(["16g (S+S)"]);
+    expect(normalizeTubeTypes("16g B (S+S)||16g (S+S)")).toEqual(["16g (S+S)"]);
+  });
 });
