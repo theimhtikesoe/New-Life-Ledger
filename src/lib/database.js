@@ -171,6 +171,7 @@ export async function ensureDatabase() {
       // Additive migration must run before the readiness fast-path and before
       // any Prisma PriceSetting query. IF EXISTS also keeps fresh databases safe.
       await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "tubeType" TEXT`);
+      await setupQuery(`ALTER TABLE IF EXISTS "ProductionReport" ADD COLUMN IF NOT EXISTS "tubeType" TEXT`);
       await setupQuery(`ALTER TABLE IF EXISTS "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerAt" TIMESTAMP(3)`);
       await setupQuery(`ALTER TABLE IF EXISTS "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerBy" TEXT`);
       // Ledger discount fields must also exist before any Prisma relation query
