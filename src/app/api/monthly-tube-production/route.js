@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ensureDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
-import { normalizeTubeTypes } from "@/lib/production-catalog";
+import { normalizeTubeTypes, TUBE_ITEMS } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,6 +50,17 @@ function tubeLabel(row) {
   return normalizeTubeTypes(`${row.tubeG || "Tube"} ${row.tubeColor || ""}`)[0] || "Tube";
 }
 
+function emptyTypeSummary(tubeType, capacity) {
+  return { tubeType, capacity, packs: 0, pieces: 0, reports: 0 };
+}
+
+function createTypeSummaries() {
+  return new Map(TUBE_ITEMS.map((item) => [
+    `${item.productName}::${item.capacity}`,
+    emptyTypeSummary(item.productName, item.capacity),
+  ]));
+}
+
 function serializeRow(row) {
   const outputQuantity = numeric(row.outputQuantity);
   const outputCapacity = numeric(row.outputCapacity);
@@ -84,7 +95,9 @@ export async function GET(request) {
     const serializedRows = rows.map(serializeRow);
     const totals = { packs: 0, pieces: 0, reports: serializedRows.length, tubeDamageKg: 0 };
     const materialTotals = blankMaterial();
-    const byType = new Map();
+    // Start with the full Tube catalog so types with no production this month
+    // remain visible as zero rows in the summary.
+    const byType = createTypeSummaries();
     const byDate = new Map();
     const byMachine = new Map();
 
@@ -96,7 +109,7 @@ export async function GET(request) {
       addMaterial(materialTotals, material);
 
       const typeKey = `${row.tubeType}::${row.outputCapacity}`;
-      const typeSummary = byType.get(typeKey) || { tubeType: row.tubeType, capacity: row.outputCapacity, packs: 0, pieces: 0, reports: 0 };
+      const typeSummary = byType.get(typeKey) || emptyTypeSummary(row.tubeType, row.outputCapacity);
       typeSummary.packs += row.outputQuantity; typeSummary.pieces += row.pieces; typeSummary.reports += 1;
       byType.set(typeKey, typeSummary);
 
@@ -129,4 +142,4 @@ export async function GET(request) {
   }
 }
 
-export { addMaterial, metricsOf, parseMonth, serializeRow };
+export { addMaterial, createTypeSummaries, metricsOf, parseMonth, serializeRow };
