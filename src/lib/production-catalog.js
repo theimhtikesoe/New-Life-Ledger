@@ -216,6 +216,15 @@ export const TUBE_MAPPING_SEPARATOR = "||";
 // Historical labels are normalized before mappings are stored or displayed so
 // equivalent Tube identities aggregate into one row everywhere.
 export const TUBE_TYPE_ALIASES = {
+  "24g W": "24g W (အဖြူ)",
+  "24g S+1": "24g B (S+1)",
+  "24g S+S": "24g B (S+S)",
+  "16g W": "16g W (အဖြူ)",
+  "16g S+1": "16g (S+1)",
+  "16g S+S": "16g (S+S)",
+  "13g W": "13g W (အဖြူ)",
+  "13g S+1": "13g (S+1)",
+  "13g S+S": "13g (S+S)",
   "16g B (S+S)": "16g (S+S)",
 };
 
