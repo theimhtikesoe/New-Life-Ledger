@@ -47,7 +47,7 @@ export default function PriceSettingsPage() {
       const nextCategoryPrices = {};
       for (const category of data.categories || []) {
         const exact = data.categoryPrices?.[category.key];
-        const effective = data.catalog?.find((item) => item.categoryKey === category.key && item.effectivePrice?.source === "CATEGORY")?.effectivePrice;
+        const effective = data.catalog?.find((item) => item.categoryKey === category.key && String(item.effectivePrice?.source || "").includes("CATEGORY"))?.effectivePrice;
         const value = exact?.pricePerBottle ?? effective?.pricePerBottle ?? category.defaultPrice;
         if (value !== undefined && value !== null) nextCategoryPrices[category.key] = String(value);
       }
@@ -55,7 +55,7 @@ export default function PriceSettingsPage() {
       const nextTubeMappings = {};
       for (const item of data.catalog || []) {
         const exact = data.itemPrices?.[item.productKey];
-        const effectiveItemPrice = item.effectivePrice?.source === "ITEM" ? Number(item.effectivePrice.pricePerBottle || 0) : 0;
+        const effectiveItemPrice = String(item.effectivePrice?.source || "").includes("ITEM") ? Number(item.effectivePrice.pricePerBottle || 0) : 0;
         if (Number(exact?.pricePerBottle || 0) > 0) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
         else if (effectiveItemPrice > 0) nextItemPrices[item.productKey] = String(effectiveItemPrice);
         const tubeType = data.tubeMappings?.[item.productKey] || item.tubeType || "";

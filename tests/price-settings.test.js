@@ -31,8 +31,14 @@ import { GET, POST } from "../src/app/api/price-settings/route.js";
 import fs from "node:fs";
 
 const priceRouteSource = fs.readFileSync(new URL("../src/app/api/price-settings/route.js", import.meta.url), "utf8");
+const pricePageSource = fs.readFileSync(new URL("../src/app/price-settings/page.js", import.meta.url), "utf8");
 
 describe("POST /api/price-settings", () => {
+  it("accepts carried-forward latest category and item prices in the page", () => {
+    expect(pricePageSource).toContain('String(item.effectivePrice?.source || "").includes("CATEGORY")');
+    expect(pricePageSource).toContain('String(item.effectivePrice?.source || "").includes("ITEM")');
+  });
+
   it("does not let mapping-only zero-price rows hide category prices", () => {
     expect(priceRouteSource).toContain("Number(itemPriceRow.pricePerBottle || 0) > 0");
     expect(priceRouteSource).toContain("const effective = itemPrice || categoryPrice || null");
@@ -59,7 +65,7 @@ describe("POST /api/price-settings", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.data.count).toBe(2);
+    expect(body.data.count).toBe(4);
     expect(mocks.transaction).toHaveBeenCalledTimes(1);
     expect(mocks.createMany).toHaveBeenCalledTimes(1);
     expect(mocks.createMany.mock.calls[0][0].data[0]).not.toHaveProperty("categoryLabel");
