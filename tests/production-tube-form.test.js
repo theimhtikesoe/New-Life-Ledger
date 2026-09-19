@@ -28,7 +28,12 @@ describe("Tube production entry", () => {
     expect(page).toContain('value=".6 အဖြူ"');
     expect(page).toContain('value=".6 (S+1)"');
     expect(page).toContain('value=".6 (S+S)"');
-    expect(page.indexOf('value="1 လီတာ ဖြူ"')).toBeLessThan(page.indexOf('value=".6 အဖြူ"'));
+    expect(page).toContain('value="1 လီတာ (S+1)"');
+    expect(page).toContain('value="1 လီတာ (S+S)"');
+    expect(page).not.toContain('value="1 လီတာ ပြာ"');
+    expect(page.indexOf('value="1 လီတာ ဖြူ"')).toBeLessThan(page.indexOf('value="1 လီတာ (S+1)"'));
+    expect(page.indexOf('value="1 လီတာ (S+1)"')).toBeLessThan(page.indexOf('value="1 လီတာ (S+S)"'));
+    expect(page.indexOf('value="1 လီတာ (S+S)"')).toBeLessThan(page.indexOf('value=".6 အဖြူ"'));
     expect(page.indexOf('value=".6 အဖြူ"')).toBeLessThan(page.indexOf('value=".3 ဖြူ"'));
   });
 
