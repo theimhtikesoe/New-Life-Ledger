@@ -51,6 +51,10 @@ export const BOTTLE_ITEMS = [
 // appear in BOTTLE_ITEMS, so new production or sales entry cannot select them.
 export const LEGACY_BOTTLE_LABELS = {
   "0.25 ပြာ": "0.25 ပြာ အဟောင်း",
+  "0.6 ပြာ": "0.6 ပြာ အဟောင်း",
+  ".6 ပြာ": ".6 ပြာ အဟောင်း",
+  "0.9 ပြာ": "0.9 ပြာ အဟောင်း",
+  ".9 ပြာ": ".9 ပြာ အဟောင်း",
   "1 လီတာ ပြာ": "1 လီတာ ပြာ အဟောင်း",
 };
 
@@ -166,8 +170,8 @@ export function getBottleDisplayName(type) {
 }
 
 export function getHistoricalBottleDisplayName(type) {
-  const value = getBottleDisplayName(type);
-  return LEGACY_BOTTLE_LABELS[value] || value;
+  const rawValue = String(type || "").trim();
+  return LEGACY_BOTTLE_LABELS[rawValue] || getBottleDisplayName(rawValue);
 }
 
 export function buildCatalog() {

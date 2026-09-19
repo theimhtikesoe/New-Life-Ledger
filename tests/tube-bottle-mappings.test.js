@@ -4,6 +4,8 @@ import { BOTTLE_ITEMS, DEFAULT_TUBE_MAPPINGS, getHistoricalBottleDisplayName, TU
 describe("requested bottle-to-tube mappings", () => {
   it("keeps legacy blue bottle names report-only and out of new entry", () => {
     expect(getHistoricalBottleDisplayName("0.25 ပြာ")).toBe("0.25 ပြာ အဟောင်း");
+    expect(getHistoricalBottleDisplayName("0.6 ပြာ")).toBe("0.6 ပြာ အဟောင်း");
+    expect(getHistoricalBottleDisplayName("0.9 ပြာ")).toBe("0.9 ပြာ အဟောင်း");
     expect(getHistoricalBottleDisplayName("1 လီတာ ပြာ")).toBe("1 လီတာ ပြာ အဟောင်း");
     expect(BOTTLE_ITEMS.map((item) => item.type)).not.toContain("0.25 ပြာ");
     expect(BOTTLE_ITEMS.map((item) => item.type)).not.toContain("1 လီတာ ပြာ");
