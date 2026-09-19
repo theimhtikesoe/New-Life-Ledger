@@ -61,7 +61,7 @@ export async function GET(request, { params }) {
     if (searchParams.get("endDate")) date.lt = getMyanmarDayRange(searchParams.get("endDate")).end;
     const where = { customerId: params.id, ...(Object.keys(date).length ? { date } : {}) };
     const [items, total] = await Promise.all([
-      prisma.cashSale.findMany({ where, select: cashSaleSelect, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: limit }),
+      prisma.cashSale.findMany({ where, select: cashSaleSelect, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: offset, take: limit }),
       prisma.cashSale.count({ where }),
     ]);
     return NextResponse.json({ data: { items, pagination: { offset, limit, total, hasMore: offset + items.length < total } } });

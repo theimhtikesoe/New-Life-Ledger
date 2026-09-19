@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
     };
     // Production uses connection_limit=1; do not request the list and count
     // connections concurrently when another device is saving a transaction.
-    const rows = await prisma.ledger.findMany({ where, select, orderBy: [{ date: "desc" }, { id: "desc" }], skip: offset, take: includeCount ? limit : limit + 1 });
+    const rows = await prisma.ledger.findMany({ where, select, orderBy: [{ createdAt: "desc" }, { id: "desc" }], skip: offset, take: includeCount ? limit : limit + 1 });
     const items = includeCount ? rows : rows.slice(0, limit);
     const total = includeCount ? await prisma.ledger.count({ where }) : null;
     return NextResponse.json({ data: { items, pagination: { offset, limit, total, hasMore: includeCount ? offset + items.length < total : rows.length > limit } } });

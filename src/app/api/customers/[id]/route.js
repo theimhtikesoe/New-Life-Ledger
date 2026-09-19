@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 const ledgerSelect = {
   id: true,
   date: true,
+  createdAt: true,
   type: true,
   saleType: true,
   itemSize: true,
@@ -68,7 +69,7 @@ export async function GET(request, { params }) {
           ? {
               ledgers: {
                 select: ledgerSelect,
-                orderBy: [{ date: "desc" }, { id: "desc" }],
+                orderBy: [{ createdAt: "desc" }, { id: "desc" }],
                 take: 50,
               },
             }
@@ -77,7 +78,7 @@ export async function GET(request, { params }) {
           ? {
               cashSales: {
                 select: cashSaleSelect,
-                orderBy: [{ date: "desc" }, { id: "desc" }],
+                orderBy: [{ createdAt: "desc" }, { id: "desc" }],
                 take: 50,
               },
             }
@@ -156,12 +157,12 @@ export async function PATCH(request, { params }) {
         settledOutsideLedgerBy: true,
         ledgers: {
           select: ledgerSelect,
-          orderBy: [{ date: "desc" }, { id: "desc" }],
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: 50,
         },
         cashSales: {
           select: cashSaleSelect,
-          orderBy: [{ date: "desc" }, { id: "desc" }],
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: 50,
         },
       },

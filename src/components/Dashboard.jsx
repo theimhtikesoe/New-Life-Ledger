@@ -297,7 +297,11 @@ export function mergeTransactionsWithCashSales(ledgers = [], cashSales = []) {
   return [
     ...ledgers,
     ...cashSales.map((sale) => ({ ...sale, type: "CASH_SALE", recordType: "CASH_SALE" })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  ].sort((a, b) => {
+    const createdDifference = new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime();
+    if (createdDifference !== 0) return createdDifference;
+    return String(b.id || "").localeCompare(String(a.id || ""));
+  });
 }
 
 export default function Dashboard({ view = "overview" }) {
