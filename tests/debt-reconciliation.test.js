@@ -13,9 +13,10 @@ describe("debt reconciliation workflow", () => {
     expect(page).toContain("grid-cols-2");
   });
 
-  it("loads all selected-customer ledger pages for payment target calculation", () => {
+  it("shows the first ledger page without waiting for all history pages", () => {
     const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
-    expect(dashboard).toContain("limit=100&offset=0&includeCount=true");
+    expect(dashboard).toContain("limit=100&offset=0&includeCount=false");
+    expect(dashboard).toContain("setLoadingCustomerHistory(false)");
     expect(dashboard).toContain("while (nextPage.pagination?.hasMore)");
     expect(dashboard).toContain("allLedgers.push");
   });

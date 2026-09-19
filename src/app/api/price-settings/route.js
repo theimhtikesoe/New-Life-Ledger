@@ -14,6 +14,8 @@ export const dynamic = "force-dynamic";
 // whole read handler instead of allowing a second priceSetting query to time
 // out while waiting for the only connection.
 let priceSettingsReadQueue = Promise.resolve();
+const PRICE_SETTINGS_CACHE_TTL_MS = 30_000;
+const priceSettingsResponseCache = new Map();
 
 async function acquirePriceSettingsRead() {
   const previous = priceSettingsReadQueue;
@@ -53,10 +55,19 @@ function serialize(row) {
 }
 
 export async function GET(request) {
+  let date;
+  try {
+    date = parseDate(new URL(request.url).searchParams.get("date"));
+  } catch (error) {
+    return NextResponse.json({ error: error.message || "စျေးနှုန်းသတ်မှတ်မည့် Date မမှန်ပါ။" }, { status: 400 });
+  }
+  const cached = priceSettingsResponseCache.get(date);
+  if (cached && Date.now() - cached.createdAt < PRICE_SETTINGS_CACHE_TTL_MS) {
+    return NextResponse.json({ data: cached.data });
+  }
   const release = await acquirePriceSettingsRead();
   try {
     await ensureDatabase();
-    const date = parseDate(new URL(request.url).searchParams.get("date"));
     const customRows = await loadCustomCatalogRows();
     const exactRows = await prisma.priceSetting.findMany({ where: { priceDate: date }, orderBy: [{ scope: "asc" }, { productName: "asc" }, { capacity: "asc" }] });
     const priorRows = await prisma.priceSetting.findMany({ where: { priceDate: { lte: date } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
@@ -108,7 +119,9 @@ export async function GET(request) {
 
     const tubeMappings = {};
     for (const item of catalog) if (item.tubeType) tubeMappings[item.productKey] = item.tubeType;
-    return NextResponse.json({ data: { date, categories: [...PRICE_GROUPS, ...customCategoriesFromRows(customRows)], catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices, tubeMappings } });
+    const data = { date, categories: [...PRICE_GROUPS, ...customCategoriesFromRows(customRows)], catalog, categoryPrices: exactCategoryPrices, itemPrices: exactItemPrices, tubeMappings };
+    priceSettingsResponseCache.set(date, { createdAt: Date.now(), data });
+    return NextResponse.json({ data });
   } catch (error) {
     console.error("Price settings read failed", error);
     if (/connection pool|Timed out fetching a new connection/i.test(String(error?.message || ""))) {
@@ -124,6 +137,7 @@ export async function POST(request) {
   try {
     await ensureDatabase();
     const body = await request.json();
+    priceSettingsResponseCache.clear();
     const action = String(body.action || "").trim();
     if (action === "addCategory" || action === "addItem") {
       const label = String(body.label || body.name || "").trim();

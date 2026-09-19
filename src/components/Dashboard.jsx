@@ -1130,19 +1130,20 @@ export default function Dashboard({ view = "overview" }) {
       setSelectedCustomer(firstPageCustomer);
       setSelectedCustomerId(customer.id);
       setLoadingCustomerHistory(true);
-      const transactionPage = await api(`/api/customers/${id}/transactions?limit=100&offset=0&includeCount=true`, { signal: controller.signal });
+      const transactionPage = await api(`/api/customers/${id}/transactions?limit=100&offset=0&includeCount=false`, { signal: controller.signal });
       if (requestId !== customerRequestIdRef.current) return;
       const firstPageWithTransactions = { ...firstPageCustomer, ledgers: transactionPage.items || [] };
       selectedCustomerRef.current = firstPageWithTransactions;
       setSelectedCustomer(firstPageWithTransactions);
       setTransactionPagination(transactionPage.pagination || { offset: firstPageWithTransactions.ledgers.length, limit: 100, total: firstPageWithTransactions.ledgers.length, hasMore: false });
+      setLoadingCustomerHistory(false);
       // The payment selector must see historical credits too. The API is
-      // paginated, so load every page for the selected customer rather than
-      // silently limiting settlement calculation to the newest 50 rows.
+      // paginated. Continue loading older pages in the background so the
+      // first customer view and sales-item picker are not blocked by history.
       const allLedgers = [...(transactionPage.items || [])];
       let nextPage = transactionPage;
       while (nextPage.pagination?.hasMore) {
-        nextPage = await api(`/api/customers/${id}/transactions?limit=100&offset=${allLedgers.length}&includeCount=true`, { signal: controller.signal });
+        nextPage = await api(`/api/customers/${id}/transactions?limit=100&offset=${allLedgers.length}&includeCount=false`, { signal: controller.signal });
         allLedgers.push(...(nextPage.items || []));
         if (!nextPage.items?.length) break;
       }
