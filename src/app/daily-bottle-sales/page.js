@@ -48,9 +48,6 @@ export default function DailyBottleSalesPage() {
       <div className="app-page-container space-y-4">
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Customer တစ်ဦးချင်းအလိုက် ရောင်းထားသော item၊ ဆံ့၊ ဗူးအရေအတွက်နှင့် စုစုပေါင်းငွေ</p>
-            </div>
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end"><label className="flex w-full shrink-0 flex-col gap-2 text-sm font-bold text-slate-700 sm:w-auto">ရက်စွဲ<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-12 rounded-xl border-2 border-slate-300 bg-slate-50 px-3 text-base font-black" /></label><Link href={`/monthly-bottle-sales?month=${encodeURIComponent(date.slice(0, 7))}`} className="inline-flex min-h-12 w-full items-center justify-center whitespace-normal rounded-xl bg-violet-600 px-4 py-3 text-center text-sm font-black leading-6 text-white hover:bg-violet-700 sm:w-auto">တစ်လစာ ကြည့်ရန်</Link></div>
           </div>
         </section>
