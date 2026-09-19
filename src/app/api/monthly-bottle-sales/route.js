@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getMyanmarDateInputValue, getMyanmarDayRange, getMyanmarDateParts } from "@/lib/myanmar-time";
 import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
-import { DEFAULT_TUBE_MAPPINGS } from "@/lib/production-catalog";
+import { DEFAULT_TUBE_MAPPINGS, TUBE_PRODUCT_TYPES } from "@/lib/production-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +78,7 @@ export async function GET(request) {
       });
       return { date, customers: day.totalCustomers, bottles: day.totalBottles, amount: day.totalAmount, paidAmount: day.totalPaidAmount, creditBottles: day.creditBottleSales.totalBottles };
     });
-    return NextResponse.json({ data: { month, firstDate: first, ...summary, daily, items: [...summary.cashBottleSales.items, ...summary.creditBottleSales.items], tubeBottleMappings: [...tubeBottleMap.values()] } });
+    return NextResponse.json({ data: { month, firstDate: first, ...summary, daily, items: [...summary.cashBottleSales.items, ...summary.creditBottleSales.items], tubeTypes: TUBE_PRODUCT_TYPES, tubeBottleMappings: [...tubeBottleMap.values()] } });
   } catch (error) {
     return NextResponse.json(databaseErrorResponse(error), { status: 500 });
   }

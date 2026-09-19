@@ -42,6 +42,11 @@ export default function MonthlyBottleSalesPage() {
   }, [data]);
   const tubeItems = useMemo(() => {
     const map = new Map();
+    for (const tubeType of data?.tubeTypes || []) {
+      const group = tubeGroup(tubeType);
+      const key = `${group.grams}::${group.color}::${group.label}`;
+      map.set(key, { ...group, tubeType, bottleCount: 0, cardCount: 0, totalAmount: 0 });
+    }
     for (const item of items) {
       const group = tubeGroup(item.tubeType);
       if (!item.tubeType) continue;
