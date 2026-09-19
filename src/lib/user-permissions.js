@@ -15,6 +15,7 @@ export const PERMISSION_PAGES = [
   { path: "/production", label: "ထုတ်လုပ်မှု" },
   { path: "/production-history", label: "ထုတ်လုပ်မှုမှတ်တမ်း" },
   { path: "/tube-production-history", label: "Tube ထုတ်လုပ်မှုမှတ်တမ်း" },
+  { path: "/monthly-tube-production", label: "တစ်လစာ Tube ထွက်ရှိမှု" },
   { path: "/balance-detail", label: "လက်ကျန်ငွေ အသေးစိတ်" },
   { path: RECONCILIATION_PAGE_PATH, label: "အကြွေးဟောင်း စာရင်းညှိခြင်း" },
   { path: PREPAYMENT_RECONCILIATION_PAGE_PATH, label: "ငွေကြိုချေ စစ်ဆေးခြင်း" },
@@ -54,6 +55,7 @@ export function normalizeAllowedPaths(value, actorName) {
   if (actorName === "ဖေဖေ/မေမေ") {
     if (!allowed.includes("/daily-bottle-sales")) allowed.push("/daily-bottle-sales");
     if (!allowed.includes("/monthly-bottle-sales")) allowed.push("/monthly-bottle-sales");
+    if (!allowed.includes("/monthly-tube-production")) allowed.push("/monthly-tube-production");
   }
   if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") {
     return [...new Set([...defaultAllowedPaths(actorName), RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH])];

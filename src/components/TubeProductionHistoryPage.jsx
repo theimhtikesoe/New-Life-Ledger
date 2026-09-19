@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 function todayMyanmar() {
   return new Date(Date.now() + (6 * 60 + 30) * 60 * 1000).toISOString().slice(0, 10);
@@ -80,7 +81,7 @@ export default function TubeProductionHistoryPage() {
       <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
         <section className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm sm:p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-cyan-700">Tube Production</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2"><button type="button" onClick={() => setDate((value) => shiftDate(value, -1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 py-2 text-xl font-black text-cyan-800">‹</button><input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-11 rounded-lg border-2 border-cyan-300 bg-white px-3 text-center font-black text-cyan-950" /><button type="button" onClick={() => setDate((value) => shiftDate(value, 1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 py-2 text-xl font-black text-cyan-800">›</button></div>
+          <div className="mt-3 flex flex-wrap items-center gap-2"><button type="button" onClick={() => setDate((value) => shiftDate(value, -1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 py-2 text-xl font-black text-cyan-800">‹</button><input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="h-11 rounded-lg border-2 border-cyan-300 bg-white px-3 text-center font-black text-cyan-950" /><button type="button" onClick={() => setDate((value) => shiftDate(value, 1))} className="rounded-lg border-2 border-cyan-300 bg-white px-3 py-2 text-xl font-black text-cyan-800">›</button><Link href={`/monthly-tube-production?month=${date.slice(0, 7)}`} className="rounded-lg border-2 border-indigo-300 bg-indigo-600 px-3 py-2 text-sm font-black text-white shadow-sm transition hover:bg-indigo-700">တစ်လစာ Tube ထွက်ရှိမှု စုစုပေါင်း</Link></div>
         </section>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
         <section className="grid gap-3 sm:grid-cols-3"><div className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm"><p className="text-xs font-black text-cyan-700">စုစုပေါင်း Tube</p><p className="mt-1 text-2xl font-black text-cyan-950">{loading ? "ရယူနေသည်..." : `${formatNumber(totals.pieces)} pcs`}</p></div><div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm"><p className="text-xs font-black text-emerald-700">အိတ်အရေအတွက်</p><p className="mt-1 text-2xl font-black text-emerald-900">{loading ? "ရယူနေသည်..." : `${formatNumber(totals.packs)} အိတ်`}</p></div><div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 shadow-sm"><p className="text-xs font-black text-orange-700">မှတ်တမ်းအကြိမ်</p><p className="mt-1 text-2xl font-black text-orange-900">{loading ? "ရယူနေသည်..." : `${formatNumber(totals.reports)} ကြိမ်`}</p></div></section>
