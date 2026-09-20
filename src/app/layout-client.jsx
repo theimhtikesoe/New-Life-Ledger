@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
+import Link from '@/components/AppLink';
 import PINLogin from '@/components/PINLogin';
 import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
 import { formatMyanmarClock, formatMyanmarDateLabel, getMyanmarHour } from '@/lib/myanmar-time-client';
