@@ -229,6 +229,7 @@ model Ledger {
   @@index([customerId])
   @@index([date])
   @@index([customerId, date])
+  @@index([customerId, createdAt, id])
   @@index([date, type])
 }
 
@@ -252,6 +253,7 @@ model CashSale {
   @@index([customerId])
   @@index([date])
   @@index([customerId, date])
+  @@index([customerId, createdAt, id])
   @@index([date, saleType])
 }
 

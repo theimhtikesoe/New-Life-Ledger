@@ -389,7 +389,7 @@ export default function Dashboard({ view = "overview" }) {
   const [alert, setAlert] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredLedgers, setFilteredLedgers] = useState([]);
-  const [transactionPagination, setTransactionPagination] = useState({ offset: 0, limit: 50, total: 0, hasMore: false });
+  const [transactionPagination, setTransactionPagination] = useState({ limit: 50, total: null, nextCursor: null, hasMore: false });
   const [loadingMoreTransactions, setLoadingMoreTransactions] = useState(false);
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState(() => initialDashboardSnapshot?.todayPaymentsList || []);
@@ -1121,34 +1121,27 @@ export default function Dashboard({ view = "overview" }) {
     try {
       // Both requests are read-only; run them concurrently to avoid two full
       // network round trips when switching customers in the ledger.
-      const customer = await api(`/api/customers/${id}?includeLedgers=false&includeCashSales=true`, { signal: controller.signal });
+      const customer = await api(`/api/customers/${id}?includeLedgers=false&includeCashSales=false`, { signal: controller.signal });
       if (requestId !== customerRequestIdRef.current) return;
       // Show the selected customer and ledger form immediately, then load all
       // transaction pages in the background for reconciliation and audit.
-      const firstPageCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: [] };
+      const firstPageCustomer = { ...customer, cashSales: [], ledgers: [] };
       selectedCustomerRef.current = firstPageCustomer;
       setSelectedCustomer(firstPageCustomer);
       setSelectedCustomerId(customer.id);
-      const transactionPage = await api(`/api/customers/${id}/transactions?limit=100&offset=0&includeCount=false`, { signal: controller.signal });
+      const transactionPage = await api(`/api/customers/${id}/transactions/unified?limit=50&includeCount=true`, { signal: controller.signal });
       if (requestId !== customerRequestIdRef.current) return;
       const firstPageWithTransactions = { ...firstPageCustomer, ledgers: transactionPage.items || [] };
       selectedCustomerRef.current = firstPageWithTransactions;
       setSelectedCustomer(firstPageWithTransactions);
-      setTransactionPagination({ offset: firstPageWithTransactions.ledgers.length, limit: 100, total: firstPageWithTransactions.ledgers.length, hasMore: false });
+      customerCacheRef.current.set(id, firstPageWithTransactions);
+      setTransactionPagination(transactionPage.pagination || {
+        limit: 50,
+        total: null,
+        nextCursor: null,
+        hasMore: false,
+      });
       setLoadingCustomerHistory(false);
-      const allLedgers = [...(transactionPage.items || [])];
-      let nextPage = transactionPage;
-      while (nextPage.pagination?.hasMore) {
-        nextPage = await api(`/api/customers/${id}/transactions?limit=100&offset=${allLedgers.length}&includeCount=false`, { signal: controller.signal });
-        allLedgers.push(...(nextPage.items || []));
-        if (!nextPage.items?.length) break;
-      }
-      if (requestId !== customerRequestIdRef.current) return;
-      const completeCustomer = { ...customer, cashSales: customer.cashSales || [], ledgers: allLedgers };
-      customerCacheRef.current.set(id, completeCustomer);
-      selectedCustomerRef.current = completeCustomer;
-      setSelectedCustomer(completeCustomer);
-      setTransactionPagination({ offset: allLedgers.length, limit: 100, total: allLedgers.length, hasMore: false });
       setSelectedCustomerId(customer.id);
     } catch (error) {
       if (error.name === "AbortError") return;
@@ -1168,16 +1161,16 @@ export default function Dashboard({ view = "overview" }) {
     if (!selectedCustomerId || loadingMoreTransactions || !transactionPagination.hasMore) return;
     setLoadingMoreTransactions(true);
     try {
-      const offset = selectedCustomer?.ledgers?.length || transactionPagination.offset;
-      const page = await api(`/api/customers/${selectedCustomerId}/transactions?limit=${transactionPagination.limit}&offset=${offset}`);
+      const cursor = transactionPagination.nextCursor ? `&cursor=${encodeURIComponent(transactionPagination.nextCursor)}` : "";
+      const page = await api(`/api/customers/${selectedCustomerId}/transactions/unified?limit=${transactionPagination.limit}${cursor}`);
       setSelectedCustomer((prev) => prev ? { ...prev, ledgers: [...(prev.ledgers || []), ...(page.items || [])] } : prev);
-      setTransactionPagination(page.pagination || transactionPagination);
+      setTransactionPagination((previous) => ({ ...previous, ...(page.pagination || {}), total: page.pagination?.total ?? previous.total }));
     } catch (error) {
       showAlert(error.message, "error");
     } finally {
       setLoadingMoreTransactions(false);
     }
-  }, [selectedCustomerId, selectedCustomer, transactionPagination, loadingMoreTransactions, showAlert]);
+  }, [selectedCustomerId, transactionPagination, loadingMoreTransactions, showAlert]);
 
   useEffect(() => {
     loadCustomer().catch((error) => {
@@ -1290,7 +1283,7 @@ export default function Dashboard({ view = "overview" }) {
     const basicCustomer = cached || { ...customer, cashSales: [], ledgers: [] };
     selectedCustomerRef.current = basicCustomer;
     setSelectedCustomer(basicCustomer);
-    setTransactionPagination({ offset: 0, limit: 50, total: cached?.ledgers?.length || 0, hasMore: false });
+    setTransactionPagination({ limit: 50, total: null, nextCursor: null, hasMore: false });
     setLoadingCustomer(false);
     setLoadingCustomerHistory(!cached);
     setSelectedCustomerId(customer.id);
@@ -1511,7 +1504,12 @@ export default function Dashboard({ view = "overview" }) {
             date: ledgerForm.date || null,
           }),
         });
-        if (result?.cashSale) setSelectedCustomer((prev) => ({ ...prev, cashSales: (prev.cashSales || []).map((sale) => sale.id === result.cashSale.id ? result.cashSale : sale) }));
+        if (result?.cashSale) setSelectedCustomer((prev) => ({
+          ...prev,
+          ledgers: (prev.ledgers || []).map((row) => row.id === result.cashSale.id
+            ? { ...result.cashSale, type: "CASH_SALE", recordType: "CASH_SALE" }
+            : row),
+        }));
         setEditingTransaction(null);
         setLedgerForm({ type: "CREDIT", saleType: "RETAIL", itemSize: "", cartons: "", rate: "", deductions: "", amount: "", manualAmount: "", discountAmount: "", discountNote: "", note: "", date: "", paymentType: "", paymentBreakdown: { ...EMPTY_PAYMENT_BREAKDOWN }, saleItems: [] });
         clearDashboardDraftFields(["ledgerForm"]);
@@ -1567,7 +1565,10 @@ export default function Dashboard({ view = "overview" }) {
       });
       
       if (isCashSale && result?.cashSale) {
-        setSelectedCustomer(prev => ({ ...prev, cashSales: [result.cashSale, ...(prev.cashSales || [])] }));
+        setSelectedCustomer(prev => ({
+          ...prev,
+          ledgers: [{ ...result.cashSale, type: "CASH_SALE", recordType: "CASH_SALE" }, ...(prev.ledgers || [])],
+        }));
       }
       if (!isCashSale && result?.ledger) {
         setSelectedCustomer(prev => ({ ...prev, ledgers: [result.ledger, ...(prev.ledgers || [])] }));
@@ -1637,7 +1638,7 @@ export default function Dashboard({ view = "overview" }) {
           // CashSale is separate from Ledger and must never change the balance.
           setSelectedCustomer((prev) => prev ? {
             ...prev,
-            cashSales: (prev.cashSales || []).filter((sale) => sale.id !== id),
+            ledgers: (prev.ledgers || []).filter((row) => row.id !== id),
           } : prev);
           setCustomers((prev) => prev.map((customer) => (
             customer.id === result.customerId
@@ -2200,10 +2201,7 @@ export default function Dashboard({ view = "overview" }) {
     totalCustomers: customers.length,
   }), [customers, todayPaymentsList.length]);
 
-  const unifiedTransactions = useMemo(
-    () => mergeTransactionsWithCashSales(selectedCustomer?.ledgers || [], selectedCustomer?.cashSales || []),
-    [selectedCustomer?.ledgers, selectedCustomer?.cashSales],
-  );
+  const unifiedTransactions = selectedCustomer?.ledgers || [];
   const transactionRowsForFilter = unifiedTransactions;
 
   // Handle filter changes from TransactionFilter component
@@ -3408,7 +3406,7 @@ export default function Dashboard({ view = "overview" }) {
                     </table>
                   </div>
                   <div className="mt-3 flex flex-col items-center gap-2 text-sm text-slate-600">
-                    <span>{unifiedTransactions.length} / {transactionPagination.total + (selectedCustomer.cashSales?.length || 0)} transactions loaded</span>
+                    <span>{unifiedTransactions.length}{transactionPagination.total != null ? ` / ${transactionPagination.total}` : ""} transactions loaded</span>
                     {transactionPagination.hasMore && (
                       <button
                         type="button"
