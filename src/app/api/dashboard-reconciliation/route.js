@@ -53,7 +53,7 @@ export async function GET() {
 
     const debits = await prisma.ledger.findMany({
       where: { type: "DEBIT" },
-      select: { id: true, customerId: true, amount: true, date: true, note: true },
+      select: { id: true, customerId: true, amount: true, discountAmount: true, date: true, note: true },
     });
     const targetIds = [...new Set(debits.flatMap((row) => settlementTargetIds(row.note)))];
     const targets = targetIds.length
@@ -85,7 +85,7 @@ export async function GET() {
 
     referencesByTarget.forEach((payments, targetId) => {
       const target = targetById.get(targetId);
-      const linkedAmount = payments.reduce((sum, payment) => sum + rounded(payment.amount), 0);
+      const linkedAmount = payments.reduce((sum, payment) => sum + rounded(payment.amount) + rounded(payment.discountAmount), 0);
       if (target && target.type === "CREDIT" && linkedAmount !== rounded(target.amount)) {
         const targetAmount = rounded(target.amount);
         const surplusAmount = linkedAmount - targetAmount;

@@ -13,12 +13,11 @@ describe("debt reconciliation workflow", () => {
     expect(page).toContain("grid-cols-2");
   });
 
-  it("loads the first transaction page quickly and completes the full history in the background", () => {
+  it("loads the first unified transaction page and continues with a cursor", () => {
     const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
-    expect(dashboard).toContain("limit=100&offset=0&includeCount=false");
-    expect(dashboard).toContain("while (nextPage.pagination?.hasMore)");
-    expect(dashboard).toContain("allLedgers.push");
-    expect(dashboard).toContain("includeCount=false");
+    expect(dashboard).toContain("/transactions/unified?limit=50&includeCount=true");
+    expect(dashboard).toContain("nextCursor");
+    expect(dashboard).toContain("encodeURIComponent(transactionPagination.nextCursor)");
     expect(dashboard).toContain("setLoadingCustomerHistory(false)");
   });
 
@@ -39,6 +38,8 @@ describe("debt reconciliation workflow", () => {
     expect(route).toContain('type: isPrepayment ? "LINKED_PREPAYMENT" : isClearedSurplus ? "LINKED_SURPLUS_CLEARED" : "LINKED_TOTAL_MISMATCH"');
     expect(route).toContain('isClearedSurplus ? "LINKED_SURPLUS_CLEARED"');
     expect(route).toContain("balanceByCustomer.get(target.customerId)");
+    expect(route).toContain("discountAmount: true");
+    expect(route).toContain("rounded(payment.amount) + rounded(payment.discountAmount)");
     expect(route).toContain("linkedAmount !== rounded(target.amount)");
     expect(route).toContain("payments.length > 1 && (!target || linkedAmount < rounded(target.amount))");
     expect(dashboard).toContain("LINKED_PREPAYMENT");
