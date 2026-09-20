@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getPreviousMyanmarDayRange, getPreviousMyanmarDayRanges, getRecentMyanmarDayRanges } from "@/lib/myanmar-time";
+import { getMyanmarHour } from "@/lib/myanmar-time-client";
 
 describe("Myanmar report date ranges", () => {
   const now = new Date("2026-08-27T02:30:00.000Z");
@@ -24,5 +25,9 @@ describe("Myanmar report date ranges", () => {
       "2026-08-26",
     ]);
     expect(getPreviousMyanmarDayRanges(now, 99)).toHaveLength(7);
+  });
+
+  it("calculates morning weather effects in Myanmar time", () => {
+    expect(getMyanmarHour(new Date("2026-09-20T01:30:00.000Z"))).toBe(8);
   });
 });

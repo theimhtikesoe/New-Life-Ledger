@@ -53,3 +53,11 @@ export function formatMyanmarClock(value = new Date()) {
     hour12: false,
   }).format(new Date(value));
 }
+
+export function getMyanmarHour(value = new Date()) {
+  return Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: MYANMAR_TIME_ZONE,
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(value)));
+}

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PINLogin from '@/components/PINLogin';
 import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
-import { formatMyanmarClock, formatMyanmarDateLabel } from '@/lib/myanmar-time-client';
+import { formatMyanmarClock, formatMyanmarDateLabel, getMyanmarHour } from '@/lib/myanmar-time-client';
 import { encodeActorHeader } from '@/lib/actor-header';
 import { defaultAllowedPaths } from '@/lib/user-permissions';
 import { installClientWriteDeduplication } from '@/lib/client-write-dedupe';
@@ -42,7 +42,7 @@ function WeatherOverlay() {
   if (weather === null) return null;
   const rainy = (weather >= 51 && weather <= 82) || weather >= 95;
   const sunny = weather <= 2;
-  const currentHour = new Date().getHours();
+  const currentHour = getMyanmarHour();
   const sunnyMorning = sunny && currentHour >= 6 && currentHour < 12;
   if (!rainy && !sunny) return null;
   return rainy ? (
