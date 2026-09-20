@@ -40,6 +40,12 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryPageSource).toContain("အသေးစိတ်မှတ်တမ်း");
   });
 
+  it("loads movement rows needed by the bottle detail dialog", () => {
+    expect(factoryPageSource).toContain('fetch("/api/factory-stock?stockType=BOTTLE"');
+    expect(factoryPageSource).not.toContain("stockType=BOTTLE&summaryOnly=1");
+    expect(factoryRouteSource).toContain("movements: summaryOnly ? [] : displayMovements");
+  });
+
   it("keeps cap stock guidance visible and uses a popup for details", () => {
     const capPageSource = fs.readFileSync(path.join(root, "src/app/cap-stock/page.js"), "utf8");
     expect(capPageSource).toContain("အဖုံးအရောင်အလိုက် စက်ရုံလက်ကျန်");

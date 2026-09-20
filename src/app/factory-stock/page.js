@@ -44,7 +44,9 @@ export default function FactoryStockPage() {
     } catch {
       // Ignore unavailable or malformed session cache.
     }
-    fetch("/api/factory-stock?stockType=BOTTLE&summaryOnly=1", { cache: "no-store", signal: controller.signal })
+    // The page needs movement rows for the per-item detail dialog as well as
+    // the summary cards. summaryOnly=1 intentionally strips those rows.
+    fetch("/api/factory-stock?stockType=BOTTLE", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error || "စက်ရုံလက်ကျန် ရယူ၍မရပါ။");
