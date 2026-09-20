@@ -46,6 +46,13 @@ describe("factory stock and dashboard loading contract", () => {
     expect(factoryRouteSource).toContain("movements: summaryOnly ? [] : displayMovements");
   });
 
+  it("keeps the dashboard retail and wholesale KPI on full-page navigation", () => {
+    const dailySalesPanelSource = fs.readFileSync(path.join(root, "src/components/DailySalesSummaryPanel.jsx"), "utf8");
+    expect(dailySalesPanelSource).toContain('import Link from "@/components/AppLink";');
+    expect(dailySalesPanelSource).toContain("/daily-sales-summary?date=");
+    expect(dailySalesPanelSource).toContain("ယနေ့ လက်လီ၊ လက်ကား စုစုပေါင်း");
+  });
+
   it("keeps cap stock guidance visible and uses a popup for details", () => {
     const capPageSource = fs.readFileSync(path.join(root, "src/app/cap-stock/page.js"), "utf8");
     expect(capPageSource).toContain("အဖုံးအရောင်အလိုက် စက်ရုံလက်ကျန်");
