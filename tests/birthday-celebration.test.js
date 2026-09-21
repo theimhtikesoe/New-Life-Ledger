@@ -28,9 +28,11 @@ describe("Happy Hnin Oo Day celebration", () => {
     expect(birthdaySource).not.toContain("Birthday song ဖွင့်ရန် ♪");
   });
 
-  it("shows the wish alert on every fresh entry during the configured date", () => {
+  it("shows once per tab session and resets that guard on a hard refresh", () => {
     expect(birthdaySource).toContain('if (getMyanmarDateInputValue() !== BIRTHDAY_DATE) return;');
-    expect(birthdaySource).not.toContain("localStorage.getItem");
-    expect(birthdaySource).not.toContain("SHOWN_KEY");
+    expect(birthdaySource).toContain("SESSION_SHOWN_KEY");
+    expect(birthdaySource).toContain('navigation?.type === "reload"');
+    expect(birthdaySource).toContain("window.sessionStorage.removeItem(SESSION_SHOWN_KEY)");
+    expect(birthdaySource).toContain("window.sessionStorage.getItem(SESSION_SHOWN_KEY)");
   });
 });

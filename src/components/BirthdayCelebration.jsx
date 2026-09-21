@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 const BIRTHDAY_DATE = "2026-09-21";
+const SESSION_SHOWN_KEY = "new-life-ledger:hnin-oo-birthday-session-2026";
 const BIRTHDAY_SONG_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663960207676/vaRnchUJftQkvJhd.mp3";
 
 function makeConfetti() {
@@ -53,8 +54,17 @@ export default function BirthdayCelebration() {
 
   useEffect(() => {
     if (getMyanmarDateInputValue() !== BIRTHDAY_DATE) return;
-    // Deliberately show on every fresh website entry/refresh, but only on the
-    // configured birthday date. It should not be suppressed after one visit.
+    // A hard refresh starts a new celebration visit; client-side route changes
+    // in the same tab do not. sessionStorage survives route changes and page
+    // refreshes, so clear it only when the browser reports a real reload.
+    try {
+      const navigation = window.performance?.getEntriesByType?.("navigation")?.[0];
+      if (navigation?.type === "reload") window.sessionStorage.removeItem(SESSION_SHOWN_KEY);
+      if (window.sessionStorage.getItem(SESSION_SHOWN_KEY) === BIRTHDAY_DATE) return;
+      window.sessionStorage.setItem(SESSION_SHOWN_KEY, BIRTHDAY_DATE);
+    } catch {
+      // If session storage is unavailable, the celebration still works.
+    }
     setOpen(true);
   }, []);
 
