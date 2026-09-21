@@ -312,7 +312,10 @@ function SharedPageHeader({ pathname, actorName }) {
   const title = PAGE_HEADERS[pathname];
   const normalizedActorName = String(actorName || '').trim();
   const zwayZwayDashboardLinkPaths = ['/production', '/production-history', '/factory-stock'];
-  const showDashboardLink = (normalizedActorName !== 'ဇွဲဇွဲ' || zwayZwayDashboardLinkPaths.includes(pathname)) && normalizedActorName !== 'ဖြိုးကို' && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail' || pathname === '/debt-reconciliation' || pathname === '/prepayment-reconciliation');
+  const phyoDashboardLinkPaths = ['/production', '/tube-stock', '/tube-production-history'];
+  const showDashboardLink = (normalizedActorName !== 'ဇွဲဇွဲ' || zwayZwayDashboardLinkPaths.includes(pathname))
+    && (normalizedActorName !== 'ဖြိုးကို' || phyoDashboardLinkPaths.includes(pathname))
+    && (normalizedActorName !== 'ဆောင်းဦး' || pathname === '/balance-detail' || pathname === '/debt-reconciliation' || pathname === '/prepayment-reconciliation');
   const [currentTime, setCurrentTime] = useState(() => new Date());
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
