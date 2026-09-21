@@ -62,10 +62,10 @@ describe("Production bottle catalog", () => {
     });
   });
 
-  it("includes the new .85 ပြာ (S+S) bottle with its 24g B (S+S) Tube mapping", () => {
-    expect(BOTTLE_ITEMS).toContainEqual({ type: ".85 ပြာ (S+S)", capacities: [100] });
-    expect(getBottleGroup(".85 ပြာ (S+S)")).toBe("085");
-    expect(DEFAULT_TUBE_MAPPINGS[".85 ပြာ (S+S)::100"]).toBe("24g B (S+S)");
+  it("includes the new 0.85 ပြာ (S+S) bottle with its 24g B (S+S) Tube mapping", () => {
+    expect(BOTTLE_ITEMS).toContainEqual({ type: "0.85 ပြာ (S+S)", capacities: [100] });
+    expect(getBottleGroup("0.85 ပြာ (S+S)")).toBe("085");
+    expect(DEFAULT_TUBE_MAPPINGS["0.85 ပြာ (S+S)::100"]).toBe("24g B (S+S)");
   });
 
   it("keeps the confirmed Tube card-to-select mappings", () => {

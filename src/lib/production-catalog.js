@@ -36,7 +36,7 @@ export const BOTTLE_ITEMS = [
   { type: "40 ကျပ်သား", capacities: [100] },
   { type: "နွားသေး", capacities: [100, 250] },
   { type: "နွားကြီး", capacities: [100, 250] },
-  { type: ".85 ပြာ (S+S)", capacities: [100] },
+  { type: "0.85 ပြာ (S+S)", capacities: [100] },
   { type: "0.85", capacities: [100] },
   { type: "0.9 ဖြူ", capacities: [100, 170] },
   { type: "0.9 ပြာ (S+1)", capacities: [100, 170] },
@@ -142,7 +142,7 @@ export function getBottleGroup(type) {
   if (value.startsWith("40 ")) return "40";
   if (value.startsWith("45 ")) return "45";
   if (value.startsWith("နွား")) return "cow";
-  if (value === "0.85" || value.startsWith(".85")) return "085";
+  if (value.startsWith("0.85") || value.startsWith(".85")) return "085";
   if (value.startsWith("0.9")) return "09";
   if (value.startsWith("1 လီတာ")) return "liter";
   return "candy";
@@ -270,7 +270,7 @@ export const DEFAULT_TUBE_MAPPINGS = {
   "1 လီတာ ပြာ (S+1)::160": "24g B (S+1)",
   "1 လီတာ ပြာ (S+S)::100": "24g B (S+S)",
   "1 လီတာ ပြာ (S+S)::160": "24g B (S+S)",
-  ".85 ပြာ (S+S)::100": "24g B (S+S)",
+  "0.85 ပြာ (S+S)::100": "24g B (S+S)",
 };
 
 export const TUBE_BY_MACHINE = {
