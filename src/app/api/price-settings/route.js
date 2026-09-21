@@ -68,16 +68,32 @@ export async function GET(request) {
   const release = await acquirePriceSettingsRead();
   try {
     await ensureDatabase();
-    const customRows = await loadCustomCatalogRows();
-    const exactRows = await prisma.priceSetting.findMany({ where: { priceDate: date }, orderBy: [{ scope: "asc" }, { productName: "asc" }, { capacity: "asc" }] });
-    const priorRows = await prisma.priceSetting.findMany({ where: { priceDate: { lte: date } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
+    const today = getMyanmarDateInputValue();
+    const latestDate = date > today ? date : today;
+    // Fetch custom catalog rows and all price rows needed for both the
+    // requested historical date and the current fallback in one round trip.
+    // The previous implementation performed three priceSetting queries plus
+    // a separate custom-catalog query, which could queue behind the single
+    // serverless database connection and make the picker time out.
+    const rows = await prisma.priceSetting.findMany({
+      where: {
+        OR: [
+          { priceDate: CUSTOM_CATALOG_DATE },
+          { priceDate: { lte: latestDate } },
+        ],
+      },
+      orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }, { scope: "asc" }, { productName: "asc" }, { capacity: "asc" }],
+    });
+    const customRows = rows.filter((row) => row.priceDate === CUSTOM_CATALOG_DATE);
+    const historicalRows = rows.filter((row) => row.priceDate !== CUSTOM_CATALOG_DATE && row.priceDate <= date);
+    const exactRows = historicalRows.filter((row) => row.priceDate === date);
     // Historical ledger entries must remain usable even when that old date
     // predates the price-setting table. The current/latest saved price is the
     // business-approved fallback for old bottle, cap, and Tube entries.
-    const latestRows = await prisma.priceSetting.findMany({ where: { priceDate: { lte: getMyanmarDateInputValue() } }, orderBy: [{ priceDate: "desc" }, { updatedAt: "desc" }] });
+    const latestRows = rows.filter((row) => row.priceDate !== CUSTOM_CATALOG_DATE && row.priceDate <= today);
 
     const effectiveByKey = new Map();
-    for (const row of priorRows) {
+    for (const row of historicalRows) {
       const key = `${row.scope}:${row.scope === "ITEM" ? normalizeBottleProductKey(row.productKey) : row.productKey}`;
       if (!effectiveByKey.has(key)) effectiveByKey.set(key, serialize(row));
     }
@@ -95,7 +111,7 @@ export async function GET(request) {
       else if (serialized.pricePerBottle > 0) exactItemPrices[normalizeBottleProductKey(row.productKey)] = serialized;
     }
 
-    const catalog = (await loadCatalogWithCustomItems()).map((item) => {
+    const catalog = (await loadCatalogWithCustomItems(customRows)).map((item) => {
       const latestItemRow = latestByKey.get(`ITEM:${item.productKey}`);
       const latestCategoryRow = latestByKey.get(`CATEGORY:${item.categoryKey}`);
       const itemPriceRow = latestItemRow && Number(latestItemRow.pricePerBottle || 0) > 0

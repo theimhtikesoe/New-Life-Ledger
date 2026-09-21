@@ -11,10 +11,10 @@ export async function loadCustomCatalogRows() {
   })) || [];
 }
 
-export async function loadCatalogWithCustomItems() {
-  const rows = await loadCustomCatalogRows();
-  const categoryLabels = new Map(rows.filter((row) => row.scope === "CUSTOM_CATEGORY").map((row) => [row.categoryKey, row.productName]));
-  const items = rows
+export async function loadCatalogWithCustomItems(rows = null) {
+  const customRows = Array.isArray(rows) ? rows : await loadCustomCatalogRows();
+  const categoryLabels = new Map(customRows.filter((row) => row.scope === "CUSTOM_CATEGORY").map((row) => [row.categoryKey, row.productName]));
+  const items = customRows
     .filter((row) => row.scope === "CUSTOM_ITEM")
     .map((row) => ({
       scope: "ITEM",
