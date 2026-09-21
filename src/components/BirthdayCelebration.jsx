@@ -66,8 +66,13 @@ export default function BirthdayCelebration() {
     // the user does not need to find and press a separate song button.
     const startTimer = window.setTimeout(() => { void playBirthdaySong(); }, 0);
     const retryOnInteraction = () => { void playBirthdaySong(); };
+    const retryWhenVisible = () => {
+      if (document.visibilityState === "visible") void playBirthdaySong();
+    };
     window.addEventListener("pointerdown", retryOnInteraction, { once: true, passive: true });
     window.addEventListener("keydown", retryOnInteraction, { once: true });
+    window.addEventListener("pageshow", retryWhenVisible);
+    document.addEventListener("visibilitychange", retryWhenVisible);
     const timer = window.setInterval(() => {
       if (getMyanmarDateInputValue() !== BIRTHDAY_DATE) {
         stopBirthdaySong();
@@ -80,6 +85,8 @@ export default function BirthdayCelebration() {
       window.clearInterval(timer);
       window.removeEventListener("pointerdown", retryOnInteraction);
       window.removeEventListener("keydown", retryOnInteraction);
+      window.removeEventListener("pageshow", retryWhenVisible);
+      document.removeEventListener("visibilitychange", retryWhenVisible);
     };
   }, [open]);
 
@@ -95,7 +102,10 @@ export default function BirthdayCelebration() {
         ref={audioRef}
         src={BIRTHDAY_SONG_URL}
         preload="auto"
+        autoPlay
+        playsInline
         loop
+        onLoadedData={playBirthdaySong}
         onPlay={() => setSongPlaying(true)}
         onPause={() => setSongPlaying(false)}
         onError={() => setSongBlocked(true)}

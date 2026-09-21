@@ -22,6 +22,9 @@ describe("Happy Hnin Oo Day celebration", () => {
     expect(birthdaySource).toContain('window.addEventListener("pointerdown", retryOnInteraction');
     expect(birthdaySource).toContain('window.addEventListener("keydown", retryOnInteraction');
     expect(birthdaySource).toContain('preload="auto"');
+    expect(birthdaySource).toContain("autoPlay");
+    expect(birthdaySource).toContain("playsInline");
+    expect(birthdaySource).toContain("onLoadedData={playBirthdaySong}");
     expect(birthdaySource).not.toContain("Birthday song ဖွင့်ရန် ♪");
   });
 
