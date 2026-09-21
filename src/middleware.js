@@ -22,6 +22,7 @@ const PRODUCTION_DASHBOARD_READ_PATHS = new Set([
   "/api/dashboard-kpi",
   "/api/dashboard-pulse",
   "/api/daily-summary",
+  "/api/monthly-tube-production",
   "/api/production-reports",
   "/api/factory-stock",
   "/api/tube-stock",

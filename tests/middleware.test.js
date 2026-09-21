@@ -6,9 +6,9 @@ vi.mock("@/lib/auth-session", () => ({ getSessionInfo: mocks.getSessionInfo }));
 
 import { middleware } from "@/middleware";
 
-function request(path) {
+function request(path, method = "GET") {
   const url = new URL(`https://example.test${path}`);
-  return { nextUrl: { pathname: url.pathname, clone: () => new URL(url) } };
+  return { method, nextUrl: { pathname: url.pathname, clone: () => new URL(url) } };
 }
 
 describe("API middleware access policy", () => {
@@ -57,5 +57,12 @@ describe("API middleware access policy", () => {
 
     expect(productionResponse.status).toBe(200);
     expect(dashboardApiResponse.status).toBe(403);
+  });
+
+  it("allows production-only users to read the monthly Tube report", async () => {
+    mocks.getSessionInfo.mockResolvedValue({ actorName: "ဖြိုးကို", access: "production-only" });
+    const response = await middleware(request("/api/monthly-tube-production"));
+
+    expect(response.status).toBe(200);
   });
 });

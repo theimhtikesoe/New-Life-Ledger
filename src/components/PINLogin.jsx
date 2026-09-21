@@ -280,10 +280,10 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
   if (isLoading || (isAuthenticated && !actorLocked)) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
-        <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold text-gray-800">New Life Ledger</h1>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/50 p-3 sm:p-4">
+      <div className="my-auto max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:p-8">
+        <div className="mb-6 text-center sm:mb-8">
+          <h1 className="mb-2 text-2xl font-bold text-gray-800 sm:text-3xl">New Life Ledger</h1>
           <p className="text-gray-600">
             {actorLocked
               ? "အသုံးပြုသူကို ပြန်ရွေးပြီး PIN code ထည့်ပါ"
@@ -323,7 +323,7 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
                 onChange={handlePinChange}
                 placeholder="• • • • • •"
                 maxLength="6"
-                className="w-full rounded-lg border-2 border-gray-300 px-4 py-3 text-center text-2xl tracking-widest transition-colors focus:border-blue-500 focus:outline-none"
+                className="pin-login-input min-h-14 w-full rounded-lg border-2 border-gray-300 px-4 py-3 text-center text-xl tracking-widest transition-colors focus:border-blue-500 focus:outline-none sm:text-2xl"
                 autoFocus
               />
               {error && <p className="mt-2 text-sm font-medium text-red-600">{error}</p>}
