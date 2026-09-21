@@ -9,10 +9,10 @@ const cssSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8"
 const dashboardSource = fs.readFileSync(path.join(root, "src/components/Dashboard.jsx"), "utf8");
 
 describe("PWA quick actions", () => {
-  it("keeps native pinch zoom and panning enabled in the PWA viewport", () => {
-    expect(rootLayoutSource).toContain("maximumScale: 5");
-    expect(rootLayoutSource).toContain("userScalable: true");
-    expect(cssSource).toContain("touch-action: pan-x pan-y pinch-zoom;");
+  it("disables browser viewport zoom so input focus cannot enlarge the page", () => {
+    expect(rootLayoutSource).toContain("maximumScale: 1");
+    expect(rootLayoutSource).toContain("userScalable: false");
+    expect(cssSource).toContain("font-size: 16px !important;");
   });
 
   it("keeps the fixed Refresh control and adds accessible app zoom controls", () => {
