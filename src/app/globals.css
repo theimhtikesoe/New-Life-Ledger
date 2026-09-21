@@ -216,6 +216,7 @@ canvas {
   width: 100%;
   min-width: 0;
   min-height: 100dvh;
+  touch-action: pan-x pan-y pinch-zoom;
   overflow-x: clip;
   background:
     radial-gradient(circle at 8% 4%, rgba(103, 232, 249, 0.12), transparent 22rem),

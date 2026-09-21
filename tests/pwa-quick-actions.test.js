@@ -3,11 +3,18 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const rootLayoutSource = fs.readFileSync(path.join(root, "src/app/layout.js"), "utf8");
 const layoutSource = fs.readFileSync(path.join(root, "src/app/layout-client.jsx"), "utf8");
 const cssSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 const dashboardSource = fs.readFileSync(path.join(root, "src/components/Dashboard.jsx"), "utf8");
 
 describe("PWA quick actions", () => {
+  it("keeps native pinch zoom and panning enabled in the PWA viewport", () => {
+    expect(rootLayoutSource).toContain("maximumScale: 5");
+    expect(rootLayoutSource).toContain("userScalable: true");
+    expect(cssSource).toContain("touch-action: pan-x pan-y pinch-zoom;");
+  });
+
   it("keeps the fixed Refresh control and adds accessible app zoom controls", () => {
     expect(layoutSource).toContain("pwa-quick-actions");
     expect(layoutSource).toContain("aria-label=\"Refresh — စာမျက်နှာ data ပြန်လည်ရယူမည်\"");
