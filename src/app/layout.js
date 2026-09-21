@@ -25,10 +25,10 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  // Keep the login modal and its form controls at the intended scale on phones.
-  // The app has its own size controls for intentional content resizing.
-  maximumScale: 1,
-  userScalable: false,
+  // Keep two-finger pinch zoom available. Input focus zoom is prevented
+  // separately by keeping mobile form controls at a rendered 16px minimum.
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   themeColor: "#00d4ff",
 };
