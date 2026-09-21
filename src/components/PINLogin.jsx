@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "ဖြိုးကို", "Rhyzoe", "သက်မွန်နှင်း"];
 const PRODUCTION_ONLY_ACTORS = ["ဇွဲဇွဲ", "ဖြိုးကို"];
+const PIN_PROTECTED_ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "Rhyzoe"];
 const ACTOR_SESSION_TIMEOUT_MS = 30 * 24 * 60 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"];
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
@@ -187,6 +188,11 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
       if (!body.ok) throw new Error(body.error || "PIN ဖြင့် ဝင်ရောက်၍ မရပါ။");
       setPin("");
       if (pendingActor) {
+        await fetchAuthJson("/api/auth/actor-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ actorName: pendingActor }),
+        });
         rememberAuthorizedActor(pendingActor);
         setAuthorizedActors(readAuthorizedActors());
         localStorage.setItem("actorName", pendingActor);
@@ -228,6 +234,10 @@ export default function PINLogin({ onSuccess, onLogout, onReady }) {
         // Re-selecting the already active user is not a user switch. Close the
         // selector without asking for the same user's PIN again.
         completeActorSelection(actorName);
+        return;
+      }
+      if (PIN_PROTECTED_ACTORS.includes(actorName)) {
+        setSelectingActor(false);
         return;
       }
       // Refresh both the actor name and session access for every configured

@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server";
-import { createSessionToken, sessionCookieOptions } from "@/lib/auth-session";
+import { createSessionToken, getSessionInfo, sessionCookieOptions } from "@/lib/auth-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "ဆောင်းဦး", "ဇွဲဇွဲ", "ဖြိုးကို", "Rhyzoe", "သက်မွန်နှင်း"];
 const PRODUCTION_ONLY_ACTORS = ["ဇွဲဇွဲ", "ဖြိုးကို"];
+const PIN_PROTECTED_ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "Rhyzoe"];
 
 export async function POST(request) {
   const body = await request.json().catch(() => ({}));
   const actorName = String(body?.actorName || "").trim();
   if (!ACTORS.includes(actorName)) {
     return NextResponse.json({ ok: false, error: "ဒီအသုံးပြုသူအတွက် PIN ဖြင့် ဝင်ရောက်ပါ။" }, { status: 403 });
+  }
+  if (PIN_PROTECTED_ACTORS.includes(actorName)) {
+    const session = await getSessionInfo(request);
+    if (!session?.pinVerified) {
+      return NextResponse.json({ ok: false, error: "ဒီအသုံးပြုသူအတွက် PIN ဖြင့် ဝင်ရောက်ပါ။" }, { status: 401 });
+    }
   }
 
   const access = PRODUCTION_ONLY_ACTORS.includes(actorName) ? "production-only" : "standard";

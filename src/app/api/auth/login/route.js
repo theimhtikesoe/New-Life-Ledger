@@ -59,7 +59,7 @@ export async function POST(request) {
   }
 
   clearFailures(key);
-  const token = await createSessionToken();
+  const token = await createSessionToken({ pinVerified: true });
   const response = NextResponse.json({ ok: true });
   response.cookies.set(sessionCookieOptions(token));
   return response;

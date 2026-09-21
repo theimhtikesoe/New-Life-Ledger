@@ -49,13 +49,14 @@ export function getSessionMaxAgeSeconds() {
   return SESSION_MAX_AGE_SECONDS;
 }
 
-export async function createSessionToken({ actorName = null, access = "full" } = {}) {
+export async function createSessionToken({ actorName = null, access = "full", pinVerified = false } = {}) {
   const secret = getSessionSecret();
   if (!secret) throw new Error("APP_SESSION_SECRET is not configured");
   const payload = base64UrlEncode(encoder.encode(JSON.stringify({
     version: 1,
     actorName: actorName ? String(actorName) : null,
     access: access === "production-only" ? "production-only" : "full",
+    pinVerified: Boolean(pinVerified),
     issuedAt: Date.now(),
     expiresAt: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
   })));
@@ -77,6 +78,7 @@ export async function getSessionInfoFromToken(token) {
     return {
       actorName: parsed.actorName ? String(parsed.actorName) : null,
       access: parsed.access === "production-only" ? "production-only" : "full",
+      pinVerified: parsed.pinVerified === true,
       expiresAt: Number(parsed.expiresAt),
     };
   } catch {
