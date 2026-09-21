@@ -6,6 +6,7 @@ import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 import { TUBE_ITEMS } from "@/lib/production-catalog";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function packEquivalent(pieces, capacity) {
   const value = Number(pieces || 0);

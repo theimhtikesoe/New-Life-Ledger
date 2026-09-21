@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const TUBE_STOCK_CACHE_KEY = "new-life-ledger:tube-stock-v2";
+const TUBE_STOCK_CACHE_KEY = "new-life-ledger:tube-stock-v3";
 
 function number(value) {
   return Number(value || 0).toLocaleString();
@@ -33,12 +33,11 @@ export default function TubeStockDetailPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 60000);
     try {
       const cached = JSON.parse(window.sessionStorage.getItem(TUBE_STOCK_CACHE_KEY) || "null");
       if (cached?.data) {
         setData(cached.data);
-        setLoading(false);
       }
     } catch {
       // Ignore unavailable or malformed session cache.
@@ -54,7 +53,7 @@ export default function TubeStockDetailPage() {
           // The live response is still rendered normally.
         }
       })
-      .catch((fetchError) => { if (fetchError.name === "AbortError") setError("Tube လက်ကျန် ရယူချိန်ကျော်သွားပါသည်။ Refresh ပြန်လုပ်ပါ။"); else setError(fetchError.message); })
+      .catch((fetchError) => { if (fetchError.name === "AbortError") setError("Tube လက်ကျန် ရယူချိန်ကျော်သွားပါသည်။ ခဏစောင့်ပြီး Refresh ပြန်လုပ်ပါ။"); else setError(fetchError.message); })
       .finally(() => setLoading(false));
     return () => { window.clearTimeout(timeoutId); controller.abort(); };
   }, []);
@@ -95,6 +94,7 @@ export default function TubeStockDetailPage() {
           <p className="mt-0.5 text-[11px] font-bold text-blue-800">အလေးချိန်မှတ်တမ်းကို backend တွင်သာ သိမ်းထားပါသည်။</p>
         </header>
         {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">{error}</div> : null}
+        {loading ? <div role="status" className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-bold text-blue-800"><span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700" aria-hidden="true" />Tube လက်ကျန် ရယူနေသည်...</div> : null}
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Tube stock KPI">
           <article className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 shadow-sm"><p className="text-[11px] font-black text-cyan-700">Tube အမျိုးအစား</p><p className="mt-1 text-xl font-black text-cyan-950">{value(summary.types, "မျိုး", loading)}</p></article>
           <article className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 shadow-sm"><p className="text-[11px] font-black text-emerald-700">ယနေ့ ထုတ်လုပ်ဝင်</p><p className="mt-1 text-2xl font-black text-emerald-950">{value(summary.productionPacks, "အိတ်", loading)}</p><p className="mt-0.5 text-xs font-bold text-emerald-700">{value(summary.productionPieces, "pcs", loading)}</p></article>
