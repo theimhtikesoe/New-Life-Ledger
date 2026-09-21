@@ -374,17 +374,16 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                 <p className="mt-1 text-[11px] text-rose-700">လက်လီငွေသား + လက်ကားငွေသား</p>
               </div>
               <div className="col-span-2 flex h-full w-full flex-col justify-self-center rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 sm:w-1/2">
-                <p className="text-xs font-semibold text-emerald-800">ယနေ့အထိ စုစုပေါင်း / နောက်နေ့ Opening</p>
+                <p className="text-xs font-semibold text-emerald-800">လအစမှ ယနေ့အထိ လက်လီ၊လက်ကား စုစုပေါင်း</p>
                 <p className="mt-1 text-2xl font-bold text-emerald-900 sm:text-3xl">{formatMoney(displayedOpening)}</p>
-                <p className="mt-1 text-[11px] leading-4 text-emerald-700">လအစ Opening နှင့် ယနေ့အထိ လက်လီ/လက်ကား ရောင်းရငွေ စုစုပေါင်း။ ယနေ့အဆုံးတန်ဖိုးသည် နောက်နေ့ Opening ဖြစ်သည်။</p>
               </div>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs leading-5 text-slate-700 sm:flex-row sm:items-center sm:justify-between">
                 <p>{saving ? "နေ့စဉ်စာရင်းကို သိမ်းနေပါသည်..." : hasManualDifference ? "ကြိုတင်ကြည့်ရှုတန်ဖိုးကို ပြင်ထားပါသည်။ မူရင်းစာရင်းကို မပြင်သေးပါ။" : "အခုတန်ဖိုးများကို ရှိပြီးသား ငွေချေ/လက်ငင်းစာရင်းများမှ အလိုအလျောက် တွက်ထားပါသည်။"}</p>
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-                <button type="button" onClick={resetToAutomatic} disabled={!summary || saving} className="w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 font-semibold text-indigo-800 hover:bg-indigo-50 disabled:opacity-50 sm:w-auto">အလိုအလျောက်တွက်ထားသည့်တန်ဖိုး ပြန်ထားရန်</button>
-                <button type="button" onClick={saveDaily} disabled={saving || invalidCashInput} className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700 disabled:opacity-50 sm:w-auto">{saving ? "သိမ်းနေသည်..." : "နေ့စဉ်စာရင်း သိမ်းမည်"}</button>
+                <button type="button" onClick={resetToAutomatic} disabled={!summary || saving} className="w-auto rounded-md border border-indigo-200 bg-white px-2 py-1 text-[11px] font-semibold leading-4 text-indigo-800 hover:bg-indigo-50 disabled:opacity-50 sm:px-2.5">အလိုအလျောက်တွက်ထားသည့်တန်ဖိုး ပြန်ထားရန်</button>
+                <button type="button" onClick={saveDaily} disabled={saving || invalidCashInput} className="w-auto rounded-md bg-indigo-600 px-2.5 py-1 text-[11px] font-bold leading-4 text-white hover:bg-indigo-700 disabled:opacity-50 sm:px-3">{saving ? "သိမ်းနေသည်..." : "နေ့စဉ်စာရင်း သိမ်းမည်"}</button>
               </div>
             </div>
 
@@ -397,28 +396,37 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
                 <p className="mt-2 text-[11px] text-slate-500">စက်တင်ဘာ ၁ ရက်မှ ရွေးထားသော Table Date အထိ data များကို ပြသပါသည်။ ယနေ့အထိကြည့်လိုပါက Table Date ကို ယနေ့အတိုင်းထားပါ။</p>
                 {historyLoading ? <p className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center text-sm font-semibold text-indigo-700">Table history data ရယူနေပါသည်...</p> : null}
                 <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full min-w-[760px] table-fixed text-left text-sm">
+                    <colgroup>
+                      <col className="w-[9%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[15%]" />
+                      <col className="w-[16%]" />
+                      <col className="w-[23%]" />
+                      <col className="w-[14%]" />
+                      <col className="w-[9%]" />
+                    </colgroup>
                     <thead className="bg-slate-50 text-slate-600">
                       <tr>
-                        <th className="px-3 py-2 font-bold">ရက်စွဲ</th>
-                        <th className="px-3 py-2 font-bold">လက်လီ (Total)</th>
-                        <th className="px-3 py-2 font-bold">လက်ကား (Total)</th>
-                        <th className="px-3 py-2 font-bold">နေ့စဉ် ရောင်းရငွေ</th>
-                        <th className="px-3 py-2 font-bold">ယနေ့အဆုံး စုစုပေါင်း / နောက်နေ့ Opening</th>
-                        <th className="px-3 py-2 font-bold">ငွေသား</th>
-                        <th className="px-3 py-2 font-bold">Source</th>
+                        <th className="px-2 py-2 font-bold leading-5">ရက်စွဲ</th>
+                        <th className="px-2 py-2 font-bold leading-5">လက်လီ (Total)</th>
+                        <th className="px-2 py-2 font-bold leading-5">လက်ကား (Total)</th>
+                        <th className="px-2 py-2 font-bold leading-5">နေ့စဉ် ရောင်းရငွေ</th>
+                        <th className="px-2 py-2 font-bold leading-5">လအစမှ ယနေ့အထိ စုစုပေါင်း</th>
+                        <th className="px-2 py-2 font-bold leading-5">ငွေသား</th>
+                        <th className="px-2 py-2 font-bold leading-5">Source</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {historyPageRows.map((row) => (
                         <tr key={row.date} className={dateKey(row.date) === dateKey(date) ? "bg-indigo-50/50" : ""}>
-                          <td className="whitespace-nowrap px-3 py-2 font-medium text-slate-900">{row.date.slice(8, 10)}/{row.date.slice(5, 7)}</td>
-                          <td className="px-3 py-2 text-slate-700">{formatMoney(row.retailTotal)}</td>
-                          <td className="px-3 py-2 text-slate-700">{formatMoney(row.wholesaleTotal)}</td>
-                          <td className="px-3 py-2 font-bold text-indigo-900">{formatMoney(row.dailyTotal)}</td>
-                          <td className="px-3 py-2 font-bold text-emerald-900">{row.monthlyCumulative == null ? "—" : formatMoney(row.monthlyCumulative)}</td>
-                          <td className="px-3 py-2 text-slate-700">{formatMoney(row.cashDailyTotal)}</td>
-                          <td className="px-3 py-2 text-[10px] font-medium text-slate-500">{row.source === "DAILY_SUMMARY" ? `Saved · ${calculationModeLabel(row)}` : calculationModeLabel(row)}</td>
+                          <td className="whitespace-nowrap px-2 py-2 font-medium text-slate-900">{row.date.slice(8, 10)}/{row.date.slice(5, 7)}</td>
+                          <td className="px-2 py-2 text-slate-700">{formatMoney(row.retailTotal)}</td>
+                          <td className="px-2 py-2 text-slate-700">{formatMoney(row.wholesaleTotal)}</td>
+                          <td className="px-2 py-2 font-bold text-indigo-900">{formatMoney(row.dailyTotal)}</td>
+                          <td className="px-2 py-2 font-bold text-emerald-900">{row.monthlyCumulative == null ? "—" : formatMoney(row.monthlyCumulative)}</td>
+                          <td className="px-2 py-2 text-slate-700">{formatMoney(row.cashDailyTotal)}</td>
+                          <td className="px-2 py-2 text-xs font-medium text-slate-500">{row.source === "DAILY_SUMMARY" ? `Saved · ${calculationModeLabel(row)}` : calculationModeLabel(row)}</td>
                         </tr>
                       ))}
                     </tbody>
