@@ -116,6 +116,7 @@ export default function PriceSettingsPage() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "စျေးနှုန်းသိမ်း၍မရပါ။");
       setMessage(`${date} အတွက် စျေးနှုန်းနှင့် သတ်မှတ် Tube များ သိမ်းပြီးပါပြီ။ Category ${body.data?.count || 0} ခု/Item များကို update လုပ်ထားပါတယ်။`);
+      window.dispatchEvent(new CustomEvent("new-life-ledger:price-settings-updated", { detail: { priceDate: date } }));
       await loadPrices(date);
     } catch (saveError) {
       setError(saveError.message || "စျေးနှုန်းသိမ်း၍မရပါ။");

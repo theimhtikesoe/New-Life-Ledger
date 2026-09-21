@@ -15,7 +15,8 @@ describe("debt reconciliation workflow", () => {
 
   it("loads the first unified transaction page and continues with a cursor", () => {
     const dashboard = readFileSync(resolve(process.cwd(), "src/components/Dashboard.jsx"), "utf8");
-    expect(dashboard).toContain("/transactions/unified?limit=50&includeCount=true");
+    expect(dashboard).toContain("/transactions/unified?limit=50");
+    expect(dashboard).not.toContain("/transactions/unified?limit=50&includeCount=true");
     expect(dashboard).toContain("nextCursor");
     expect(dashboard).toContain("encodeURIComponent(transactionPagination.nextCursor)");
     expect(dashboard).toContain("setLoadingCustomerHistory(false)");

@@ -27,6 +27,7 @@ const API_REQUEST_TIMEOUT_MS = 25000;
 const MAX_GET_ATTEMPTS = 2;
 const DASHBOARD_LOADING_WATCHDOG_MS = 12000;
 const DASHBOARD_DRAFT_STORAGE_PREFIX = "new-life-ledger-dashboard-draft-v1";
+const PRICE_CATALOG_CACHE_TTL_MS = 30_000;
 const EMPTY_PAYMENT_BREAKDOWN = { CASH: "", KPAY: "", BANK: "", WAVE: "", SPECIAL: "" };
 const PREPAYMENT_OPTION = "__PREPAYMENT__";
 const PAYMENT_BREAKDOWN_FIELDS = [
@@ -325,6 +326,7 @@ export default function Dashboard({ view = "overview" }) {
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const customerCacheRef = useRef(new Map());
+  const salesCatalogCacheRef = useRef(new Map());
   const selectedCustomerRef = useRef(null);
   const [search, setSearch] = useState("");
   const [matchingKpay, setMatchingKpay] = useState(null);
@@ -513,8 +515,17 @@ export default function Dashboard({ view = "overview" }) {
     const priceDate = ledgerForm.date || formatMyanmarDateInputValue();
     const controller = new AbortController();
     setSalesCatalogError("");
+    const cached = salesCatalogCacheRef.current.get(priceDate);
+    if (cached && Date.now() - cached.cachedAt < PRICE_CATALOG_CACHE_TTL_MS) {
+      setSalesCatalog(cached.catalog);
+      return () => controller.abort();
+    }
     api(`/api/price-settings?date=${encodeURIComponent(priceDate)}`, { signal: controller.signal, cache: "no-store" })
-      .then((data) => setSalesCatalog(Array.isArray(data?.catalog) ? data.catalog : []))
+      .then((data) => {
+        const catalog = Array.isArray(data?.catalog) ? data.catalog : [];
+        salesCatalogCacheRef.current.set(priceDate, { catalog, cachedAt: Date.now() });
+        setSalesCatalog(catalog);
+      })
       .catch((error) => {
         if (error.name !== "AbortError") {
           setSalesCatalog([]);
@@ -523,6 +534,16 @@ export default function Dashboard({ view = "overview" }) {
       });
     return () => controller.abort();
   }, [ledgerForm.date, selectedCustomerId, showAddCustomer]);
+
+  useEffect(() => {
+    const handlePriceSettingsUpdated = (event) => {
+      const priceDate = event.detail?.priceDate;
+      if (priceDate) salesCatalogCacheRef.current.delete(priceDate);
+      else salesCatalogCacheRef.current.clear();
+    };
+    window.addEventListener("new-life-ledger:price-settings-updated", handlePriceSettingsUpdated);
+    return () => window.removeEventListener("new-life-ledger:price-settings-updated", handlePriceSettingsUpdated);
+  }, []);
 
   // Keep unfinished local work available when the actor-only idle lock appears.
   // Each actor has a separate session draft so shared-phone users do not see one another's form data.
@@ -1121,9 +1142,11 @@ export default function Dashboard({ view = "overview" }) {
     if (!selectedCustomerRef.current || selectedCustomerRef.current.id !== id) setLoadingCustomer(true);
     setLoadingCustomerHistory(true);
     try {
-      // Both requests are read-only; run them concurrently to avoid two full
-      // network round trips when switching customers in the ledger.
-      const customer = await api(`/api/customers/${id}?includeLedgers=false&includeCashSales=false`, { signal: controller.signal });
+      // Both requests are read-only and only need the customer id. Start them
+      // together so a slow customer detail response cannot delay history.
+      const customerRequest = api(`/api/customers/${id}?includeLedgers=false&includeCashSales=false`, { signal: controller.signal });
+      const transactionRequest = api(`/api/customers/${id}/transactions/unified?limit=50`, { signal: controller.signal });
+      const customer = await customerRequest;
       if (requestId !== customerRequestIdRef.current) return;
       // Show the selected customer and ledger form immediately, then load all
       // transaction pages in the background for reconciliation and audit.
@@ -1131,7 +1154,7 @@ export default function Dashboard({ view = "overview" }) {
       selectedCustomerRef.current = firstPageCustomer;
       setSelectedCustomer(firstPageCustomer);
       setSelectedCustomerId(customer.id);
-      const transactionPage = await api(`/api/customers/${id}/transactions/unified?limit=50&includeCount=true`, { signal: controller.signal });
+      const transactionPage = await transactionRequest;
       if (requestId !== customerRequestIdRef.current) return;
       const firstPageWithTransactions = { ...firstPageCustomer, ledgers: transactionPage.items || [] };
       selectedCustomerRef.current = firstPageWithTransactions;
