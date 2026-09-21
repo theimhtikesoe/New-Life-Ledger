@@ -9,6 +9,7 @@ import { isPieceCapProduct } from "@/lib/production-catalog";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const CAP_COLOR_NAMES = new Set(["ဖြူ", "နီ", "ပြာ", "ဝါ", "စိမ်း", "ပန်း", "နက်/အမဲ", "ခရမ်း", "အပန်း"]);
 

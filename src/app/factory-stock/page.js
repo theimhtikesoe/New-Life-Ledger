@@ -34,7 +34,7 @@ export default function FactoryStockPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 60000);
     try {
       const cached = JSON.parse(window.sessionStorage.getItem(FACTORY_STOCK_CACHE_KEY) || "null");
       if (cached?.data) {
@@ -57,7 +57,7 @@ export default function FactoryStockPage() {
           // The live response is still rendered normally.
         }
       })
-      .catch((fetchError) => { if (fetchError.name === "AbortError") setError("စက်ရုံဗူးလက်ကျန် ရယူချိန်ကျော်သွားပါသည်။ Refresh ပြန်လုပ်ပါ။"); else setError(fetchError.message); })
+      .catch((fetchError) => { if (fetchError.name === "AbortError") setError("စက်ရုံဗူးလက်ကျန် ရယူချိန်ကျော်သွားပါသည်။ ခဏစောင့်ပြီး Refresh ပြန်လုပ်ပါ။"); else setError(fetchError.message); })
       .finally(() => setLoading(false));
     return () => { window.clearTimeout(timeoutId); controller.abort(); };
   }, []);
