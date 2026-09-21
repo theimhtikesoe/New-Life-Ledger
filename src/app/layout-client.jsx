@@ -460,7 +460,10 @@ export default function RootLayoutClient({ children }) {
   };
 
   useEffect(() => {
-    setAppZoom(readAppZoom());
+    const isMobileViewport = window.matchMedia?.('(max-width: 768px)').matches;
+    const nextZoom = isMobileViewport ? 1 : readAppZoom();
+    setAppZoom(nextZoom);
+    if (isMobileViewport) writeAppZoom(1);
   }, []);
 
   useEffect(() => {
