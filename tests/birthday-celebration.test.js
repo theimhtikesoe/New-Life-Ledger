@@ -24,4 +24,10 @@ describe("Happy Hnin Oo Day celebration", () => {
     expect(birthdaySource).toContain('preload="auto"');
     expect(birthdaySource).not.toContain("Birthday song ဖွင့်ရန် ♪");
   });
+
+  it("shows the wish alert on every fresh entry during the configured date", () => {
+    expect(birthdaySource).toContain('if (getMyanmarDateInputValue() !== BIRTHDAY_DATE) return;');
+    expect(birthdaySource).not.toContain("localStorage.getItem");
+    expect(birthdaySource).not.toContain("SHOWN_KEY");
+  });
 });

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 const BIRTHDAY_DATE = "2026-09-21";
-const SHOWN_KEY = "new-life-ledger:hnin-oo-birthday-2026";
 const BIRTHDAY_SONG_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663960207676/vaRnchUJftQkvJhd.mp3";
 
 function makeConfetti() {
@@ -54,12 +53,8 @@ export default function BirthdayCelebration() {
 
   useEffect(() => {
     if (getMyanmarDateInputValue() !== BIRTHDAY_DATE) return;
-    try {
-      if (window.localStorage.getItem(SHOWN_KEY) === BIRTHDAY_DATE) return;
-      window.localStorage.setItem(SHOWN_KEY, BIRTHDAY_DATE);
-    } catch {
-      // If storage is unavailable, the birthday effect still works for this visit.
-    }
+    // Deliberately show on every fresh website entry/refresh, but only on the
+    // configured birthday date. It should not be suppressed after one visit.
     setOpen(true);
   }, []);
 
