@@ -32,6 +32,15 @@ describe("Dashboard loading recovery", () => {
     expect(source.indexOf("const customerRequest = api(")).toBeLessThan(source.indexOf("const kpiRequest = api("));
   });
 
+  it("keeps production and daily-summary cards independent from the slow KPI rebuild", () => {
+    expect(source).toContain("const [todaySummaryLoading, setTodaySummaryLoading]");
+    expect(source).toContain(".finally(() => setTodaySummaryLoading(false));");
+    expect(source).toContain("productionLoading ? \"ရယူနေသည်...\"");
+    expect(source).toContain("dateLoading={false}");
+    expect(source).toContain("bottleSalesLoading ? \"ရောင်းစာရင်း ရယူနေသည်...\"");
+    expect(source).not.toContain("productionLoading || kpiDateLoading ? \"ရယူနေသည်...\"");
+  });
+
   it("calculates the cash-sale paid amount from listed total minus discount", () => {
     expect(source).toContain("const listedSaleAmount = getSaleItemsTotal(ledgerForm.saleItems);");
     expect(source).toContain("const discountAmount = Math.max(0, Math.round(Number(ledgerForm.paymentBreakdown?.discount || 0)))");

@@ -393,6 +393,7 @@ export default function Dashboard({ view = "overview" }) {
   const [highlightedCustomerId, setHighlightedCustomerId] = useState(null);
   const [todayPaymentsList, setTodayPaymentsList] = useState(() => initialDashboardSnapshot?.todayPaymentsList || []);
   const [todayCashSales, setTodayCashSales] = useState(() => initialDashboardSnapshot?.todayCashSales || []);
+  const [todaySummaryLoading, setTodaySummaryLoading] = useState(() => !Array.isArray(initialDashboardSnapshot?.todayPaymentsList) && !Array.isArray(initialDashboardSnapshot?.todayCashSales));
   const [factoryStock] = useState(() => initialDashboardSnapshot?.factoryStock || null);
   const [overdueDebts, setOverdueDebts] = useState(() => initialDashboardSnapshot?.overdueDebts || null);
   const [overdueDebtsLoaded, setOverdueDebtsLoaded] = useState(() => Array.isArray(initialDashboardSnapshot?.overdueDebts));
@@ -907,7 +908,8 @@ export default function Dashboard({ view = "overview" }) {
       void kpiRequest;
       if (!isProductionDashboard) void loadOverdueDebts();
 
-      // Detailed daily values are intentionally background work.
+      // Detailed daily values load independently from the slower KPI/stock rebuild.
+      setTodaySummaryLoading(true);
       setLoadingStage("Data ရယူနေပါသည်");
       if (!isProductionDashboard) void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
         .then((summary) => {
@@ -928,7 +930,8 @@ export default function Dashboard({ view = "overview" }) {
         })
         .catch((error) => {
           if (error.name !== "AbortError") console.warn("Today summary was not loaded:", error);
-        });
+        })
+        .finally(() => setTodaySummaryLoading(false));
 
       // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
       setLoadingStage("Data ရယူနေပါသည်");
@@ -1228,7 +1231,7 @@ export default function Dashboard({ view = "overview" }) {
   const displayedTotalBalance = dashboardKpi?.totalBalance ?? totalBalance;
   const displayedCustomerCount = dashboardKpi?.totalCustomers ?? customerCount;
   const todayTransactions = dashboardKpi?.todayPaidCount ?? todayPaymentsList.length;
-  const dashboardSummaryLoading = dashboardKpiLoading || kpiDateLoading || productionLoading;
+  const dashboardSummaryLoading = dashboardKpiLoading || kpiDateLoading || productionLoading || todaySummaryLoading;
   const todayCashAmount = dashboardKpi?.amount ?? todayCashSales.reduce((sum, sale) => sum + Number(sale.amount || 0), 0);
   const todayCashCount = dashboardKpi?.count ?? todayCashSales.length;
   const todayCashRetail = dashboardKpi?.retailCount ?? todayCashSales.filter((sale) => String(sale.saleType || "RETAIL").toUpperCase() !== "WHOLESALE").length;
@@ -2508,7 +2511,7 @@ export default function Dashboard({ view = "overview" }) {
               className={`neon-card neon-sweep neon-card-emerald flex h-full min-h-[110px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-emerald-200 bg-emerald-50/85 p-4 text-left shadow-sm transition-all sm:min-h-[158px] ${selectedKpiIsToday ? "cursor-pointer hover:shadow-md hover:border-emerald-300" : "cursor-default"}`}
             >
               <p className="text-sm font-medium text-emerald-600 tracking-wide">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ငွေချေထားသော စာရင်း</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">{dashboardSummaryLoading ? "ရယူနေသည်..." : todayTransactions}</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-700">{todaySummaryLoading ? "ရယူနေသည်..." : todayTransactions}</p>
               <p className="mt-1 text-sm text-emerald-500">အသေးစိတ်ကြည့်ရန် နှိပ်ပါ</p>
             </button>
 
@@ -2519,11 +2522,11 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-orange-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုတ်လုပ်ပြီးသော ဗူး</p>
-                <p className="mt-2 text-2xl font-black text-orange-800">{dashboardSummaryLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
+                <p className="mt-2 text-2xl font-black text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p>
               </div>
               <div className="mt-2 space-y-0.5 text-sm font-bold text-orange-700 sm:text-base">
-                <p>{dashboardSummaryLoading ? "Data ရယူနေသည်..." : `ကောင်းသောဗူး ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p>
-                <p>{dashboardSummaryLoading ? "ခဏစောင့်ပါ..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p>
+                <p>{productionLoading ? "Data ရယူနေသည်..." : `ကောင်းသောဗူး ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p>
+                <p>{productionLoading ? "ခဏစောင့်ပါ..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p>
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2534,8 +2537,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုတ်လုပ်ပြီးသော Tube</p>
-                <p className="mt-2 text-3xl font-black text-cyan-900">{dashboardSummaryLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p>
-                <p className="mt-1 text-sm font-bold text-cyan-700">{dashboardSummaryLoading ? "Data ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p>
+                <p className="mt-2 text-3xl font-black text-cyan-900">{productionLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p>
+                <p className="mt-1 text-sm font-bold text-cyan-700">{productionLoading ? "Data ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p>
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2546,16 +2549,16 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black uppercase tracking-wide text-slate-600 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ဗူးရောင်းစာရင်း</p>
-                <p className="mt-2 text-2xl font-black text-slate-800">{dashboardSummaryLoading ? "ရယူနေသည်..." : `${Number(todayTotalBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
+                <p className="mt-2 text-2xl font-black text-slate-800">{bottleSalesLoading ? "ရယူနေသည်..." : `${Number(todayTotalBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
                 <div className="mt-1 space-y-0.5 text-sm font-bold text-slate-600">
-                  <p>{dashboardSummaryLoading ? "ရောင်းစာရင်း ရယူနေသည်..." : "စုစုပေါင်း ရောင်းဗူး"}</p>
-                  <p className="text-teal-700">{dashboardSummaryLoading ? "ငွေရပြီးစာရင်း ရယူနေသည်..." : `ငွေရပြီး ${Number(todayPaidBottleSales.totalBottles || 0) + Number(todayCashBottleSales.totalBottles || 0)} ဗူး`}</p>
-                  <p className="text-violet-700">{dashboardSummaryLoading ? "အကြွေးရောင်းစာရင်း ရယူနေသည်..." : `အကြွေးရောင်း ${Number(todayCreditBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
+                  <p>{bottleSalesLoading ? "ရောင်းစာရင်း ရယူနေသည်..." : "စုစုပေါင်း ရောင်းဗူး"}</p>
+                  <p className="text-teal-700">{bottleSalesLoading ? "ငွေရပြီးစာရင်း ရယူနေသည်..." : `ငွေရပြီး ${Number(todayPaidBottleSales.totalBottles || 0) + Number(todayCashBottleSales.totalBottles || 0)} ဗူး`}</p>
+                  <p className="text-violet-700">{bottleSalesLoading ? "အကြွေးရောင်းစာရင်း ရယူနေသည်..." : `အကြွေးရောင်း ${Number(todayCreditBottleSales.totalBottles || 0).toLocaleString()} ဗူး`}</p>
                 </div>
               </div>
               <p className="pt-2 text-sm font-bold text-slate-600">အသေးစိတ် →</p>
             </Link>
-            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} retailAmount={dashboardKpi?.retailAmount || 0} wholesaleAmount={dashboardKpi?.wholesaleAmount || 0} dateLoading={kpiDateLoading} />
+            <DailySalesSummaryPanel selectedDate={selectedKpiDate} totalCount={todayCashCount} retailCount={todayCashRetail} wholesaleCount={todayCashWholesale} retailAmount={dashboardKpi?.retailAmount || 0} wholesaleAmount={dashboardKpi?.wholesaleAmount || 0} dateLoading={false} />
             <Link
               href="/tube-stock"
               aria-label="စက်ရုံ Tube လက်ကျန် အသေးစိတ်ကြည့်ရန်"
@@ -2563,8 +2566,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-blue-800 sm:text-base">စက်ရုံ Tube လက်ကျန်</p>
-                <p className="mt-2 text-3xl font-black text-blue-950">{dashboardSummaryLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePacks.toLocaleString()} အိတ်`}</p>
-                <p className="mt-1 text-sm font-bold text-blue-700">{dashboardSummaryLoading || !dashboardKpi ? "Canonical stock data ရယူနေသည်..." : `${factoryTubePieces.toLocaleString()} pcs · ထုတ်လုပ်ဝင်ပြီးနောက် ကျန်သော Tube`}</p>
+                <p className="mt-2 text-3xl font-black text-blue-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePacks.toLocaleString()} အိတ်`}</p>
+                <p className="mt-1 text-sm font-bold text-blue-700">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "Canonical stock data ရယူနေသည်..." : `${factoryTubePieces.toLocaleString()} pcs · ထုတ်လုပ်ဝင်ပြီးနောက် ကျန်သော Tube`}</p>
               </div>
               <p className="pt-2 text-sm font-bold text-blue-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2575,8 +2578,8 @@ export default function Dashboard({ view = "overview" }) {
             >
               <div>
                 <p className="text-sm font-black tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူး လက်ကျန်</p>
-                <p className="mt-2 text-2xl font-black text-amber-950">{dashboardSummaryLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
-                <p className="mt-1 text-sm font-bold text-amber-800">{dashboardSummaryLoading || !dashboardKpi ? "Canonical stock data ရယူနေသည်..." : "စက်ရုံထုတ်လုပ်ဝင်ပြီး ရောင်းထွက်သွားပြီးနောက် ကျန်သောကဒ်"}</p>
+                <p className="mt-2 text-2xl font-black text-amber-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p>
+                <p className="mt-1 text-sm font-bold text-amber-800">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "Canonical stock data ရယူနေသည်..." : "စက်ရုံထုတ်လုပ်ဝင်ပြီး ရောင်းထွက်သွားပြီးနောက် ကျန်သောကဒ်"}</p>
               </div>
               <p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
@@ -2679,10 +2682,10 @@ export default function Dashboard({ view = "overview" }) {
           <section className="neon-surface neon-sweep rounded-2xl border border-cyan-200/80 bg-gradient-to-br from-white/95 via-slate-50/95 to-cyan-50/60 p-4">
             <div className="dashboard-kpi-grid grid grid-cols-1 gap-3 sm:grid-cols-2">
               {dashboardActorName === "ဇွဲဇွဲ" ? <>
-                <Link href="/production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော ဗူး အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep neon-card-orange flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-orange-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသောဗူး</p><p className="mt-2 text-2xl font-black text-orange-800">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p></div><div className="mt-2 space-y-0.5 text-sm font-bold text-orange-700 sm:text-base"><p>{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `ကောင်းသောဗူး ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p><p>{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
+                <Link href="/production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော ဗူး အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep neon-card-orange flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-orange-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသောဗူး</p><p className="mt-2 text-2xl font-black text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p></div><div className="mt-2 space-y-0.5 text-sm font-bold text-orange-700 sm:text-base"><p>{productionLoading ? "ရယူနေသည်..." : `ကောင်းသောဗူး ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p><p>{productionLoading ? "ရယူနေသည်..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
                 <Link href="/factory-stock" aria-label="စက်ရုံဗူးလက်ကျန် အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-500 bg-amber-100/95 p-4 text-left shadow-sm transition-all hover:border-amber-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူး လက်ကျန်</p><p className="mt-2 text-2xl font-black text-amber-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p><p className="mt-1 text-sm font-bold text-amber-800">စက်ရုံထုတ်လုပ်ဝင်ပြီး ရောင်းထွက်သွားပြီးနောက် ကျန်သောကဒ်</p></div><p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p></Link>
               </> : <>
-                <Link href="/tube-production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော Tube အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/90 p-4 text-left shadow-sm transition-all hover:border-cyan-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသော Tube</p><p className="mt-2 text-3xl font-black text-cyan-900">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-cyan-700">{productionLoading || kpiDateLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
+                <Link href="/tube-production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော Tube အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/90 p-4 text-left shadow-sm transition-all hover:border-cyan-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသော Tube</p><p className="mt-2 text-3xl font-black text-cyan-900">{productionLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-cyan-700">{productionLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
                 <Link href="/tube-stock" aria-label="စက်ရုံ Tube လက်ကျန် အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-blue-300 bg-blue-50/95 p-4 text-left shadow-sm transition-all hover:border-blue-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-blue-800 sm:text-base">စက်ရုံ Tube လက်ကျန်</p><p className="mt-2 text-3xl font-black text-blue-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePacks.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-blue-700">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePieces.toLocaleString()} pcs · ထုတ်လုပ်ဝင်ပြီးနောက် ကျန်သော Tube`}</p></div><p className="pt-2 text-sm font-bold text-blue-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
               </>}
             </div>
