@@ -325,6 +325,9 @@ canvas {
 }
 
 .neon-card-rose { --neon-border-color: rgba(244, 63, 94, 0.82); box-shadow: 0 10px 26px rgba(244, 63, 94, 0.10), 0 0 18px rgba(251, 113, 133, 0.12); }
+.neon-card-red { --neon-border-color: rgba(220, 38, 38, 0.90); box-shadow: 0 10px 26px rgba(220, 38, 38, 0.12), 0 0 18px rgba(248, 113, 113, 0.16); }
+.neon-card-yellow { --neon-border-color: rgba(234, 179, 8, 0.90); box-shadow: 0 10px 26px rgba(234, 179, 8, 0.12), 0 0 18px rgba(250, 204, 21, 0.16); }
+.neon-card-lime { --neon-border-color: rgba(101, 163, 13, 0.88); box-shadow: 0 10px 26px rgba(101, 163, 13, 0.11), 0 0 18px rgba(163, 230, 53, 0.15); }
 .neon-card-blue { --neon-border-color: rgba(59, 130, 246, 0.82); box-shadow: 0 10px 26px rgba(59, 130, 246, 0.10), 0 0 18px rgba(96, 165, 250, 0.12); }
 .neon-card-emerald { --neon-border-color: rgba(16, 185, 129, 0.82); box-shadow: 0 10px 26px rgba(16, 185, 129, 0.10), 0 0 18px rgba(52, 211, 153, 0.12); }
 .neon-card-violet { --neon-border-color: rgba(139, 92, 246, 0.82); box-shadow: 0 10px 26px rgba(139, 92, 246, 0.11), 0 0 18px rgba(167, 139, 250, 0.14); }
