@@ -17,7 +17,6 @@ import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
-import BirthdayCelebration from "@/components/BirthdayCelebration";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -4215,7 +4214,6 @@ export default function Dashboard({ view = "overview" }) {
           </div>
         </div>
       )}
-      <BirthdayCelebration />
     </main>
   );
 }

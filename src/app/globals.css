@@ -551,6 +551,13 @@ textarea {
   font-weight: 700;
   line-height: 1.7;
 }
+.birthday-song-status {
+  margin-top: 1rem;
+  color: #7c3aed;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
 .birthday-close {
   margin-top: 1.15rem;
   min-height: 2.75rem;

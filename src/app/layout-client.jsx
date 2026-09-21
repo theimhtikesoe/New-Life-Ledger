@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from '@/components/AppLink';
 import PINLogin from '@/components/PINLogin';
 import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
+import BirthdayCelebration from '@/components/BirthdayCelebration';
 import { formatMyanmarClock, formatMyanmarDateLabel, getMyanmarHour } from '@/lib/myanmar-time-client';
 import { encodeActorHeader } from '@/lib/actor-header';
 import { defaultAllowedPaths } from '@/lib/user-permissions';
@@ -584,6 +585,7 @@ export default function RootLayoutClient({ children }) {
           {/* Mount the global player before page children so it cannot miss the
               first overdue-status/audio event during the PWA startup handshake. */}
           <BackgroundMusicPlayer settingsOpen={settingsOpen} />
+          <BirthdayCelebration />
           <RefreshOverlay />
           <GlobalActionLoadingIndicator />
           <SettingsToggle open={settingsOpen} onToggle={() => setSettingsOpen((current) => !current)} />

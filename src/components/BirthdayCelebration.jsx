@@ -66,7 +66,13 @@ export default function BirthdayCelebration() {
   useEffect(() => {
     if (!open) return undefined;
     dispatchBirthdayAudioEvent("new-life-ledger:birthday-audio-active");
-    void playBirthdaySong();
+    // Let the audio element commit before attempting autoplay. If Safari has
+    // not granted autoplay yet, the first ordinary tap/keypress retries it so
+    // the user does not need to find and press a separate song button.
+    const startTimer = window.setTimeout(() => { void playBirthdaySong(); }, 0);
+    const retryOnInteraction = () => { void playBirthdaySong(); };
+    window.addEventListener("pointerdown", retryOnInteraction, { once: true, passive: true });
+    window.addEventListener("keydown", retryOnInteraction, { once: true });
     const timer = window.setInterval(() => {
       if (getMyanmarDateInputValue() !== BIRTHDAY_DATE) {
         stopBirthdaySong();
@@ -74,7 +80,12 @@ export default function BirthdayCelebration() {
         dispatchBirthdayAudioEvent("new-life-ledger:birthday-audio-ended");
       }
     }, 1000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(startTimer);
+      window.clearInterval(timer);
+      window.removeEventListener("pointerdown", retryOnInteraction);
+      window.removeEventListener("keydown", retryOnInteraction);
+    };
   }, [open]);
 
   useEffect(() => () => {
@@ -111,12 +122,10 @@ export default function BirthdayCelebration() {
         <h2 id="birthday-alert-title">Happy Hnin Oo Day 🎉</h2>
         <p className="birthday-message">မွေးနေ့မှစပြီး ပျော်ရွှင်ခြင်း၊ ကျန်းမာခြင်းတွေနဲ့ ပြည့်စုံပါစေ။</p>
         <p className="mt-2 text-xs text-slate-600">၂၁ ရက်နေ့အတွက် သီးသန့် Birthday song</p>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <button type="button" onClick={playBirthdaySong} className="birthday-close" aria-pressed={songPlaying}>
-            {songPlaying ? "Birthday song ဖွင့်နေသည် ♪" : songBlocked ? "သီချင်းဖွင့်ရန် ထပ်နှိပ်ပါ ♪" : "Birthday song ဖွင့်ရန် ♪"}
-          </button>
-          <button type="button" onClick={() => { stopBirthdaySong(); setOpen(false); }} className="birthday-close">ကျေးဇူးတင်ပါတယ် ♥</button>
-        </div>
+        <p className="birthday-song-status" role="status" aria-live="polite">
+          {songPlaying ? "Birthday song ဖွင့်နေသည် ♪" : songBlocked ? "အသံခွင့်ပြုရန် screen ကို တစ်ချက်ထိပါ ♪" : "Birthday song ဖွင့်နေပါသည်..."}
+        </p>
+        <button type="button" onClick={() => { stopBirthdaySong(); setOpen(false); }} className="birthday-close">ကျေးဇူးတင်ပါတယ် ♥</button>
       </section>
     </div>
   );
