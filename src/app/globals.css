@@ -480,17 +480,18 @@ textarea {
   }
 }
 
-/* More aggressive fix for mobile zoom on focus */
+/* Keep the rendered control size at or above 16px. The app shell supports a
+   user-selected CSS zoom, so a nominal 16px input can otherwise render below
+   the iOS/Android focus-zoom threshold when the app is set below 100%. */
 @media screen and (max-width: 768px) {
-  input, 
-  textarea, 
+  input,
+  textarea,
   select,
   input[type="text"],
   input[type="number"],
   input[type="tel"],
-  input[type="search"],
-  .text-sm {
-    font-size: 16px !important;
+  input[type="search"] {
+    font-size: max(16px, calc(16px / var(--app-zoom, 1))) !important;
   }
 }
 
