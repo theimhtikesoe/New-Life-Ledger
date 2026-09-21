@@ -484,6 +484,14 @@ textarea {
    user-selected CSS zoom, so a nominal 16px input can otherwise render below
    the iOS/Android focus-zoom threshold when the app is set below 100%. */
 @media screen and (max-width: 768px) {
+  /* The browser's pinch zoom remains enabled through the viewport metadata.
+     Keep the app shell at its native scale on touch phones so focusing a form
+     field cannot be interpreted as a request for an additional zoom. */
+  .neon-app-shell {
+    zoom: 1 !important;
+    width: 100% !important;
+  }
+
   input,
   textarea,
   select,

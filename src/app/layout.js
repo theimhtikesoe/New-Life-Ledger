@@ -25,10 +25,10 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  // Prevent Safari/Chrome from zooming the whole page when an input receives
-  // focus. The app has its own A+/A− size controls for intentional resizing.
-  maximumScale: 1,
-  userScalable: false,
+  // Keep manual two-finger pinch zoom available. Input focus zoom is handled
+  // by the mobile control font-size rules in globals.css instead.
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   themeColor: "#00d4ff",
 };

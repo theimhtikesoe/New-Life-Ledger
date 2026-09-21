@@ -42,7 +42,7 @@ export const PERMISSION_PAGES = [
 
 export function defaultAllowedPaths(actorName) {
   if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", "/monthly-tube-production", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   return PERMISSION_PAGES.map((page) => page.path);
