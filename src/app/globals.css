@@ -1174,7 +1174,8 @@ textarea {
 }
 @media screen and (min-width: 1440px) and (hover: hover) and (pointer: fine) {
   .app-page-container,
-  .shared-page-header {
+  .shared-page-header,
+  .shared-report-route-main {
     max-width: 96rem;
   }
   .dashboard-content-stack {

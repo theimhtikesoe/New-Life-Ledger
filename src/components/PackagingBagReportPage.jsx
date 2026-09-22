@@ -34,7 +34,7 @@ export default function PackagingBagReportPage() {
 
   const report = useMemo(() => calculatePackagingBags(rows), [rows]);
   return (
-    <main data-layout-version="shared-header-width-v3" className="shared-report-route-main mx-auto w-full space-y-4 px-3 pb-8 sm:px-6" style={{ width: "calc(100% - 3rem)", maxWidth: "80rem", marginInline: "auto" }}>
+    <main data-layout-version="shared-header-width-v4" className="shared-report-route-main mx-auto w-full space-y-4 px-3 pb-8 sm:px-6">
       <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-sm font-bold text-cyan-700">ဗူးထွက်ရှိမှုမှတ်တမ်းကို အိတ်ခွံအရွယ်အစားအလိုက် ပြန်တွက်ထားသော စာရင်း</p><p className="mt-1 text-xs text-slate-500">ကဒ် ၁ ကဒ် = အိတ် ၁ အိတ်ဟု သတ်မှတ်တွက်ချက်ထားပါသည်။</p></div>
