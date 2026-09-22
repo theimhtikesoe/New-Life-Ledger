@@ -259,6 +259,7 @@ function getFormFieldLabel(element) {
 }
 
 const PAGE_HEADERS = {
+  '/': 'New Life Ledger Dashboard',
   '/activity': 'Activity History',
   '/auto-report-status': 'Auto Report အခြေအနေ',
   '/balance-detail': 'လက်ကျန်ငွေ အသေးစိတ်',
@@ -341,7 +342,7 @@ function SharedPageHeader({ pathname, actorName }) {
           <p className="text-[11px] text-slate-500">Myanmar Time (UTC+06:30)</p>
         </div>
         <div className="min-w-0 text-left">
-          <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
+          <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger</p>
           <h1 className="mt-1 max-w-full break-words text-[clamp(1rem,4.5vw,1.55rem)] font-semibold leading-tight tracking-tight text-slate-900">{title}</h1>
         </div>
       </div>
