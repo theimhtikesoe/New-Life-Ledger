@@ -2292,9 +2292,9 @@ export default function Dashboard({ view = "overview" }) {
           ) : null}
           <div className="grid min-w-0 grid-cols-1 gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(260px,1fr)] lg:items-center lg:gap-x-6">
             <div className="order-2 min-w-0 lg:order-none lg:max-w-[360px] lg:justify-self-start">
-              <p className="text-xs text-cyan-600 sm:text-sm">New Life Ledger Dashboard</p>
+              <p className="text-xs text-cyan-600 sm:text-sm">{isCapStockDashboard ? "New Life Ledger" : "New Life Ledger Dashboard"}</p>
               <h1 className="mt-1 max-w-full break-words text-[clamp(1rem,4.5vw,1.55rem)] font-semibold leading-tight tracking-tight text-slate-900 sm:text-[clamp(1rem,1.8vw,1.55rem)]">
-                Customer ငွေရှင်းတမ်း၊ အကြွေးရှင်းတမ်း
+                {isCapStockDashboard ? "New Life Ledger" : "Customer ငွေရှင်းတမ်း၊ အကြွေးရှင်းတမ်း"}
               </h1>
             </div>
             <div className="order-1 min-w-0 text-center lg:order-none lg:min-w-[210px]">
