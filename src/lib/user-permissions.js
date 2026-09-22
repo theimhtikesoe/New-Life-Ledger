@@ -14,6 +14,7 @@ export const PERMISSION_PAGES = [
   { path: "/ledger", label: "ငွေရှင်းတမ်း / Customer Ledger" },
   { path: "/production", label: "ထုတ်လုပ်မှု" },
   { path: "/production-history", label: "ထုတ်လုပ်မှုမှတ်တမ်း" },
+  { path: "/packaging-bag-report", label: "တစ်နေ့တာ ထုပ်ပိုး အိတ်ခွံ" },
   { path: "/tube-production-history", label: "Tube ထုတ်လုပ်မှုမှတ်တမ်း" },
   { path: "/monthly-tube-production", label: "တစ်လစာ Tube ထွက်ရှိမှု" },
   { path: "/balance-detail", label: "လက်ကျန်ငွေ အသေးစိတ်" },
@@ -41,7 +42,7 @@ export const PERMISSION_PAGES = [
 ];
 
 export function defaultAllowedPaths(actorName) {
-  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", "/monthly-tube-production", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
@@ -56,6 +57,7 @@ export function normalizeAllowedPaths(value, actorName) {
     if (!allowed.includes("/daily-bottle-sales")) allowed.push("/daily-bottle-sales");
     if (!allowed.includes("/monthly-bottle-sales")) allowed.push("/monthly-bottle-sales");
     if (!allowed.includes("/monthly-tube-production")) allowed.push("/monthly-tube-production");
+    if (!allowed.includes("/packaging-bag-report")) allowed.push("/packaging-bag-report");
   }
   if (actorName === "ဇွဲဇွဲ" || actorName === "ဖြိုးကို") {
     return [...new Set([...defaultAllowedPaths(actorName), RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH])];

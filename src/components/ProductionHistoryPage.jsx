@@ -129,9 +129,12 @@ export default function ProductionHistoryPage() {
           <div>
             <p className="mt-1 text-sm text-slate-500">ရက်စွဲအလိုက် ထုတ်လုပ်မှုမှတ်တမ်းများကို သီးသန့်ကြည့်ရှုနိုင်ပါသည်။</p>
           </div>
-          <label className="text-sm font-black text-orange-900">မှတ်တမ်း Date
-            <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 block min-h-11 rounded-xl border-2 border-orange-200 bg-orange-50 px-3 py-2 font-bold text-orange-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200" />
-          </label>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-sm font-black text-orange-900">မှတ်တမ်း Date
+              <input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 block min-h-11 rounded-xl border-2 border-orange-200 bg-orange-50 px-3 py-2 font-bold text-orange-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200" />
+            </label>
+            <a href={`/packaging-bag-report?date=${encodeURIComponent(date)}`} className="min-h-11 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-cyan-700">ထုပ်ပိုးအိတ်တွက်ရန် →</a>
+          </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           {[-1, 0, 1].map((delta) => {

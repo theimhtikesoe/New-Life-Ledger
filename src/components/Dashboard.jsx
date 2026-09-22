@@ -17,6 +17,7 @@ import LedgerPulse from "@/components/LedgerPulse";
 import DailySalesSummaryPanel from "@/components/DailySalesSummaryPanel";
 import SalesItemPicker from "./SalesItemPicker";
 import OverdueAlertAudio from "@/components/OverdueAlertAudio";
+import { calculatePackagingBags } from "@/lib/packaging-bag-calculator";
 
 
 const money = new Intl.NumberFormat("en-US");
@@ -1266,6 +1267,7 @@ export default function Dashboard({ view = "overview" }) {
   const todayCreditBottleSales = dashboardKpi?.creditBottleSales || { totalBottles: 0, totalAmount: 0, items: [] };
   const bottleSalesLoading = dashboardKpiLoading || kpiDateLoading;
   const productionSummary = useMemo(() => summarizeProduction(productionRows), [productionRows]);
+  const packagingBagSummary = useMemo(() => calculatePackagingBags(productionRows), [productionRows]);
   const tubeProductionSummary = useMemo(() => {
     const rows = tubeProductionRows;
     const totalPacks = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0), 0);
@@ -2552,6 +2554,18 @@ export default function Dashboard({ view = "overview" }) {
                 <p>{productionLoading ? "ခဏစောင့်ပါ..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p>
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p>
+            </Link>
+            <Link
+              href={`/packaging-bag-report?date=${encodeURIComponent(selectedKpiDate)}`}
+              aria-label={`${selectedKpiDate} ထုပ်ပိုး အိတ်ခွံ အသေးစိတ်ကြည့်ရန်`}
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-fuchsia-200 bg-fuchsia-50/90 p-4 text-left shadow-sm transition-all hover:border-fuchsia-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-fuchsia-300 sm:min-h-[170px]"
+            >
+              <div>
+                <p className="text-sm font-black tracking-wide text-fuchsia-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုပ်ပိုး အိတ်ခွံ</p>
+                <p className="mt-2 text-2xl font-black text-fuchsia-900">{productionLoading ? "ရယူနေသည်..." : `${packagingBagSummary.totalBags.toLocaleString()} အိတ်`}</p>
+                <p className="mt-1 text-sm font-bold text-fuchsia-700">{productionLoading ? "Data ရယူနေသည်..." : `${packagingBagSummary.totalPieces.toLocaleString()} ဗူး · အိတ်အရွယ် ${packagingBagSummary.groups.length} မျိုး`}</p>
+              </div>
+              <p className="pt-2 text-sm font-bold text-fuchsia-700">အိတ်စာရင်းကြည့်ရန် →</p>
             </Link>
             <Link
               href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`}
