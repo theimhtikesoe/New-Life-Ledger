@@ -263,6 +263,7 @@ const PAGE_HEADERS = {
   '/auto-report-status': 'Auto Report အခြေအနေ',
   '/balance-detail': 'လက်ကျန်ငွေ အသေးစိတ်',
   '/cap-stock': 'စက်ရုံအဖုံးလက်ကျန်',
+  '/packaging-bag-stock': 'စက်ရုံ ထုပ်ပိုး အိတ်ခွံ လက်ကျန်',
   '/customer-management': 'Customer Management',
   '/debt-reconciliation': 'အကြွေးဟောင်း စာရင်းညှိခြင်း',
   '/prepayment-reconciliation': 'လက်ရှိ ကြိုတင်ငွေချေ စာရင်း',

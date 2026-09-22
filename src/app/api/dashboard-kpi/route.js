@@ -6,6 +6,7 @@ import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { aggregateStockMovements, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
 import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
+import { loadPackagingBagStock } from "@/lib/packaging-bag-stock";
 
 export const dynamic = "force-dynamic";
 const DASHBOARD_KPI_CACHE_TTL_MS = 30_000;
@@ -63,6 +64,7 @@ export async function GET(request) {
         const capacity = Number(item.capacity || 0);
         return sum + (capacity ? (Number(item.currentBottles || 0) < 0 ? -Math.ceil(Math.abs(Number(item.currentBottles || 0)) / capacity) : Math.floor(Number(item.currentBottles || 0) / capacity)) : 0);
       }, 0);
+    const packagingBagStock = await loadPackagingBagStock({ date: dateParam, includeMovements: false });
     const dayLedgers = await prisma.ledger.findMany({
       where: { ...dayWhere, type: "DEBIT" },
       select: { id: true, amount: true, date: true, type: true, saleItems: true, customer: { select: { id: true, name: true, phone: true } } },
@@ -124,6 +126,9 @@ export async function GET(request) {
         factoryCapPieces,
         factoryTubePieces,
         factoryTubePacks,
+        factoryPackagingBagBags: packagingBagStock.totalCurrentBags,
+        factoryPackagingBagUsedToday: packagingBagStock.dailyUsed.reduce((sum, row) => sum + Math.abs(Number(row.quantityBottles || 0)), 0),
+        factoryPackagingBagAddedToday: packagingBagStock.dailyAdded.reduce((sum, row) => sum + Number(row.quantityBottles || 0), 0),
         negativeBottleStockItems,
         negativeCapStockItems,
         negativeTubeStockItems,
