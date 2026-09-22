@@ -6,6 +6,7 @@ import { getMyanmarDateInputValue } from "@/lib/myanmar-time";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function parseMonth(value) {
   const month = String(value || getMyanmarDateInputValue().slice(0, 7)).trim();
@@ -37,7 +38,6 @@ export async function GET(request) {
     const rows = await prisma.productionReport.findMany({
       where: { category: "bottle", reportDate: { gte: firstDate, lt: nextDate } },
       select: { id: true, reportDate: true, category: true, outputQuantity: true, outputCapacity: true, outputUnit: true, bottleType: true },
-      orderBy: [{ reportDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     });
     const serializedRows = rows.map(serialize);
     const monthly = calculatePackagingBags(serializedRows);
