@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { calculatePackagingBags } from "@/lib/packaging-bag-calculator";
 
 function todayMyanmar() {
@@ -38,7 +39,7 @@ export default function PackagingBagReportPage() {
       <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-sm font-bold text-cyan-700">ဗူးထွက်ရှိမှုမှတ်တမ်းကို အိတ်ခွံအရွယ်အစားအလိုက် ပြန်တွက်ထားသော စာရင်း</p><p className="mt-1 text-xs text-slate-500">ကဒ် ၁ ကဒ် = အိတ် ၁ အိတ်ဟု သတ်မှတ်တွက်ချက်ထားပါသည်။</p></div>
-          <label className="text-sm font-black text-cyan-900">မှတ်တမ်း Date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 block min-h-11 rounded-xl border-2 border-cyan-200 bg-cyan-50 px-3 py-2 font-bold text-cyan-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200" /></label>
+          <div className="flex flex-wrap items-end gap-2"><label className="text-sm font-black text-cyan-900">မှတ်တမ်း Date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 block min-h-11 rounded-xl border-2 border-cyan-200 bg-cyan-50 px-3 py-2 font-bold text-cyan-900 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200" /></label><Link href={`/monthly-packaging-bag-report?month=${encodeURIComponent(date.slice(0, 7))}`} className="inline-flex min-h-11 items-center rounded-xl bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-violet-700">တစ်လစာ ထုပ်ပိုးအိတ်ခွံ</Link></div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">{[-1, 0, 1].map((delta) => { const value = shiftDate(todayMyanmar(), delta); const label = delta === -1 ? "မနေ့" : delta === 0 ? "ဒီနေ့" : "မနက်ဖြန်"; return <button key={label} type="button" onClick={() => setDate(value)} className={`rounded-lg border px-4 py-2 text-sm font-black ${date === value ? "border-cyan-600 bg-cyan-600 text-white" : "border-cyan-200 bg-cyan-50 text-cyan-800 hover:bg-cyan-100"}`}>{label}</button>; })}</div>
       </section>

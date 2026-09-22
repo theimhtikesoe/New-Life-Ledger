@@ -15,6 +15,7 @@ export const PERMISSION_PAGES = [
   { path: "/production", label: "ထုတ်လုပ်မှု" },
   { path: "/production-history", label: "ထုတ်လုပ်မှုမှတ်တမ်း" },
   { path: "/packaging-bag-report", label: "တစ်နေ့တာ ထုပ်ပိုး အိတ်ခွံ" },
+  { path: "/monthly-packaging-bag-report", label: "တစ်လစာ ထုပ်ပိုး အိတ်ခွံ" },
   { path: "/packaging-bag-stock", label: "စက်ရုံ ထုပ်ပိုး အိတ်ခွံ လက်ကျန်" },
   { path: "/tube-production-history", label: "Tube ထုတ်လုပ်မှုမှတ်တမ်း" },
   { path: "/monthly-tube-production", label: "တစ်လစာ Tube ထွက်ရှိမှု" },
@@ -43,16 +44,17 @@ export const PERMISSION_PAGES = [
 ];
 
 export function defaultAllowedPaths(actorName) {
-  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/packaging-bag-stock", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", "/monthly-tube-production", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", "/monthly-tube-production", "/monthly-packaging-bag-report", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", "/monthly-packaging-bag-report", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", "/monthly-packaging-bag-report", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   return PERMISSION_PAGES.map((page) => page.path);
 }
 
 export function normalizeAllowedPaths(value, actorName) {
   const allowed = Array.isArray(value) ? value.filter((path) => PERMISSION_PAGES.some((page) => page.path === path)) : defaultAllowedPaths(actorName);
   if (!allowed.includes("/packaging-bag-stock")) allowed.push("/packaging-bag-stock");
+  if (!allowed.includes("/monthly-packaging-bag-report")) allowed.push("/monthly-packaging-bag-report");
   // Keep the bottle-sales reports reachable for the parent/manager account even
   // when its stored permission row predates these pages.
   if (actorName === "ဖေဖေ/မေမေ") {
