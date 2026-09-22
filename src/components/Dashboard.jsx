@@ -2713,7 +2713,7 @@ export default function Dashboard({ view = "overview" }) {
 
         {isCapStockDashboard ? (
           <section className="neon-surface neon-sweep rounded-2xl border border-pink-300/80 bg-gradient-to-br from-white/95 via-pink-50/80 to-rose-50/70 p-4">
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Link
                 href="/cap-stock"
                 aria-label="စက်ရုံအဖုံးလက်ကျန် အသေးစိတ်ကြည့်ရန်"
@@ -2725,6 +2725,30 @@ export default function Dashboard({ view = "overview" }) {
                   <p className="mt-2 text-sm font-bold text-pink-700">{dashboardKpiLoading || kpiDateLoading ? "Canonical stock data ရယူနေပါသည်..." : "အဖုံးအရောင်အလိုက် လက်ကျန်ပမာဏ"}</p>
                 </div>
                 <p className="pt-3 text-sm font-black text-pink-700">အသေးစိတ်ကြည့်ရန် →</p>
+              </Link>
+              <Link
+                href={`/packaging-bag-report?date=${encodeURIComponent(selectedKpiDate)}`}
+                aria-label={`${selectedKpiDate} ထုပ်ပိုး အိတ်ခွံ အသေးစိတ်ကြည့်ရန်`}
+                className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-fuchsia-200 bg-fuchsia-50/90 p-4 text-left shadow-sm transition-all hover:border-fuchsia-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-fuchsia-300 sm:min-h-[170px]"
+              >
+                <div>
+                  <p className="text-sm font-black tracking-wide text-fuchsia-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုပ်ပိုး အိတ်ခွံ</p>
+                  <p className="mt-2 text-2xl font-black text-fuchsia-900">{productionLoading ? "ရယူနေသည်..." : `${packagingBagSummary.totalBags.toLocaleString()} အိတ်`}</p>
+                  <p className="mt-1 text-sm font-bold text-fuchsia-700">{productionLoading ? "Data ရယူနေသည်..." : `${packagingBagSummary.totalPieces.toLocaleString()} ဗူး · အိတ်အရွယ် ${packagingBagSummary.groups.length} မျိုး`}</p>
+                </div>
+                <p className="pt-2 text-sm font-bold text-fuchsia-700">အိတ်စာရင်းကြည့်ရန် →</p>
+              </Link>
+              <Link
+                href={`/packaging-bag-stock?date=${encodeURIComponent(selectedKpiDate)}`}
+                aria-label="စက်ရုံ ထုပ်ပိုး အိတ်ခွံ လက်ကျန် အသေးစိတ်ကြည့်ရန်"
+                className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-cyan-300 bg-cyan-50/95 p-4 text-left shadow-sm transition-all hover:border-cyan-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"
+              >
+                <div>
+                  <p className="text-sm font-black tracking-wide text-cyan-800 sm:text-base">စက်ရုံ ထုပ်ပိုး အိတ်ခွံ လက်ကျန်</p>
+                  <p className="mt-2 text-2xl font-black text-cyan-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryPackagingBagBags.toLocaleString()} အိတ်`}</p>
+                  <p className="mt-1 text-sm font-bold text-cyan-700">Packaging Bag Report အသုံးပြုမှုနုတ်ပြီး လက်ကျန်</p>
+                </div>
+                <p className="pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p>
               </Link>
             </div>
           </section>
