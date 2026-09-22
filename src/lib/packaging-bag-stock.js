@@ -91,7 +91,7 @@ export function packagingBagMovement({ bagSize, bags, date, note, actorName }) {
     capacity: 1,
     quantityCards: quantity,
     quantityBottles: quantity,
-    sourceType: PACKAGING_BAG_OPENING,
+    sourceType: PACKAGING_BAG_OPENING_SOURCE,
     sourceId,
     sourceVersion: "packaging-bag-stock-v1",
     reason: "စက်ရုံ ထုပ်ပိုး အိတ်ခွံ အသစ်ဝင် / လက်ရှိ Stock ထည့်ခြင်း",
