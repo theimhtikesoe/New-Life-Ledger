@@ -123,7 +123,7 @@ export default function ProductionHistoryPage() {
   }, [rows]);
 
   return (
-    <main className="mx-auto w-full max-w-[80rem] space-y-4 px-3 pb-8 sm:px-6">
+    <main className="shared-report-route-main mx-auto w-full space-y-4 px-3 pb-8 sm:px-6">
       <section className="rounded-2xl border border-orange-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

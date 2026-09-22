@@ -308,7 +308,7 @@ export default function DailySalesSummaryPanel({ selectedDate = "", totalCount =
 
       {isOpen ? (
         <div className={fullPage ? "app-page-main min-h-screen" : "fixed inset-0 z-[120] flex items-start justify-center bg-slate-950/35 p-2 backdrop-blur-[2px] sm:items-center sm:p-5"} style={fullPage ? undefined : { paddingTop: "max(0.5rem, env(safe-area-inset-top))" }} role={fullPage ? undefined : "dialog"} aria-modal={fullPage ? undefined : "true"} aria-labelledby="daily-sales-summary-title">
-          <section className={fullPage ? "mx-auto w-full max-w-[80rem] px-3 sm:px-6 lg:px-8" : "relative max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl sm:max-h-[94vh] sm:p-6"}>
+          <section className={fullPage ? "shared-report-route-inner mx-auto w-full px-3 sm:px-6 lg:px-8" : "relative max-h-[calc(100dvh-1rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-indigo-200 bg-white p-3 shadow-2xl sm:max-h-[94vh] sm:p-6"}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 {!fullPage ? <p className="text-xs font-semibold tracking-[0.16em] text-indigo-600">နေ့စဉ် ရောင်းရငွေ အနှစ်ချုပ်</p> : null}

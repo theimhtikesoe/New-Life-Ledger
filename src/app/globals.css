@@ -893,6 +893,23 @@ textarea {
   margin-inline: auto;
 }
 
+/* Report routes must use the same outer width contract as the shared header.
+   Keep this explicit instead of relying only on generated arbitrary Tailwind
+   max-width classes, so the header and report surfaces cannot drift apart. */
+.shared-report-route-main {
+  width: calc(100% - 1.5rem) !important;
+  max-width: 80rem !important;
+  margin-inline: auto !important;
+  box-sizing: border-box;
+}
+
+.shared-report-route-inner {
+  width: 100% !important;
+  max-width: 80rem !important;
+  margin-inline: auto !important;
+  box-sizing: border-box;
+}
+
 /* Keep the actor switcher on the left and refresh/settings controls on the
    right in a clear empty rail above every route header. */
 .shared-page-header-route {
@@ -902,6 +919,10 @@ textarea {
 @media (min-width: 640px) {
   .shared-page-header {
     width: calc(100% - 3rem);
+  }
+
+  .shared-report-route-main {
+    width: calc(100% - 3rem) !important;
   }
 }
 
