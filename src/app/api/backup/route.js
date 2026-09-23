@@ -12,7 +12,7 @@ export async function GET() {
   try {
     await ensureDatabase();
 
-    const [customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports, priceSettings] = await Promise.all([
+    const [customers, transactions, cashSales, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports, priceSettings] = await Promise.all([
       prisma.customer.findMany({
         orderBy: { createdAt: "asc" },
         select: {
@@ -65,26 +65,6 @@ export async function GET() {
           createdAt: true,
         },
       }),
-      prisma.kpayAlias.findMany({
-        orderBy: { id: "asc" },
-        select: {
-          id: true,
-          kpayName: true,
-          customerId: true,
-        },
-      }),
-      prisma.unverifiedKpay.findMany({
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        select: {
-          id: true,
-          raw_text: true,
-          kpayName: true,
-          amount: true,
-          status: true,
-          suggestedCustomerId: true,
-          createdAt: true,
-        },
-      }),
       prisma.auditLog.findMany({
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: {
@@ -107,7 +87,6 @@ export async function GET() {
       prisma.orderDelivery.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       prisma.orderAutomationSetting.findUnique({ where: { id: 1 } }),
       prisma.orderBatchRun.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
-      prisma.aiExplanationCache.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       prisma.autoReportRun.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       prisma.dailySalesSummary.findMany({ orderBy: [{ date: "asc" }, { id: "asc" }] }),
       prisma.dailySalesSummarySource.findMany({ orderBy: [{ linkedAt: "asc" }, { id: "asc" }] }),
@@ -150,8 +129,6 @@ export async function GET() {
           customers: customers.length,
           transactions: transactions.length,
           cashSales: cashSales.length,
-          kpayAliases: kpayAliases.length,
-          unverifiedKpay: unverifiedKpay.length,
           auditLogs: auditLogs.length,
           orders: orders.length,
           orderLines: orderLines.length,
@@ -159,7 +136,6 @@ export async function GET() {
           orderDeliveries: orderDeliveries.length,
           orderBatchRuns: orderBatchRuns.length,
           orderAutomationSetting: orderAutomationSetting ? 1 : 0,
-          aiExplanationCaches: aiExplanationCaches.length,
           autoReportRuns: autoReportRuns.length,
           dailySalesSummaries: dailySalesSummaries.length,
           dailySalesSummarySources: dailySalesSummarySources.length,
@@ -180,8 +156,6 @@ export async function GET() {
         customers,
         transactions,
         cashSales,
-        kpayAliases,
-        unverifiedKpay,
         auditLogs,
         orders,
         orderLines,
@@ -189,7 +163,6 @@ export async function GET() {
         orderDeliveries,
         orderAutomationSetting,
         orderBatchRuns,
-        aiExplanationCaches,
         autoReportRuns,
         dailySalesSummaries,
         dailySalesSummarySources,

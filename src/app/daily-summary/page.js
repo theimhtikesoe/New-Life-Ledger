@@ -1,20 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
 import { encodeActorHeader } from "@/lib/actor-header";
 import { buildDailySummaryReviewChecks, transactionsToDailySummaryEvents } from "@/lib/daily-summary-review";
 import { cashSaleTypeLabel } from "@/lib/cash-sale-utils";
-import { cleanAiText, mergeOverviewText, normalizeAiItems, normalizeReviewItems, sanitizeExplanation } from "@/lib/ai-explanation-merge";
-import {
-  recordDailyAiSuccess,
-  getAiActivityReviewHref,
-  getDailyAiUsage,
-  MAX_DAILY_AI_REQUESTS,
-  readAiExplanationCache,
-  saveAiExplanationCache,
-} from "@/lib/ai-explanation-storage";
+import { cleanAiText, normalizeAiItems, normalizeReviewItems } from "@/lib/ai-explanation-merge";
 
 const money = new Intl.NumberFormat("en-US");
 
@@ -162,21 +154,7 @@ function buildCodeBasedExplanation(report, reportDate) {
   };
 }
 
-function mergeExplanations(codeExplanation, aiExplanation) {
-  if (!codeExplanation) return sanitizeExplanation(aiExplanation);
-  if (!aiExplanation) return sanitizeExplanation(codeExplanation);
-  const cleanedAiExplanation = sanitizeExplanation(aiExplanation);
-  const unique = (items = []) => normalizeAiItems(items);
-  return {
-    overview: mergeOverviewText(codeExplanation.overview, cleanedAiExplanation.overview),
-    findings: unique([...(codeExplanation.findings || []), ...(cleanedAiExplanation.findings || [])]),
-    checks: normalizeReviewItems([...(codeExplanation.checks || []), ...(cleanedAiExplanation.checks || [])]),
-    caution: cleanedAiExplanation.caution || codeExplanation.caution,
-  };
-}
 
-const AI_CLIENT_TIMEOUT_MS = 50_000;
-const AI_CACHE_CHECK_TIMEOUT_MS = 10_000;
 
 function isRetryableSummaryError(error) {
   return error?.name === "TypeError" || error?.name === "TimeoutError" || /Failed to fetch|NetworkError|Load failed|Request timed out/i.test(String(error?.message || ""));
@@ -215,39 +193,8 @@ async function fetchJson(path, { timeoutMs = 15_000, maxAttempts = 3 } = {}) {
   throw lastError || new Error("စာရင်းရယူ၍ မရပါ။");
 }
 
-async function fetchAiJson(path, { timeoutMs = AI_CLIENT_TIMEOUT_MS, signal: externalSignal } = {}) {
-  const actorName = localStorage.getItem("actorName") || "";
-  const controller = new AbortController();
-  const abortFromOutside = () => controller.abort();
-  if (externalSignal) {
-    if (externalSignal.aborted) controller.abort();
-    else externalSignal.addEventListener("abort", abortFromOutside, { once: true });
-  }
-  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(path, {
-      headers: { "x-actor-name": encodeActorHeader(actorName) },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok || !body.ok) {
-      const error = new Error(body.error || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
-      error.status = response.status;
-      throw error;
-    }
-    return body;
-  } catch (error) {
-    if (error?.name === "AbortError") throw new Error("AI ရှင်းပြချက် ရယူရန် အချိန်ကြာသွားပါပြီ။ ပြန်စမ်းရန်နှိပ်ပါ။");
-    if (!error?.message) throw new Error("AI ရှင်းပြချက် ရယူ၍ မရပါ။ ပြန်စမ်းရန်နှိပ်ပါ။");
-    throw error;
-  } finally {
-    window.clearTimeout(timeout);
-    externalSignal?.removeEventListener("abort", abortFromOutside);
-  }
-}
 
-function AiListItem({ item, index, tone, date }) {
+function CodeListItem({ item, index, tone, date }) {
   const palette = tone === "amber"
     ? "border-amber-200 bg-amber-50/70 text-amber-950"
     : "border-emerald-200 bg-emerald-50/70 text-slate-700";
@@ -272,7 +219,7 @@ function AiListItem({ item, index, tone, date }) {
   );
 }
 
-function AiDetailSection({ number, title, items, tone, date }) {
+function CodeDetailSection({ number, title, items, tone, date }) {
   const isAmber = tone === "amber";
   return (
     <details className={`group overflow-hidden rounded-xl border bg-white ${isAmber ? "border-amber-200" : "border-emerald-200"}`}>
@@ -287,7 +234,7 @@ function AiDetailSection({ number, title, items, tone, date }) {
       </summary>
       <div className={`border-t p-3 sm:p-4 ${isAmber ? "border-amber-100" : "border-emerald-100"}`}>
         {items.length > 0 ? (
-          <div className="grid gap-2 sm:grid-cols-2">{items.map((item, index) => <AiListItem key={`${tone}-${index}`} item={item} index={index} tone={tone} date={date} />)}
+          <div className="grid gap-2 sm:grid-cols-2">{items.map((item, index) => <CodeListItem key={`${tone}-${index}`} item={item} index={index} tone={tone} date={date} />)}
 </div>
         ) : <p className="text-[13px] text-slate-500 sm:text-sm">မရှိပါ။</p>}
       </div>
@@ -295,19 +242,19 @@ function AiDetailSection({ number, title, items, tone, date }) {
   );
 }
 
-function AiExplanationPanel({ explanation, date, source }) {
+function CodeExplanationPanel({ explanation, date, source }) {
   const findings = normalizeAiItems(explanation?.findings);
   const checks = normalizeReviewItems(explanation?.checks);
   return (
-    <section id="ai-explanation" className="rounded-2xl border border-violet-200 bg-white p-3 shadow-sm sm:p-5" aria-labelledby="ai-summary-title">
+    <section id="code-explanation" className="rounded-2xl border border-violet-200 bg-white p-3 shadow-sm sm:p-5" aria-labelledby="code-summary-title">
       <div className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-3 text-white sm:px-4 sm:py-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 text-[11px] font-bold">AI</span>
-              <h2 id="ai-summary-title" className="text-base font-bold sm:text-lg">AI ရှင်းပြချက်</h2>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white/15 text-[11px] font-bold">CODE</span>
+              <h2 id="code-summary-title" className="text-base font-bold sm:text-lg">Code ရှင်းပြချက်</h2>
             </div>
-            <p className="mt-1 text-[11px] leading-4 text-violet-100 sm:text-xs">နေ့စဉ်စာရင်းနှင့် လုပ်ဆောင်ချက်မှတ်တမ်းကို အကျဉ်းချုပ်ဖတ်ရှုထားခြင်း</p>
+            <p className="mt-1 text-[11px] leading-4 text-violet-100 sm:text-xs">နေ့စဉ်စာရင်း data အပေါ် အခြေခံ၍ code ဖြင့်တွက်ချက်ထားသော ရှင်းပြချက်</p>
           </div>
                         <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-violet-50">{date}</span>
@@ -335,8 +282,8 @@ function AiExplanationPanel({ explanation, date, source }) {
         </div>
       </div>
 
-      {findings.length > 0 && <div className="mt-3"><AiDetailSection number="02" title="အဓိကတွေ့ရှိချက်များ" items={findings} tone="emerald" date={date} /></div>}
-      {checks.length > 0 && <div className="mt-2"><AiDetailSection number="03" title="ပြန်စစ်သင့်သည့်အချက်များ" items={checks} tone="amber" date={date} /></div>}
+      {findings.length > 0 && <div className="mt-3"><CodeDetailSection number="02" title="အဓိကတွေ့ရှိချက်များ" items={findings} tone="emerald" date={date} /></div>}
+      {checks.length > 0 && <div className="mt-2"><CodeDetailSection number="03" title="ပြန်စစ်သင့်သည့်အချက်များ" items={checks} tone="amber" date={date} /></div>}
 
     </section>
   );
@@ -368,20 +315,10 @@ export default function DailySummaryPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [aiExplanation, setAiExplanation] = useState(null);
-  const [aiExplanationOpen, setAiExplanationOpen] = useState(false);
-  const [, setAiRefreshMessage] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [, setAiUsage] = useState(0);
-  const [, setAiStale] = useState(false);
-  const [, setAiFallback] = useState(false);
-  const [, setAiSource] = useState("");
   const [reconciliationOpen, setReconciliationOpen] = useState(false);
   const [reconciliation, setReconciliation] = useState(null);
   const [reconciliationLoading, setReconciliationLoading] = useState(false);
   const [reconciliationError, setReconciliationError] = useState("");
-  const aiAbortRef = useRef(null);
-  const aiRequestStartedAtRef = useRef(0);
 
   useEffect(() => {
     const requestedDate = new URLSearchParams(window.location.search).get("date") || "";
@@ -437,152 +374,7 @@ export default function DailySummaryPage() {
     }
   };
 
-  useEffect(() => {
-    if (!urlReady) return undefined;
-    aiAbortRef.current?.abort();
-    aiAbortRef.current = null;
-    aiRequestStartedAtRef.current = 0;
-    const actorName = localStorage.getItem("actorName") || "Rhyzoe";
-    const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
-    setAiExplanation(localExplanation);
-    setAiExplanationOpen(false);
-    if (localExplanation) saveAiExplanationCache(date, localExplanation, actorName);
-    setAiSource(localExplanation ? "browser" : "");
-    setAiUsage(getDailyAiUsage(actorName, date));
-    setAiStale(false);
-    setAiFallback(false);
-    setAiRefreshMessage("");
-    setAiLoading(false);
-  }, [date, urlReady]);
-
-  useEffect(() => {
-    const recoverIfStuck = () => {
-      if (!aiLoading || !aiRequestStartedAtRef.current) return;
-      if (Date.now() - aiRequestStartedAtRef.current <= AI_CLIENT_TIMEOUT_MS + 1_000) return;
-      aiAbortRef.current?.abort();
-      aiAbortRef.current = null;
-      aiRequestStartedAtRef.current = 0;
-      const fallback = buildCodeBasedExplanation(data, date);
-      if (fallback) {
-        const actorName = localStorage.getItem("actorName") || "Rhyzoe";
-        saveAiExplanationCache(date, fallback, actorName);
-        setAiExplanation((current) => current || fallback);
-        setAiFallback(true);
-        setAiStale(false);
-        setAiSource("code-first");
-        setAiRefreshMessage("AI provider တုံ့ပြန်ရန် အချိန်ကြာသဖြင့် စာရင်း data အပေါ်အခြေခံသော အလိုအလျောက်အနှစ်ချုပ်ကို ပြထားပါသည်။ AI ပြန်ရသောအခါ ပြန်စမ်းနိုင်ပါသည်။");
-      } else {
-        setAiRefreshMessage("AI ရှင်းပြချက် အချိန်ကြာနေသောကြောင့် ရပ်ထားပါသည်။ အောက်က ပြန်စမ်းရန်ကို နှိပ်နိုင်ပါသည်။");
-      }
-      setAiLoading(false);
-    };
-    const interval = window.setInterval(recoverIfStuck, 1_000);
-    window.addEventListener("pageshow", recoverIfStuck);
-    window.addEventListener("online", recoverIfStuck);
-    document.addEventListener("visibilitychange", recoverIfStuck);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("pageshow", recoverIfStuck);
-      window.removeEventListener("online", recoverIfStuck);
-      document.removeEventListener("visibilitychange", recoverIfStuck);
-    };
-  }, [aiLoading, data, date]);
-
-  useEffect(() => () => {
-    aiAbortRef.current?.abort();
-  }, []);
-
-  const handleAiExplain = async ({ bypassLimit = false } = {}) => {
-    if (aiLoading) return;
-    const actorName = localStorage.getItem("actorName") || "Rhyzoe";
-    const localExplanation = sanitizeExplanation(readAiExplanationCache(date, actorName));
-    const codeExplanation = buildCodeBasedExplanation(data, date);
-    const immediateExplanation = codeExplanation ? mergeExplanations(codeExplanation, localExplanation) : localExplanation;
-    if (immediateExplanation) {
-      setAiExplanation(immediateExplanation);
-      setAiStale(false);
-      setAiFallback(Boolean(codeExplanation));
-      setAiSource(codeExplanation ? "code-first" : "browser");
-      if (codeExplanation && !localExplanation) saveAiExplanationCache(date, codeExplanation, actorName);
-      setAiRefreshMessage("Code-based စစ်ချက်ကို အရင်ပြထားပြီး AI ကို နောက်ကွယ်မှာ စစ်ဆေးနေပါသည်။");
-    } else {
-      setAiRefreshMessage("စာရင်း data ရရှိပြီးမှ AI refresh လုပ်ပါမည်။");
-    }
-    setAiLoading(true);
-    const requestController = new AbortController();
-    aiAbortRef.current = requestController;
-    aiRequestStartedAtRef.current = Date.now();
-    const isCurrentRequest = () => aiAbortRef.current === requestController;
-
-    try {
-      // The cache probe is intentionally after the immediate code-based render.
-      // It avoids a provider call when the underlying date data is unchanged.
-      let cacheBody = null;
-      try {
-        cacheBody = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}&cacheOnly=1`, { timeoutMs: AI_CACHE_CHECK_TIMEOUT_MS, signal: requestController.signal });
-      } catch (cacheError) {
-        if (requestController.signal.aborted || !isCurrentRequest()) return;
-        console.warn("Daily Summary cache probe failed; continuing to explanation request", cacheError);
-      }
-      if (!isCurrentRequest()) return;
-      const cacheData = cacheBody?.data || {};
-      if (cacheData.explanation) {
-        const mergedCache = mergeExplanations(codeExplanation, cacheData.explanation);
-        setAiExplanation(mergedCache);
-        setAiStale(Boolean(cacheData.stale));
-        setAiFallback(Boolean(codeExplanation));
-        setAiSource(cacheData.stale ? "database-stale" : codeExplanation ? "code-first-cache" : "database");
-        saveAiExplanationCache(date, cacheData.explanation, actorName);
-        if (!cacheData.stale) {
-          setAiRefreshMessage("ရှိပြီးသား AI အဖြေကို Code-based စစ်ချက်နှင့် ပေါင်းပြီး ပြထားပါသည်။");
-          return;
-        }
-      }
-
-      const currentUsage = getDailyAiUsage(actorName, date);
-      if (currentUsage >= MAX_DAILY_AI_REQUESTS && !bypassLimit) {
-        setAiUsage(currentUsage);
-        setAiRefreshMessage(`Code-based စစ်ချက်ကို ပြထားပြီး ဒီ Browser ၏ အောင်မြင်သော AI အဖြေ ${MAX_DAILY_AI_REQUESTS} ကြိမ်ကန့်သတ်ချက်ကြောင့် AI အသစ်ကို မစစ်နိုင်သေးပါ။ ဒါသည် Manus account limit မဟုတ်ပါ။`);
-        return;
-      }
-
-      const body = await fetchAiJson(`/api/ai/daily-summary?date=${encodeURIComponent(date)}`, { signal: requestController.signal });
-      if (!isCurrentRequest()) return;
-      const explanation = body.data?.explanation || null;
-      if (!explanation) throw new Error("AI မှ ရှင်းပြချက် မရရှိပါ။");
-      setAiExplanation(mergeExplanations(codeExplanation, explanation));
-      setAiStale(Boolean(body.data?.stale));
-      setAiFallback(Boolean(body.data?.fallback) || Boolean(codeExplanation));
-      setAiSource(body.data?.stale ? "database-stale" : body.data?.cached ? (codeExplanation ? "code-first-cache" : "database") : body.data?.fallback ? "code-first" : "fresh");
-      if (!body.data?.fallback) saveAiExplanationCache(date, explanation, actorName);
-      if (!body.data?.cached && !body.data?.stale && !body.data?.fallback) {
-        setAiUsage(recordDailyAiSuccess(actorName, date));
-      }
-      setAiRefreshMessage(body.data?.fallback ? "AI မရသေးပါ။ Code-based စစ်ချက်ကို မပျောက်ဘဲ အရင်အဖြေအဖြစ် ပြထားပါသည်။" : body.warning || "AI စစ်ဆေးချက်ကို Code-based စစ်ချက်နှင့် ပေါင်းပြီး ပြထားပါသည်။");
-    } catch (err) {
-      if (isCurrentRequest()) {
-        const fallback = codeExplanation || buildCodeBasedExplanation(data, date);
-        if (fallback) {
-          saveAiExplanationCache(date, fallback, actorName);
-          setAiExplanation((current) => current || fallback);
-          setAiFallback(true);
-          setAiStale(false);
-          setAiSource("code-first");
-          setAiRefreshMessage("AI provider ခဏမရသေးပါ။ Code-based စစ်ချက်ကို မပျောက်ဘဲ ပြထားပါသည်။ နောက်မှ AI ပြန်စစ်နိုင်ပါသည်။");
-        } else {
-          setAiRefreshMessage(err.message || "AI ရှင်းပြချက် ရယူ၍ မရပါ။");
-        }
-      }
-    } finally {
-      if (aiAbortRef.current === requestController) {
-        aiAbortRef.current = null;
-        aiRequestStartedAtRef.current = 0;
-        setAiLoading(false);
-      }
-    }
-  };
-
-
+  const codeExplanation = useMemo(() => buildCodeBasedExplanation(data, date), [data, date]);
   return (
     <main className="app-page-main">
       <div className="app-page-container">
@@ -601,15 +393,11 @@ export default function DailySummaryPage() {
               </label>
               <div className="page-toolbar-controls w-full sm:w-auto">
                 <button type="button" onClick={handleReconciliation} disabled={loading || reconciliationLoading} className={`min-h-10 flex-1 rounded-lg border px-4 py-2 text-sm font-semibold shadow-sm transition active:scale-[0.98] disabled:opacity-60 sm:flex-none ${reconciliationOpen ? "border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100" : "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"}`}>{reconciliationLoading ? "ပြန်စစ်နေသည်..." : reconciliationOpen ? "ပြန်စစ်ရန် ပိတ်မည်" : "ပြန်စစ်ရန်"}</button>
-                <button type="button" onClick={() => { if (aiExplanation) setAiExplanationOpen((open) => !open); else handleAiExplain(); }} disabled={loading || aiLoading} className="min-h-10 flex-1 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-[0.98] disabled:bg-slate-400 sm:flex-none">
-                  {aiLoading ? "AI ရှင်းပြနေသည်..." : aiExplanationOpen ? "AI ရှင်းပြချက် ဖျောက်မည်" : "AI ရှင်းပြချက် ပြမည်"}
-                </button>
               </div>
             </div>
           </div>
         </section>
-
-        {aiExplanation && aiExplanationOpen && <AiExplanationPanel explanation={aiExplanation} date={date} />}
+        {codeExplanation && <CodeExplanationPanel explanation={codeExplanation} date={date} source="code" />}
         {reconciliationOpen && <ReconciliationPanel reconciliation={reconciliation} loading={reconciliationLoading} error={reconciliationError} />}
 
         {error && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-3 text-[13px] text-rose-700 sm:p-4 sm:text-sm">{error}</p>}

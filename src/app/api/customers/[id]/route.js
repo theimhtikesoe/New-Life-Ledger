@@ -59,10 +59,6 @@ export async function GET(request, { params }) {
         current_balance: true,
         createdAt: true,
         deletedAt: true,
-        kpayAliases: {
-          select: { id: true, kpayName: true },
-          orderBy: { kpayName: "asc" },
-        },
         settledOutsideLedgerAt: true,
         settledOutsideLedgerBy: true,
           ...(includeLedgers
@@ -149,10 +145,6 @@ export async function PATCH(request, { params }) {
         current_balance: true,
         createdAt: true,
         deletedAt: true,
-        kpayAliases: {
-          select: { id: true, kpayName: true },
-          orderBy: { kpayName: "asc" },
-        },
         settledOutsideLedgerAt: true,
         settledOutsideLedgerBy: true,
         ledgers: {

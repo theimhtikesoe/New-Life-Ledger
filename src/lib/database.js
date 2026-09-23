@@ -6,9 +6,7 @@ let setupComplete = false;
 
 const REQUIRED_TABLES = [
   "Customer",
-  "KpayAlias",
   "Ledger",
-  "UnverifiedKpay",
   "AuditLog",
   "AutoReportRun",
   "ProductionReport",
@@ -28,7 +26,6 @@ const REQUIRED_TABLES = [
   "OrderDelivery",
   "OrderAutomationSetting",
   "OrderBatchRun",
-  "AiExplanationCache",
 ];
 const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSentAt"];
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType", "settledOutsideLedgerAt", "settledOutsideLedgerBy"];
@@ -435,16 +432,6 @@ export async function ensureDatabase() {
       `);
       await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "customerType" TEXT NOT NULL DEFAULT 'RETAIL'`);
       await setupQuery(`
-        CREATE TABLE IF NOT EXISTS "KpayAlias" (
-          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          "kpayName" TEXT NOT NULL UNIQUE,
-          "customerId" UUID NOT NULL,
-          CONSTRAINT "KpayAlias_customerId_fkey"
-            FOREIGN KEY ("customerId") REFERENCES "Customer" ("id")
-            ON DELETE CASCADE ON UPDATE CASCADE
-        )
-      `);
-      await setupQuery(`
         CREATE TABLE IF NOT EXISTS "Ledger" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           "customerId" UUID NOT NULL,
@@ -542,20 +529,6 @@ export async function ensureDatabase() {
         )
       `);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "DailySalesOpening_month_idx" ON "DailySalesOpening"("month")`);
-      await setupQuery(`
-        CREATE TABLE IF NOT EXISTS "UnverifiedKpay" (
-          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-          "raw_text" TEXT NOT NULL,
-          "kpayName" TEXT,
-          "amount" INTEGER NOT NULL,
-          "status" TEXT NOT NULL DEFAULT 'PENDING',
-          "suggestedCustomerId" UUID,
-          "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          CONSTRAINT "UnverifiedKpay_suggestedCustomerId_fkey"
-            FOREIGN KEY ("suggestedCustomerId") REFERENCES "Customer" ("id")
-            ON DELETE SET NULL ON UPDATE CASCADE
-        )
-      `);
 
       // Ensure all columns exist (for migrations)
       await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "routeTag" TEXT`);
@@ -564,10 +537,6 @@ export async function ensureDatabase() {
       );
       await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerAt" TIMESTAMP(3)`);
       await setupQuery(`ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerBy" TEXT`);
-      await setupQuery(`ALTER TABLE "UnverifiedKpay" ADD COLUMN IF NOT EXISTS "kpayName" TEXT`);
-      await setupQuery(
-        `ALTER TABLE "UnverifiedKpay" ADD COLUMN IF NOT EXISTS "suggestedCustomerId" UUID`,
-      );
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "paymentType" TEXT`);
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "saleItems" JSONB`);
       await setupQuery(`ALTER TABLE "Ledger" ADD COLUMN IF NOT EXISTS "discountAmount" INTEGER NOT NULL DEFAULT 0`);
@@ -580,8 +549,6 @@ export async function ensureDatabase() {
       // Create indexes for faster queries
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_customerId_idx" ON "Ledger"("customerId")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "Ledger_date_idx" ON "Ledger"("date")`);
-      await setupQuery(`CREATE INDEX IF NOT EXISTS "UnverifiedKpay_status_idx" ON "UnverifiedKpay"("status")`);
-      await setupQuery(`CREATE INDEX IF NOT EXISTS "UnverifiedKpay_kpayName_idx" ON "UnverifiedKpay"("kpayName")`);
       await setupQuery(`
         CREATE TABLE IF NOT EXISTS "AuditLog" (
           "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),

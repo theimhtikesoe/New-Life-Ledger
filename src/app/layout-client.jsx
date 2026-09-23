@@ -4,8 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from '@/components/AppLink';
 import PINLogin from '@/components/PINLogin';
-import BackgroundMusicPlayer from '@/components/BackgroundMusicPlayer';
-import BirthdayCelebration from '@/components/BirthdayCelebration';
 import { formatMyanmarClock, formatMyanmarDateLabel, getMyanmarHour } from '@/lib/myanmar-time-client';
 import { encodeActorHeader } from '@/lib/actor-header';
 import { defaultAllowedPaths } from '@/lib/user-permissions';
@@ -100,9 +98,6 @@ function RefreshOverlay() {
   const handleRefresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    // Ask the global player to persist its exact track/time before the
-    // full reload. pagehide/beforeunload remain as additional fallbacks.
-    window.dispatchEvent(new CustomEvent('new-life-ledger:background-music-save'));
     try {
       const registration = await window.navigator.serviceWorker?.getRegistration();
       await registration?.update();
@@ -592,10 +587,6 @@ export default function RootLayoutClient({ children }) {
       )}
       {showApp && (
         <>
-          {/* Mount the global player before page children so it cannot miss the
-              first overdue-status/audio event during the PWA startup handshake. */}
-          <BackgroundMusicPlayer settingsOpen={settingsOpen} />
-          <BirthdayCelebration />
           <RefreshOverlay />
           <GlobalActionLoadingIndicator />
           <SettingsToggle open={settingsOpen} onToggle={() => setSettingsOpen((current) => !current)} />

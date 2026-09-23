@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const SUPPORTED_BACKUP_VERSION = 6;
 const REQUIRED_SHEETS = ["Backup Info", "Customers", "Transactions", "Audit History"];
-const OPTIONAL_SHEETS = ["KPay Aliases", "Pending KPay", "Cash Sales", "Integrity", "Orders", "Order Lines", "Order Caps", "Order Deliveries", "Order Automation", "Order Batch Runs", "AI Explanation Cache", "Auto Report Runs", "Daily Summaries", "Summary Sources", "Daily Openings"];
+const OPTIONAL_SHEETS = ["Cash Sales", "Integrity", "Orders", "Order Lines", "Order Caps", "Order Deliveries", "Order Automation", "Order Batch Runs", "Auto Report Runs", "Daily Summaries", "Summary Sources", "Daily Openings"];
 
 function rowsFromSheet(workbook, name) {
   const sheet = workbook.Sheets[name];
@@ -97,20 +97,6 @@ function normalize(workbook) {
     paymentType: row.paymentType ?? row.PaymentType ?? null,
     paymentBreakdown: parseJsonCell(row.paymentBreakdown ?? row.PaymentBreakdown),
     createdAt: asDate(row.createdAt || row.CreatedAt) || asDate(row.date || row.Date) || new Date(),
-  }));
-  const kpayAliases = rowsFromSheet(workbook, "KPay Aliases").map((row) => ({
-    id: asUuid(row.id || row.ID),
-    kpayName: asText(row.kpayName ?? row.KpayName),
-    customerId: asUuid(row.customerId || row.CustomerId),
-  }));
-  const unverifiedKpay = rowsFromSheet(workbook, "Pending KPay").map((row) => ({
-    id: asUuid(row.id || row.ID),
-    raw_text: asText(row.raw_text ?? row.rawText ?? row.RawText),
-    kpayName: row.kpayName ?? row.KpayName ?? null,
-    amount: asNumber(row.amount ?? row.Amount),
-    status: asText(row.status ?? row.Status, "PENDING") || "PENDING",
-    suggestedCustomerId: asUuid(row.suggestedCustomerId || row.SuggestedCustomerId),
-    createdAt: asDate(row.createdAt || row.CreatedAt) || new Date(),
   }));
   const auditLogs = rowsFromSheet(workbook, "Audit History").map((row) => ({
     id: asUuid(row.id || row.ID),
@@ -216,18 +202,6 @@ function normalize(workbook) {
     errorMessage: row.errorMessage ?? row.ErrorMessage ?? null,
     createdAt: asDate(row.createdAt || row.CreatedAt) || new Date(),
   }));
-  const aiExplanationCaches = rowsFromSheet(workbook, "AI Explanation Cache").map((row) => ({
-    id: asUuid(row.id || row.ID),
-    reportDate: asText(row.reportDate ?? row.ReportDate),
-    dataFingerprint: asText(row.dataFingerprint ?? row.DataFingerprint),
-    promptVersion: asText(row.promptVersion ?? row.PromptVersion, "v2") || "v2",
-    explanation: parseJsonCell(row.explanation ?? row.Explanation),
-    generatedBy: row.generatedBy ?? row.GeneratedBy ?? null,
-    provider: row.provider ?? row.Provider ?? null,
-    model: row.model ?? row.Model ?? null,
-    createdAt: asDate(row.createdAt || row.CreatedAt) || new Date(),
-    updatedAt: asDate(row.updatedAt || row.UpdatedAt) || asDate(row.createdAt || row.CreatedAt) || new Date(),
-  }));
   const autoReportRuns = rowsFromSheet(workbook, "Auto Report Runs").map((row) => ({
     id: asUuid(row.id || row.ID),
     status: asText(row.status ?? row.Status),
@@ -309,7 +283,7 @@ function normalize(workbook) {
       .filter((row) => row.key || row.Key)
       .map((row) => [String(row.key || row.Key), parseJsonCell(row.value ?? row.Value)]),
   );
-  return { info, customers, transactions, cashSales, kpayAliases, unverifiedKpay, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, aiExplanationCaches, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports, integrity };
+  return { info, customers, transactions, cashSales, auditLogs, orders, orderLines, orderCaps, orderDeliveries, orderAutomationSetting, orderBatchRuns, autoReportRuns, dailySalesSummaries, dailySalesSummarySources, dailySalesOpenings, productionReports, integrity };
 }
 
 function computeIntegrity(data) {
@@ -379,25 +353,8 @@ function validate(data) {
 
   const aliasIds = new Set();
   const aliasNames = new Set();
-  data.kpayAliases.forEach((alias, index) => {
-    if (!alias.id) errors.push(`KPay Aliases row ${index + 2}: valid id မရှိပါ။`);
-    if (!alias.kpayName) errors.push(`KPay Aliases row ${index + 2}: kpayName မရှိပါ။`);
-    if (!alias.customerId || !customerIds.has(alias.customerId)) errors.push(`KPay Aliases row ${index + 2}: customerId မကိုက်ညီပါ။`);
-    if (alias.id && aliasIds.has(alias.id)) errors.push(`KPay Aliases row ${index + 2}: duplicate id ဖြစ်နေပါသည်။`);
-    if (alias.kpayName && aliasNames.has(alias.kpayName)) errors.push(`KPay Aliases row ${index + 2}: duplicate kpayName ဖြစ်နေပါသည်။`);
-    if (alias.id) aliasIds.add(alias.id);
-    if (alias.kpayName) aliasNames.add(alias.kpayName);
-  });
 
   const pendingIds = new Set();
-  data.unverifiedKpay.forEach((item, index) => {
-    if (!item.id) errors.push(`Pending KPay row ${index + 2}: valid id မရှိပါ။`);
-    if (!item.raw_text) errors.push(`Pending KPay row ${index + 2}: raw_text မရှိပါ။`);
-    if (!item.amount || item.amount <= 0) errors.push(`Pending KPay row ${index + 2}: amount မမှန်ပါ။`);
-    if (item.suggestedCustomerId && !customerIds.has(item.suggestedCustomerId)) errors.push(`Pending KPay row ${index + 2}: suggestedCustomerId မကိုက်ညီပါ။`);
-    if (item.id && pendingIds.has(item.id)) errors.push(`Pending KPay row ${index + 2}: duplicate id ဖြစ်နေပါသည်။`);
-    if (item.id) pendingIds.add(item.id);
-  });
 
   const auditIds = new Set();
   data.auditLogs.forEach((audit, index) => {
@@ -450,12 +407,6 @@ function validate(data) {
   });
 
   const aiCacheKeys = new Set();
-  data.aiExplanationCaches.forEach((item, index) => {
-    if (!item.id || !item.reportDate || !item.dataFingerprint) errors.push(`AI Explanation Cache row ${index + 2}: id/reportDate/dataFingerprint မမှန်ပါ။`);
-    const key = `${item.reportDate}|${item.dataFingerprint}|${item.promptVersion}`;
-    if (aiCacheKeys.has(key)) errors.push(`AI Explanation Cache row ${index + 2}: duplicate key ဖြစ်နေပါသည်။`);
-    aiCacheKeys.add(key);
-  });
 
   data.autoReportRuns.forEach((run, index) => {
     if (!run.id || !run.status) errors.push(`Auto Report Runs row ${index + 2}: id/status မမှန်ပါ။`);
@@ -537,12 +488,10 @@ export async function POST(request) {
       }, { status: 409 });
     }
 
-    const [existingCustomers, existingTransactions, existingCashSales, existingAliases, existingPendingKpay, existingAuditLogs, existingOrders, existingOrderLines, existingOrderCaps, existingOrderDeliveries, existingAutomationSetting, existingBatchRuns, existingAiExplanationCaches, existingAutoReportRuns, existingDailySalesSummaries, existingDailySalesSummarySources, existingDailySalesOpenings, existingProductionReports] = await Promise.all([
+    const [existingCustomers, existingTransactions, existingCashSales, existingAuditLogs, existingOrders, existingOrderLines, existingOrderCaps, existingOrderDeliveries, existingAutomationSetting, existingBatchRuns, existingAutoReportRuns, existingDailySalesSummaries, existingDailySalesSummarySources, existingDailySalesOpenings, existingProductionReports] = await Promise.all([
       prisma.customer.findMany({ select: { id: true, name: true, phone: true } }),
       prisma.ledger.findMany({ select: { id: true } }),
       prisma.cashSale.findMany({ select: { id: true } }),
-      prisma.kpayAlias.findMany({ select: { id: true, kpayName: true } }),
-      prisma.unverifiedKpay.findMany({ select: { id: true } }),
       prisma.auditLog.findMany({ select: { id: true } }),
       prisma.order.findMany({ select: { id: true, sourceChatId: true, sourceMessageId: true, sourceUpdateId: true } }),
       prisma.orderLine.findMany({ select: { id: true } }),
@@ -550,7 +499,6 @@ export async function POST(request) {
       prisma.orderDelivery.findMany({ select: { id: true } }),
       prisma.orderAutomationSetting.findUnique({ where: { id: 1 }, select: { id: true } }),
       prisma.orderBatchRun.findMany({ select: { id: true, batchDate: true } }),
-      prisma.aiExplanationCache.findMany({ select: { id: true, reportDate: true, dataFingerprint: true, promptVersion: true } }),
       prisma.autoReportRun.findMany({ select: { id: true } }),
       prisma.dailySalesSummary.findMany({ select: { id: true, date: true } }),
       prisma.dailySalesSummarySource.findMany({ select: { id: true, summaryId: true, sourceType: true, sourceId: true, contributionType: true } }),
@@ -572,9 +520,6 @@ export async function POST(request) {
 
     const existingTransactionIds = new Set(existingTransactions.map((item) => item.id));
     const existingCashSaleIds = new Set(existingCashSales.map((item) => item.id));
-    const existingAliasIds = new Set(existingAliases.map((item) => item.id));
-    const existingAliasNames = new Set(existingAliases.map((item) => item.kpayName));
-    const existingPendingIds = new Set(existingPendingKpay.map((item) => item.id));
     const existingAuditIds = new Set(existingAuditLogs.map((item) => item.id));
     const existingOrderIds = new Set(existingOrders.map((item) => item.id));
     const existingOrderSourceUpdateIds = new Set(existingOrders.map((item) => item.sourceUpdateId).filter(Boolean));
@@ -584,8 +529,6 @@ export async function POST(request) {
     const existingOrderDeliveryIds = new Set(existingOrderDeliveries.map((item) => item.id));
     const existingBatchRunIds = new Set(existingBatchRuns.map((item) => item.id));
     const existingBatchDates = new Set(existingBatchRuns.map((item) => item.batchDate));
-    const existingAiExplanationCacheIds = new Set(existingAiExplanationCaches.map((item) => item.id));
-    const existingAiExplanationCacheKeys = new Set(existingAiExplanationCaches.map((item) => `${item.reportDate}|${item.dataFingerprint}|${item.promptVersion}`));
     const existingAutoReportRunIds = new Set(existingAutoReportRuns.map((item) => item.id));
     const existingDailySalesSummaryIds = new Set(existingDailySalesSummaries.map((item) => item.id));
     const existingDailySalesSummaryByDate = new Map(existingDailySalesSummaries.map((item) => [item.date, item.id]));
@@ -605,7 +548,6 @@ export async function POST(request) {
     const toCreateAutomationSetting = data.orderAutomationSetting && !existingAutomationSetting ? data.orderAutomationSetting : null;
     const toCreateBatchRuns = data.orderBatchRuns.filter((item) => item.id && item.batchDate && !existingBatchRunIds.has(item.id) && !existingBatchDates.has(item.batchDate));
     const summaryIdMap = new Map(data.dailySalesSummaries.map((item) => [item.id, existingDailySalesSummaryByDate.get(item.date) || item.id]));
-    const toCreateAiExplanationCaches = data.aiExplanationCaches.filter((item) => item.id && item.reportDate && item.dataFingerprint && !existingAiExplanationCacheIds.has(item.id) && !existingAiExplanationCacheKeys.has(`${item.reportDate}|${item.dataFingerprint}|${item.promptVersion}`));
     const toCreateAutoReportRuns = data.autoReportRuns.filter((item) => item.id && !existingAutoReportRunIds.has(item.id));
     const toCreateDailySalesSummaries = data.dailySalesSummaries.filter((item) => item.id && item.date && !existingDailySalesSummaryIds.has(item.id) && !existingDailySalesSummaryByDate.has(item.date));
     const importableSummaryIds = new Set([...existingDailySalesSummaryIds, ...toCreateDailySalesSummaries.map((item) => item.id)]);
@@ -621,13 +563,6 @@ export async function POST(request) {
     const toCreateCashSales = data.cashSales
       .filter((item) => item.id && !existingCashSaleIds.has(item.id))
       .map((item) => ({ ...item, customerId: customerIdMap.get(item.customerId) || item.customerId }));
-    const toCreateAliases = data.kpayAliases
-      .filter((item) => item.id && !existingAliasIds.has(item.id) && !existingAliasNames.has(item.kpayName))
-      .map((item) => ({ ...item, customerId: customerIdMap.get(item.customerId) || item.customerId }));
-    const aliasConflicts = data.kpayAliases.filter((item) => existingAliasNames.has(item.kpayName) && !existingAliasIds.has(item.id));
-    const toCreatePendingKpay = data.unverifiedKpay
-      .filter((item) => item.id && !existingPendingIds.has(item.id))
-      .map((item) => ({ ...item, suggestedCustomerId: item.suggestedCustomerId ? (customerIdMap.get(item.suggestedCustomerId) || item.suggestedCustomerId) : null }));
     const toCreateAudits = data.auditLogs.filter((item) => item.id && !existingAuditIds.has(item.id));
 
     const customerIdsToRecalculate = [...new Set(data.customers.map((customer) => customerIdMap.get(customer.id) || customer.id))];
@@ -639,8 +574,6 @@ export async function POST(request) {
         customers: data.customers.length,
         transactions: data.transactions.length,
         cashSales: data.cashSales.length,
-        kpayAliases: data.kpayAliases.length,
-        unverifiedKpay: data.unverifiedKpay.length,
         auditLogs: data.auditLogs.length,
         orders: data.orders.length,
         orderLines: data.orderLines.length,
@@ -648,7 +581,6 @@ export async function POST(request) {
         orderDeliveries: data.orderDeliveries.length,
         orderBatchRuns: data.orderBatchRuns.length,
         orderAutomationSetting: data.orderAutomationSetting ? 1 : 0,
-        aiExplanationCaches: data.aiExplanationCaches.length,
         autoReportRuns: data.autoReportRuns.length,
         dailySalesSummaries: data.dailySalesSummaries.length,
         dailySalesSummarySources: data.dailySalesSummarySources.length,
@@ -659,8 +591,6 @@ export async function POST(request) {
         customers: toCreateCustomers.length,
         transactions: toCreateTransactions.length,
         cashSales: toCreateCashSales.length,
-        kpayAliases: toCreateAliases.length,
-        unverifiedKpay: toCreatePendingKpay.length,
         auditLogs: toCreateAudits.length,
         orders: toCreateOrders.length,
         orderLines: toCreateOrderLines.length,
@@ -668,7 +598,6 @@ export async function POST(request) {
         orderDeliveries: toCreateOrderDeliveries.length,
         orderBatchRuns: toCreateBatchRuns.length,
         orderAutomationSetting: toCreateAutomationSetting ? 1 : 0,
-        aiExplanationCaches: toCreateAiExplanationCaches.length,
         autoReportRuns: toCreateAutoReportRuns.length,
         dailySalesSummaries: toCreateDailySalesSummaries.length,
         dailySalesSummarySources: toCreateDailySalesSummarySources.length,
@@ -679,8 +608,6 @@ export async function POST(request) {
         customers: data.customers.length - toCreateCustomers.length,
         transactions: data.transactions.length - toCreateTransactions.length,
         cashSales: data.cashSales.length - toCreateCashSales.length,
-        kpayAliases: data.kpayAliases.length - toCreateAliases.length,
-        unverifiedKpay: data.unverifiedKpay.length - toCreatePendingKpay.length,
         auditLogs: data.auditLogs.length - toCreateAudits.length,
         orders: data.orders.length - toCreateOrders.length,
         orderLines: data.orderLines.length - toCreateOrderLines.length,
@@ -688,7 +615,6 @@ export async function POST(request) {
         orderDeliveries: data.orderDeliveries.length - toCreateOrderDeliveries.length,
         orderBatchRuns: data.orderBatchRuns.length - toCreateBatchRuns.length,
         orderAutomationSetting: data.orderAutomationSetting && !toCreateAutomationSetting ? 1 : 0,
-        aiExplanationCaches: data.aiExplanationCaches.length - toCreateAiExplanationCaches.length,
         autoReportRuns: data.autoReportRuns.length - toCreateAutoReportRuns.length,
         dailySalesSummaries: data.dailySalesSummaries.length - toCreateDailySalesSummaries.length,
         dailySalesSummarySources: data.dailySalesSummarySources.length - toCreateDailySalesSummarySources.length,
@@ -699,7 +625,6 @@ export async function POST(request) {
         const mappedId = customerIdMap.get(customer.id);
         return mappedId && mappedId !== customer.id;
       }).length,
-      aliasConflicts: aliasConflicts.map((item) => ({ id: item.id, kpayName: item.kpayName })),
       balanceRecalculation: {
         customers: customerIdsToRecalculate.length,
         sourceIntegrity,
@@ -715,8 +640,6 @@ export async function POST(request) {
       let addedCustomers = 0;
       let addedTransactions = 0;
       let addedCashSales = 0;
-      let addedAliases = 0;
-      let addedPendingKpay = 0;
       let addedAuditLogs = 0;
       let addedOrders = 0;
       let addedOrderLines = 0;
@@ -724,7 +647,6 @@ export async function POST(request) {
       let addedOrderDeliveries = 0;
       let addedBatchRuns = 0;
       let addedAutomationSetting = 0;
-      let addedAiExplanationCaches = 0;
       let addedAutoReportRuns = 0;
       let addedDailySalesSummaries = 0;
       let addedDailySalesSummarySources = 0;
@@ -742,26 +664,6 @@ export async function POST(request) {
         if (!customerExists) continue;
         await tx.cashSale.create({ data: cashSale });
         addedCashSales += 1;
-      }
-      for (const alias of toCreateAliases) {
-        const customerExists = await tx.customer.findUnique({ where: { id: alias.customerId }, select: { id: true } });
-        if (!customerExists) continue;
-        await tx.kpayAlias.create({ data: alias });
-        addedAliases += 1;
-      }
-      for (const transaction of toCreateTransactions) {
-        const customerExists = await tx.customer.findUnique({ where: { id: transaction.customerId }, select: { id: true } });
-        if (!customerExists) continue;
-        await tx.ledger.create({ data: transaction });
-        addedTransactions += 1;
-      }
-      for (const item of toCreatePendingKpay) {
-        if (item.suggestedCustomerId) {
-          const customerExists = await tx.customer.findUnique({ where: { id: item.suggestedCustomerId }, select: { id: true } });
-          if (!customerExists) item.suggestedCustomerId = null;
-        }
-        await tx.unverifiedKpay.create({ data: item });
-        addedPendingKpay += 1;
       }
       for (const auditLog of toCreateAudits) {
         await tx.auditLog.create({ data: auditLog });
@@ -798,10 +700,6 @@ export async function POST(request) {
       for (const batchRun of toCreateBatchRuns) {
         await tx.orderBatchRun.create({ data: batchRun });
         addedBatchRuns += 1;
-      }
-      for (const cache of toCreateAiExplanationCaches) {
-        await tx.aiExplanationCache.create({ data: cache });
-        addedAiExplanationCaches += 1;
       }
       for (const reportRun of toCreateAutoReportRuns) {
         await tx.autoReportRun.create({ data: reportRun });
@@ -845,16 +743,15 @@ export async function POST(request) {
         actorName: getActorName(request),
         action: "IMPORT",
         entityType: "Backup",
-        summary: `Backup restore: customer ${addedCustomers}, transaction ${addedTransactions}, cash sale ${addedCashSales}, KPay ${addedAliases + addedPendingKpay}, order ${addedOrders}`,
+        summary: `Backup restore: customer ${addedCustomers}, transaction ${addedTransactions}, cash sale ${addedCashSales}, order ${addedOrders}`,
         metadata: {
           sourceCounts: summary.sourceCounts,
-          added: { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAiExplanationCaches, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings, addedProductionReports },
+          added: { addedCustomers, addedTransactions, addedCashSales, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings, addedProductionReports },
           correctedBalances,
           balanceCorrections,
-          aliasConflicts: summary.aliasConflicts,
         },
       });
-      return { addedCustomers, addedTransactions, addedCashSales, addedAliases, addedPendingKpay, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAiExplanationCaches, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings, addedProductionReports, correctedBalances, balanceCorrections };
+      return { addedCustomers, addedTransactions, addedCashSales, addedAuditLogs, addedOrders, addedOrderLines, addedOrderCaps, addedOrderDeliveries, addedAutomationSetting, addedBatchRuns, addedAutoReportRuns, addedDailySalesSummaries, addedDailySalesSummarySources, addedDailySalesOpenings, addedProductionReports, correctedBalances, balanceCorrections };
     });
 
     return NextResponse.json({ data: { ...summary, result } }, { status: 201 });

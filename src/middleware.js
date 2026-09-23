@@ -8,7 +8,6 @@ const PUBLIC_API_PATHS = new Set([
   "/api/auth/session",
   "/api/auth/actor-session",
   "/api/cron/daily-report",
-  "/api/kpay-webhook",
   "/api/telegram/order-webhook",
   "/api/cron/order-batch",
   "/api/cron/order-trash-cleanup",

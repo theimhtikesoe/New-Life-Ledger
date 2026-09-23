@@ -329,16 +329,12 @@ export default function Dashboard({ view = "overview" }) {
   const [deletedCustomerDetail, setDeletedCustomerDetail] = useState(null);
   const [loadingDeletedCustomerDetail, setLoadingDeletedCustomerDetail] = useState(false);
   const [deletedCustomerDetailError, setDeletedCustomerDetailError] = useState("");
-  const [pendingKpay, setPendingKpay] = useState([]);
-  const [pendingKpayLoaded, setPendingKpayLoaded] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const customerCacheRef = useRef(new Map());
   const salesCatalogCacheRef = useRef(new Map());
   const selectedCustomerRef = useRef(null);
   const [search, setSearch] = useState("");
-  const [matchingKpay, setMatchingKpay] = useState(null);
-  const [matchCustomerId, setMatchCustomerId] = useState("");
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [deletingCustomer, setDeletingCustomer] = useState(null);
   const [permanentDeletingCustomer, setPermanentDeletingCustomer] = useState(null);
@@ -570,8 +566,6 @@ export default function Dashboard({ view = "overview" }) {
       setShowCustomerList(true);
       setSelectedCustomerId(null);
       setSelectedCustomer(null);
-      setMatchingKpay(null);
-      setMatchCustomerId("");
       setShowPinModal(false);
       setPinValue("");
       setPinError("");
@@ -601,8 +595,6 @@ export default function Dashboard({ view = "overview" }) {
       if (draft.newCustomer && typeof draft.newCustomer === "object") setNewCustomer((prev) => ({ ...prev, ...draft.newCustomer }));
       if (draft.ledgerForm && typeof draft.ledgerForm === "object") setLedgerForm((prev) => ({ ...prev, ...draft.ledgerForm }));
       if (draft.editForm && typeof draft.editForm === "object") setEditForm((prev) => ({ ...prev, ...draft.editForm }));
-      if (draft.matchingKpay && typeof draft.matchingKpay === "object") setMatchingKpay(draft.matchingKpay);
-      if (typeof draft.matchCustomerId === "string") setMatchCustomerId(draft.matchCustomerId);
       setEditingCustomer(draft.editingCustomer && typeof draft.editingCustomer === "object" ? draft.editingCustomer : null);
       if (typeof draft.search === "string") setSearch(draft.search);
       if (Number.isFinite(Number(draft.currentPage)) && Number(draft.currentPage) > 0) {
@@ -663,8 +655,6 @@ export default function Dashboard({ view = "overview" }) {
         newCustomer,
         ledgerForm,
         editForm,
-        matchingKpay,
-        matchCustomerId,
         editingCustomer: editingCustomer
           ? { id: editingCustomer.id, name: editingCustomer.name, phone: editingCustomer.phone, routeTag: editingCustomer.routeTag }
           : null,
@@ -679,7 +669,7 @@ export default function Dashboard({ view = "overview" }) {
     } catch (error) {
       console.warn("Dashboard draft could not be saved:", error);
     }
-  }, [newCustomer, ledgerForm, editForm, matchingKpay, matchCustomerId, editingCustomer, search, currentPage, showAddCustomer, showCustomerList, selectedCustomerId]);
+  }, [newCustomer, ledgerForm, editForm, editingCustomer, search, currentPage, showAddCustomer, showCustomerList, selectedCustomerId]);
 
   // Auto-scroll and auto-hide list when a customer is selected
   useEffect(() => {
@@ -962,19 +952,7 @@ export default function Dashboard({ view = "overview" }) {
         })
         .finally(() => setTodaySummaryLoading(false));
 
-      // Stage 5: secondary KPay data is loaded last and never blocks the main UI.
-      setLoadingStage("Data ရယူနေပါသည်");
-      if (!isProductionDashboard) void api("/api/unverified-kpay?status=PENDING", { signal, background: true })
-        .then((kpayRows) => {
-          setPendingKpay(Array.isArray(kpayRows) ? kpayRows : []);
-          setPendingKpayLoaded(true);
-        })
-        .catch((error) => {
-          if (error.name !== "AbortError") console.warn("Pending KPay data was not loaded:", error);
-          if (error.name !== "AbortError") setPendingKpayLoaded(true);
-        });
-
-      // Stage 6: the visual pulse is non-critical and loads after the main data.
+      // Stage 5: the visual pulse is non-critical and loads after the main data.
       if (isProductionDashboard) return;
       setLedgerPulseLoading(true);
       setLedgerPulseError("");
@@ -1100,7 +1078,7 @@ export default function Dashboard({ view = "overview" }) {
 
   async function openDeletedCustomerDetail(customer) {
     setDeletedCustomerDetailError("");
-    setDeletedCustomerDetail({ ...customer, ledgers: [], kpayAliases: [] });
+    setDeletedCustomerDetail({ ...customer, ledgers: [] });
     setLoadingDeletedCustomerDetail(true);
     try {
       const detail = await api(`/api/customers/${encodeURIComponent(customer.id)}?includeLedgers=true`);
@@ -1212,10 +1190,6 @@ export default function Dashboard({ view = "overview" }) {
     });
   }, [loadCustomer, showAlert]);
 
-  const totalPending = useMemo(
-    () => pendingKpay.reduce((sum, item) => sum + item.amount, 0),
-    [pendingKpay],
-  );
 
   useEffect(() => {
     if (!showDashboardReconciliation || dashboardReconciliation || dashboardReconciliationLoading) return undefined;
@@ -1891,61 +1865,6 @@ export default function Dashboard({ view = "overview" }) {
     }
   }
 
-  async function matchKpay(event) {
-    event.preventDefault();
-    if (!matchingKpay || !matchCustomerId || isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      setMessage("");
-      await api("/api/kpay-match", {
-        method: "POST",
-        body: JSON.stringify({
-          unverifiedKpayId: matchingKpay.id,
-          customerId: matchCustomerId,
-          kpayName: matchingKpay.kpayName,
-          amount: matchingKpay.amount,
-        }),
-      });
-      
-      const customerId = matchCustomerId;
-      const kpayAmount = matchingKpay.amount;
-      
-      // Optimistic Update: Remove matched KPay from pending list
-      setPendingKpay(prev => prev.filter(k => k.id !== matchingKpay.id));
-      
-      // Update customer balance and ledgers optimistically
-      const updateFn = c => 
-        c.id === customerId 
-          ? { 
-              ...c, 
-              current_balance: c.current_balance - kpayAmount,
-              ledgers: [{
-                id: `temp-${Date.now()}`,
-                type: 'DEBIT',
-                amount: kpayAmount,
-                date: new Date().toISOString(),
-                note: `KPay Match: ${matchingKpay.kpayName}`
-              }, ...(c.ledgers || [])]
-            } 
-          : c;
-      setCustomers(prev => prev.map(updateFn));
-      setAllCustomersForKPI(prev => prev.map(updateFn));
-      
-      setMatchingKpay(null);
-      setMatchCustomerId("");
-      setSelectedCustomerId(customerId);
-      
-      showAlert(`KPay ${formatMoney(kpayAmount)} အောင်မြင်စွာ တွဲဆက်ပြီးပါပြီ။`, "success");
-    } catch (error) {
-      setMessage(error.message);
-      showAlert(error.message, "error");
-      // Reload data on error
-      await Promise.all([loadDashboard(), loadCustomer(matchCustomerId)]);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
 
   function openEditCustomer(customer) {
     setEditingCustomer(customer);
@@ -3638,24 +3557,6 @@ export default function Dashboard({ view = "overview" }) {
                       <div><p className="text-xs text-slate-500">ဖျက်ထားသည့်အချိန်</p><p className="mt-1 font-medium text-rose-700">{deletedCustomerDetail.deletedAt ? formatDate(deletedCustomerDetail.deletedAt) : "မသိရသေးပါ"}</p></div>
                       <div><p className="text-xs text-slate-500">စတင်ထည့်ထားသည့်အချိန်</p><p className="mt-1 font-medium text-slate-900">{deletedCustomerDetail.createdAt ? formatDate(deletedCustomerDetail.createdAt) : "မသိရသေးပါ"}</p></div>
                       <div><p className="text-xs text-slate-500">လက်ရှိလက်ကျန်</p><p className="mt-1 font-medium text-slate-900">{getBalanceLabel(deletedCustomerDetail.current_balance)} — {formatBalanceAmount(deletedCustomerDetail.current_balance)}</p></div>
-                    </div>
-                    <div className="mt-4 border-t border-slate-200 pt-3">
-                      <p className="text-xs text-slate-500">KPay အမည်များ</p>
-                      {deletedCustomerDetail.kpayAliases?.length ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {deletedCustomerDetail.kpayAliases.map((alias) => <span key={alias.id} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200">{alias.kpayName}</span>)}
-                        </div>
-                      ) : <p className="mt-1 text-sm text-slate-600">KPay ချိတ်ဆက်ထားခြင်း မရှိပါ။</p>}
-                    </div>
-                  </section>
-
-                  <section>
-                    <h4 className="font-semibold text-slate-900">ငွေစာရင်းအနှစ်ချုပ်</h4>
-                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3"><p className="text-xs text-emerald-700">ငွေချေ</p><p className="mt-1 text-lg font-bold text-emerald-800">{deletedCustomerLedgerSummary.paidCount} ခု</p><p className="text-xs text-emerald-700">{formatMoney(deletedCustomerLedgerSummary.paidAmount)}</p></div>
-                      <div className="rounded-lg border border-rose-200 bg-rose-50 p-3"><p className="text-xs text-rose-700">အကြွေးတိုး</p><p className="mt-1 text-lg font-bold text-rose-800">{deletedCustomerLedgerSummary.debtCount} ခု</p><p className="text-xs text-rose-700">{formatMoney(deletedCustomerLedgerSummary.debtAmount)}</p></div>
-                      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3"><p className="text-xs text-blue-700">စာရင်းစုစုပေါင်း</p><p className="mt-1 text-lg font-bold text-blue-800">{deletedCustomerLedgers.length} ခု</p></div>
-                      <div className="rounded-lg border border-violet-200 bg-violet-50 p-3"><p className="text-xs text-violet-700">ပြသထားသည့်စာရင်း</p><p className="mt-1 text-lg font-bold text-violet-800">နောက်ဆုံး ၅၀</p></div>
                     </div>
                   </section>
 

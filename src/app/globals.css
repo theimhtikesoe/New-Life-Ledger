@@ -575,13 +575,6 @@ textarea {
   font-weight: 700;
   line-height: 1.7;
 }
-.birthday-song-status {
-  margin-top: 1rem;
-  color: #7c3aed;
-  font-size: 0.78rem;
-  font-weight: 800;
-  line-height: 1.5;
-}
 .birthday-close {
   margin-top: 1.15rem;
   min-height: 2.75rem;
@@ -765,25 +758,10 @@ textarea {
   transform: translateY(0) scale(1);
 }
 
-.pwa-music-control {
-  top: calc(var(--pwa-top-clearance) + 7rem);
-  right: max(
-    calc(env(safe-area-inset-right, 0px) + 0.65rem),
-    calc((100vw - 80rem) / 2 - 3rem)
-  );
-}
 
 @media screen and (min-width: 1024px) and (hover: hover) and (pointer: fine) {
   .pwa-settings-toggle {
     top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
-    right: max(
-      calc(env(safe-area-inset-right, 0px) + 1rem),
-      calc((100vw - 80rem) / 2 + 4.5rem)
-    );
-  }
-
-  .pwa-music-control {
-    top: calc(env(safe-area-inset-top, 0px) + 8rem);
     right: max(
       calc(env(safe-area-inset-right, 0px) + 1rem),
       calc((100vw - 80rem) / 2 + 4.5rem)
@@ -1183,7 +1161,6 @@ textarea {
   }
   .pwa-quick-actions,
   .pwa-settings-toggle,
-  .pwa-music-control,
   .pwa-zoom-controls {
     right: max(
       calc(env(safe-area-inset-right, 0px) + 1rem),
@@ -1281,22 +1258,3 @@ textarea {
   .weather-rain i,
   .weather-leaves i { animation: none; display: none; }
 }
-
-.music-mini-player { line-height: 1; }
-.music-mini-divider { width: 1px; height: 20px; background: #cbd5e1; margin: 0 2px; }
-.music-mini-button {
-  display: inline-flex;
-  height: 32px;
-  min-width: 32px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  color: #475569;
-  font-size: 15px;
-  font-weight: 800;
-  padding: 0 5px;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-.music-mini-button:hover { background: #e2e8f0; color: #0e7490; }
-.music-mini-main { background: #cffafe; color: #0e7490; }
-.music-mini-main:hover { background: #a5f3fc; }

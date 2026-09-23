@@ -17,9 +17,7 @@ model Customer {
   current_balance Int              @default(0)
   settledOutsideLedgerAt DateTime?
   settledOutsideLedgerBy String?
-  kpayAliases     KpayAlias[]
   ledgers         Ledger[]
-  suggestedKpay   UnverifiedKpay[] @relation("KpaySuggestion")
   orders          Order[]
   cashSales       CashSale[]
   outsideSettlements OutsideLedgerSettlement[]
@@ -198,12 +196,6 @@ model OrderBatchRun {
   @@index([status])
 }
 
-model KpayAlias {
-  id         String   @id @default(uuid()) @db.Uuid
-  kpayName   String   @unique
-  customerId String   @db.Uuid
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-}
 
 model Ledger {
   id             String   @id @default(uuid()) @db.Uuid
@@ -278,22 +270,6 @@ model AuditLog {
   @@index([createdAt, entityType])
 }
 
-model AiExplanationCache {
-  id              String   @id @default(uuid()) @db.Uuid
-  reportDate      String
-  dataFingerprint String
-  promptVersion   String   @default("v2")
-  explanation     Json
-  generatedBy     String?
-  provider        String?
-  model           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([reportDate, dataFingerprint, promptVersion])
-  @@index([reportDate])
-  @@index([reportDate, updatedAt])
-}
 
 model AutoReportRun {
   id                    String    @id @default(uuid()) @db.Uuid
@@ -314,19 +290,6 @@ model AutoReportRun {
   @@index([status])
 }
 
-model UnverifiedKpay {
-  id                  String    @id @default(uuid()) @db.Uuid
-  raw_text            String
-  kpayName            String?
-  amount              Int
-  status              String    @default("PENDING")
-  suggestedCustomerId String?   @db.Uuid
-  suggestedCustomer   Customer? @relation("KpaySuggestion", fields: [suggestedCustomerId], references: [id])
-  createdAt           DateTime  @default(now())
-
-  @@index([status])
-  @@index([kpayName])
-}
 
 model DailySalesSummary {
   id                     String    @id @default(uuid()) @db.Uuid
