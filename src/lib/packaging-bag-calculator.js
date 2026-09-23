@@ -36,6 +36,7 @@ export function packagingRuleFor(row) {
   if (is30(type) && capacity === 320) return BAG_RULES[0];
 
   if (type === "1 လီတာ ဖြူ" && capacity === 100) return BAG_RULES[1];
+  if (type.startsWith("1 လီတာ ပြာ") && capacity === 100) return BAG_RULES[1];
   if (type === "1 လီတာ အဝိုင်း" && capacity === 100) return BAG_RULES[1];
   if (type === "အင်ဂျင်ဝိုင်" && capacity === 100) return BAG_RULES[1];
 

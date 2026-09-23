@@ -24,13 +24,14 @@ export default function PackagingBagReportPage() {
   useEffect(() => {
     if (!date) return undefined;
     const controller = new AbortController();
+    let active = true;
     setLoading(true); setError("");
     fetch(`/api/production-reports?date=${encodeURIComponent(date)}&category=bottle`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "ထုတ်လုပ်မှုမှတ်တမ်း ရယူ၍မရပါ။"); return body.data; })
       .then((data) => setRows(Array.isArray(data) ? data : []))
-      .catch((loadError) => { if (loadError.name !== "AbortError") { setRows([]); setError(loadError.message || "ထုတ်လုပ်မှုမှတ်တမ်း ရယူ၍မရပါ။"); } })
-      .finally(() => setLoading(false));
-    return () => controller.abort();
+      .catch((loadError) => { if (active && loadError.name !== "AbortError") { setRows([]); setError(loadError.message || "ထုတ်လုပ်မှုမှတ်တမ်း ရယူ၍မရပါ။"); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; controller.abort(); };
   }, [date]);
 
   const report = useMemo(() => calculatePackagingBags(rows), [rows]);

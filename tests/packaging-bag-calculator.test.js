@@ -6,6 +6,9 @@ describe("packaging bag calculator", () => {
     expect(packagingRuleFor({ bottleType: "0.3 ဖြူ", outputCapacity: 400 })?.bagSize).toBe("38×58");
     expect(calculatePackagingBags([{ bottleType: "0.3 ဖြူ", outputCapacity: 400, outputQuantity: 1 }]).groups[0].cards).toBe(1);
   });
+  it("maps the 1-liter blue S+S 100-card to a 38×40 bag", () => {
+    expect(packagingRuleFor({ bottleType: "1 လီတာ ပြာ (S+S)", outputCapacity: 100 })?.bagSize).toBe("38×40");
+  });
   it("aggregates all mapped cards by bag size", () => {
     const result = calculatePackagingBags([
       { bottleType: "1 လီတာ ဖြူ", outputCapacity: 160, outputQuantity: 2 },
