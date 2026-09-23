@@ -153,66 +153,6 @@ function SettingsToggle({ open, onToggle }) {
   );
 }
 
-function GlobalActionLoadingIndicator() {
-  const [pendingRequests, setPendingRequests] = useState(0);
-  const [recentAction, setRecentAction] = useState(false);
-  const pendingRequestIdsRef = useRef(new Set());
-  const nextRequestIdRef = useRef(0);
-
-  useEffect(() => {
-    const originalFetch = window.fetch.bind(window);
-    let actionTimer;
-    const removePendingRequest = (requestId) => {
-      if (!pendingRequestIdsRef.current.delete(requestId)) return;
-      setPendingRequests(pendingRequestIdsRef.current.size);
-    };
-    const startAction = () => {
-      setRecentAction(true);
-      window.clearTimeout(actionTimer);
-      actionTimer = window.setTimeout(() => setRecentAction(false), 1500);
-    };
-    const handleAction = (event) => {
-      if (event.target?.closest?.('[data-no-global-loading="true"]')) return;
-      startAction();
-    };
-    const trackedFetch = (...args) => {
-      const requestHeaders = args[1]?.headers;
-      const isBackgroundRequest = requestHeaders?.get?.('x-background-request') === 'true'
-        || requestHeaders?.['x-background-request'] === 'true';
-      if (isBackgroundRequest) return originalFetch(...args);
-      const requestId = nextRequestIdRef.current + 1;
-      nextRequestIdRef.current = requestId;
-      pendingRequestIdsRef.current.add(requestId);
-      setPendingRequests(pendingRequestIdsRef.current.size);
-      startAction();
-      const watchdog = window.setTimeout(() => removePendingRequest(requestId), 15000);
-      return originalFetch(...args).finally(() => {
-        window.clearTimeout(watchdog);
-        removePendingRequest(requestId);
-      });
-    };
-
-    window.fetch = trackedFetch;
-    document.addEventListener('click', handleAction, true);
-    document.addEventListener('submit', handleAction, true);
-    return () => {
-      window.fetch = originalFetch;
-      document.removeEventListener('click', handleAction, true);
-      document.removeEventListener('submit', handleAction, true);
-      window.clearTimeout(actionTimer);
-      pendingRequestIdsRef.current.clear();
-    };
-  }, []);
-
-  if (!recentAction && pendingRequests === 0) return null;
-  return (
-    <div className="pointer-events-none fixed left-1/2 top-3 z-[200] flex -translate-x-1/2 items-center gap-2 rounded-full border border-cyan-200 bg-white/95 px-3 py-1.5 text-xs font-bold text-cyan-800 shadow-lg backdrop-blur-sm" role="status" aria-live="polite" aria-label="လုပ်ဆောင်နေသည်">
-      <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-cyan-200 border-t-cyan-700" aria-hidden="true" />
-      <span>လုပ်ဆောင်နေသည်...</span>
-    </div>
-  );
-}
-
 function SaveReviewModal({ review, onCancel, onConfirm }) {
   if (!review) return null;
   return (
@@ -588,7 +528,6 @@ export default function RootLayoutClient({ children }) {
       {showApp && (
         <>
           <RefreshOverlay />
-          <GlobalActionLoadingIndicator />
           <SettingsToggle open={settingsOpen} onToggle={() => setSettingsOpen((current) => !current)} />
           <AppZoomControls appZoom={appZoom} onChange={setAppZoom} settingsOpen={settingsOpen} />
           <div className="neon-app-shell-viewport">

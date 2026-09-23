@@ -374,8 +374,6 @@ export default function Dashboard({ view = "overview" }) {
   const [pendingTransactionConfirmation, setPendingTransactionConfirmation] = useState(null);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [loading, setLoading] = useState(() => !Array.isArray(initialDashboardSnapshot?.customers));
-  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
-  const [loadingStage, setLoadingStage] = useState(() => (Array.isArray(initialDashboardSnapshot?.customers) ? "" : "Dashboard data ရယူနေပါသည်"));
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
   const [loadingCustomerHistory, setLoadingCustomerHistory] = useState(false);
@@ -860,20 +858,16 @@ export default function Dashboard({ view = "overview" }) {
       setKpiDateError("");
       setDashboardKpiLoading(!hasCachedKpi);
       setDashboardKpiError("");
-      setLoadingTimedOut(false);
     setDataLoadError("");
     setMessage("");
     dashboardLoadingWatchdogRef.current = window.setTimeout(() => {
       if (dashboardRequestIdRef.current !== requestId) return;
       dashboardLoadingWatchdogRef.current = null;
       setLoading(false);
-      setLoadingTimedOut(true);
-      setLoadingStage("");
       setDataLoadError("Dashboard data ရယူရန် ကြာနေပါသည်။ ခဏနားပြီး ပြန်လည်ရယူပါမည်။");
     }, DASHBOARD_LOADING_WATCHDOG_MS);
     // Keep one stable loading message in the dashboard chrome. Individual KPI
     // cards keep their dimensions and do not duplicate the global indicator.
-    setLoadingStage("Data ရယူနေပါသည်");
     try {
       // Customer data is the critical path for the Ledger. Do not start the
       // expensive historical KPI/stock rebuild at the same time: production
@@ -929,8 +923,7 @@ export default function Dashboard({ view = "overview" }) {
 
       // Detailed daily values load independently from the slower KPI/stock rebuild.
       setTodaySummaryLoading(true);
-      setLoadingStage("Data ရယူနေပါသည်");
-      if (!isProductionDashboard) void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
+        if (!isProductionDashboard) void api(`/api/daily-summary?date=${encodeURIComponent(selectedKpiDate)}`, { signal, background: true })
         .then((summary) => {
           const phoneByCustomerId = new Map(allCustomersRows.map((customer) => [customer.id, customer.phone]));
           const payments = (summary.transactions || [])
@@ -989,8 +982,6 @@ export default function Dashboard({ view = "overview" }) {
         if (dashboardLoadingWatchdogRef.current) clearTimeout(dashboardLoadingWatchdogRef.current);
         dashboardLoadingWatchdogRef.current = null;
         setLoading(false);
-        setLoadingTimedOut(false);
-        setLoadingStage("");
       }
     }
   }, [clearAutoRetryTimers, hasCachedDashboardForSelectedDate, loadOverdueDebts, search, selectedKpiDate, showAlert]);
@@ -2190,27 +2181,6 @@ export default function Dashboard({ view = "overview" }) {
       {alert?.type === "success" && (
         <AlertNotification message={alert.message} type={alert.type} onClose={hideAlert} />
       )}
-      {(isSubmitting || (loading && !loadingTimedOut && !dashboardKpi && customers.length === 0 && allCustomersForKPI.length === 0)) && (
-        <div
-          className="dashboard-loading-status pointer-events-none fixed left-1/2 top-1/2 z-[120] w-[min(calc(100vw-2rem),320px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-cyan-200/90 bg-gradient-to-br from-white/98 via-cyan-50/95 to-white/98 p-4 text-slate-800 shadow-2xl shadow-cyan-900/20 backdrop-blur sm:w-[min(92vw,360px)]"
-          role="status"
-          aria-live="polite"
-          aria-label={isSubmitting ? "လုပ်ဆောင်နေသည်" : "အချက်အလက်များကို ရယူနေသည်"}
-        >
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-600/10" aria-hidden="true">
-              <span className="h-5 w-5 animate-spin rounded-full border-[3px] border-cyan-200 border-t-cyan-700" />
-            </span>
-            <p className="min-w-0 text-sm font-bold leading-5 text-cyan-900">
-              {isSubmitting ? "လုပ်ဆောင်နေပါသည်" : loadingStage || (isLedgerView ? "Customer data ရယူနေပါသည်" : "Data ရယူနေပါသည်")}
-            </p>
-          </div>
-          <div className="mt-3 h-1 overflow-hidden rounded-full bg-cyan-100">
-            <div className="h-full w-1/3 animate-[pulse_1.4s_ease-in-out_infinite] rounded-full bg-cyan-600" />
-          </div>
-        </div>
-      )}
-
       <div className="dashboard-content-stack mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-6 overflow-x-clip px-3 py-3 sm:gap-6 sm:px-6 sm:py-6 lg:px-8">
         <header className="neon-surface neon-sweep min-w-0 rounded-2xl border border-cyan-200/80 bg-white/90 px-3 py-3 sm:px-5 sm:py-5">
           {isLedgerView ? (
