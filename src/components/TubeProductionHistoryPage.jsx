@@ -31,6 +31,7 @@ export default function TubeProductionHistoryPage() {
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
+    setRows([]);
     setError("");
     fetch(`/api/production-reports?date=${encodeURIComponent(date)}&category=tube`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {

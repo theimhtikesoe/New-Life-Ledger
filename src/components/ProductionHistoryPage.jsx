@@ -30,7 +30,7 @@ function normalizeWorkerNames(value) {
 export default function ProductionHistoryPage() {
   const [date, setDate] = useState("");
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -42,6 +42,7 @@ export default function ProductionHistoryPage() {
     if (!date) return undefined;
     const controller = new AbortController();
     setLoading(true);
+    setRows([]);
     setError("");
     fetch(`/api/production-reports?date=${encodeURIComponent(date)}&category=bottle`, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
