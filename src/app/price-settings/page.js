@@ -195,9 +195,9 @@ export default function PriceSettingsPage() {
           </section>
 
           <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 flex-1"><h3 className="text-lg font-black text-slate-900">2. Item တစ်ခုချင်းစီအလိုက် စျေးပြင်ရန်</h3><p className="mt-1 text-xs leading-5 text-slate-500">Item Override မထည့်ထားလျှင် Category စျေးကို အလိုအလျောက်သုံးပါမယ်။ Customer စျေးကွာလျှင် ငွေရှင်းတမ်းထဲမှာ အဲဒီ transaction အတွက် စျေးကို ပြန်ညှိနိုင်ပါမယ်။</p></div>
-              <ThemedSelect value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)} className="h-11 w-full max-w-full shrink-0 rounded-xl border-2 border-cyan-300 bg-cyan-50 px-3 text-sm font-black text-cyan-950 sm:w-56">{categories.map((category) => <option key={category.key} value={category.key}>{category.label}</option>)}</ThemedSelect>
+            <div className="flex min-w-0 flex-col gap-3">
+              <div className="w-full min-w-0"><h3 className="whitespace-normal text-lg font-black leading-7 text-slate-900">2. Item တစ်ခုချင်းစီအလိုက် စျေးပြင်ရန်</h3><p className="mt-1 text-xs leading-5 text-slate-500">Item Override မထည့်ထားလျှင် Category စျေးကို အလိုအလျောက်သုံးပါမယ်။ Customer စျေးကွာလျှင် ငွေရှင်းတမ်းထဲမှာ အဲဒီ transaction အတွက် စျေးကို ပြန်ညှိနိုင်ပါမယ်။</p></div>
+              <ThemedSelect value={activeCategory} onChange={(event) => setActiveCategory(event.target.value)} className="h-11 w-full max-w-full rounded-xl border-2 border-cyan-300 bg-cyan-50 px-3 text-sm font-black text-cyan-950 sm:w-56">{categories.map((category) => <option key={category.key} value={category.key}>{category.label}</option>)}</ThemedSelect>
             </div>
             {loading ? <p className="py-10 text-center text-sm text-slate-500">Catalog နှင့် စျေးနှုန်းများ ရယူနေသည်...</p> : <div className="mt-4 min-w-0 space-y-3">{visibleItems.map((item) => {
               const categoryPrice = categoryPrices[item.categoryKey];
