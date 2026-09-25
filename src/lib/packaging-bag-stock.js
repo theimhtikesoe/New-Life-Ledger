@@ -38,7 +38,10 @@ export async function loadPackagingBagStock({ date = "", includeMovements = true
     const rule = packagingRuleFor(row);
     const quantity = number(row.outputQuantity);
     if (!rule || quantity <= 0) continue;
-    const pieces = quantity * rule.piecesPerBag;
+    // Factory stock is consumed by output card: one bottle-output card uses one
+    // packaging-bag piece. The rule's piecesPerBag is only for the 100-lb Sala
+    // reference conversion, not for production stock deductions.
+    const pieces = quantity;
     usageMovements.push({
       id: `usage-${row.id}`,
       movementDate: row.reportDate,
@@ -53,7 +56,7 @@ export async function loadPackagingBagStock({ date = "", includeMovements = true
       sourceId: row.id,
       sourceVersion: PACKAGING_BAG_STOCK_VERSION,
       reason: "ဗူးထုတ်လုပ်ပြီး ထုပ်ပိုးရာတွင် အိတ်ခွံလုံး သုံးစွဲ",
-      note: `${row.bottleType || "ဗူး"} ${row.outputCapacity || ""} ဆံ့ · ${rule.piecesPerBag} လုံး/ထုပ်`,
+      note: `${row.bottleType || "ဗူး"} ${row.outputCapacity || ""} ဆံ့ · ဗူးကဒ် ၁ ကဒ် = အိတ်ခွံ ၁ လုံး`,
       actorName: "system",
       derived: true,
     });

@@ -44,12 +44,16 @@ describe("packaging bag calculator", () => {
     expect(packagingSacksFromPieces("31×25", 2550)).toMatchObject({ sacks: 1, remainderPieces: 0 });
   });
 
-  it("renders the packaging page as a 100-pound reference table, not a stock ledger", () => {
+  it("renders the 100-pound reference table together with the stock ledger", () => {
     expect(packagingReferencePage).toContain("SALA_SACK_WEIGHT_LB");
     expect(packagingReferencePage).toContain("BAG_RULES.map");
     expect(packagingReferencePage).toContain("ဆာလာအိတ် ၁ အိတ်");
-    expect(packagingReferencePage).not.toContain("/api/packaging-bag-stock");
-    expect(packagingReferencePage).not.toContain("loadStock");
-    expect(packagingReferencePage).not.toContain("saveStock");
+    expect(packagingReferencePage).toContain("/api/packaging-bag-stock");
+    expect(packagingReferencePage).toContain("loadStock");
+    expect(packagingReferencePage).toContain("saveStock");
+    expect(packagingReferencePage).toContain("Stock တိုး (လုံး)");
+    expect(packagingReferencePage).toContain("သုံးစွဲ (လုံး)");
+    expect(packagingReferencePage).toContain("လက်ကျန် (လုံး)");
+    expect(packagingReferencePage).toContain("card ၁ ကဒ် = အိတ်ခွံ ၁ လုံး");
   });
 });

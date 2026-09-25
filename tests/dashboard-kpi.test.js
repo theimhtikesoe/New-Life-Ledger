@@ -133,6 +133,14 @@ describe("Dashboard KPI aggregate route", () => {
     expect(zwayBranch).not.toContain("စက်ရုံ ကော်စေ့ လက်ကျန်");
   });
 
+  it("uses the same packaging-piece details and balance KPI across dashboard branches", () => {
+    expect(dashboardSource).not.toContain("packagingBagSummary.totalBags.toLocaleString()} အိတ်");
+    expect(dashboardSource).toContain("packagingBagSummary.totalPackagingPieces.toLocaleString()} လုံး");
+    expect(dashboardSource).toContain("packagingBagSummary.totalPackagingWeightLb.toLocaleString()} ပေါင်");
+    expect(dashboardSource).toContain("factoryPackagingBagPieces.toLocaleString()} လုံး");
+    expect(dashboardSource).toContain("ထုပ်ပိုး အိတ်ခွံ လက်ကျန်");
+  });
+
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.dashboardKpiFindUnique.mockResolvedValue(null);
