@@ -45,10 +45,10 @@ export const PERMISSION_PAGES = [
 ];
 
 export function defaultAllowedPaths(actorName) {
-  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", "/glue-stock", "/monthly-tube-production", "/monthly-packaging-bag-report", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   return PERMISSION_PAGES.map((page) => page.path);
 }
 
@@ -57,6 +57,7 @@ export function normalizeAllowedPaths(value, actorName) {
   if (!allowed.includes("/packaging-bag-stock")) allowed.push("/packaging-bag-stock");
   if (!allowed.includes("/monthly-packaging-bag-report")) allowed.push("/monthly-packaging-bag-report");
   if (!allowed.includes("/glue-stock")) allowed.push("/glue-stock");
+  if (!allowed.includes("/tube-stock")) allowed.push("/tube-stock");
   // Keep the bottle-sales reports reachable for the parent/manager account even
   // when its stored permission row predates these pages.
   if (actorName === "ဖေဖေ/မေမေ") {

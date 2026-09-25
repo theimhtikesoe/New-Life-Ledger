@@ -16,6 +16,8 @@ const PUBLIC_API_PATHS = new Set([
 const PRODUCTION_API_PATHS = new Set([
   "/api/production-reports",
   "/api/production-workers",
+  "/api/glue-stock",
+  "/api/packaging-bag-stock",
 ]);
 const PRODUCTION_DASHBOARD_READ_PATHS = new Set([
   "/api/dashboard-kpi",
@@ -25,6 +27,7 @@ const PRODUCTION_DASHBOARD_READ_PATHS = new Set([
   "/api/production-reports",
   "/api/factory-stock",
   "/api/tube-stock",
+  "/api/monthly-packaging-bag-report",
 ]);
 const PRODUCTION_ONLY_ACTORS = new Set(["ဇွဲဇွဲ", "ဖြိုးကို"]);
 const LEDGER_ONLY_ACTOR = "ဆောင်းဦး";

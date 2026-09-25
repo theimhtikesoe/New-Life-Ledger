@@ -47,6 +47,7 @@ export async function PATCH(request) {
     const updated = glueStockAddition({ date: body.date || existing.movementDate, kg: body.kg, bags: body.bags, note: body.note, actorName: getActorName(request) });
     await prisma.factoryStockMovement.update({ where: { id }, data: { movementDate: updated.movementDate, quantityBottles: updated.quantityBottles, quantityCards: updated.quantityCards, note: updated.note, actorName: updated.actorName } });
     await writeAuditLog({ db: prisma, actorName: getActorName(request), action: "GLUE_STOCK_UPDATE", entityType: "FactoryStockMovement", entityId: id, entityLabel: "စက်ရုံ ကော်စေ့ လက်ကျန်", summary: "ကော်စေ့ Stock မှတ်တမ်း ပြင်ဆင်", metadata: { kg: updated.quantityBottles, bags: updated.quantityCards } });
+    await prisma.dashboardKpiSnapshot.deleteMany({ where: { date: { in: [existing.movementDate, updated.movementDate] } } });
     invalidateFactoryStockCache();
     return NextResponse.json({ data: { id, updated: true } });
   } catch (error) {
@@ -63,6 +64,7 @@ export async function DELETE(request) {
     if (!existing) return NextResponse.json({ error: "Manual ကော်စေ့ Stock မှတ်တမ်း မတွေ့ပါ။" }, { status: 404 });
     await prisma.factoryStockMovement.delete({ where: { id } });
     await writeAuditLog({ db: prisma, actorName: getActorName(request), action: "GLUE_STOCK_DELETE", entityType: "FactoryStockMovement", entityId: id, entityLabel: "စက်ရုံ ကော်စေ့ လက်ကျန်", summary: "ကော်စေ့ Stock မှတ်တမ်း ဖျက်", metadata: { kg: existing.quantityBottles, bags: existing.quantityCards } });
+    await prisma.dashboardKpiSnapshot.deleteMany({ where: { date: existing.movementDate } });
     invalidateFactoryStockCache();
     return NextResponse.json({ data: { id, deleted: true } });
   } catch (error) {

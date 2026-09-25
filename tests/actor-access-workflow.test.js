@@ -138,5 +138,9 @@ describe("Actor access workflow", () => {
 
   it("keeps the Glue Stock page available to every configured user", () => {
     expect(permissionsSource).toContain('if (!allowed.includes("/glue-stock")) allowed.push("/glue-stock");');
+    expect(permissionsSource).toContain('if (!allowed.includes("/tube-stock")) allowed.push("/tube-stock");');
+    expect(middlewareSource).toContain('"/api/glue-stock"');
+    expect(middlewareSource).toContain('"/api/packaging-bag-stock"');
+    expect(middlewareSource).toContain('"/api/monthly-packaging-bag-report"');
   });
 });
