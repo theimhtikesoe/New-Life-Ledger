@@ -45,6 +45,10 @@ function isGlueItem(itemOrRow) {
   return itemOrRow?.productType === "glue-seed" || itemOrRow?.categoryKey === "GLUE";
 }
 
+function isBottleItem(itemOrRow) {
+  return itemOrRow?.productType === "bottle";
+}
+
 function hasAnyPrice(row) {
   return Number(row?.pricePerBottle || 0) > 0
     || Number(row?.pricePerPack || 0) > 0
@@ -146,7 +150,7 @@ export async function GET(request) {
       const effective = itemPrice || categoryPrice || null;
       return {
         ...item,
-        tubeType: serializeTubeTypes(itemPriceRow?.tubeType || DEFAULT_TUBE_MAPPINGS[item.productKey] || ""),
+        tubeType: isBottleItem(item) ? serializeTubeTypes(itemPriceRow?.tubeType || DEFAULT_TUBE_MAPPINGS[item.productKey] || "") : "",
         effectivePrice: effective
           ? { ...effective, source: itemPrice ? (itemPriceRow === latestItemRow ? "LATEST_ITEM" : "ITEM") : (categoryPrice === latestCategoryRow ? "LATEST_CATEGORY" : "CATEGORY") }
           : (item.defaultPrice !== undefined ? { pricePerBottle: item.defaultPrice, pricePerCard: item.defaultPrice, source: "DEFAULT" } : null),
@@ -236,7 +240,7 @@ export async function POST(request) {
     }
 
     for (const item of catalog) {
-      if (item.productType === "cap" || itemPrices[item.productKey] !== undefined) continue;
+      if (item.productType !== "bottle" || itemPrices[item.productKey] !== undefined) continue;
       const legacyDefault = item.productKey.startsWith("30 ကျပ်သား အပြာ::") ? DEFAULT_TUBE_MAPPINGS[item.productKey] : "";
       const tubeType = serializeTubeTypes(tubeMappings[item.productKey] || legacyDefault);
       if (!tubeType) continue;

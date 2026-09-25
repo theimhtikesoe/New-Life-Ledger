@@ -44,6 +44,15 @@ describe("POST /api/price-settings", () => {
     expect(priceRouteSource).toContain("const effective = itemPrice || categoryPrice || null");
   });
 
+  it("shows Tube mapping only for bottle-shell items and keeps item cards within mobile width", () => {
+    expect(pricePageSource).toContain('function isBottleItem(itemOrKey)');
+    expect(pricePageSource).toContain('{isBottleItem(item) ? <fieldset');
+    expect(pricePageSource).toContain('className="min-w-0 overflow-hidden rounded-2xl');
+    expect(pricePageSource).toContain('className="mt-4 min-w-0 space-y-3"');
+    expect(priceRouteSource).toContain('isBottleItem(item) ? serializeTubeTypes');
+    expect(priceRouteSource).toContain('if (item.productType !== "bottle" || itemPrices[item.productKey] !== undefined) continue;');
+  });
+
   it("saves category and item costs with only PriceSetting schema fields", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.upsert.mockResolvedValue({});
