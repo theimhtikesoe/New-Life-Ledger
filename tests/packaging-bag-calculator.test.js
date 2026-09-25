@@ -57,3 +57,14 @@ describe("packaging bag calculator", () => {
     expect(packagingReferencePage).not.toContain("တစ်ထုပ်အလေးချိန်");
   });
 });
+
+
+describe("monthly packaging bag report wording", () => {
+  it("uses သုံး for packaging-bag quantity table headings and labels", () => {
+    const page = fs.readFileSync(new URL("../src/components/MonthlyPackagingBagReportPage.jsx", import.meta.url), "utf8");
+    expect(page).toContain("သုံးစုစုပေါင်း");
+    expect(page).toContain('text-right font-black">သုံး</th>');
+    expect(page).not.toContain("လုံးစုစုပေါင်း");
+    expect(page).not.toContain('text-right font-black">လုံး</th>');
+  });
+});
