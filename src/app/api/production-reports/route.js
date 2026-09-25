@@ -9,6 +9,12 @@ import { invalidateFactoryStockCache, loadTubeMappings, productionMovementRows, 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+async function invalidateDashboardKpiDates(dates = []) {
+  const uniqueDates = [...new Set(dates.map((date) => String(date || "").trim()).filter(Boolean))];
+  if (!uniqueDates.length || typeof prisma.dashboardKpiSnapshot?.deleteMany !== "function") return;
+  await prisma.dashboardKpiSnapshot.deleteMany({ where: { date: { in: uniqueDates } } });
+}
+
 function parseDate(value, { allowFuture = false } = {}) {
   const date = String(value || getMyanmarDateInputValue()).trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("ရက်စွဲပုံစံ မမှန်ပါ။");
@@ -158,6 +164,7 @@ export async function POST(request) {
       metadata: { submissionId, reportDate, machineCode: machine.code, category: requestedCategory, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers },
     });
     invalidateFactoryStockCache();
+    await invalidateDashboardKpiDates([reportDate]);
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: created.count, totalPieces, wasteQuantity } }, { status: 201 });
   } catch (error) {
     console.error("Production report write failed", error);
@@ -215,6 +222,7 @@ export async function PATCH(request) {
     const totalPieces = rows.reduce((sum, row) => sum + row.outputQuantity * Number(row.outputCapacity), 0);
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_UPDATE", entityType: "ProductionReport", entityId: submissionId, entityLabel: `${machine.code} ${reportDate}`, summary: `${machine.code} ထုတ်လုပ်မှုမှတ်တမ်း ပြင်ဆင် (${totalPieces.toLocaleString()} ဗူး)`, metadata: { submissionId, reportDate, machineCode: machine.code, lineCount: rows.length, totalPieces, wasteQuantity, tubeDamageQuantity, tubeQuantity, involvedWorkers } });
     invalidateFactoryStockCache();
+    await invalidateDashboardKpiDates([existing.reportDate, reportDate]);
     return NextResponse.json({ data: { submissionId, reportDate, machineCode: machine.code, lineCount: result.count, totalPieces, wasteQuantity } });
   } catch (error) {
     console.error("Production report update failed", error);
@@ -239,6 +247,7 @@ export async function DELETE(request) {
     if (!result.count) throw new Error("ဖျက်မည့် report မတွေ့ပါ။");
     await writeAuditLog({ actorName, action: "PRODUCTION_REPORT_DELETE", entityType: "ProductionReport", entityId: submissionId, entityLabel: submissionId, summary: "ထုတ်လုပ်မှုမှတ်တမ်း ဖျက်လိုက်သည်", metadata: { submissionId, deletedRows: result.count } });
     invalidateFactoryStockCache();
+    await invalidateDashboardKpiDates(existingRows.map((row) => row.reportDate));
     return NextResponse.json({ data: { submissionId, deletedRows: result.count } });
   } catch (error) {
     console.error("Production report delete failed", error);

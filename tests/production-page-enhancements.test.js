@@ -29,6 +29,13 @@ describe("Production page enhancements", () => {
     expect(databaseSource).toContain('ADD COLUMN IF NOT EXISTS "tubeQuantityUnit" TEXT NOT NULL DEFAULT \'အိတ်\'');
   });
 
+  it("invalidates the selected Dashboard KPI dates after production changes", () => {
+    expect(routeSource).toContain("async function invalidateDashboardKpiDates(dates = [])");
+    expect(routeSource).toContain("await invalidateDashboardKpiDates([reportDate])");
+    expect(routeSource).toContain("await invalidateDashboardKpiDates([existing.reportDate, reportDate])");
+    expect(routeSource).toContain("await invalidateDashboardKpiDates(existingRows.map((row) => row.reportDate))");
+  });
+
   it("makes Ledger cap color selection location-aware", () => {
     expect(salesItemPickerSource).toContain('const capLocations = ["မန္တလေး", "အေးသာယာ", "Soe", "အခြား", "အဖုံးမပါ"]');
     expect(salesItemPickerSource).toContain("const capSummary = !isCap && !isTube ?");
