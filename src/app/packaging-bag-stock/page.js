@@ -1,121 +1,54 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { BAG_RULES, packagingPiecesFromSacks } from "@/lib/packaging-bag-calculator";
-import { encodeActorHeader } from "@/lib/actor-header";
+import { BAG_RULES, SALA_SACK_WEIGHT_LB } from "@/lib/packaging-bag-calculator";
 
-function todayMyanmar() {
-  const now = new Date(Date.now() + (6 * 60 + 30) * 60 * 1000);
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
-}
-function formatNumber(value) { return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }); }
-function shiftDate(value, delta) { const date = new Date(`${value}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + delta); return date.toISOString().slice(0, 10); }
-function actorHeaders(headers = {}) { const actorName = typeof window !== "undefined" ? window.localStorage.getItem("actorName") || "" : ""; return { ...headers, "x-actor-name": encodeActorHeader(actorName) }; }
-function movementLabel(movement) { return movement.movementType === "PRODUCTION_USE_OUT" ? "သုံးစွဲ" : "အသစ်ဝင်"; }
-function compactMovements(movements = [], { dateOnly = "" } = {}) {
-  const grouped = new Map();
-  movements.filter((movement) => !dateOnly || movement.movementDate === dateOnly).forEach((movement) => {
-    const quantity = Number(movement.quantityBottles || movement.quantityCards || 0);
-    const key = `${movement.movementDate}|${movement.productKey}|${movement.movementType}`;
-    const current = grouped.get(key) || { key, date: movement.movementDate, productName: movement.productName, type: movementLabel(movement), quantity: 0, note: movement.note || "" };
-    current.quantity += quantity;
-    if (!current.note && movement.note) current.note = movement.note;
-    grouped.set(key, current);
-  });
-  return [...grouped.values()].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.productName).localeCompare(String(b.productName), "my"));
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
 export default function PackagingBagStockPage() {
-  const [date, setDate] = useState("");
-  const [data, setData] = useState(null);
-  const [form, setForm] = useState({ bagSize: BAG_RULES[0].bagSize, sacks: "", extraPieces: "", note: "" });
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [editingMovement, setEditingMovement] = useState(null);
-  const [editForm, setEditForm] = useState({ bagSize: BAG_RULES[0].bagSize, pieces: "", date: "", note: "" });
+  return (
+    <main className="app-page-main">
+      <div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
+        <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
+          <p className="text-sm font-bold text-cyan-700">ထုပ်ပိုးအိတ်ခွံ လုံးရေတွက်ချက်ရန်</p>
+          <h2 className="mt-1 text-xl font-black text-slate-900">ဆာလာအိတ် {formatNumber(SALA_SACK_WEIGHT_LB)} ပေါင် အခြေခံတွက်ချက်မှု</h2>
+          <p className="mt-2 text-sm font-bold leading-6 text-slate-600">
+            ဤစာမျက်နှာသည် လက်ရှိစက်ရုံ Stock အဝင်၊ သုံးစွဲမှု၊ လက်ကျန်စာရင်း မဟုတ်ပါ။ အရွယ်အစားတစ်မျိုးလျှင် ဆာလာအိတ်တစ်အိတ် ({formatNumber(SALA_SACK_WEIGHT_LB)} ပေါင်) မှာ ထုပ်နှင့် လုံး ဘယ်လောက်ရနိုင်သည်ကို တွက်ချက်ပြသသော reference table ဖြစ်ပါသည်။
+          </p>
+        </section>
 
-  useEffect(() => { const queryDate = new URLSearchParams(window.location.search).get("date"); setDate(/^\d{4}-\d{2}-\d{2}$/.test(queryDate || "") ? queryDate : todayMyanmar()); }, []);
-  const loadStock = useCallback(async () => {
-    if (!date) return;
-    setLoading(true); setError("");
-    try {
-      const response = await fetch(`/api/packaging-bag-stock?date=${encodeURIComponent(date)}`, { cache: "no-store" });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "အိတ်ခွံလက်ကျန် ရယူ၍မရပါ။");
-      setData(body.data);
-    } catch (loadError) { setError(loadError.message || "အိတ်ခွံလက်ကျန် ရယူ၍မရပါ။"); } finally { setLoading(false); }
-  }, [date]);
-  useEffect(() => { loadStock(); }, [loadStock]);
-
-  const summary = data?.summary || [];
-  const dailyUsed = useMemo(() => compactMovements(data?.dailyUsed || [], { dateOnly: date }), [data, date]);
-  const dailyAdded = useMemo(() => compactMovements(data?.dailyAdded || [], { dateOnly: date }), [data, date]);
-  const dailyUsedTotal = dailyUsed.reduce((sum, row) => sum + Math.abs(row.quantity), 0);
-  const dailyAddedTotal = dailyAdded.reduce((sum, row) => sum + Math.max(0, row.quantity), 0);
-  const sackPreview = useMemo(() => packagingPiecesFromSacks(form.bagSize, form.sacks), [form.bagSize, form.sacks]);
-
-  async function saveStock(event) {
-    event.preventDefault(); setSaving(true); setError(""); setMessage("");
-    try {
-      const response = await fetch("/api/packaging-bag-stock", { method: "POST", headers: actorHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ ...form, date }) });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "အိတ်ခွံ Stock ထည့်၍မရပါ။");
-      setMessage("အိတ်ခွံလုံး Stock ထည့်သိမ်းပြီးပါပြီ။"); setForm({ ...form, sacks: "", extraPieces: "", note: "" }); await loadStock();
-    } catch (saveError) { setError(saveError.message || "အိတ်ခွံ Stock ထည့်၍မရပါ။"); } finally { setSaving(false); }
-  }
-
-  function beginEdit(movement) {
-    setEditingMovement(movement);
-    setEditForm({ bagSize: String(movement.productKey || "").replace(/^BAG::/, "") || BAG_RULES[0].bagSize, pieces: String(Math.abs(Number(movement.quantityBottles || movement.quantityCards || 0))), date: movement.movementDate || date, note: movement.note || "" });
-    setError(""); setMessage("");
-  }
-
-  async function updateStock(event) {
-    event.preventDefault(); setSaving(true); setError(""); setMessage("");
-    try {
-      const response = await fetch("/api/packaging-bag-stock", { method: "PATCH", headers: actorHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ id: editingMovement.id, ...editForm }) });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "အိတ်ခွံ Stock ပြင်၍မရပါ။");
-      setEditingMovement(null); setMessage("အိတ်ခွံ Stock မှတ်တမ်း ပြင်ပြီးပါပြီ။"); await loadStock();
-    } catch (updateError) { setError(updateError.message || "အိတ်ခွံ Stock ပြင်၍မရပါ။"); } finally { setSaving(false); }
-  }
-
-  async function deleteStock(movement) {
-    if (!window.confirm(`${movement.productName} ${formatNumber(Math.abs(Number(movement.quantityBottles || movement.quantityCards || 0)))} လုံးကို ဖျက်မလား?`)) return;
-    setSaving(true); setError(""); setMessage("");
-    try {
-      const response = await fetch(`/api/packaging-bag-stock?id=${encodeURIComponent(movement.id)}`, { method: "DELETE", headers: actorHeaders() });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "အိတ်ခွံ Stock ဖျက်၍မရပါ။");
-      setMessage("အိတ်ခွံ Stock မှတ်တမ်း ဖျက်ပြီးပါပြီ။"); await loadStock();
-    } catch (deleteError) { setError(deleteError.message || "အိတ်ခွံ Stock ဖျက်၍မရပါ။"); } finally { setSaving(false); }
-  }
-
-  return <main className="app-page-main"><div className="app-page-container app-page-surface space-y-4 pt-5 sm:pt-6">
-    <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-sm font-bold text-cyan-700">ထုပ်ပိုးအိတ်ခွံလုံး အဝင်၊ သုံးစွဲမှုနှင့် လက်ကျန်</p><p className="mt-1 text-xs font-bold text-slate-500">တစ်ထုပ်ထဲပါသော လုံးရေကို မြှောက်ပြီး လုံးအဖြစ် ပြသထားပါသည်။</p></div><div className="grid grid-cols-3 gap-2 text-right"><div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2"><p className="text-[11px] font-bold text-cyan-700">လက်ကျန်</p><p className="text-lg font-black text-cyan-950">{loading ? "..." : `${formatNumber(data?.totalCurrentPieces)} လုံး`}</p></div><div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2"><p className="text-[11px] font-bold text-rose-700">ယနေ့သုံး</p><p className="text-lg font-black text-rose-950">{loading ? "..." : `${formatNumber(dailyUsedTotal)} လုံး`}</p></div><div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2"><p className="text-[11px] font-bold text-emerald-700">ယနေ့ဝင်</p><p className="text-lg font-black text-emerald-950">{loading ? "..." : `${formatNumber(dailyAddedTotal)} လုံး`}</p></div></div></div>
-      <div className="mt-3 flex flex-wrap items-end gap-2"><label className="text-sm font-black text-cyan-900">Usage Date<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 block min-h-10 rounded-lg border-2 border-cyan-200 bg-cyan-50 px-3 py-2 font-bold text-cyan-900" /></label>{[-1, 0, 1].map((delta) => { const value = shiftDate(todayMyanmar(), delta); const label = delta === -1 ? "မနေ့" : delta === 0 ? "ဒီနေ့" : "မနက်ဖြန်"; return <button key={label} type="button" onClick={() => setDate(value)} className={`rounded-lg border px-3 py-2 text-sm font-black ${date === value ? "border-cyan-600 bg-cyan-600 text-white" : "border-cyan-200 bg-cyan-50 text-cyan-800"}`}>{label}</button>; })}</div>
-    </section>
-
-    <section className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm sm:p-5"><h2 className="text-base font-black text-violet-900">အိတ်ခွံလုံး အသစ်ဝင် Stock ထည့်ရန်</h2><p className="mt-1 text-xs font-bold text-slate-500">ဆာလာအိတ် ၁ အိတ် = ၁၀၀ ပေါင်ဟု သတ်မှတ်ပြီး အရွယ်အစားအလိုက် ထုပ်နှင့် လုံးရေကို အလိုအလျောက်တွက်ပါမည်။</p><form onSubmit={saveStock} className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-6"><label className="text-xs font-bold text-slate-700">Stock ဝင်ရက်<input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-violet-200 px-2 text-sm font-bold" /></label><label className="text-xs font-bold text-slate-700 lg:col-span-2">အိတ်ခွံအရွယ်အစား<select value={form.bagSize} onChange={(event) => setForm({ ...form, bagSize: event.target.value })} className="mt-1 h-10 w-full rounded-lg border border-violet-200 bg-white px-2 text-sm font-bold">{BAG_RULES.map((rule) => <option key={rule.bagSize} value={rule.bagSize}>{rule.bagSize} · {rule.piecesPerBag} လုံး/ထုပ် · {rule.weightLb} ပေါင်/ထုပ်</option>)}</select></label><label className="text-xs font-bold text-slate-700">ဆာလာအိတ် အရေအတွက်<input type="number" min="0" step="1" value={form.sacks} onChange={(event) => setForm({ ...form, sacks: event.target.value })} className="mt-1 h-10 w-full rounded-lg border border-violet-200 px-2 text-center text-sm font-black" placeholder="ဥပမာ 1" /></label><label className="text-xs font-bold text-slate-700">အပိုလုံး (ရှိလျှင်)<input type="number" min="0" step="1" value={form.extraPieces} onChange={(event) => setForm({ ...form, extraPieces: event.target.value })} className="mt-1 h-10 w-full rounded-lg border border-violet-200 px-2 text-center text-sm font-black" placeholder="0" /></label><label className="text-xs font-bold text-slate-700">မှတ်ချက်<input value={form.note} onChange={(event) => setForm({ ...form, note: event.target.value })} className="mt-1 h-10 w-full rounded-lg border border-violet-200 px-2 text-sm" placeholder="အသစ်ရောက် / လက်ရှိစာရင်း" /></label><div className="flex items-end gap-2 lg:col-span-6"><div className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-black text-violet-900">တွက်ချက်ရလဒ်: {formatNumber(sackPreview.packs)} ထုပ် · {formatNumber(sackPreview.pieces + Number(form.extraPieces || 0))} လုံး · {formatNumber(sackPreview.weightLb)} ပေါင်</div><button disabled={saving || (!sackPreview.pieces && !Number(form.extraPieces || 0))} className="h-10 rounded-lg bg-violet-700 px-4 text-sm font-black text-white disabled:opacity-50">{saving ? "သိမ်းနေသည်..." : "Stock ထည့်သိမ်းမည်"}</button></div></form>{message ? <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{message}</p> : null}</section>
-    {error ? <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 font-bold text-rose-700">{error}</div> : null}
-
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-cyan-100 bg-cyan-50 px-4 py-3"><h2 className="font-black text-cyan-950">အိတ်ခွံအရွယ်အစားအလိုက် စုစုပေါင်းလုံးရေ</h2><span className="text-xs font-bold text-cyan-700">အဝင် − သုံးစွဲ = လက်ကျန်</span></div><div className="overflow-x-auto"><table className="min-w-full text-sm"><thead className="text-left text-xs font-black text-slate-600"><tr><th className="px-4 py-2">အိတ်ခွံအရွယ်</th><th className="px-4 py-2 text-right">တစ်ထုပ်အလေးချိန်</th><th className="px-4 py-2 text-right">၁၀၀ ပေါင်တွင် ထုပ်</th><th className="px-4 py-2 text-right">၁၀၀ ပေါင်တွင် လုံး</th><th className="px-4 py-2 text-right">အသစ်ဝင်လုံး</th><th className="px-4 py-2 text-right">သုံးစွဲလုံး</th><th className="px-4 py-2 text-right">လက်ကျန်</th></tr></thead><tbody className="divide-y divide-slate-100">{loading ? <tr><td colSpan="8" className="px-4 py-6 text-center font-bold text-slate-500">ရယူနေသည်...</td></tr> : summary.map((item) => <tr key={item.bagSize}><td className="px-4 py-2 font-black text-slate-900">{item.bagSize}</td><td className="px-4 py-2 text-right font-bold text-slate-600">{formatNumber(item.piecesPerBag)} လုံး</td><td className="px-4 py-2 text-right font-bold text-slate-600">{formatNumber(item.weightLb)} ပေါင်</td><td className="px-4 py-2 text-right font-bold text-violet-700">{formatNumber(item.packsPerSack)}</td><td className="px-4 py-2 text-right font-bold text-violet-700">{formatNumber(item.piecesPerSack)}</td><td className="px-4 py-2 text-right font-bold text-emerald-700">+{formatNumber(item.addedPieces)}</td><td className="px-4 py-2 text-right font-bold text-rose-700">-{formatNumber(item.usedPieces)}</td><td className={`px-4 py-2 text-right font-black ${item.systemCurrentPieces < 0 ? "text-rose-700" : "text-cyan-900"}`}>{formatNumber(item.sacks)} ဆာလာအိတ် + {formatNumber(item.remainderPieces)} လုံး</td></tr>)}</tbody></table></div></section>
-
-    <div className="grid gap-3 lg:grid-cols-2"><CompactMovementCard title={`ယနေ့ အိတ်ခွံလုံး သုံးစွဲမှု · ${date}`} rows={dailyUsed} empty="ဒီနေ့ သုံးစွဲမှု မရှိသေးပါ။" tone="rose" /><EditableMovementCard title={`ယနေ့ အသစ်ဝင် လုံး Stock · ${date}`} rows={data?.dailyAdded || []} empty="ဒီနေ့ အသစ်ဝင် Stock မရှိသေးပါ။" onEdit={beginEdit} onDelete={deleteStock} saving={saving} /></div>
-
-    {editingMovement ? <div className="fixed inset-0 z-[170] flex items-end justify-center bg-slate-950/60 p-4 backdrop-blur-sm sm:items-center"><section role="dialog" aria-modal="true" aria-labelledby="edit-packaging-bag-title" className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-2xl sm:p-5"><div className="flex items-start justify-between gap-3"><div><h2 id="edit-packaging-bag-title" className="text-lg font-black text-slate-900">အိတ်ခွံလုံး Stock မှတ်တမ်း ပြင်ရန်</h2><p className="mt-1 text-xs font-bold text-slate-500">Manual Stock ထည့်မှတ်တမ်းကိုသာ ပြင်နိုင်ပါသည်။</p></div><button type="button" onClick={() => setEditingMovement(null)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-bold">ပိတ်</button></div><form onSubmit={updateStock} className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-bold">ရက်စွဲ<input type="date" required value={editForm.date} onChange={(event) => setEditForm({ ...editForm, date: event.target.value })} className="mt-1 h-10 w-full rounded-lg border px-2" /></label><label className="text-xs font-bold">အိတ်ခွံအရွယ်အစား<select value={editForm.bagSize} onChange={(event) => setEditForm({ ...editForm, bagSize: event.target.value })} className="mt-1 h-10 w-full rounded-lg border bg-white px-2">{BAG_RULES.map((rule) => <option key={rule.bagSize} value={rule.bagSize}>{rule.bagSize} · {rule.piecesPerBag} လုံး · {rule.weightLb} ပေါင်</option>)}</select></label><label className="text-xs font-bold">လုံးအရေအတွက်<input type="number" min="1" step="1" required value={editForm.pieces} onChange={(event) => setEditForm({ ...editForm, pieces: event.target.value })} className="mt-1 h-10 w-full rounded-lg border px-2" /></label><label className="text-xs font-bold">မှတ်ချက်<input value={editForm.note} onChange={(event) => setEditForm({ ...editForm, note: event.target.value })} className="mt-1 h-10 w-full rounded-lg border px-2" /></label><div className="flex gap-2 sm:col-span-2"><button type="button" onClick={() => setEditingMovement(null)} className="flex-1 rounded-lg border py-2 font-bold">မလုပ်တော့ပါ</button><button disabled={saving} className="flex-1 rounded-lg bg-violet-700 px-4 py-2 font-black text-white">{saving ? "သိမ်းနေသည်..." : "ပြင်ပြီးသိမ်းမည်"}</button></div></form></section></div> : null}
-  </div></main>;
-}
-
-function CompactMovementCard({ title, rows, empty, tone }) {
-  const styles = tone === "rose" ? { border: "border-rose-200", bg: "bg-rose-50", title: "text-rose-900", value: "text-rose-700" } : { border: "border-emerald-200", bg: "bg-emerald-50", title: "text-emerald-900", value: "text-emerald-700" };
-  return <section className={`rounded-2xl border ${styles.border} bg-white p-4 shadow-sm`}><div className="flex items-center justify-between gap-2"><h2 className={`font-black ${styles.title}`}>{title}</h2><span className={`rounded-full ${styles.bg} px-2 py-1 text-xs font-black ${styles.value}`}>{formatNumber(rows.reduce((sum, row) => sum + Math.abs(row.quantity), 0))} လုံး</span></div>{rows.length ? <div className="mt-2 overflow-x-auto"><table className="min-w-full text-sm"><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.key}><td className="py-2 font-bold text-slate-800">{row.productName}</td><td className={`py-2 text-right font-black ${styles.value}`}>{row.quantity < 0 ? "−" : "+"}{formatNumber(Math.abs(row.quantity))} လုံး</td></tr>)}</tbody></table></div> : <p className="py-4 text-center text-sm font-bold text-slate-500">{empty}</p>}</section>;
-}
-
-function EditableMovementCard({ title, rows, empty, onEdit, onDelete, saving }) {
-  const styles = { border: "border-emerald-200", bg: "bg-emerald-50", title: "text-emerald-900", value: "text-emerald-700" };
-  return <section className={`rounded-2xl border ${styles.border} bg-white p-4 shadow-sm`}><div className="flex items-center justify-between gap-2"><h2 className={`font-black ${styles.title}`}>{title}</h2><span className={`rounded-full ${styles.bg} px-2 py-1 text-xs font-black ${styles.value}`}>{formatNumber(rows.reduce((sum, row) => sum + Math.max(0, Number(row.quantityBottles || row.quantityCards || 0)), 0))} လုံး</span></div>{rows.length ? <div className="mt-2 space-y-2">{rows.map((row, index) => { const quantity = Number(row.quantityBottles || row.quantityCards || 0); return <div key={`${row.id || row.sourceId || row.productKey}-${index}`} className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3"><div className="flex items-start justify-between gap-3"><div><p className="font-bold text-slate-800">{row.productName}</p><p className="text-xs text-slate-500">{row.movementDate}{row.note ? ` · ${row.note}` : ""}</p></div><p className={`font-black ${styles.value}`}>+{formatNumber(quantity)} လုံး</p></div><div className="mt-2 flex justify-end gap-2 border-t border-emerald-100 pt-2"><button type="button" onClick={() => onEdit(row)} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700">ပြင်ရန်</button><button type="button" disabled={saving} onClick={() => onDelete(row)} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-700 disabled:opacity-50">ဖျက်ရန်</button></div></div>; })}</div> : <p className="py-4 text-center text-sm font-bold text-slate-500">{empty}</p>}</section>;
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-cyan-100 bg-cyan-50 px-4 py-3">
+            <h2 className="font-black text-cyan-950">အရွယ်အစားအလိုက် ဆာလာအိတ် ၁ အိတ် တွက်ချက်မှု</h2>
+            <p className="mt-1 text-xs font-bold text-cyan-700">ထုပ်အရေအတွက် = 100 ÷ တစ်ထုပ်အလေးချိန် · လုံးရေ = ထုပ်အရေအတွက် × တစ်ထုပ်ပါလုံး</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-100 text-left text-xs font-black text-slate-700">
+                <tr>
+                  <th className="px-4 py-3">အရွယ်အစား</th>
+                  <th className="px-4 py-3 text-right">တစ်ထုပ်ပါ လုံး</th>
+                  <th className="px-4 py-3 text-right">တစ်ထုပ်အလေးချိန်</th>
+                  <th className="px-4 py-3 text-right">100 ပေါင်တွင် ထုပ်</th>
+                  <th className="px-4 py-3 text-right">စုစုပေါင်းလုံး</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {BAG_RULES.map((rule) => (
+                  <tr key={rule.bagSize} className="hover:bg-cyan-50/50">
+                    <td className="px-4 py-3 font-black text-slate-900">{rule.label}</td>
+                    <td className="px-4 py-3 text-right font-bold text-slate-700">{formatNumber(rule.piecesPerBag)}</td>
+                    <td className="px-4 py-3 text-right font-bold text-slate-700">{formatNumber(rule.weightLb)} ပေါင်</td>
+                    <td className="px-4 py-3 text-right font-black text-violet-700">{formatNumber(rule.packsPerSack)}</td>
+                    <td className="px-4 py-3 text-right text-lg font-black text-cyan-800">{formatNumber(rule.piecesPerSack)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
 }

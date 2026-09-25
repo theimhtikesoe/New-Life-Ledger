@@ -6,11 +6,11 @@ import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { aggregateStockMovements, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
 import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
-import { loadPackagingBagStock } from "@/lib/packaging-bag-stock";
 import { loadGlueStock } from "@/lib/glue-stock";
 
 export const dynamic = "force-dynamic";
 const DASHBOARD_KPI_CACHE_TTL_MS = 30_000;
+const DASHBOARD_KPI_PAYLOAD_VERSION = 2;
 
 export async function GET(request) {
   try {
@@ -21,7 +21,7 @@ export async function GET(request) {
     const { start, end } = getMyanmarDayRange(dateParam);
     if (!forceRefresh) {
       const cached = await prisma.dashboardKpiSnapshot.findUnique({ where: { date: dateParam } });
-      if (cached && Date.now() - new Date(cached.generatedAt).getTime() < DASHBOARD_KPI_CACHE_TTL_MS) {
+      if (cached && cached.payload?.kpiVersion === DASHBOARD_KPI_PAYLOAD_VERSION && Date.now() - new Date(cached.generatedAt).getTime() < DASHBOARD_KPI_CACHE_TTL_MS) {
         return NextResponse.json({ data: cached.payload, cache: "hit", generatedAt: cached.generatedAt });
       }
     }
@@ -67,7 +67,6 @@ export async function GET(request) {
         return sum + (capacity ? currentPieces / capacity : 0);
       }, 0);
     const roundedFactoryTubePacks = Number(factoryTubePacks.toFixed(2));
-    const packagingBagStock = await loadPackagingBagStock({ date: dateParam, includeMovements: false });
     const glueStock = await loadGlueStock({ date: dateParam, includeMovements: false });
     const dayLedgers = await prisma.ledger.findMany({
       where: { ...dayWhere, type: "DEBIT" },
@@ -116,6 +115,7 @@ export async function GET(request) {
 
     const data = {
         date: dateParam,
+        kpiVersion: DASHBOARD_KPI_PAYLOAD_VERSION,
         totalCustomers: Number(customerStats._count?._all || 0),
         totalBalance: Number(customerStats._sum?.current_balance || 0),
         todayPaidCount: Number(paymentStats._count?._all || 0),
@@ -130,10 +130,6 @@ export async function GET(request) {
         factoryCapPieces,
         factoryTubePieces,
         factoryTubePacks: roundedFactoryTubePacks,
-        factoryPackagingBagBags: packagingBagStock.totalCurrentBags,
-        factoryPackagingBagPieces: packagingBagStock.totalCurrentPieces,
-        factoryPackagingBagUsedToday: packagingBagStock.dailyUsed.reduce((sum, row) => sum + Math.abs(Number(row.quantityBottles || 0)), 0),
-        factoryPackagingBagAddedToday: packagingBagStock.dailyAdded.reduce((sum, row) => sum + Number(row.quantityBottles || 0), 0),
         factoryGlueKg: glueStock.currentKg,
         factoryGlueBags: glueStock.currentBags,
         factoryGlueUsedTodayKg: glueStock.dailyUsedKg,

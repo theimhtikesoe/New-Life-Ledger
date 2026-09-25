@@ -184,7 +184,7 @@ describe("Dashboard KPI aggregate route", () => {
   });
 
   it("serves a fresh durable snapshot without recomputing stock and ledger aggregates", async () => {
-    const payload = { date: "2026-08-27", totalCustomers: 12, factoryTubePacks: 4 };
+    const payload = { date: "2026-08-27", kpiVersion: 2, totalCustomers: 12, factoryTubePacks: 4 };
     mocks.customerAggregate.mockClear();
     mocks.ledgerAggregate.mockClear();
     mocks.cashSaleGroupBy.mockClear();

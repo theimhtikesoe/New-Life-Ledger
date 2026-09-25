@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
 import { calculatePackagingBags, packagingPiecesFromSacks, packagingRuleFor, packagingSacksFromPieces } from "@/lib/packaging-bag-calculator";
+
+const packagingReferencePage = fs.readFileSync("src/app/packaging-bag-stock/page.js", "utf8");
 
 describe("packaging bag calculator", () => {
   it("maps a .3 400-card to one 38×58 bag", () => {
@@ -39,5 +42,14 @@ describe("packaging bag calculator", () => {
     expect(packagingPiecesFromSacks("31×25", 1)).toMatchObject({ packs: 51, pieces: 2550 });
     expect(packagingPiecesFromSacks("38×58", 1)).toMatchObject({ packs: 86, pieces: 1720 });
     expect(packagingSacksFromPieces("31×25", 2550)).toMatchObject({ sacks: 1, remainderPieces: 0 });
+  });
+
+  it("renders the packaging page as a 100-pound reference table, not a stock ledger", () => {
+    expect(packagingReferencePage).toContain("SALA_SACK_WEIGHT_LB");
+    expect(packagingReferencePage).toContain("BAG_RULES.map");
+    expect(packagingReferencePage).toContain("ဆာလာအိတ် ၁ အိတ်");
+    expect(packagingReferencePage).not.toContain("/api/packaging-bag-stock");
+    expect(packagingReferencePage).not.toContain("loadStock");
+    expect(packagingReferencePage).not.toContain("saveStock");
   });
 });
