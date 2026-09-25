@@ -56,6 +56,7 @@ export function normalizeAllowedPaths(value, actorName) {
   const allowed = Array.isArray(value) ? value.filter((path) => PERMISSION_PAGES.some((page) => page.path === path)) : defaultAllowedPaths(actorName);
   if (!allowed.includes("/packaging-bag-stock")) allowed.push("/packaging-bag-stock");
   if (!allowed.includes("/monthly-packaging-bag-report")) allowed.push("/monthly-packaging-bag-report");
+  if (!allowed.includes("/glue-stock")) allowed.push("/glue-stock");
   // Keep the bottle-sales reports reachable for the parent/manager account even
   // when its stored permission row predates these pages.
   if (actorName === "ဖေဖေ/မေမေ") {

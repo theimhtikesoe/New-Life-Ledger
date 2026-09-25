@@ -10,6 +10,7 @@ const productionSource = fs.readFileSync(path.join(root, "src/components/Product
 const middlewareSource = fs.readFileSync(path.join(root, "src/middleware.js"), "utf8");
 const globalStylesSource = fs.readFileSync(path.join(root, "src/app/globals.css"), "utf8");
 const dashboardSource = fs.readFileSync(path.join(root, "src/components/Dashboard.jsx"), "utf8");
+const permissionsSource = fs.readFileSync(path.join(root, "src/lib/user-permissions.js"), "utf8");
 const sharedHeaderRouteSources = [
   "src/app/activity/page.js",
   "src/app/auto-report-status/page.js",
@@ -133,5 +134,9 @@ describe("Actor access workflow", () => {
     expect(layoutSource).toContain("pathname === '/production'");
     expect(layoutSource).toContain("router.replace('/');");
     expect(layoutSource).toContain("!isProductionOnlyActor && !isLedgerOnlyActor && !isCapStockOnlyActor");
+  });
+
+  it("keeps the Glue Stock page available to every configured user", () => {
+    expect(permissionsSource).toContain('if (!allowed.includes("/glue-stock")) allowed.push("/glue-stock");');
   });
 });

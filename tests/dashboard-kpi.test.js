@@ -126,6 +126,13 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain('href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`}');
   });
 
+  it("shows daily glue usage for the requested users but not Zway Zway", () => {
+    expect(dashboardSource).toContain('["ဖြိုးကို", "ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "Rhyzoe"].includes(dashboardActorName)');
+    expect(dashboardSource).toContain("{showDailyGlueUsageKpi ? <Link");
+    const zwayBranch = dashboardSource.split('{dashboardActorName === "ဇွဲဇွဲ" ? <>')[1].split('</> : <>')[0];
+    expect(zwayBranch).not.toContain("စက်ရုံ ကော်စေ့ လက်ကျန်");
+  });
+
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.dashboardKpiFindUnique.mockResolvedValue(null);

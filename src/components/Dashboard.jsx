@@ -321,6 +321,7 @@ export default function Dashboard({ view = "overview" }) {
   const isSangEulDashboard = dashboardActorName === "ဆောင်းဦး";
   const isProductionDashboard = dashboardActorName === "ဇွဲဇွဲ" || dashboardActorName === "ဖြိုးကို";
   const isCapStockDashboard = dashboardActorName === "သက်မွန်နှင်း";
+  const showDailyGlueUsageKpi = ["ဖြိုးကို", "ဖေဖေ/မေမေ", "ပုံ့ပုံ့", "Rhyzoe"].includes(dashboardActorName);
   const showOperationalDashboardSections = !isLedgerView && !isCapStockDashboard && (!isProductionDashboard || isSangEulDashboard);
   const [customers, setCustomers] = useState(() => initialDashboardSnapshot?.customers || []);
   const [allCustomersForKPI, setAllCustomersForKPI] = useState(() => initialDashboardSnapshot?.allCustomersForKPI || []);
@@ -674,7 +675,7 @@ export default function Dashboard({ view = "overview" }) {
     if (selectedCustomerId) {
       // Hide the customer list to make view clearer
       setShowCustomerList(false);
-      
+
       // Use a small timeout to ensure the DOM has updated and the details section is rendered
       const timer = setTimeout(() => {
         const element = document.getElementById("customer-details-section");
@@ -1322,7 +1323,7 @@ export default function Dashboard({ view = "overview" }) {
   async function createCustomer(event) {
     event.preventDefault();
     if (isSubmitting) return;
-    
+
     setIsSubmitting(true);
     try {
       setMessage("");
@@ -1333,7 +1334,7 @@ export default function Dashboard({ view = "overview" }) {
           current_balance: Number(newCustomer.current_balance || 0),
         }),
       });
-      
+
       // Optimistic Update: Add new customer to the list immediately
       setCustomers(prev => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name, 'my')));
       setAllCustomersForKPI(prev => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name, 'my')));
@@ -1499,7 +1500,7 @@ export default function Dashboard({ view = "overview" }) {
         showAlert("Transaction ကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။", "success");
         return;
       }
-      
+
       if (editingTransaction && isCashSale) {
         const result = await api(`/api/customers/${selectedCustomerId}/cash-sales/${editingTransaction.id}`, {
           method: "PATCH",
@@ -1540,7 +1541,7 @@ export default function Dashboard({ view = "overview" }) {
         setCustomers(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c));
         setAllCustomersForKPI(prev => prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c));
       }
-      
+
       const result = await api(isCashSale ? `/api/customers/${selectedCustomerId}/cash-sales` : `/api/customers/${selectedCustomerId}/transactions`, {
         method: "POST",
         body: JSON.stringify({
@@ -1576,7 +1577,7 @@ export default function Dashboard({ view = "overview" }) {
           date: ledgerForm.date || null,
         }),
       });
-      
+
       if (isCashSale && result?.cashSale) {
         setSelectedCustomer(prev => ({
           ...prev,
@@ -1595,7 +1596,7 @@ export default function Dashboard({ view = "overview" }) {
       void loadDashboard(undefined, true).catch((refreshError) => {
         console.warn("Dashboard refresh after save was not completed:", refreshError);
       });
-      
+
       // Clear form immediately after successful submission
       setLedgerForm({
         type: "CREDIT",
@@ -1615,7 +1616,7 @@ export default function Dashboard({ view = "overview" }) {
         saleItems: [],
       });
       clearDashboardDraftFields(["ledgerForm"]);
-      
+
       setPaymentTargetLedgerId("");
       showAlert(isCashSale ? "လက်ငင်း Transaction သိမ်းဆည်းပြီးပါပြီ။" : "Transaction အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
       ledgerRequestIdRef.current = null;
@@ -1784,14 +1785,14 @@ export default function Dashboard({ view = "overview" }) {
     setIsSubmitting(true);
     try {
       setMessage("");
-      
+
       // Optimistic Update: Calculate and update balance immediately
       const newBalance = (selectedCustomer?.current_balance || 0) + amount;
       setSelectedCustomer(prev => ({
         ...prev,
         current_balance: newBalance,
       }));
-      
+
       // Update customer in list
       setCustomers(prev =>
         prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c)
@@ -1801,7 +1802,7 @@ export default function Dashboard({ view = "overview" }) {
       setAllCustomersForKPI(prev =>
         prev.map(c => c.id === selectedCustomerId ? { ...c, current_balance: newBalance } : c)
       );
-      
+
       const result = await api(`/api/customers/${selectedCustomerId}/transactions`, {
         method: "POST",
         body: JSON.stringify({
@@ -1814,33 +1815,33 @@ export default function Dashboard({ view = "overview" }) {
           date: ledgerForm.date || null,
         }),
       });
-      
+
       // Add new transaction to the list
       if (result && result.ledger) {
         setSelectedCustomer(prev => ({
           ...prev,
           ledgers: [result.ledger, ...(prev.ledgers || [])],
         }));
-        
+
         // Also update the customer in the main list to reflect in "Today's Transactions"
         setCustomers(prev =>
-          prev.map(c => 
-            c.id === selectedCustomerId 
-              ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } 
+          prev.map(c =>
+            c.id === selectedCustomerId
+              ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] }
               : c
           )
         );
 
         // Also update allCustomersForKPI to reflect in summary metrics
         setAllCustomersForKPI(prev =>
-          prev.map(c => 
-            c.id === selectedCustomerId 
-              ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] } 
+          prev.map(c =>
+            c.id === selectedCustomerId
+              ? { ...c, ledgers: [result.ledger, ...(c.ledgers || [])] }
               : c
           )
         );
       }
-      
+
       setLedgerForm({
         type: "CREDIT",
         saleType: "RETAIL",
@@ -1857,7 +1858,7 @@ export default function Dashboard({ view = "overview" }) {
         saleItems: [],
       });
       clearDashboardDraftFields(["ledgerForm"]);
-      
+
       showAlert("Sales လက်ခြင်းအောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။", "success");
     } catch (error) {
       setMessage(error.message);
@@ -1886,25 +1887,25 @@ export default function Dashboard({ view = "overview" }) {
     setIsSubmitting(true);
     try {
       setMessage("");
-      
+
       // Optimistic Update: Update customer in list immediately
       const updateFn = c => c.id === editingCustomer.id ? { ...c, ...editForm } : c;
       setCustomers(prev => prev.map(updateFn).sort((a, b) => a.name.localeCompare(b.name, 'my')));
       setAllCustomersForKPI(prev => prev.map(updateFn).sort((a, b) => a.name.localeCompare(b.name, 'my')));
-      
+
       const customer = await api(`/api/customers/${editingCustomer.id}`, {
         method: "PATCH",
         body: JSON.stringify(editForm),
       });
-      
+
       setEditingCustomer(null);
       setEditForm({ name: "", phone: "", routeTag: "" });
       clearDashboardDraftFields(["editForm", "editingCustomer"]);
-      
+
       if (selectedCustomerId === customer.id) {
         setSelectedCustomer(prev => ({ ...prev, ...customer }));
       }
-      
+
       showAlert(`Customer "${customer.name}" အောင်မြင်စွာ အဆင့်မြှင့်တင်ပြီးပါပြီ။`, "success");
     } catch (error) {
       setMessage(error.message);
@@ -1923,20 +1924,20 @@ export default function Dashboard({ view = "overview" }) {
     try {
       setMessage("");
       const customerName = deletingCustomer.name;
-      
+
       // Optimistic Update: Remove customer from list immediately
       setCustomers(prev => prev.filter(c => c.id !== deletingCustomer.id));
       setAllCustomersForKPI(prev => prev.filter(c => c.id !== deletingCustomer.id));
-      
+
       await api(`/api/customers/${deletingCustomer.id}`, {
         method: "DELETE",
       });
-      
+
       if (selectedCustomerId === deletingCustomer.id) {
         setSelectedCustomerId(null);
         setSelectedCustomer(null);
       }
-      
+
       setDeletingCustomer(null);
       showAlert(`Customer "${customerName}" ကို အမှိုက်ပုံးထဲသို့ ရွှေ့လိုက်ပါပြီ။`, "success");
       if (showRecycleBin) loadDeletedCustomers();
@@ -1958,7 +1959,7 @@ export default function Dashboard({ view = "overview" }) {
         method: "PATCH",
         body: JSON.stringify({ restore: true }),
       });
-      
+
       setDeletedCustomers(prev => prev.filter(c => c.id !== customer.id));
       setCustomers(prev => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name, 'my')));
       setAllCustomersForKPI(prev => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name, 'my')));
@@ -1977,7 +1978,7 @@ export default function Dashboard({ view = "overview" }) {
       await api(`/api/customers/${permanentDeletingCustomer.id}?permanent=true`, {
         method: "DELETE",
       });
-      
+
       setDeletedCustomers(prev => prev.filter(c => c.id !== permanentDeletingCustomer.id));
       setPermanentDeletingCustomer(null);
       showAlert(`Customer "${permanentDeletingCustomer.name}" ကို အပြီးတိုင်ဖျက်လိုက်ပါပြီ။`, "success");
@@ -1991,7 +1992,7 @@ export default function Dashboard({ view = "overview" }) {
   // Export transaction data to CSV
   const exportToCSV = () => {
     const transactionsToExport = filteredLedgers.length > 0 ? filteredLedgers : unifiedTransactions;
-    
+
     if (!selectedCustomer || transactionsToExport.length === 0) {
       showAlert("ထုတ်ယူရန် transaction မရှိပါ။", "error");
       return;
@@ -2023,15 +2024,15 @@ export default function Dashboard({ view = "overview" }) {
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    
+
     link.setAttribute("href", url);
     link.setAttribute("download", `${selectedCustomer.name}_transactions_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = "hidden";
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     showAlert(`"${selectedCustomer.name}" ရဲ့ transaction တွေ အောင်မြင်စွာ ထုတ်ယူပြီးပါပြီ။`, "success");
   };
 
@@ -2566,6 +2567,9 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="pt-2 text-sm font-bold text-yellow-700">Stock စာမျက်နှာကြည့်ရန် →</p>
             </Link>
+            {showDailyGlueUsageKpi ? <Link href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} ကော်စေ့ သုံး/ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-300 bg-amber-50/95 p-4 text-left shadow-sm transition-all hover:border-amber-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-300 sm:min-h-[170px]">
+              <div><p className="text-sm font-black tracking-wide text-amber-800 sm:text-base">ယနေ့ ကော်စေ့ သုံး/ကျန်</p><div className="mt-2 space-y-1 text-base font-black text-amber-950">{productionLoading ? <p>ရယူနေသည်...</p> : <><p>သုံး: {tubeMaterialSummary.usedGlueKg.toLocaleString()} kg / {tubeMaterialSummary.usedGlueBags.toLocaleString()} အိတ်</p><p>ကျန်: {tubeMaterialSummary.remainingGlueKg.toLocaleString()} kg / {tubeMaterialSummary.remainingGlueBags.toLocaleString()} အိတ်</p></>}</div></div><p className="pt-2 text-sm font-bold text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
+            </Link> : null}
             </>}
           </div>
           {showOperationalDashboardSections ? (
@@ -2679,7 +2683,7 @@ export default function Dashboard({ view = "overview" }) {
               {dashboardActorName === "ဇွဲဇွဲ" ? <>
                 <Link href="/production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော ဗူး အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep neon-card-orange flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-orange-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသောဗူး</p><p className="mt-2 text-2xl font-black text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p></div><div className="mt-2 space-y-0.5 text-sm font-bold text-orange-700 sm:text-base"><p>{productionLoading ? "ရယူနေသည်..." : `ကောင်းသောဗူး ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p><p>{productionLoading ? "ရယူနေသည်..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
                 <Link href="/factory-stock" aria-label="စက်ရုံဗူးလက်ကျန် အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-500 bg-amber-100/95 p-4 text-left shadow-sm transition-all hover:border-amber-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူး လက်ကျန်</p><p className="mt-2 text-2xl font-black text-amber-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p><p className="mt-1 text-sm font-bold text-amber-800">စက်ရုံထုတ်လုပ်ဝင်ပြီး ရောင်းထွက်သွားပြီးနောက် ကျန်သောကဒ်</p></div><p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p></Link>
-                <Link href={`/glue-stock?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} စက်ရုံ ကော်စေ့ လက်ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-yellow-300 bg-yellow-50/95 p-4 text-left shadow-sm transition-all hover:border-yellow-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-yellow-800 sm:text-base">စက်ရုံ ကော်စေ့ လက်ကျန်</p><p className="mt-2 text-2xl font-black text-yellow-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryGlueKg.toLocaleString()} kg / ${factoryGlueBags.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-yellow-700">ရွေးထားသောရက် သုံး: {factoryGlueUsedTodayKg.toLocaleString()} kg / {factoryGlueUsedTodayBags.toLocaleString()} အိတ်</p></div><p className="pt-2 text-sm font-bold text-yellow-700">Stock စာမျက်နှာကြည့်ရန် →</p></Link>
+
               </> : <>
                 <Link href="/tube-production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော Tube အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/90 p-4 text-left shadow-sm transition-all hover:border-cyan-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသော Tube</p><p className="mt-2 text-3xl font-black text-cyan-900">{productionLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-cyan-700">{productionLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
                 <Link href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} ကော်စေ့ သုံး/ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-300 bg-amber-50/95 p-4 text-left shadow-sm transition-all hover:border-amber-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-amber-800 sm:text-base">ယနေ့ ကော်စေ့ သုံး/ကျန်</p><div className="mt-2 space-y-1 text-base font-black text-amber-950">{productionLoading ? <p>ရယူနေသည်...</p> : <><p>သုံး: {tubeMaterialSummary.usedGlueKg.toLocaleString()} kg / {tubeMaterialSummary.usedGlueBags.toLocaleString()} အိတ်</p><p>ကျန်: {tubeMaterialSummary.remainingGlueKg.toLocaleString()} kg / {tubeMaterialSummary.remainingGlueBags.toLocaleString()} အိတ်</p></>}</div></div><p className="pt-2 text-sm font-bold text-amber-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
@@ -2752,7 +2756,7 @@ export default function Dashboard({ view = "overview" }) {
                 }
                 disabled={isSubmitting}
               />
-              <button 
+              <button
                 className="min-h-12 rounded-md bg-cyan-400 px-5 py-3 text-base font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isSubmitting || newCustomerMatches.length > 0}
               >
@@ -3277,7 +3281,7 @@ export default function Dashboard({ view = "overview" }) {
                         disabled={isSubmitting}
                       ></textarea>
 
-                      <button 
+                      <button
                         className="w-full min-h-11 rounded-md bg-cyan-400 py-2.5 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed sm:min-h-12 sm:py-3"
                         disabled={isSubmitting || cashSaleBreakdownMismatch}
                       >
@@ -3291,8 +3295,8 @@ export default function Dashboard({ view = "overview" }) {
                   <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h3 className="text-lg font-semibold text-slate-900">စာရင်းမှတ်တမ်း (Transactions)</h3>
                   </div>
-                  
-                  <TransactionFilter 
+
+                  <TransactionFilter
                     transactions={transactionRowsForFilter}
                     onFilterChange={handleFilterChange}
                   />
@@ -3640,7 +3644,7 @@ export default function Dashboard({ view = "overview" }) {
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   className="flex-1 rounded-md bg-cyan-400 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50"
                   disabled={isSubmitting}
                 >
