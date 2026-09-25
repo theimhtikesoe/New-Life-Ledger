@@ -155,6 +155,13 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource.indexOf(capLabel)).toBeLessThan(dashboardSource.indexOf(packagingLabel));
   });
 
+  it("keeps daily glue usage beside today's Tube production for production users", () => {
+    const productionBranch = dashboardSource.split(") : isProductionDashboard ? (")[1].split("</section>\n        ) : null;")[0];
+    expect(productionBranch.indexOf("ယနေ့ ထုတ်လုပ်ပြီးသော Tube")).toBeGreaterThanOrEqual(0);
+    expect(productionBranch.indexOf("ယနေ့ ကော်စေ့ သုံး/ကျန်")).toBeGreaterThanOrEqual(0);
+    expect(productionBranch.indexOf("ယနေ့ ထုတ်လုပ်ပြီးသော Tube")).toBeLessThan(productionBranch.indexOf("ယနေ့ ကော်စေ့ သုံး/ကျန်"));
+  });
+
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.dashboardKpiFindUnique.mockResolvedValue(null);
