@@ -149,6 +149,12 @@ describe("Dashboard KPI aggregate route", () => {
     expect(capBranch).toContain("ထုပ်ပိုး အိတ်ခွံ လက်ကျန်");
   });
 
+  it("places packaging balance immediately after factory cap balance in shared KPI layouts", () => {
+    const capLabel = "စက်ရုံအဖုံး လက်ကျန်";
+    const packagingLabel = "ထုပ်ပိုး အိတ်ခွံ လက်ကျန်";
+    expect(dashboardSource.indexOf(capLabel)).toBeLessThan(dashboardSource.indexOf(packagingLabel));
+  });
+
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.dashboardKpiFindUnique.mockResolvedValue(null);
