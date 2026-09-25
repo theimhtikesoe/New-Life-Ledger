@@ -6,6 +6,7 @@ import { normalizeCashSaleType } from "@/lib/cash-sale-utils";
 import { aggregateStockMovements, loadCanonicalFactoryStockMovements } from "@/lib/factory-stock";
 import { hydrateSettledBottleSaleItems } from "@/lib/bottle-sales-ledger";
 import { buildDailyBottleSalesSummary } from "@/lib/daily-bottle-sales";
+import { loadPackagingBagStock } from "@/lib/packaging-bag-stock";
 import { loadGlueStock } from "@/lib/glue-stock";
 
 export const dynamic = "force-dynamic";
@@ -67,6 +68,7 @@ export async function GET(request) {
         return sum + (capacity ? currentPieces / capacity : 0);
       }, 0);
     const roundedFactoryTubePacks = Number(factoryTubePacks.toFixed(2));
+    const packagingBagStock = await loadPackagingBagStock({ date: dateParam, includeMovements: false });
     const glueStock = await loadGlueStock({ date: dateParam, includeMovements: false });
     const dayLedgers = await prisma.ledger.findMany({
       where: { ...dayWhere, type: "DEBIT" },
@@ -130,6 +132,7 @@ export async function GET(request) {
         factoryCapPieces,
         factoryTubePieces,
         factoryTubePacks: roundedFactoryTubePacks,
+        factoryPackagingBagPieces: packagingBagStock.totalCurrentPieces,
         factoryGlueKg: glueStock.currentKg,
         factoryGlueBags: glueStock.currentBags,
         factoryGlueUsedTodayKg: glueStock.dailyUsedKg,
