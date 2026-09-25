@@ -28,6 +28,8 @@ const PRODUCTION_DASHBOARD_READ_PATHS = new Set([
   "/api/factory-stock",
   "/api/tube-stock",
   "/api/monthly-packaging-bag-report",
+  "/api/price-settings",
+  "/api/user-permissions",
 ]);
 const PRODUCTION_ONLY_ACTORS = new Set(["ဇွဲဇွဲ", "ဖြိုးကို"]);
 const LEDGER_ONLY_ACTOR = "ဆောင်းဦး";

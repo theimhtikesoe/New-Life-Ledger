@@ -46,7 +46,7 @@ export const PERMISSION_PAGES = [
 
 export function defaultAllowedPaths(actorName) {
   if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဖြိုးကို") return ["/", "/production", "/tube-production-history", "/tube-stock", "/glue-stock", "/monthly-tube-production", "/monthly-packaging-bag-report", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဖြိုးကို") return ["/", "/production", "/production-history", "/packaging-bag-report", "/tube-production-history", "/tube-stock", "/glue-stock", "/factory-stock", "/monthly-tube-production", "/monthly-packaging-bag-report", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   return PERMISSION_PAGES.map((page) => page.path);

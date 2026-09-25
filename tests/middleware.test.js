@@ -65,4 +65,13 @@ describe("API middleware access policy", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("allows Phyo to load shared permission and price data without a production-only notice", async () => {
+    mocks.getSessionInfo.mockResolvedValue({ actorName: "ဖြိုးကို", access: "production-only" });
+    const permissionsResponse = await middleware(request("/api/user-permissions"));
+    const pricesResponse = await middleware(request("/api/price-settings"));
+
+    expect(permissionsResponse.status).toBe(200);
+    expect(pricesResponse.status).toBe(200);
+  });
 });
