@@ -2489,6 +2489,9 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p>
             </Link>
+            {showDailyGlueUsageKpi ? <Link href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} ကော်စေ့ သုံး/ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-300 bg-amber-50/95 p-4 text-left shadow-sm transition-all hover:border-amber-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-300 sm:min-h-[170px]">
+              <div><p className="text-sm font-black tracking-wide text-amber-800 sm:text-base">ယနေ့ ကော်စေ့ သုံး/ကျန်</p><div className="mt-2 space-y-1 text-base font-black text-amber-950">{productionLoading ? <p>ရယူနေသည်...</p> : <><p>သုံး: {tubeMaterialSummary.usedGlueKg.toLocaleString()} kg / {tubeMaterialSummary.usedGlueBags.toLocaleString()} အိတ်</p><p>ကျန်: {tubeMaterialSummary.remainingGlueKg.toLocaleString()} kg / {tubeMaterialSummary.remainingGlueBags.toLocaleString()} အိတ်</p></>}</div></div><p className="pt-2 text-sm font-bold text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
+            </Link> : null}
             <Link
               href={`/daily-bottle-sales?date=${encodeURIComponent(selectedKpiDate)}`}
               aria-label={`${selectedKpiDate} ဗူးရောင်းစာရင်း အသေးစိတ်ကြည့်ရန်`}
@@ -2554,9 +2557,6 @@ export default function Dashboard({ view = "overview" }) {
               </div>
               <p className="pt-2 text-sm font-bold text-cyan-700">တွက်ချက်မှုကြည့်ရန် →</p>
             </Link>
-            {showDailyGlueUsageKpi ? <Link href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} ကော်စေ့ သုံး/ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-300 bg-amber-50/95 p-4 text-left shadow-sm transition-all hover:border-amber-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-300 sm:min-h-[170px]">
-              <div><p className="text-sm font-black tracking-wide text-amber-800 sm:text-base">ယနေ့ ကော်စေ့ သုံး/ကျန်</p><div className="mt-2 space-y-1 text-base font-black text-amber-950">{productionLoading ? <p>ရယူနေသည်...</p> : <><p>သုံး: {tubeMaterialSummary.usedGlueKg.toLocaleString()} kg / {tubeMaterialSummary.usedGlueBags.toLocaleString()} အိတ်</p><p>ကျန်: {tubeMaterialSummary.remainingGlueKg.toLocaleString()} kg / {tubeMaterialSummary.remainingGlueBags.toLocaleString()} အိတ်</p></>}</div></div><p className="pt-2 text-sm font-bold text-amber-700">အသေးစိတ်ကြည့်ရန် →</p>
-            </Link> : null}
             <Link
               href={`/glue-stock?date=${encodeURIComponent(selectedKpiDate)}`}
               aria-label={`${selectedKpiDate} စက်ရုံ ကော်စေ့ လက်ကျန် အသေးစိတ်ကြည့်ရန်`}
