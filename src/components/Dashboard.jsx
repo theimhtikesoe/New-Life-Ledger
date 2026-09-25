@@ -2658,7 +2658,7 @@ export default function Dashboard({ view = "overview" }) {
               >
                 <div>
                   <p className="text-sm font-black tracking-wide text-fuchsia-700 sm:text-base">{selectedKpiIsToday ? "ယနေ့" : selectedKpiDate} ထုပ်ပိုး အိတ်ခွံ</p>
-                  <p className="mt-2 text-2xl font-black text-fuchsia-900">{productionLoading ? "ရယူနေသည်..." : `${packagingBagSummary.totalBags.toLocaleString()} အိတ်`}</p>
+                  <p className="mt-2 text-2xl font-black text-fuchsia-900">{productionLoading ? "ရယူနေသည်..." : `${packagingBagSummary.totalPackagingPieces.toLocaleString()} လုံး`}</p>
                   <p className="mt-1 text-sm font-bold text-fuchsia-700">{productionLoading ? "Data ရယူနေသည်..." : `${packagingBagSummary.totalPieces.toLocaleString()} ဗူး · အိတ်အရွယ် ${packagingBagSummary.groups.length} မျိုး`}</p>
                 </div>
                 <p className="pt-2 text-sm font-bold text-fuchsia-700">အိတ်စာရင်းကြည့်ရန် →</p>
