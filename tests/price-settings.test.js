@@ -40,7 +40,7 @@ describe("POST /api/price-settings", () => {
   });
 
   it("does not let mapping-only zero-price rows hide category prices", () => {
-    expect(priceRouteSource).toContain("Number(itemPriceRow.pricePerBottle || 0) > 0");
+    expect(priceRouteSource).toContain("function hasAnyPrice(row)");
     expect(priceRouteSource).toContain("const effective = itemPrice || categoryPrice || null");
   });
 
@@ -99,5 +99,30 @@ describe("GET /api/price-settings historical fallback", () => {
     const item = body.data.catalog.find((entry) => entry.productKey === "40 ကျပ်သား::100");
     expect(response.status).toBe(200);
     expect(item.effectivePrice).toMatchObject({ pricePerBottle: 123, source: "LATEST_CATEGORY" });
+  });
+
+  it("carries today's saved price into the next day when no next-day price exists", async () => {
+    mocks.ensureDatabase.mockResolvedValue(undefined);
+    mocks.findMany.mockResolvedValue([{
+      id: 2,
+      priceDate: "2026-09-25",
+      scope: "CATEGORY",
+      categoryKey: "40",
+      productKey: "40",
+      productType: "bottle",
+      productName: "40 ကျပ်သား",
+      capacity: 0,
+      bottlesPerCard: 0,
+      pricePerBottle: 456,
+      pricePerCard: 456,
+      tubeType: null,
+      updatedAt: new Date("2026-09-25T00:00:00Z"),
+    }]);
+
+    const response = await GET(new Request("http://localhost/api/price-settings?date=2026-09-26"));
+    const body = await response.json();
+    const item = body.data.catalog.find((entry) => entry.productKey === "40 ကျပ်သား::100");
+    expect(response.status).toBe(200);
+    expect(item.effectivePrice).toMatchObject({ pricePerBottle: 456, source: "LATEST_CATEGORY" });
   });
 });

@@ -31,7 +31,7 @@ const REQUIRED_AUTO_REPORT_COLUMNS = ["manualNoticeClaimedAt", "manualNoticeSent
 const REQUIRED_CUSTOMER_COLUMNS = ["customerType", "settledOutsideLedgerAt", "settledOutsideLedgerBy"];
 const REQUIRED_LEDGER_COLUMNS = ["saleItems", "discountAmount", "discountNote", "actorName", "requestId"];
 const REQUIRED_CASH_SALE_COLUMNS = ["saleItems"];
-const REQUIRED_PRICE_SETTING_COLUMNS = ["tubeType"];
+const REQUIRED_PRICE_SETTING_COLUMNS = ["tubeType", "pricePerPack", "pricePerLb", "pricePerKg", "pricePerSack"];
 const REQUIRED_PRODUCTION_COLUMNS = ["tubeDamageQuantity", "tubeQuantity", "tubeQuantityValue", "tubeQuantityUnit", "tubeMetrics"];
 const REQUIRED_DAILY_SALES_COLUMNS = [
   "enteredAt",
@@ -167,7 +167,15 @@ export async function ensureDatabase() {
     try {
       // Additive migration must run before the readiness fast-path and before
       // any Prisma PriceSetting query. IF EXISTS also keeps fresh databases safe.
+      // Keep older production databases compatible with the current Prisma
+      // client before any PriceSetting query selects the optional unit prices.
+      // The migration is also tracked in prisma/migrations, but this additive
+      // repair is required for databases initialized by the runtime bootstrap.
       await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "tubeType" TEXT`);
+      await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerPack" INTEGER`);
+      await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerLb" INTEGER`);
+      await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerKg" INTEGER`);
+      await setupQuery(`ALTER TABLE IF EXISTS "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerSack" INTEGER`);
       await setupQuery(`ALTER TABLE IF EXISTS "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerAt" TIMESTAMP(3)`);
       await setupQuery(`ALTER TABLE IF EXISTS "Customer" ADD COLUMN IF NOT EXISTS "settledOutsideLedgerBy" TEXT`);
       // Ledger discount fields must also exist before any Prisma relation query
