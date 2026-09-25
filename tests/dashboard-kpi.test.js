@@ -141,6 +141,14 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain("ထုပ်ပိုး အိတ်ခွံ လက်ကျန်");
   });
 
+  it("keeps packaging daily KPI out of the cap and production-only dashboards", () => {
+    const capBranch = dashboardSource.split("{isCapStockDashboard ? (")[1].split(") : isProductionDashboard ? (")[0];
+    const productionBranch = dashboardSource.split(") : isProductionDashboard ? (")[1].split("</section>\n        ) : null;")[0];
+    expect(capBranch).not.toContain("ယနေ့ ထုပ်ပိုး အိတ်ခွံ");
+    expect(productionBranch).not.toContain("ထုပ်ပိုး အိတ်ခွံ");
+    expect(capBranch).toContain("ထုပ်ပိုး အိတ်ခွံ လက်ကျန်");
+  });
+
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.dashboardKpiFindUnique.mockResolvedValue(null);

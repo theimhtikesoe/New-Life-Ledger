@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BAG_RULES, SALA_SACK_WEIGHT_LB } from "@/lib/packaging-bag-calculator";
+import { BAG_RULES } from "@/lib/packaging-bag-calculator";
 import { encodeActorHeader } from "@/lib/actor-header";
 
 function formatNumber(value) {
@@ -84,9 +84,9 @@ export default function PackagingBagStockPage() {
         <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-cyan-700">ထုပ်ပိုးအိတ်ခွံ လုံးရေတွက်ချက်ရန်</p>
-              <h2 className="mt-1 text-xl font-black text-slate-900">ဆာလာအိတ် {formatNumber(SALA_SACK_WEIGHT_LB)} ပေါင် အခြေခံတွက်ချက်မှုနှင့် Stock</h2>
-              <p className="mt-2 max-w-3xl text-sm font-bold leading-6 text-slate-600">အောက်ပါဇယားသည် size အလိုက် 100 ပေါင် ဆာလာအိတ်တစ်အိတ်မှာ ထုပ်နှင့် လုံး ဘယ်လောက်ရနိုင်သည်ကို ပြသသော reference ဖြစ်ပါသည်။ အောက်က Stock စာရင်းမှာတော့ လက်ရှိစက်ရုံအဝင်၊ ထုတ်လုပ်မှုမှာ သုံးစွဲမှုနှင့် လက်ကျန်ကို သီးခြားတွက်ချက်ပြပါသည်။</p>
+              <p className="text-sm font-bold text-cyan-700">ထုပ်ပိုးအိတ်ခွံ လက်ကျန်</p>
+              <h2 className="mt-1 text-xl font-black text-slate-900">အိတ်ခွံအရွယ်အစားအလိုက် Stock စာရင်း</h2>
+              <p className="mt-2 max-w-3xl text-sm font-bold leading-6 text-slate-600">စက်ရုံ Stock အဝင်၊ ထုတ်လုပ်မှုမှာ သုံးစွဲသည့် လုံးရေ နှင့် လက်ကျန်ကို အရွယ်အစားတစ်မျိုးချင်းစီအလိုက် ပြသထားပါသည်။</p>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center text-xs font-bold">
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-900"><p>Stock တိုး</p><p className="mt-1 text-lg font-black">{loading ? "…" : formatNumber(totalAdded)}</p><p>လုံး</p></div>
@@ -110,11 +110,6 @@ export default function PackagingBagStockPage() {
           </form>
           {message ? <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{message}</p> : null}
           {error ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">{error}</p> : null}
-        </section>
-
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-cyan-100 bg-cyan-50 px-4 py-3"><h2 className="font-black text-cyan-950">အရွယ်အစားအလိုက် ဆာလာအိတ် ၁ အိတ် တွက်ချက်မှု</h2><p className="mt-1 text-xs font-bold text-cyan-700">ထုပ်အရေအတွက် = 100 ÷ တစ်ထုပ်အလေးချိန် · လုံးရေ = ထုပ်အရေအတွက် × တစ်ထုပ်ပါလုံး</p></div>
-          <div className="overflow-x-auto"><table className="min-w-full text-sm"><thead className="bg-slate-100 text-left text-xs font-black text-slate-700"><tr><th className="px-4 py-3">အရွယ်အစား</th><th className="px-4 py-3 text-right">တစ်ထုပ်ပါ လုံး</th><th className="px-4 py-3 text-right">တစ်ထုပ်အလေးချိန်</th><th className="px-4 py-3 text-right">100 ပေါင်တွင် ထုပ်</th><th className="px-4 py-3 text-right">စုစုပေါင်းလုံး</th></tr></thead><tbody className="divide-y divide-slate-100">{BAG_RULES.map((rule) => <tr key={rule.bagSize} className="hover:bg-cyan-50/50"><td className="px-4 py-3 font-black text-slate-900">{rule.label}</td><td className="px-4 py-3 text-right font-bold text-slate-700">{formatNumber(rule.piecesPerBag)}</td><td className="px-4 py-3 text-right font-bold text-slate-700">{formatNumber(rule.weightLb)} ပေါင်</td><td className="px-4 py-3 text-right font-black text-violet-700">{formatNumber(rule.packsPerSack)}</td><td className="px-4 py-3 text-right text-lg font-black text-cyan-800">{formatNumber(rule.piecesPerSack)}</td></tr>)}</tbody></table></div>
         </section>
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b border-emerald-100 bg-emerald-50 px-4 py-3"><h2 className="font-black text-emerald-950">အိတ်ခွံအရွယ်အစားအလိုက် Stock စာရင်း</h2><p className="mt-1 text-xs font-bold text-emerald-700">ထွက်ရှိသော ဗူးကဒ် ၁ ကဒ်ကို သက်ဆိုင်ရာအရွယ်အစား အိတ်ခွံ ၁ လုံးအဖြစ် အလိုအလျောက်နုတ်ထားပါသည်။ အသေးစိတ်ကြည့်ရန် row ကိုနှိပ်ပါ။</p></div><div className="overflow-x-auto"><table className="min-w-full text-sm"><thead className="bg-slate-100 text-left text-xs font-black text-slate-700"><tr><th className="px-4 py-3">အရွယ်အစား</th><th className="px-4 py-3 text-right">Stock တိုး (လုံး)</th><th className="px-4 py-3 text-right">သုံးစွဲ (လုံး)</th><th className="px-4 py-3 text-right">လက်ကျန် (လုံး)</th><th className="px-4 py-3 text-right">လက်ကျန် ဆာလာအိတ်ခန့်မှန်း</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.bagSize} onClick={() => setSelectedSize(row.bagSize)} className="cursor-pointer hover:bg-emerald-50"><td className="px-4 py-3 font-black text-slate-900">{row.bagSize}</td><td className="px-4 py-3 text-right font-bold text-emerald-700">{formatNumber(row.addedPieces)}</td><td className="px-4 py-3 text-right font-bold text-rose-700">{formatNumber(row.usedPieces)}</td><td className="px-4 py-3 text-right text-lg font-black text-cyan-800">{formatNumber(row.currentPieces)}</td><td className="px-4 py-3 text-right font-bold text-violet-700">{formatNumber(row.currentBags)} ထုပ်</td></tr>)}</tbody></table></div></section>
