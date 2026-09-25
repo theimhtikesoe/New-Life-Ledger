@@ -1,12 +1,19 @@
+export const SALA_SACK_WEIGHT_LB = 100;
+
 const BAG_RULES = [
-  { bagSize: "38×58", label: "38×58", matches: ["03", "liter", "09", "06", "cow", "30"] },
-  { bagSize: "38×40", label: "38×40", matches: ["liter-white-100", "liter-round", "engine-oil"] },
-  { bagSize: "38×38", label: "38×38", matches: ["09-100", "08-white-250", "03-white-200"] },
-  { bagSize: "37×37", label: "37×37", matches: ["085-100", "gold-200", "025-200", "25-210"] },
-  { bagSize: "35×35", label: "35×35", matches: ["cow-100", "06-100", "06-round-100"] },
-  { bagSize: "31×31", label: "31×31", matches: ["08-100", "30-100", "025-100", "candy-100"] },
-  { bagSize: "31×25", label: "31×25", matches: ["03-100", "yogurt-small-100"] },
-];
+  { bagSize: "38×58", label: "38×58", piecesPerBag: 20, weightLb: 1.15, matches: ["03", "liter", "09", "06", "cow", "30"] },
+  { bagSize: "38×40", label: "38×40", piecesPerBag: 28, weightLb: 4.16, matches: ["liter-white-100", "liter-round", "engine-oil"] },
+  { bagSize: "38×38", label: "38×38", piecesPerBag: 28, weightLb: 1.17, matches: ["09-100", "08-white-250", "03-white-200"] },
+  { bagSize: "37×37", label: "37×37", piecesPerBag: 36, weightLb: 1.13, matches: ["085-100", "gold-200", "025-200", "25-210"] },
+  { bagSize: "35×35", label: "35×35", piecesPerBag: 52, weightLb: 1.17, matches: ["cow-100", "06-100", "06-round-100"] },
+  { bagSize: "31×31", label: "31×31", piecesPerBag: 40, weightLb: 1.16, matches: ["08-100", "30-100", "025-100", "candy-100"] },
+  { bagSize: "31×25", label: "31×25", piecesPerBag: 50, weightLb: 1.96, matches: ["03-100", "yogurt-small-100"] },
+].map((rule) => ({
+  ...rule,
+  sackWeightLb: SALA_SACK_WEIGHT_LB,
+  packsPerSack: Math.floor(SALA_SACK_WEIGHT_LB / rule.weightLb),
+  piecesPerSack: Math.floor(SALA_SACK_WEIGHT_LB / rule.weightLb) * rule.piecesPerBag,
+}));
 
 function clean(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
@@ -63,6 +70,26 @@ export function packagingRuleFor(row) {
   return null;
 }
 
+export function packagingRuleForSize(bagSize) {
+  return BAG_RULES.find((rule) => rule.bagSize === String(bagSize || "").trim()) || null;
+}
+
+export function packagingPiecesFromSacks(bagSize, sacks) {
+  const rule = packagingRuleForSize(bagSize);
+  const quantity = Number(sacks || 0);
+  if (!rule || !Number.isFinite(quantity) || quantity <= 0) return { sacks: 0, packs: 0, pieces: 0, weightLb: 0 };
+  const packs = Math.floor(quantity * rule.packsPerSack);
+  return { sacks: quantity, packs, pieces: packs * rule.piecesPerBag, weightLb: packs * rule.weightLb };
+}
+
+export function packagingSacksFromPieces(bagSize, pieces) {
+  const rule = packagingRuleForSize(bagSize);
+  const quantity = Number(pieces || 0);
+  if (!rule || !Number.isFinite(quantity) || quantity <= 0) return { sacks: 0, remainderPieces: Math.max(0, quantity) };
+  const fullSacks = Math.floor(quantity / rule.piecesPerSack);
+  return { sacks: fullSacks, remainderPieces: quantity - fullSacks * rule.piecesPerSack };
+}
+
 export function calculatePackagingBags(rows) {
   const grouped = new Map(BAG_RULES.map((rule) => [rule.bagSize, { ...rule, cards: 0, pieces: 0, items: [] }]));
   const unassigned = [];
@@ -81,8 +108,19 @@ export function calculatePackagingBags(rows) {
     if (existing) existing.quantity += quantity;
     else group.items.push({ ...item, key });
   }
-  const groups = [...grouped.values()].filter((group) => group.cards > 0);
-  return { groups, unassigned, totalBags: groups.reduce((sum, group) => sum + group.cards, 0), totalPieces: groups.reduce((sum, group) => sum + group.pieces, 0) };
+  const groups = [...grouped.values()].filter((group) => group.cards > 0).map((group) => ({
+    ...group,
+    packagingPieces: group.cards * group.piecesPerBag,
+    packagingWeightLb: group.cards * group.weightLb,
+  }));
+  return {
+    groups,
+    unassigned,
+    totalBags: groups.reduce((sum, group) => sum + group.cards, 0),
+    totalPackagingPieces: groups.reduce((sum, group) => sum + group.packagingPieces, 0),
+    totalPackagingWeightLb: groups.reduce((sum, group) => sum + group.packagingWeightLb, 0),
+    totalPieces: groups.reduce((sum, group) => sum + group.pieces, 0),
+  };
 }
 
 export { BAG_RULES };

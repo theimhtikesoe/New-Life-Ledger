@@ -430,6 +430,10 @@ model PriceSetting {
   bottlesPerCard Int      @default(0)
   pricePerBottle Int
   pricePerCard   Int      @default(0)
+  pricePerPack   Int?
+  pricePerLb     Int?
+  pricePerKg     Int?
+  pricePerSack   Int?
   tubeType       String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

@@ -665,6 +665,10 @@ export async function ensureDatabase() {
           "bottlesPerCard" INTEGER NOT NULL DEFAULT 0,
           "pricePerBottle" INTEGER NOT NULL,
           "pricePerCard" INTEGER NOT NULL DEFAULT 0,
+          "pricePerPack" INTEGER,
+          "pricePerLb" INTEGER,
+          "pricePerKg" INTEGER,
+          "pricePerSack" INTEGER,
           "tubeType" TEXT,
           "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
           "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -674,6 +678,10 @@ export async function ensureDatabase() {
       await setupQuery(`CREATE INDEX IF NOT EXISTS "PriceSetting_priceDate_idx" ON "PriceSetting"("priceDate")`);
       await setupQuery(`CREATE INDEX IF NOT EXISTS "PriceSetting_productKey_idx" ON "PriceSetting"("productKey")`);
       await setupQuery(`ALTER TABLE "PriceSetting" ADD COLUMN IF NOT EXISTS "tubeType" TEXT`);
+      await setupQuery(`ALTER TABLE "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerPack" INTEGER`);
+      await setupQuery(`ALTER TABLE "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerLb" INTEGER`);
+      await setupQuery(`ALTER TABLE "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerKg" INTEGER`);
+      await setupQuery(`ALTER TABLE "PriceSetting" ADD COLUMN IF NOT EXISTS "pricePerSack" INTEGER`);
       const orderTableCheck = await prisma.$queryRaw`
         SELECT count(*)
         FROM information_schema.tables

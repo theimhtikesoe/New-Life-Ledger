@@ -49,7 +49,7 @@ export async function GET(request) {
     }
     const daily = [...dailyMap.entries()].map(([date, dateRows]) => {
       const report = calculatePackagingBags(dateRows);
-      return { date, totalBags: report.totalBags, totalPieces: report.totalPieces, groups: report.groups, unassigned: report.unassigned };
+      return { date, totalBags: report.totalBags, totalPackagingPieces: report.totalPackagingPieces, totalPackagingWeightLb: report.totalPackagingWeightLb, totalPieces: report.totalPieces, groups: report.groups, unassigned: report.unassigned };
     });
     const unassignedMap = new Map();
     for (const item of monthly.unassigned) {
@@ -58,7 +58,7 @@ export async function GET(request) {
       current.quantity += Number(item.quantity || 0);
       unassignedMap.set(key, current);
     }
-    return NextResponse.json({ data: { month, days: daily.length, records: serializedRows.length, totalBags: monthly.totalBags, totalPieces: monthly.totalPieces, groups: monthly.groups, unassigned: [...unassignedMap.values()], daily } });
+    return NextResponse.json({ data: { month, days: daily.length, records: serializedRows.length, totalBags: monthly.totalBags, totalPackagingPieces: monthly.totalPackagingPieces, totalPackagingWeightLb: monthly.totalPackagingWeightLb, totalPieces: monthly.totalPieces, groups: monthly.groups, unassigned: [...unassignedMap.values()], daily } });
   } catch (error) {
     console.error("Monthly packaging bag report read failed", error);
     return NextResponse.json(databaseErrorResponse(error), { status: 400 });

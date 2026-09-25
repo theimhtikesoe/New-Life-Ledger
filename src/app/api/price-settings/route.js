@@ -37,6 +37,22 @@ function positiveInt(value, label) {
   return parsed;
 }
 
+function isPackagingItem(itemOrRow) {
+  return itemOrRow?.productType === "packaging-bag" || itemOrRow?.categoryKey === "PACKAGING_BAG";
+}
+
+function isGlueItem(itemOrRow) {
+  return itemOrRow?.productType === "glue-seed" || itemOrRow?.categoryKey === "GLUE";
+}
+
+function hasAnyPrice(row) {
+  return Number(row?.pricePerBottle || 0) > 0
+    || Number(row?.pricePerPack || 0) > 0
+    || Number(row?.pricePerLb || 0) > 0
+    || Number(row?.pricePerKg || 0) > 0
+    || Number(row?.pricePerSack || 0) > 0;
+}
+
 function serialize(row) {
   return {
     id: row.id,
@@ -50,6 +66,10 @@ function serialize(row) {
     bottlesPerCard: Number(row.bottlesPerCard || 0),
     pricePerBottle: Number(row.pricePerBottle || 0),
     pricePerCard: Number(row.pricePerCard || 0),
+    pricePerPack: row.pricePerPack === null || row.pricePerPack === undefined ? null : Number(row.pricePerPack || 0),
+    pricePerLb: row.pricePerLb === null || row.pricePerLb === undefined ? null : Number(row.pricePerLb || 0),
+    pricePerKg: row.pricePerKg === null || row.pricePerKg === undefined ? null : Number(row.pricePerKg || 0),
+    pricePerSack: row.pricePerSack === null || row.pricePerSack === undefined ? null : Number(row.pricePerSack || 0),
     tubeType: serializeTubeTypes(row.tubeType),
   };
 }
@@ -108,21 +128,21 @@ export async function GET(request) {
     for (const row of exactRows) {
       const serialized = serialize(row);
       if (row.scope === "CATEGORY") exactCategoryPrices[row.productKey] = serialized;
-      else if (serialized.pricePerBottle > 0) exactItemPrices[normalizeBottleProductKey(row.productKey)] = serialized;
+      else if (hasAnyPrice(serialized)) exactItemPrices[normalizeBottleProductKey(row.productKey)] = serialized;
     }
 
     const catalog = (await loadCatalogWithCustomItems(customRows)).map((item) => {
       const latestItemRow = latestByKey.get(`ITEM:${item.productKey}`);
       const latestCategoryRow = latestByKey.get(`CATEGORY:${item.categoryKey}`);
-      const itemPriceRow = latestItemRow && Number(latestItemRow.pricePerBottle || 0) > 0
+      const itemPriceRow = latestItemRow && hasAnyPrice(latestItemRow)
         ? latestItemRow
         : effectiveByKey.get(`ITEM:${item.productKey}`);
-      const categoryPrice = latestCategoryRow && Number(latestCategoryRow.pricePerBottle || 0) > 0
+      const categoryPrice = latestCategoryRow && hasAnyPrice(latestCategoryRow)
         ? latestCategoryRow
         : effectiveByKey.get(`CATEGORY:${item.categoryKey}`);
-      // A mapping-only ITEM row is intentionally stored with price 0. It must
-      // not hide a valid category price used by settlement sales.
-      const itemPrice = itemPriceRow && Number(itemPriceRow.pricePerBottle || 0) > 0 ? itemPriceRow : null;
+      // A mapping-only ITEM row is intentionally stored with all prices 0. It must
+        // not hide a valid category price used by settlement sales.
+      const itemPrice = itemPriceRow && hasAnyPrice(itemPriceRow) ? itemPriceRow : null;
       const effective = itemPrice || categoryPrice || null;
       return {
         ...item,
@@ -202,6 +222,15 @@ export async function POST(request) {
     for (const item of catalog) {
       const raw = itemPrices[item.productKey];
       if (raw === "" || raw === null || raw === undefined) continue;
+      if ((isPackagingItem(item) || isGlueItem(item)) && typeof raw === "object") {
+        const pricePerBottle = raw.perPiece === "" || raw.perPiece === null || raw.perPiece === undefined ? 0 : positiveInt(raw.perPiece, `${item.productName} တစ်လုံးစျေး`);
+        const pricePerPack = raw.perPack === "" || raw.perPack === null || raw.perPack === undefined ? 0 : positiveInt(raw.perPack, `${item.productName} တစ်ထုပ်စျေး`);
+        const pricePerLb = raw.perLb === "" || raw.perLb === null || raw.perLb === undefined ? 0 : positiveInt(raw.perLb, `${item.productName} တစ်ပေါင်စျေး`);
+        const pricePerKg = raw.perKg === "" || raw.perKg === null || raw.perKg === undefined ? 0 : positiveInt(raw.perKg, `${item.productName} တစ် kg စျေး`);
+        const pricePerSack = raw.perSack === "" || raw.perSack === null || raw.perSack === undefined ? 0 : positiveInt(raw.perSack, `${item.productName} ဆာလာအိတ်စျေး`);
+        if (pricePerBottle || pricePerPack || pricePerLb || pricePerKg || pricePerSack) rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: 0, pricePerPack, pricePerLb, pricePerKg, pricePerSack, tubeType: null });
+        continue;
+      }
       const pricePerBottle = positiveInt(raw, `${item.productName} ${item.capacity} စျေးနှုန်း`);
       rows.push({ priceDate, scope: "ITEM", categoryKey: item.categoryKey, productKey: item.productKey, productType: item.productType, productName: item.productName, capacity: item.capacity, bottlesPerCard: item.bottlesPerCard, pricePerBottle, pricePerCard: pricePerBottle * item.bottlesPerCard, tubeType: serializeTubeTypes(tubeMappings[item.productKey] || "") || null });
     }

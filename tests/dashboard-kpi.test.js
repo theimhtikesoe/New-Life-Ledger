@@ -114,6 +114,18 @@ describe("Dashboard KPI aggregate route", () => {
     expect(dashboardSource).toContain('Number(displayedTotalBalance) < 0 ? "text-green-700" : "text-rose-700"');
   });
 
+  it("shows daily tube glue usage and remaining stock in one Dashboard KPI", () => {
+    expect(dashboardSource).toContain("const tubeMaterialSummary = useMemo");
+    expect(dashboardSource).toContain("metrics.usedGlueKg");
+    expect(dashboardSource).toContain("metrics.usedGlueBags");
+    expect(dashboardSource).toContain("metrics.remainingGlueKg");
+    expect(dashboardSource).toContain("metrics.remainingGlueBags");
+    expect(dashboardSource).toContain("ယနေ့ ကော်စေ့ သုံး/ကျန်");
+    expect(dashboardSource).toContain("tubeMaterialSummary.usedGlueKg.toLocaleString()");
+    expect(dashboardSource).toContain("tubeMaterialSummary.remainingGlueBags.toLocaleString()");
+    expect(dashboardSource).toContain('href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`}');
+  });
+
   it("returns KPI totals without loading full customer or daily-summary rows", async () => {
     mocks.ensureDatabase.mockResolvedValue(undefined);
     mocks.dashboardKpiFindUnique.mockResolvedValue(null);

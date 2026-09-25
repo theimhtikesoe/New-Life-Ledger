@@ -17,9 +17,9 @@ function PlantColumn({ point, outputTotals, index }) {
   const series = [
     { key: "paidAmount", color: "from-emerald-300 to-emerald-500", leaf: "bg-emerald-400", label: "ငွေချေ", unit: "financial" },
     { key: "debtAmount", color: "from-rose-300 to-rose-500", leaf: "bg-rose-400", label: "အကြွေးတိုး", unit: "financial" },
-    { key: "cashAmount", color: "from-sky-300 to-sky-500", leaf: "bg-sky-400", label: "လက်ငင်း", unit: "financial" },
-    { key: "bottleOutput", color: "from-amber-300 to-amber-500", leaf: "bg-amber-400", label: "ဗူးထွက်ရှိမှု", unit: "bottles" },
-    { key: "tubeOutput", color: "from-violet-300 to-violet-500", leaf: "bg-violet-400", label: "Tube ထွက်ရှိမှု", unit: "tubes" },
+    { key: "cashAmount", color: "from-violet-300 to-violet-500", leaf: "bg-violet-400", label: "လက်ငင်း", unit: "financial" },
+    { key: "bottleOutput", color: "from-orange-300 to-orange-500", leaf: "bg-orange-400", label: "ဗူးထွက်ရှိမှု", unit: "bottles" },
+    { key: "tubeOutput", color: "from-cyan-300 to-cyan-500", leaf: "bg-cyan-400", label: "Tube ထွက်ရှိမှု", unit: "tubes" },
   ];
   const financialTotal = [point.paidAmount, point.debtAmount, point.cashAmount].reduce((sum, value) => sum + Number(value || 0), 0);
 
@@ -99,9 +99,9 @@ export default function LedgerPulse({ data, loading = false, error = "" }) {
           <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9px] text-slate-600 sm:gap-x-3 sm:text-[10px]">
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />ငွေချေ</span>
             <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-400" />အကြွေးတိုး</span>
-            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-sky-400" />လက်ငင်း</span>
-            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />ဗူးထွက်ရှိမှု</span>
-            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />Tube ထွက်ရှိမှု</span>
+            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-violet-400" />လက်ငင်း</span>
+            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-orange-400" />ဗူးထွက်ရှိမှု</span>
+            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-cyan-400" />Tube ထွက်ရှိမှု</span>
             <span className="ml-auto text-slate-500">ငွေ ၃ မျိုး = တစ်နေ့တာငွေစုစုပေါင်းအပေါ် % · ဗူး / Tube = ၇ ရက်အတွင်း အမျိုးအစားတူ စုစုပေါင်းအပေါ် %</span>
           </div>
         </>

@@ -29,10 +29,10 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const movement = packagingBagMovement({ ...body, date: body.date || getMyanmarDateInputValue(), actorName: getActorName(request) });
     await prisma.factoryStockMovement.create({ data: movement });
-    await writeAuditLog({ db: prisma, actorName: getActorName(request), action: "PACKAGING_BAG_STOCK_ADD", entityType: "FactoryStockMovement", entityId: movement.sourceId, entityLabel: movement.productName, summary: `${movement.productName} ${movement.quantityBottles} အိတ် ထည့်သွင်း`, metadata: { bagSize: body.bagSize, bags: movement.quantityBottles, date: movement.movementDate } });
+    await writeAuditLog({ db: prisma, actorName: getActorName(request), action: "PACKAGING_BAG_STOCK_ADD", entityType: "FactoryStockMovement", entityId: movement.sourceId, entityLabel: movement.productName, summary: `${movement.productName} ${movement.quantityBottles} လုံး ထည့်သွင်း`, metadata: { bagSize: body.bagSize, pieces: movement.quantityBottles, date: movement.movementDate } });
     await prisma.dashboardKpiSnapshot.deleteMany({ where: { date: movement.movementDate } });
     invalidateFactoryStockCache();
-    return NextResponse.json({ data: { sourceId: movement.sourceId, addedBags: movement.quantityBottles } }, { status: 201 });
+    return NextResponse.json({ data: { sourceId: movement.sourceId, addedPieces: movement.quantityBottles } }, { status: 201 });
   } catch (error) {
     console.error("Packaging bag stock write failed", error);
     return NextResponse.json(databaseErrorResponse(error), { status: 400 });
@@ -50,8 +50,8 @@ export async function PATCH(request) {
     const existing = await prisma.factoryStockMovement.findFirst({ where: { id, stockType: "PACKAGING_BAG", movementType: "ADJUSTMENT_IN", sourceType: "PACKAGING_BAG_OPENING" } });
     if (!existing) return NextResponse.json({ error: "Manual အိတ်ခွံ Stock မှတ်တမ်း မတွေ့ပါ။ အလိုအလျောက်သုံးစွဲမှုကို တိုက်ရိုက်မပြင်နိုင်ပါ။" }, { status: 404 });
     const movement = packagingBagMovement({ ...body, date: body.date || existing.movementDate, actorName });
-    const updated = await prisma.factoryStockMovement.update({ where: { id }, data: { movementDate: movement.movementDate, productKey: movement.productKey, productName: movement.productName, capacity: 1, quantityCards: movement.quantityCards, quantityBottles: movement.quantityBottles, note: movement.note, actorName } });
-    await writeAuditLog({ db: prisma, actorName, action: "PACKAGING_BAG_STOCK_UPDATE", entityType: "FactoryStockMovement", entityId: id, entityLabel: updated.productName, summary: `${updated.productName} Stock မှတ်တမ်း ပြင်ဆင်`, metadata: { bagSize: body.bagSize, bags: movement.quantityBottles, date: movement.movementDate } });
+    const updated = await prisma.factoryStockMovement.update({ where: { id }, data: { movementDate: movement.movementDate, productKey: movement.productKey, productName: movement.productName, capacity: 1, quantityCards: movement.quantityCards, quantityBottles: movement.quantityBottles, sourceVersion: movement.sourceVersion, note: movement.note, actorName } });
+    await writeAuditLog({ db: prisma, actorName, action: "PACKAGING_BAG_STOCK_UPDATE", entityType: "FactoryStockMovement", entityId: id, entityLabel: updated.productName, summary: `${updated.productName} Stock မှတ်တမ်း ပြင်ဆင်`, metadata: { bagSize: body.bagSize, pieces: movement.quantityBottles, date: movement.movementDate } });
     await prisma.dashboardKpiSnapshot.deleteMany({ where: { date: { in: [existing.movementDate, updated.movementDate] } } });
     invalidateFactoryStockCache();
     return NextResponse.json({ data: { id, updated: true } });
@@ -71,7 +71,7 @@ export async function DELETE(request) {
     const existing = await prisma.factoryStockMovement.findFirst({ where: { id, stockType: "PACKAGING_BAG", movementType: "ADJUSTMENT_IN", sourceType: "PACKAGING_BAG_OPENING" } });
     if (!existing) return NextResponse.json({ error: "Manual အိတ်ခွံ Stock မှတ်တမ်း မတွေ့ပါ။ အလိုအလျောက်သုံးစွဲမှုကို တိုက်ရိုက်မဖျက်နိုင်ပါ။" }, { status: 404 });
     await prisma.factoryStockMovement.delete({ where: { id } });
-    await writeAuditLog({ db: prisma, actorName, action: "PACKAGING_BAG_STOCK_DELETE", entityType: "FactoryStockMovement", entityId: id, entityLabel: existing.productName, summary: `${existing.productName} Stock မှတ်တမ်း ဖျက်`, metadata: { quantityBags: existing.quantityBottles, date: existing.movementDate } });
+    await writeAuditLog({ db: prisma, actorName, action: "PACKAGING_BAG_STOCK_DELETE", entityType: "FactoryStockMovement", entityId: id, entityLabel: existing.productName, summary: `${existing.productName} Stock မှတ်တမ်း ဖျက်`, metadata: { quantityPieces: existing.quantityBottles, date: existing.movementDate } });
     await prisma.dashboardKpiSnapshot.deleteMany({ where: { date: existing.movementDate } });
     invalidateFactoryStockCache();
     return NextResponse.json({ data: { id, deleted: true } });

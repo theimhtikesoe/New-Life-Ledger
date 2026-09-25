@@ -86,6 +86,47 @@ export const BOTTLE_GROUPS = [
 
 export const CAP_GROUP = { key: "CAP", label: "အဖုံး", description: "အဖုံးအရောင်အလိုက် သီးခြားရောင်းချမှု", productType: "cap", defaultPrice: 40 };
 
+export const PACKAGING_BAG_GROUP = { key: "PACKAGING_BAG", label: "အိတ်ခွံ", description: "အိတ်ခွံဆိုဒ်အလိုက် တစ်လုံးစျေး", productType: "packaging-bag" };
+
+export const PACKAGING_BAG_ITEMS = [
+  ["38×58", 20, 1.15, 86, 1720],
+  ["38×40", 28, 4.16, 24, 672],
+  ["38×38", 28, 1.17, 85, 2380],
+  ["37×37", 36, 1.13, 88, 3168],
+  ["35×35", 52, 1.17, 85, 4420],
+  ["31×31", 40, 1.16, 86, 3440],
+  ["31×25", 50, 1.96, 51, 2550],
+].map(([size, piecesPerPack, weightLb, packsPerSack, piecesPerSack]) => ({
+  scope: "ITEM",
+  productType: PACKAGING_BAG_GROUP.productType,
+  productKey: `PACKAGING_BAG::${size}`,
+  categoryKey: PACKAGING_BAG_GROUP.key,
+  categoryLabel: PACKAGING_BAG_GROUP.label,
+  productName: `အိတ်ခွံ ${size}`,
+  capacity: 1,
+  bottlesPerCard: 1,
+  unitLabel: "လုံး",
+  piecesPerPack,
+  weightLb,
+  sackWeightLb: 100,
+  packsPerSack,
+  piecesPerSack,
+}));
+
+export const GLUE_GROUP = { key: "GLUE", label: "ကော်စေ့", description: "ကော်စေ့ တစ် kg နှင့် တစ်အိတ်စျေး", productType: "glue-seed" };
+
+export const GLUE_ITEMS = [{
+  scope: "ITEM",
+  productType: GLUE_GROUP.productType,
+  productKey: "GLUE_SEED",
+  categoryKey: GLUE_GROUP.key,
+  categoryLabel: GLUE_GROUP.label,
+  productName: "ကော်စေ့",
+  capacity: 1,
+  bottlesPerCard: 1,
+  unitLabel: "kg",
+}];
+
 export const CAP_ITEMS = [
   ["ဖြူ", "CAP_WHITE"],
   ["နီ", "CAP_RED"],
@@ -119,7 +160,7 @@ export function isPieceCapProduct(itemOrKey) {
 }
 
 export const TUBE_GROUP = { key: "TUBE", label: "Tube", description: "Tube တစ်လုံးစျေး", productType: "tube" };
-export const PRICE_GROUPS = [...BOTTLE_GROUPS, CAP_GROUP, TUBE_GROUP];
+export const PRICE_GROUPS = [...BOTTLE_GROUPS, CAP_GROUP, PACKAGING_BAG_GROUP, GLUE_GROUP, TUBE_GROUP];
 
 export function getBottleGroup(type) {
   const value = String(type || "");
@@ -197,7 +238,7 @@ export function buildCatalog() {
     bottlesPerCard: 1,
     defaultPrice: item.defaultPrice,
   }));
-  return [...bottles, ...caps, ...TUBE_ITEMS];
+  return [...bottles, ...caps, ...PACKAGING_BAG_ITEMS, ...GLUE_ITEMS, ...TUBE_ITEMS];
 }
 
 export const TUBE_PRODUCT_TYPES = [

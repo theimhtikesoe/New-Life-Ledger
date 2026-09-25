@@ -16,6 +16,14 @@ function money(value) {
   return `${Number(value || 0).toLocaleString()} Ks`;
 }
 
+function isPackagingItem(itemOrKey) {
+  return itemOrKey?.productType === "packaging-bag" || itemOrKey?.categoryKey === "PACKAGING_BAG";
+}
+
+function isGlueItem(itemOrKey) {
+  return itemOrKey?.productType === "glue-seed" || itemOrKey?.categoryKey === "GLUE";
+}
+
 export default function PriceSettingsPage() {
   const [date, setDate] = useState(todayValue);
   const [categories, setCategories] = useState(PRICE_GROUPS);
@@ -52,9 +60,23 @@ export default function PriceSettingsPage() {
       const nextTubeMappings = {};
       for (const item of data.catalog || []) {
         const exact = data.itemPrices?.[item.productKey];
+        if (isPackagingItem(item) || isGlueItem(item)) {
+          const packagingPrice = exact || (String(item.effectivePrice?.source || "").includes("ITEM") ? item.effectivePrice : null);
+          if (packagingPrice && (packagingPrice.pricePerBottle || packagingPrice.pricePerPack || packagingPrice.pricePerLb || packagingPrice.pricePerKg || packagingPrice.pricePerSack)) {
+            nextItemPrices[item.productKey] = {
+              perPiece: String(packagingPrice.pricePerBottle || ""),
+              perPack: String(packagingPrice.pricePerPack || ""),
+              perLb: String(packagingPrice.pricePerLb || ""),
+              perKg: String(packagingPrice.pricePerKg || ""),
+              perSack: String(packagingPrice.pricePerSack || ""),
+            };
+          }
+        }
         const effectiveItemPrice = String(item.effectivePrice?.source || "").includes("ITEM") ? Number(item.effectivePrice.pricePerBottle || 0) : 0;
-        if (Number(exact?.pricePerBottle || 0) > 0) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
-        else if (effectiveItemPrice > 0) nextItemPrices[item.productKey] = String(effectiveItemPrice);
+        if (!isPackagingItem(item)) {
+          if (Number(exact?.pricePerBottle || 0) > 0) nextItemPrices[item.productKey] = String(exact.pricePerBottle);
+          else if (effectiveItemPrice > 0) nextItemPrices[item.productKey] = String(effectiveItemPrice);
+        }
         const tubeType = data.tubeMappings?.[item.productKey] || item.tubeType || "";
         if (tubeType) nextTubeMappings[item.productKey] = normalizeTubeTypes(tubeType);
       }
@@ -82,6 +104,13 @@ export default function PriceSettingsPage() {
 
   function setItemPrice(key, value) {
     setItemPrices((current) => ({ ...current, [key]: value }));
+  }
+
+  function setPackagingPrice(key, field, value) {
+    setItemPrices((current) => ({
+      ...current,
+      [key]: { perPiece: "", perPack: "", perLb: "", perKg: "", perSack: "", ...(current[key] && typeof current[key] === "object" ? current[key] : {}), [field]: value },
+    }));
   }
 
   function setTubeMapping(key, value) {
@@ -131,7 +160,7 @@ export default function PriceSettingsPage() {
         <section className="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cost / Price Settings</p>
+              <p className="text-xs font-bold tracking-wide text-amber-700">စျေးသတ်မှတ်ရန်</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">Category စျေးကို အခြေခံစျေးအဖြစ်ထားပြီး item တစ်ခုချင်းစီက စျေးကွာလျှင် Item Override ထည့်ပါ။ Item Override ရှိလျှင် အဲဒီ Item စျေးကိုပဲ ဦးစားပေးသုံးပါမယ်။</p>
             </div>
             <label className="flex shrink-0 flex-col gap-1.5 text-sm font-bold text-slate-700">
@@ -154,8 +183,8 @@ export default function PriceSettingsPage() {
               {categories.map((category) => (
                 <label key={category.key} className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 text-sm font-bold text-slate-800">
                   <span className="block">{category.label}</span><span className="mt-1 block text-[11px] font-normal text-slate-500">{category.description}</span>
-                  <div className="mt-2 flex items-center gap-2"><input type="number" min="0" step="1" inputMode="numeric" value={categoryPrices[category.key] || ""} onChange={(event) => setCategoryPrice(category.key, event.target.value)} placeholder="မသတ်မှတ်ရသေး" aria-label={`${category.label} category price`} className="h-11 min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 text-right font-black" /><span className="text-xs font-black">Ks/{category.key === "CAP" ? "ဖုံး" : category.key === "TUBE" ? "Tube" : "ဗူး"}</span></div>
-                  {categoryPrices[category.key] ? <p className="mt-1 text-right text-[11px] font-black text-emerald-700">သတ်မှတ်ပြီး: {money(categoryPrices[category.key])}/{category.key === "CAP" ? "ဖုံး" : category.key === "TUBE" ? "Tube" : "ဗူး"}</p> : null}
+                  <div className="mt-2 flex items-center gap-2"><input type="number" min="0" step="1" inputMode="numeric" value={categoryPrices[category.key] || ""} onChange={(event) => setCategoryPrice(category.key, event.target.value)} placeholder="မသတ်မှတ်ရသေး" aria-label={`${category.label} category price`} className="h-11 min-w-0 flex-1 rounded-lg border border-violet-200 bg-white px-3 text-right font-black" /><span className="text-xs font-black">Ks/{category.key === "CAP" ? "ဖုံး" : category.key === "PACKAGING_BAG" ? "လုံး" : category.key === "GLUE" ? "kg" : category.key === "TUBE" ? "Tube" : "ဗူး"}</span></div>
+                  {categoryPrices[category.key] ? <p className="mt-1 text-right text-[11px] font-black text-emerald-700">သတ်မှတ်ပြီး: {money(categoryPrices[category.key])}/{category.key === "CAP" ? "ဖုံး" : category.key === "PACKAGING_BAG" ? "လုံး" : category.key === "GLUE" ? "kg" : category.key === "TUBE" ? "Tube" : "ဗူး"}</p> : null}
                 </label>
               ))}
             </div>
@@ -168,15 +197,27 @@ export default function PriceSettingsPage() {
             </div>
             {loading ? <p className="py-10 text-center text-sm text-slate-500">Catalog နှင့် စျေးနှုန်းများ ရယူနေသည်...</p> : <div className="mt-4 space-y-2">{visibleItems.map((item) => {
               const categoryPrice = categoryPrices[item.categoryKey];
-              const itemPrice = itemPrices[item.productKey] ?? "";
-              const effectivePrice = itemPrice || categoryPrice || item.effectivePrice?.pricePerBottle || "";
               const isCap = item.productType === "cap" || item.categoryKey === "CAP";
               const isTube = item.productType === "tube" || item.categoryKey === "TUBE";
-              const unitLabel = isCap ? "ဖုံး" : isTube ? "Tube" : "ဗူး";
-              const quantityLabel = isCap ? "အဖုံးတစ်ဖုံး" : isTube ? "တစ်အိတ်" : "ကဒ်တစ်ကဒ်";
+              const isPackagingBag = isPackagingItem(item);
+              const isGlue = isGlueItem(item);
+              const isMultiUnitPrice = isPackagingBag || isGlue;
+              const itemPrice = isMultiUnitPrice
+                ? (itemPrices[item.productKey] && typeof itemPrices[item.productKey] === "object" ? itemPrices[item.productKey] : { perPiece: "", perPack: "", perLb: "", perKg: "", perSack: "" })
+                : (itemPrices[item.productKey] ?? "");
+              const effectivePrice = isPackagingBag ? (itemPrice.perPiece || categoryPrice || item.effectivePrice?.pricePerBottle || "") : isGlue ? (itemPrice.perKg || categoryPrice || item.effectivePrice?.pricePerBottle || "") : (itemPrice || categoryPrice || item.effectivePrice?.pricePerBottle || "");
+              const unitLabel = isCap ? "ဖုံး" : isPackagingBag ? "လုံး" : isGlue ? "kg" : isTube ? "Tube" : "ဗူး";
+              const quantityLabel = isCap ? "အဖုံးတစ်ဖုံး" : isPackagingBag ? "တစ်လုံး" : isGlue ? "1 kg" : isTube ? "တစ်ထုပ်" : "ကဒ်တစ်ကဒ်";
               const unitTotal = isCap ? Number(effectivePrice || 0) : Number(effectivePrice || 0) * item.capacity;
+              const hasItemPrice = isMultiUnitPrice ? Object.values(itemPrice).some(Boolean) : Boolean(itemPrice);
               const mappedTubeTypes = normalizeTubeTypes(tubeMappings[item.productKey]);
-              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_180px_190px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{isCap ? "အဖုံး သီးသန့်" : isTube ? `${item.capacity} pcs / အိတ်` : `${item.capacity} ဆံ့ / ကဒ်`}</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {effectivePrice ? `${money(effectivePrice)}/${unitLabel}` : "စျေးမသတ်မှတ်ရသေး"}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">{quantityLabel}<br /><span className="font-black">{effectivePrice ? money(unitTotal) : "—"}</span></div><label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/{unitLabel}</span> : null}</label><fieldset disabled={isCap || isTube} className="rounded-lg border border-cyan-200 bg-white p-2 disabled:bg-slate-100"><legend className="px-1 text-xs font-bold text-slate-700">သတ်မှတ် Tube</legend><div className="grid grid-cols-1 gap-1">{TUBE_PRODUCT_TYPES.map((tubeType) => <label key={tubeType} className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={mappedTubeTypes.includes(tubeType)} onChange={(event) => toggleTubeMapping(item.productKey, tubeType, event.target.checked)} /><span>{tubeType}</span></label>)}</div></fieldset><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!itemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
+              const packagingDetails = isPackagingBag ? `${item.piecesPerPack} လုံး/ထုပ် · ${item.weightLb} ပေါင်/ထုပ် · 100 ပေါင် = ${item.packsPerSack} ထုပ် / ${item.piecesPerSack} လုံး` : isGlue ? "kg နှင့် အိတ် အလိုက် စျေးသတ်မှတ်ရန်" : "";
+              const currentPriceText = isPackagingBag
+                ? ([itemPrice.perPiece ? `${money(itemPrice.perPiece)}/လုံး` : categoryPrice ? `${money(categoryPrice)}/လုံး (Category)` : "", itemPrice.perPack && `${money(itemPrice.perPack)}/ထုပ်`, itemPrice.perLb && `${money(itemPrice.perLb)}/ပေါင်`, itemPrice.perSack && `${money(itemPrice.perSack)}/ဆာလာအိတ်`].filter(Boolean).join(" · ") || "စျေးမသတ်မှတ်ရသေး")
+                : isGlue
+                  ? ([itemPrice.perKg ? `${money(itemPrice.perKg)}/kg` : categoryPrice ? `${money(categoryPrice)}/kg (Category)` : "", itemPrice.perSack && `${money(itemPrice.perSack)}/အိတ်`].filter(Boolean).join(" · ") || "စျေးမသတ်မှတ်ရသေး")
+                : (effectivePrice ? `${money(effectivePrice)}/${unitLabel}` : "စျေးမသတ်မှတ်ရသေး");
+              return <div key={item.productKey} className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_140px_180px_190px_auto] sm:items-center"><div><p className="font-black text-slate-900">{item.productName}</p><p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-xs font-black text-sky-800">{isCap ? "အဖုံး သီးသန့်" : isMultiUnitPrice ? packagingDetails : isTube ? `${item.capacity} pcs / ထုပ်` : `${item.capacity} ဆံ့ / ကဒ်`}</p><p className="mt-1 text-xs text-slate-500">လက်ရှိ {currentPriceText}</p></div><div className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900">{quantityLabel}<br /><span className="font-black">{effectivePrice ? money(unitTotal) : "—"}</span></div><>{isMultiUnitPrice ? (isGlue ? <div className="grid grid-cols-2 gap-2 rounded-lg border border-cyan-200 bg-white p-2 text-[11px] font-bold"><label>တစ် kg စျေး<input type="number" min="0" step="1" value={itemPrice.perKg} onChange={(event) => setPackagingPrice(item.productKey, "perKg", event.target.value)} placeholder="မထည့်ရသေး" className="mt-1 h-9 w-full rounded border border-cyan-200 px-2 text-right font-black" /></label><label>တစ်အိတ်စျေး<input type="number" min="0" step="1" value={itemPrice.perSack} onChange={(event) => setPackagingPrice(item.productKey, "perSack", event.target.value)} placeholder="မထည့်ရသေး" className="mt-1 h-9 w-full rounded border border-cyan-200 px-2 text-right font-black" /></label></div> : <div className="grid grid-cols-2 gap-2 rounded-lg border border-cyan-200 bg-white p-2 text-[11px] font-bold"><label>တစ်လုံးစျေး<input type="number" min="0" step="1" value={itemPrice.perPiece} onChange={(event) => setPackagingPrice(item.productKey, "perPiece", event.target.value)} placeholder="မထည့်ရသေး" className="mt-1 h-9 w-full rounded border border-cyan-200 px-2 text-right font-black" /></label><label>တစ်ထုပ်စျေး<input type="number" min="0" step="1" value={itemPrice.perPack} onChange={(event) => setPackagingPrice(item.productKey, "perPack", event.target.value)} placeholder="မထည့်ရသေး" className="mt-1 h-9 w-full rounded border border-cyan-200 px-2 text-right font-black" /></label><label>တစ်ပေါင်စျေး<input type="number" min="0" step="1" value={itemPrice.perLb} onChange={(event) => setPackagingPrice(item.productKey, "perLb", event.target.value)} placeholder="မထည့်ရသေး" className="mt-1 h-9 w-full rounded border border-cyan-200 px-2 text-right font-black" /></label><label>ဆာလာအိတ်စျေး<input type="number" min="0" step="1" value={itemPrice.perSack} onChange={(event) => setPackagingPrice(item.productKey, "perSack", event.target.value)} placeholder="မထည့်ရသေး" className="mt-1 h-9 w-full rounded border border-cyan-200 px-2 text-right font-black" /></label></div>) : <label className="text-xs font-bold text-slate-700">Item Override<input type="number" min="0" step="1" inputMode="numeric" value={itemPrice} onChange={(event) => setItemPrice(item.productKey, event.target.value)} placeholder={categoryPrice ? `${categoryPrice} (Category)` : "စျေးထည့်ပါ"} className="mt-1 h-10 w-full rounded-lg border border-cyan-200 bg-white px-2 text-right font-black" />{categoryPrice && !itemPrice ? <span className="mt-1 block text-[10px] font-black text-emerald-700">Category စျေး: {money(categoryPrice)}/{unitLabel}</span> : null}</label>}</><fieldset disabled={isCap || isTube || isMultiUnitPrice} className="rounded-lg border border-cyan-200 bg-white p-2 disabled:bg-slate-100"><legend className="px-1 text-xs font-bold text-slate-700">သတ်မှတ် Tube</legend><div className="grid grid-cols-1 gap-1">{TUBE_PRODUCT_TYPES.map((tubeType) => <label key={tubeType} className="flex items-center gap-2 text-xs font-bold"><input type="checkbox" checked={mappedTubeTypes.includes(tubeType)} onChange={(event) => toggleTubeMapping(item.productKey, tubeType, event.target.checked)} /><span>{tubeType}</span></label>)}</div></fieldset><button type="button" onClick={() => clearItemPrice(item.productKey)} disabled={!hasItemPrice} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40">Category သုံး</button></div>;
             })}</div>}
           </section>
 

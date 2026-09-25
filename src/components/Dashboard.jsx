@@ -1222,6 +1222,11 @@ export default function Dashboard({ view = "overview" }) {
   const factoryTubePacks = Number(dashboardKpi?.factoryTubePacks || 0);
   const factoryCapPieces = Number(dashboardKpi?.factoryCapPieces || 0);
   const factoryPackagingBagBags = Number(dashboardKpi?.factoryPackagingBagBags || 0);
+  const factoryPackagingBagPieces = Number(dashboardKpi?.factoryPackagingBagPieces || 0);
+  const factoryGlueKg = Number(dashboardKpi?.factoryGlueKg || 0);
+  const factoryGlueBags = Number(dashboardKpi?.factoryGlueBags || 0);
+  const factoryGlueUsedTodayKg = Number(dashboardKpi?.factoryGlueUsedTodayKg || 0);
+  const factoryGlueUsedTodayBags = Number(dashboardKpi?.factoryGlueUsedTodayBags || 0);
     const hasKpiSnapshot = Boolean(dashboardKpi);
   const currentMyanmarDate = formatMyanmarDateInputValue(currentTime);
   const selectedKpiIsToday = selectedKpiDate === currentMyanmarDate;
@@ -1247,6 +1252,14 @@ export default function Dashboard({ view = "overview" }) {
     const totalPieces = rows.reduce((sum, row) => sum + Number(row.outputQuantity || 0) * Number(row.outputCapacity || 0), 0);
     return { rows, totalPacks, totalPieces };
   }, [tubeProductionRows]);
+  const tubeMaterialSummary = useMemo(() => tubeProductionRows.reduce((summary, row) => {
+    const metrics = row.tubeMetrics && typeof row.tubeMetrics === "object" ? row.tubeMetrics : {};
+    summary.usedGlueKg += Number(metrics.usedGlueKg || 0);
+    summary.usedGlueBags += Number(metrics.usedGlueBags || 0);
+    summary.remainingGlueKg += Number(metrics.remainingGlueKg || 0);
+    summary.remainingGlueBags += Number(metrics.remainingGlueBags || 0);
+    return summary;
+  }, { usedGlueKg: 0, usedGlueBags: 0, remainingGlueKg: 0, remainingGlueBags: 0 }), [tubeProductionRows]);
 
   // Pagination logic
   const paginatedCustomers = useMemo(() => {
@@ -2298,9 +2311,9 @@ export default function Dashboard({ view = "overview" }) {
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💰</span>
                 <span>လျှော့စျေး</span>
               </Link>
-              <Link href="/price-settings" className="neon-menu-button neon-card-fuchsia flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-3 text-center text-base font-black leading-5 text-fuchsia-800 shadow-sm transition-colors hover:bg-fuchsia-100">
+              <Link href="/price-settings" aria-label="စျေးသတ်မှတ်ရန်" title="စျေးသတ်မှတ်ရန်" className="neon-menu-button neon-card-fuchsia flex min-h-16 min-w-0 w-full items-center justify-center gap-2 rounded-lg border border-fuchsia-300 bg-fuchsia-50 px-3 py-3 text-center text-base font-black leading-5 text-fuchsia-800 shadow-sm transition-colors hover:bg-fuchsia-100">
                 <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center text-lg leading-none" aria-hidden="true">💰</span>
-                <span>ဗူး Category / Item Cost</span>
+                <span>စျေးသတ်မှတ်ရန်</span>
               </Link>
               <button
                 type="button"
@@ -2531,15 +2544,27 @@ export default function Dashboard({ view = "overview" }) {
             </Link>
             <Link
               href={`/packaging-bag-stock?date=${encodeURIComponent(selectedKpiDate)}`}
-              aria-label="စက်ရုံ ထုပ်ပိုး အိတ်ခွံ လက်ကျန် အသေးစိတ်ကြည့်ရန်"
+              aria-label="စက်ရုံ ထုပ်ပိုး အိတ်ခွံလုံး လက်ကျန် အသေးစိတ်ကြည့်ရန်"
               className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-cyan-300 bg-cyan-50/95 p-4 text-left shadow-sm transition-all hover:border-cyan-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"
             >
               <div>
-                <p className="text-sm font-black tracking-wide text-cyan-800 sm:text-base">စက်ရုံ ထုပ်ပိုး အိတ်ခွံ လက်ကျန်</p>
-                <p className="mt-2 text-2xl font-black text-cyan-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryPackagingBagBags.toLocaleString()} အိတ်`}</p>
-                <p className="mt-1 text-sm font-bold text-cyan-700">Packaging Bag Report အသုံးပြုမှုနုတ်ပြီး လက်ကျန်</p>
+                <p className="text-sm font-black tracking-wide text-cyan-800 sm:text-base">စက်ရုံ ထုပ်ပိုး အိတ်ခွံလုံး လက်ကျန်</p>
+                <p className="mt-2 text-2xl font-black text-cyan-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryPackagingBagPieces.toLocaleString()} လုံး`}</p>
+                <p className="mt-1 text-sm font-bold text-cyan-700">Packaging Bag Report အသုံးပြုမှုနုတ်ပြီး လက်ကျန်လုံးရေ</p>
               </div>
               <p className="pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p>
+            </Link>
+            <Link
+              href={`/glue-stock?date=${encodeURIComponent(selectedKpiDate)}`}
+              aria-label={`${selectedKpiDate} စက်ရုံ ကော်စေ့ လက်ကျန် အသေးစိတ်ကြည့်ရန်`}
+              className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-yellow-300 bg-yellow-50/95 p-4 text-left shadow-sm transition-all hover:border-yellow-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[170px]"
+            >
+              <div>
+                <p className="text-sm font-black tracking-wide text-yellow-800 sm:text-base">စက်ရုံ ကော်စေ့ လက်ကျန်</p>
+                <p className="mt-2 text-2xl font-black text-yellow-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryGlueKg.toLocaleString()} kg / ${factoryGlueBags.toLocaleString()} အိတ်`}</p>
+                <p className="mt-1 text-sm font-bold text-yellow-700">ရွေးထားသောရက် သုံး: {factoryGlueUsedTodayKg.toLocaleString()} kg / {factoryGlueUsedTodayBags.toLocaleString()} အိတ်</p>
+              </div>
+              <p className="pt-2 text-sm font-bold text-yellow-700">Stock စာမျက်နှာကြည့်ရန် →</p>
             </Link>
             </>}
           </div>
@@ -2654,9 +2679,12 @@ export default function Dashboard({ view = "overview" }) {
               {dashboardActorName === "ဇွဲဇွဲ" ? <>
                 <Link href="/production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော ဗူး အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep neon-card-orange flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-orange-200 bg-orange-50/85 p-4 text-left shadow-sm transition-all hover:border-orange-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-orange-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသောဗူး</p><p className="mt-2 text-2xl font-black text-orange-800">{productionLoading ? "ရယူနေသည်..." : `${productionSummary.totalPieces.toLocaleString()} ဗူး`}</p></div><div className="mt-2 space-y-0.5 text-sm font-bold text-orange-700 sm:text-base"><p>{productionLoading ? "ရယူနေသည်..." : `ကောင်းသောဗူး ${productionSummary.goodPieces.toLocaleString()} ဗူး`}</p><p>{productionLoading ? "ရယူနေသည်..." : `ပျက်စီးသောဗူး ${productionSummary.wasteQuantity.toLocaleString()} ဗူး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-orange-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
                 <Link href="/factory-stock" aria-label="စက်ရုံဗူးလက်ကျန် အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-500 bg-amber-100/95 p-4 text-left shadow-sm transition-all hover:border-amber-600 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-500 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-amber-900 sm:text-base">စက်ရုံဗူး လက်ကျန်</p><p className="mt-2 text-2xl font-black text-amber-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryStockCards.toLocaleString()} ကဒ်`}</p><p className="mt-1 text-sm font-bold text-amber-800">စက်ရုံထုတ်လုပ်ဝင်ပြီး ရောင်းထွက်သွားပြီးနောက် ကျန်သောကဒ်</p></div><p className="pt-2 text-sm font-bold text-amber-800">အသေးစိတ်ကြည့်ရန် →</p></Link>
+                <Link href={`/glue-stock?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} စက်ရုံ ကော်စေ့ လက်ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-yellow-300 bg-yellow-50/95 p-4 text-left shadow-sm transition-all hover:border-yellow-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-yellow-800 sm:text-base">စက်ရုံ ကော်စေ့ လက်ကျန်</p><p className="mt-2 text-2xl font-black text-yellow-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryGlueKg.toLocaleString()} kg / ${factoryGlueBags.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-yellow-700">ရွေးထားသောရက် သုံး: {factoryGlueUsedTodayKg.toLocaleString()} kg / {factoryGlueUsedTodayBags.toLocaleString()} အိတ်</p></div><p className="pt-2 text-sm font-bold text-yellow-700">Stock စာမျက်နှာကြည့်ရန် →</p></Link>
               </> : <>
                 <Link href="/tube-production-history" aria-label="ယနေ့ ထုတ်လုပ်ပြီးသော Tube အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-start rounded-xl border border-cyan-200 bg-cyan-50/90 p-4 text-left shadow-sm transition-all hover:border-cyan-400 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-cyan-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-cyan-700 sm:text-base">ယနေ့ ထုတ်လုပ်ပြီးသော Tube</p><p className="mt-2 text-3xl font-black text-cyan-900">{productionLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPacks.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-cyan-700">{productionLoading ? "ရယူနေသည်..." : `${tubeProductionSummary.totalPieces.toLocaleString()} pcs · အမျိုးအစား ${tubeProductionSummary.rows.length} မျိုး`}</p></div><p className="mt-auto pt-2 text-sm font-bold text-cyan-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
+                <Link href={`/tube-production-history?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} ကော်စေ့ သုံး/ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-amber-300 bg-amber-50/95 p-4 text-left shadow-sm transition-all hover:border-amber-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-amber-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-amber-800 sm:text-base">ယနေ့ ကော်စေ့ သုံး/ကျန်</p><div className="mt-2 space-y-1 text-base font-black text-amber-950">{productionLoading ? <p>ရယူနေသည်...</p> : <><p>သုံး: {tubeMaterialSummary.usedGlueKg.toLocaleString()} kg / {tubeMaterialSummary.usedGlueBags.toLocaleString()} အိတ်</p><p>ကျန်: {tubeMaterialSummary.remainingGlueKg.toLocaleString()} kg / {tubeMaterialSummary.remainingGlueBags.toLocaleString()} အိတ်</p></>}</div></div><p className="pt-2 text-sm font-bold text-amber-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
                 <Link href="/tube-stock" aria-label="စက်ရုံ Tube လက်ကျန် အသေးစိတ်ကြည့်ရန်" className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-blue-300 bg-blue-50/95 p-4 text-left shadow-sm transition-all hover:border-blue-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-blue-800 sm:text-base">စက်ရုံ Tube လက်ကျန်</p><p className="mt-2 text-3xl font-black text-blue-950">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePacks.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-blue-700">{dashboardKpiLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryTubePieces.toLocaleString()} pcs · ထုတ်လုပ်ဝင်ပြီးနောက် ကျန်သော Tube`}</p></div><p className="pt-2 text-sm font-bold text-blue-700">အသေးစိတ်ကြည့်ရန် →</p></Link>
+                <Link href={`/glue-stock?date=${encodeURIComponent(selectedKpiDate)}`} aria-label={`${selectedKpiDate} စက်ရုံ ကော်စေ့ လက်ကျန် အသေးစိတ်ကြည့်ရန်`} className="neon-card neon-sweep flex h-full min-h-[128px] min-w-0 w-full flex-col items-start justify-between rounded-xl border border-yellow-300 bg-yellow-50/95 p-4 text-left shadow-sm transition-all hover:border-yellow-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-300 sm:min-h-[170px]"><div><p className="text-sm font-black tracking-wide text-yellow-800 sm:text-base">စက်ရုံ ကော်စေ့ လက်ကျန်</p><p className="mt-2 text-2xl font-black text-yellow-950">{dashboardKpiLoading || kpiDateLoading || !dashboardKpi ? "ရယူနေသည်..." : `${factoryGlueKg.toLocaleString()} kg / ${factoryGlueBags.toLocaleString()} အိတ်`}</p><p className="mt-1 text-sm font-bold text-yellow-700">ရွေးထားသောရက် သုံး: {factoryGlueUsedTodayKg.toLocaleString()} kg / {factoryGlueUsedTodayBags.toLocaleString()} အိတ်</p></div><p className="pt-2 text-sm font-bold text-yellow-700">Stock စာမျက်နှာကြည့်ရန် →</p></Link>
               </>}
             </div>
           </section>
