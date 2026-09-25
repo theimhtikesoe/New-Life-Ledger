@@ -14,6 +14,7 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.1",
     "@pdf-lib/fontkit": "^1.1.1",
     "@prisma/client": "^5.22.0",
     "@sparticuz/chromium-min": "149.0.0",
@@ -24,7 +25,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sharp": "^0.35.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",

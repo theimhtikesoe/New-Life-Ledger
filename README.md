@@ -185,6 +185,8 @@ The middleware requires a valid application session for normal website APIs. Ext
 | `GET/POST` | `/api/backup` | Backup export | App session |
 | `GET/POST` | `/api/restore` | Add-only restore preview/confirm | App session |
 | `GET` | `/api/health` | Service health | Public health check |
+| `GET/POST/DELETE` | `/api/mcp` | Stateless, read-only MCP tools for dashboard, customers, prices, production, packaging, and report status | `MCP_READONLY_TOKEN` bearer token or app session |
+| `POST` | `/api/ai/assistant` | In-app Burmese AI Assistant; invokes the read-only MCP tools before answering | App session and LLM provider variables |
 | `POST` | `/api/telegram/custom-message` | Controlled Telegram group message | App session and route guard |
 | `GET` | `/api/vercel/build-logs` | Redacted Vercel deployment events | App session and actor allowlist |
 | `POST` | `/api/ai/daily-summary` | Cached/fallback AI explanation | App session |

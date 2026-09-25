@@ -2334,6 +2334,9 @@ export default function Dashboard({ view = "overview" }) {
                     <span>အစီရင်ခံစာနှင့် ဒေတာစီမံခန့်ခွဲမှု</span>
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    <Link href="/ai-assistant" className="settings-menu-item border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100">
+                      <span className="ui-icon">🤖</span><span>AI Assistant</span>
+                    </Link>
                     <Link href="/orders" className="settings-menu-item border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
                       <span className="ui-icon">🧾</span><span>အော်ဒါများ</span>
                     </Link>

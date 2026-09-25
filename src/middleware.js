@@ -7,6 +7,7 @@ const PUBLIC_API_PATHS = new Set([
   "/api/auth/logout",
   "/api/auth/session",
   "/api/auth/actor-session",
+  "/api/mcp",
   "/api/cron/daily-report",
   "/api/telegram/order-webhook",
   "/api/cron/order-batch",
