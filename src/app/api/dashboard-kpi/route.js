@@ -63,8 +63,10 @@ export async function GET(request) {
       .filter((item) => item.stockType === "TUBE")
       .reduce((sum, item) => {
         const capacity = Number(item.capacity || 0);
-        return sum + (capacity ? (Number(item.currentBottles || 0) < 0 ? -Math.ceil(Math.abs(Number(item.currentBottles || 0)) / capacity) : Math.floor(Number(item.currentBottles || 0) / capacity)) : 0);
+        const currentPieces = Math.max(0, Number(item.currentBottles || 0));
+        return sum + (capacity ? currentPieces / capacity : 0);
       }, 0);
+    const roundedFactoryTubePacks = Number(factoryTubePacks.toFixed(2));
     const packagingBagStock = await loadPackagingBagStock({ date: dateParam, includeMovements: false });
     const glueStock = await loadGlueStock({ date: dateParam, includeMovements: false });
     const dayLedgers = await prisma.ledger.findMany({
@@ -127,7 +129,7 @@ export async function GET(request) {
         factoryStockCards,
         factoryCapPieces,
         factoryTubePieces,
-        factoryTubePacks,
+        factoryTubePacks: roundedFactoryTubePacks,
         factoryPackagingBagBags: packagingBagStock.totalCurrentBags,
         factoryPackagingBagPieces: packagingBagStock.totalCurrentPieces,
         factoryPackagingBagUsedToday: packagingBagStock.dailyUsed.reduce((sum, row) => sum + Math.abs(Number(row.quantityBottles || 0)), 0),
