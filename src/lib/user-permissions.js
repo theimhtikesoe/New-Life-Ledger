@@ -2,6 +2,7 @@ export const ACTORS = ["ဖေဖေ/မေမေ", "ပုံ့ပုံ့", 
 export const MANAGER_ACTORS = ["ဖေဖေ/မေမေ"];
 export const RECONCILIATION_PAGE_PATH = "/debt-reconciliation";
 export const PREPAYMENT_RECONCILIATION_PAGE_PATH = "/prepayment-reconciliation";
+export const AI_ASSISTANT_PAGE_PATH = "/ai-assistant";
 export const USER_ROLES = ["Manager", "Accountant", "Production", "Sales", "Viewer"];
 export function defaultUserRole(actorName) {
   if (actorName === "ဖေဖေ/မေမေ") return "Manager";
@@ -42,13 +43,14 @@ export const PERMISSION_PAGES = [
   { path: "/data-management", label: "Data Management" },
   { path: "/auto-report-status", label: "Auto Report အခြေအနေ" },
   { path: "/vercel-build-logs", label: "Vercel Build Logs" },
+  { path: AI_ASSISTANT_PAGE_PATH, label: "AI Assistant" },
 ];
 
 export function defaultAllowedPaths(actorName) {
-  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", "/factory-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဖြိုးကို") return ["/", "/production", "/production-history", "/packaging-bag-report", "/tube-production-history", "/tube-stock", "/glue-stock", "/factory-stock", "/monthly-tube-production", "/monthly-packaging-bag-report", "/packaging-bag-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
-  if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဇွဲဇွဲ") return ["/", "/production", "/production-history", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", "/factory-stock", AI_ASSISTANT_PAGE_PATH, RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဖြိုးကို") return ["/", "/production", "/production-history", "/packaging-bag-report", "/tube-production-history", "/tube-stock", "/glue-stock", "/factory-stock", "/monthly-tube-production", "/monthly-packaging-bag-report", "/packaging-bag-stock", AI_ASSISTANT_PAGE_PATH, RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "ဆောင်းဦး") return ["/", "/ledger", "/balance-detail", "/monthly-bottle-sales", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/tube-stock", AI_ASSISTANT_PAGE_PATH, RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
+  if (actorName === "သက်မွန်နှင်း") return ["/", "/cap-stock", "/packaging-bag-report", "/monthly-packaging-bag-report", "/packaging-bag-stock", "/glue-stock", "/tube-stock", AI_ASSISTANT_PAGE_PATH, RECONCILIATION_PAGE_PATH, PREPAYMENT_RECONCILIATION_PAGE_PATH];
   return PERMISSION_PAGES.map((page) => page.path);
 }
 
@@ -79,5 +81,6 @@ export function normalizeAllowedPaths(value, actorName) {
   // from this page just because their legacy permission row predates it.
   if (!allowed.includes(RECONCILIATION_PAGE_PATH)) allowed.push(RECONCILIATION_PAGE_PATH);
   if (!allowed.includes(PREPAYMENT_RECONCILIATION_PAGE_PATH)) allowed.push(PREPAYMENT_RECONCILIATION_PAGE_PATH);
+  if (!allowed.includes(AI_ASSISTANT_PAGE_PATH)) allowed.push(AI_ASSISTANT_PAGE_PATH);
   return [...new Set(allowed)];
 }

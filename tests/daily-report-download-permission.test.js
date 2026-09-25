@@ -22,4 +22,11 @@ describe("Daily PDF download permissions", () => {
     expect(defaultAllowedPaths("သက်မွန်နှင်း")).toEqual(expect.arrayContaining(["/", "/cap-stock"]));
     expect(normalizeAllowedPaths(["/cap-stock"], "သက်မွန်နှင်း")).toEqual(expect.arrayContaining(["/", "/cap-stock"]));
   });
+
+  it("allows every actor to open the read-only AI Assistant", () => {
+    for (const actor of ["ဖေဖေ/မေမေ", "Rhyzoe", "ဇွဲဇွဲ", "ဖြိုးကို", "ဆောင်းဦး", "သက်မွန်နှင်း"]) {
+      expect(defaultAllowedPaths(actor)).toContain("/ai-assistant");
+      expect(normalizeAllowedPaths(["/"], actor)).toContain("/ai-assistant");
+    }
+  });
 });

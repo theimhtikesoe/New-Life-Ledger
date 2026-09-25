@@ -32,6 +32,7 @@ const PRODUCTION_DASHBOARD_READ_PATHS = new Set([
   "/api/price-settings",
   "/api/user-permissions",
 ]);
+const READONLY_AI_API_PATHS = new Set(["/api/ai/assistant"]);
 const PRODUCTION_ONLY_ACTORS = new Set(["ဇွဲဇွဲ", "ဖြိုးကို"]);
 const LEDGER_ONLY_ACTOR = "ဆောင်းဦး";
 const LEDGER_BLOCKED_API_PATHS = new Set([
@@ -65,8 +66,8 @@ export async function middleware(request) {
       );
     }
     const productionDashboardRead = isProductionOnlySession(session)
-      && request.method === "GET"
-      && PRODUCTION_DASHBOARD_READ_PATHS.has(path);
+      && ((request.method === "GET" && PRODUCTION_DASHBOARD_READ_PATHS.has(path))
+        || (request.method === "POST" && READONLY_AI_API_PATHS.has(path)));
     if (isProductionOnlySession(session) && !SHARED_RECONCILIATION_API_PATHS.has(path) && !PRODUCTION_API_PATHS.has(path) && !productionDashboardRead) {
       return NextResponse.json(
         { ok: false, error: `${session.actorName} အသုံးပြုသူသည် ထုတ်လုပ်မှုစာမျက်နှာနှင့် သက်ဆိုင်သောလုပ်ဆောင်ချက်များကိုသာ အသုံးပြုနိုင်ပါသည်။` },
