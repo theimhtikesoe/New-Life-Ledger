@@ -2,8 +2,9 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createReadonlyMcpServer } from "@/lib/mcp-readonly";
 
-const MAX_TOOL_ROUNDS = 4;
-const MAX_MESSAGES = 12;
+const MAX_TOOL_ROUNDS = 2;
+const MAX_MESSAGES = 8;
+const MAX_TOOL_RESULT_CHARS = 2200;
 const DEFAULT_MODEL = "gpt-5-mini";
 
 function providerConfig() {
@@ -26,7 +27,9 @@ function asOpenAiTools(mcpTools) {
 }
 
 function toolText(result) {
-  return (result?.content || []).filter((item) => item.type === "text").map((item) => item.text).join("\n") || JSON.stringify(result);
+  const text = (result?.content || []).filter((item) => item.type === "text").map((item) => item.text).join("\n") || JSON.stringify(result);
+  if (text.length <= MAX_TOOL_RESULT_CHARS) return text;
+  return `${text.slice(0, MAX_TOOL_RESULT_CHARS)}\n[အချက်အလက်များလွန်းသောကြောင့် tool result ကို အကျဉ်းချုပ်ထားသည်]`;
 }
 
 async function callModel(messages, tools) {
@@ -34,7 +37,7 @@ async function callModel(messages, tools) {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({ model, messages, tools, tool_choice: "auto", max_completion_tokens: 1400 }),
+    body: JSON.stringify({ model, messages, tools, tool_choice: "auto", max_completion_tokens: 700 }),
     signal: AbortSignal.timeout(45_000),
   });
   const body = await response.json().catch(() => ({}));
@@ -73,12 +76,12 @@ export async function answerWithMcp({ messages = [] } = {}) {
       ...normalizedMessages,
     ];
 
+    const usedTools = [];
     for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
       const assistant = await callModel(conversation, tools);
       if (!assistant) throw new Error("AI မှ အဖြေမရရှိပါ။");
       if (!assistant.tool_calls?.length) return { answer: String(assistant.content || "အဖြေမရရှိပါ။"), usedTools: [] };
       conversation.push(assistant);
-      const usedTools = [];
       for (const toolCall of assistant.tool_calls.slice(0, 4)) {
         const name = toolCall.function?.name;
         let args = {};
@@ -88,9 +91,6 @@ export async function answerWithMcp({ messages = [] } = {}) {
         conversation.push({ role: "tool", tool_call_id: toolCall.id, content: toolText(result) });
       }
       if (round === MAX_TOOL_ROUNDS - 1) return { answer: "အချက်အလက်များ ရယူပြီးပါပြီ။ မေးခွန်းကို ပိုတိုအောင် ပြန်မေးပေးပါ။", usedTools };
-      const final = await callModel(conversation, tools);
-      if (final && !final.tool_calls?.length) return { answer: String(final.content || "အဖြေမရရှိပါ။"), usedTools };
-      if (final) conversation.push(final);
     }
     throw new Error("AI အဖြေရန် အဆင့်များလွန်းနေပါသည်။");
   } finally {
