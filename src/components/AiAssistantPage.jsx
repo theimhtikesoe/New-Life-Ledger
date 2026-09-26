@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { formatMyanmarClock, formatMyanmarDateLabel } from "@/lib/myanmar-time-client";
+import { useMemo, useState } from "react";
 
 const STARTER_PROMPTS = [
   "ဒီနေ့ Dashboard အခြေအနေကို အကျဉ်းချုပ်ပေးပါ။",
@@ -27,13 +26,7 @@ export default function AiAssistantPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [currentTime, setCurrentTime] = useState(() => new Date());
   const visibleMessages = useMemo(() => messages.filter((message) => message.role === "user" || message.role === "assistant"), [messages]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   async function submitQuestion(event) {
     event?.preventDefault();
@@ -70,15 +63,7 @@ export default function AiAssistantPage() {
               <h1 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">AI Assistant</h1>
               <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-600">Project data ကို MCP read-only tools နဲ့ ရယူပြီး မြန်မာလို အဖြေပေးပါတယ်။ စျေး၊ အကြွေး၊ Customer၊ production၊ အိတ်ခွံနဲ့ report တွေကို မေးနိုင်ပါတယ်။</p>
             </div>
-            <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
-              <div className="rounded-2xl border border-cyan-200 bg-white/90 px-3 py-2 text-left shadow-sm sm:min-w-[180px] sm:text-right">
-                <p className="text-[11px] font-black text-slate-500">ယနေ့ရက်စွဲ</p>
-                <p className="mt-0.5 text-sm font-black text-slate-800">{formatMyanmarDateLabel(currentTime)}</p>
-                <p className="mt-0.5 font-mono text-xl font-black tracking-wider text-cyan-700 tabular-nums">{formatMyanmarClock(currentTime)}</p>
-                <p className="text-[10px] font-bold text-slate-400">Myanmar Time (UTC+06:30)</p>
-              </div>
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">MCP Read-only</span>
-            </div>
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">MCP Read-only</span>
           </div>
         </header>
 
