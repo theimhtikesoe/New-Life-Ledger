@@ -35,6 +35,40 @@ function textResult(data) {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
 }
 
+export function compactPackagingReport(data, detail = "summary") {
+  const compact = {
+    month: data?.month,
+    days: data?.days,
+    records: data?.records,
+    totalPackagingPieces: data?.totalPackagingPieces,
+    totalPackagingWeightLb: data?.totalPackagingWeightLb,
+    totalPieces: data?.totalPieces,
+    groups: (data?.groups || []).map((group) => ({
+      bagSize: group.bagSize,
+      label: group.label,
+      packagingPieces: group.packagingPieces,
+      packagingWeightLb: group.packagingWeightLb,
+      bottlePieces: group.pieces,
+    })),
+  };
+  if (detail === "daily") {
+    compact.daily = (data?.daily || []).map((row) => ({
+      date: row.date,
+      packagingPieces: row.totalPackagingPieces,
+      packagingWeightLb: row.totalPackagingWeightLb,
+      bottlePieces: row.totalPieces,
+    }));
+  }
+  if (detail === "items") {
+    compact.groups = (data?.groups || []).map((group) => ({
+      ...compact.groups.find((item) => item.bagSize === group.bagSize),
+      items: (group.items || []).map((item) => ({ label: item.label, capacity: item.capacity, quantity: item.quantity, unit: item.unit })),
+    }));
+    compact.unassigned = data?.unassigned || [];
+  }
+  return compact;
+}
+
 export function createReadonlyMcpServer() {
   const server = new McpServer({
     name: "new-life-ledger-readonly",
@@ -88,9 +122,15 @@ export function createReadonlyMcpServer() {
 
   server.tool(
     "get_packaging_bag_report",
-    "Read the monthly packaging-bag report, including groups, daily totals, and unassigned items. This tool never changes data.",
-    { month: z.string().regex(/^\d{4}-\d{2}$/).optional().describe("Month in YYYY-MM format") },
-    async ({ month }) => textResult(await callGet(getPackagingReport, "/api/monthly-packaging-bag-report", { month: month || currentMonth() })),
+    "Read accurate compact packaging-bag totals by bag size. Use detail=daily only when a daily breakdown is requested, or detail=items for bottle-type details. Never infer totals from individual records; use returned totals and groups exactly. This tool never changes data.",
+    {
+      month: z.string().regex(/^\d{4}-\d{2}$/).optional().describe("Month in YYYY-MM format"),
+      detail: z.enum(["summary", "daily", "items"]).optional().describe("summary for bag-size totals; daily for dates; items for bottle types"),
+    },
+    async ({ month, detail }) => {
+      const report = await callGet(getPackagingReport, "/api/monthly-packaging-bag-report", { month: month || currentMonth() });
+      return textResult(compactPackagingReport(report, detail || "summary"));
+    },
   );
 
   server.tool(
