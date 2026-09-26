@@ -221,6 +221,7 @@ const PAGE_HEADERS = {
   '/tube-stock': 'စက်ရုံ Tube လက်ကျန် အသေးစိတ်',
   '/trace': 'Trace / Lineage Center',
   '/price-settings': 'စျေးသတ်မှတ်ရန်',
+  '/ai-assistant': 'AI Assistant',
   '/vercel-build-logs': 'Vercel Build Logs',
 };
 
