@@ -6,7 +6,9 @@ import { getMyanmarDayRange, getPreviousMyanmarDayRange } from "@/lib/myanmar-ti
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Manual report generation uses the same Chromium/PDF pipeline as the
+// scheduled report and can exceed the default 60-second function window.
+export const maxDuration = 300;
 
 function isAuthorized(request) {
   const authorization = String(request.headers.get("authorization") || "").trim();
