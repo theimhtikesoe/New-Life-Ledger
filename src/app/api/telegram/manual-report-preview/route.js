@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getDailyReportData } from "@/lib/daily-report";
+import { prisma } from "@/lib/prisma";
+import { ensureDatabase } from "@/lib/database";
 import { getMyanmarDayRange } from "@/lib/myanmar-time";
 
 export const runtime = "nodejs";
@@ -10,24 +11,36 @@ export async function GET(request) {
   try {
     const requestedDate = new URL(request.url).searchParams.get("date");
     const range = requestedDate ? getMyanmarDayRange(requestedDate) : undefined;
-    const report = await getDailyReportData(range);
+    if (!range) throw new Error("Report date မမှန်ကန်ပါ။");
+    await ensureDatabase();
+    const [ledgers, cashSales, auditCount, productionCount] = await Promise.all([
+      prisma.ledger.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { type: true, amount: true } }),
+      prisma.cashSale.findMany({ where: { date: { gte: range.start, lt: range.end } }, select: { amount: true } }),
+      prisma.auditLog.count({ where: { createdAt: { gte: range.start, lt: range.end } } }),
+      prisma.productionReport.count({ where: { reportDate: range.dateLabel } }),
+    ]);
+    const paid = ledgers.filter((row) => row.type === "DEBIT");
+    const debt = ledgers.filter((row) => row.type !== "DEBIT");
+    const paidAmount = paid.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const debtAmount = debt.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const cashAmount = cashSales.reduce((sum, row) => sum + Number(row.amount || 0), 0);
     return NextResponse.json({
       ok: true,
       data: {
-        date: report.dateLabel,
-        period: report.periodLabel,
+        date: range.dateLabel,
+        period: `${range.dateLabel} 00:00–23:59 (Myanmar time)`,
         summary: {
-          paidCount: report.summary.paidCount,
-          paidAmount: report.summary.paidAmount,
-          debtCount: report.summary.debtCount,
-          debtAmount: report.summary.debtAmount,
-          cashCount: report.summary.cashCount || 0,
-          cashAmount: report.summary.cashAmount || 0,
-          cashPaymentTypes: report.summary.cashPaymentTypes || {},
-          cashSaleTypes: report.summary.cashSaleTypes || {},
-          totalTransactions: report.summary.totalTransactions,
-          auditCount: report.summary.auditCount,
-          activityCount: report.summary.activityCount ?? report.activityLogs.length,
+          paidCount: paid.length,
+          paidAmount,
+          debtCount: debt.length,
+          debtAmount,
+          cashCount: cashSales.length,
+          cashAmount,
+          cashPaymentTypes: {},
+          cashSaleTypes: {},
+          totalTransactions: ledgers.length,
+          auditCount: auditCount + productionCount,
+          activityCount: auditCount + productionCount,
         },
       },
     });
