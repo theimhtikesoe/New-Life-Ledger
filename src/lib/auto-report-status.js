@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export const AUTO_REPORT_STATUS_LIMIT = 20;
 const RUNNING_TIMEOUT_MS = 15 * 60 * 1000;
+const STALE_RUN_ERROR_MESSAGE = "Daily report run timed out before completion. The next scheduled run will retry it.";
 
 function safeErrorMessage(error) {
   const message = String(error?.message || "Auto report failed").replace(/\s+/g, " ").trim();
@@ -233,18 +234,22 @@ export async function recordAutoReportRun({
   }
 }
 
-export function serializeAutoReportRun(run) {
+export function serializeAutoReportRun(run, now = Date.now()) {
   if (!run) return null;
+  const createdAtMs = new Date(run.createdAt).getTime();
+  const isStale = run.status === "RUNNING"
+    && Number.isFinite(createdAtMs)
+    && now - createdAtMs >= RUNNING_TIMEOUT_MS;
   return {
     id: run.id,
-    status: run.status,
+    status: isStale ? "FAILED" : run.status,
     trigger: run.trigger,
     reportDate: run.reportDate,
     periodLabel: run.periodLabel,
     recipientCount: run.recipientCount,
     counts: run.counts || null,
     elapsedMs: run.elapsedMs,
-    errorMessage: run.errorMessage,
+    errorMessage: isStale ? STALE_RUN_ERROR_MESSAGE : run.errorMessage,
     manualNoticeClaimedAt: run.manualNoticeClaimedAt?.toISOString?.() || run.manualNoticeClaimedAt || null,
     manualNoticeSentAt: run.manualNoticeSentAt?.toISOString?.() || run.manualNoticeSentAt || null,
     createdAt: run.createdAt?.toISOString?.() || run.createdAt,

@@ -22,7 +22,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { reconcileManualReportRun } from "@/lib/auto-report-status";
+import { reconcileManualReportRun, serializeAutoReportRun } from "@/lib/auto-report-status";
 
 const zeroCountRun = {
   id: "manual-reconciled-1",
@@ -46,6 +46,24 @@ describe("Auto Report manual reconciliation metadata", () => {
     mocks.findFirst.mockReset();
     mocks.update.mockReset();
     mocks.create.mockReset();
+  });
+
+  it("does not leave a timed-out run displayed as still sending", () => {
+    const run = serializeAutoReportRun({
+      id: "auto-timeout-1",
+      status: "RUNNING",
+      trigger: "schedule",
+      reportDate: "2026-09-27",
+      periodLabel: null,
+      recipientCount: 0,
+      counts: null,
+      elapsedMs: null,
+      errorMessage: null,
+      createdAt: new Date("2026-09-28T01:48:12.000Z"),
+    }, new Date("2026-09-28T02:10:00.000Z").getTime());
+
+    expect(run.status).toBe("FAILED");
+    expect(run.errorMessage).toContain("timed out");
   });
 
   it("backfills counts only on a zero-count manual-reconciled row", async () => {
