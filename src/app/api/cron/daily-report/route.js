@@ -12,7 +12,11 @@ import { sendManualReportStatusNotice } from "@/lib/auto-report-notice";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// The report renders four Myanmar-font PDF pages through headless Chromium.
+// Keep enough serverless time for a cold start and Chromium bundle download;
+// the previous 60-second limit could terminate a valid run after its claim
+// was created, leaving the report date displayed as RUNNING.
+export const maxDuration = 300;
 
 function isAuthorized(request) {
   const secret = process.env.CRON_SECRET;
