@@ -27,4 +27,11 @@ describe("sales item picker selection controls", () => {
     expect(picker).toContain("တစ်အိတ်ဆံ့");
     expect(picker).toContain("defaultCapLocation");
   });
+
+  it("labels standard cap-only quantities as bags and explains the converted pieces", () => {
+    expect(picker).toContain('capQuantityLabel(selectedItem, true)} အရေအတွက်');
+    expect(picker).toContain('previewCards.toLocaleString()} အိတ် × {selectedPrice} Ks');
+    expect(picker).toContain('({previewBottles.toLocaleString()} အဖုံး)');
+    expect(picker).toContain('saleMode === "cap" && !isPieceCapItem(selectedItem)');
+  });
 });
