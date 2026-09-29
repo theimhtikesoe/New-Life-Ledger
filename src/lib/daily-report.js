@@ -627,7 +627,21 @@ export function createProductionSummaryHtml(report, fontDataUri, latinDataUri) {
 }
 
 let chromiumExecutablePromise;
+let reportFontDataPromise;
 const reportImageCache = new WeakMap();
+
+function getReportFontData(fontPath, latinFontPath) {
+  if (!reportFontDataPromise) {
+    reportFontDataPromise = Promise.resolve({
+      fontDataUri: fs.readFileSync(fontPath).toString("base64"),
+      latinDataUri: fs.readFileSync(latinFontPath).toString("base64"),
+    }).catch((error) => {
+      reportFontDataPromise = undefined;
+      throw error;
+    });
+  }
+  return reportFontDataPromise;
+}
 
 function getChromiumExecutablePath() {
   if (!chromiumExecutablePromise) {
@@ -643,6 +657,7 @@ async function renderReportImagesUncached(report) {
   const fontPath = resolveFontPath();
   const latinFontPath = resolveLatinFontPath();
   if (!fontPath || !latinFontPath) throw new Error("Daily report font assets are unavailable in the serverless bundle");
+  const { fontDataUri, latinDataUri } = await getReportFontData(fontPath, latinFontPath);
   const browser = await playwright.launch({
     args: chromium.args,
     executablePath: await getChromiumExecutablePath(),
@@ -650,32 +665,20 @@ async function renderReportImagesUncached(report) {
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1480, height: 900 }, deviceScaleFactor: 1 });
-    const html = createReportHtml(
-      report,
-      fs.readFileSync(fontPath).toString("base64"),
-      fs.readFileSync(latinFontPath).toString("base64"),
-    );
+    const html = createReportHtml(report, fontDataUri, latinDataUri);
     await page.setContent(html, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const summaryBuffer = Buffer.from(await page.locator("#summary").screenshot({ type: "png" }));
     const salesData = await getDailySalesSummaryCardData(report.dateLabel);
-    const salesHtml = createDailySalesSummaryCardHtml(
-      salesData,
-      fs.readFileSync(fontPath).toString("base64"),
-      fs.readFileSync(latinFontPath).toString("base64"),
-    );
+    const salesHtml = createDailySalesSummaryCardHtml(salesData, fontDataUri, latinDataUri);
     await page.setContent(salesHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const salesSummaryBuffer = Buffer.from(await page.locator("#sales-summary-card").screenshot({ type: "png" }));
-    const productionHtml = createProductionSummaryHtml(
-      report,
-      fs.readFileSync(fontPath).toString("base64"),
-      fs.readFileSync(latinFontPath).toString("base64"),
-    );
+    const productionHtml = createProductionSummaryHtml(report, fontDataUri, latinDataUri);
     await page.setContent(productionHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const productionSummaryBuffer = Buffer.from(await page.locator("#production-summary").screenshot({ type: "png" }));
-    const bottleSalesHtml = createBottleSalesSummaryHtml(report, fs.readFileSync(fontPath).toString("base64"), fs.readFileSync(latinFontPath).toString("base64"));
+    const bottleSalesHtml = createBottleSalesSummaryHtml(report, fontDataUri, latinDataUri);
     await page.setContent(bottleSalesHtml, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready);
     const bottleSalesBuffer = Buffer.from(await page.locator("#bottle-sales-summary").screenshot({ type: "png" }));

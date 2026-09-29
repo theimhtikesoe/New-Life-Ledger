@@ -37,25 +37,41 @@ async function telegramRequest({ token, method, payload, timeoutMs = 8000, maxAt
 }
 
 async function sendTelegramFile({ token, chatId, method, buffer, filename, mimeType, caption }) {
-  const form = new FormData();
-  form.append("chat_id", chatId);
-  form.append("caption", caption || "");
-  if (caption) form.append("parse_mode", "HTML");
-  if (method === "sendPhoto") {
-    form.append("photo", new Blob([buffer], { type: mimeType }), filename);
-  } else {
-    form.append("document", new Blob([buffer], { type: mimeType }), filename);
+  let lastError;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const form = new FormData();
+    form.append("chat_id", chatId);
+    form.append("caption", caption || "");
+    if (caption) form.append("parse_mode", "HTML");
+    if (method === "sendPhoto") {
+      form.append("photo", new Blob([buffer], { type: mimeType }), filename);
+    } else {
+      form.append("document", new Blob([buffer], { type: mimeType }), filename);
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.ok) {
+        const error = new Error(`Telegram ${method} failed for ${chatId}: ${response.status} ${body.description || "unknown error"}`);
+        error.retryable = response.status >= 500 || response.status === 429;
+        throw error;
+      }
+      return body;
+    } catch (error) {
+      lastError = error;
+      if (attempt >= 2 || (error?.name !== "AbortError" && !error?.retryable)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+    } finally {
+      clearTimeout(timer);
+    }
   }
-
-  const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: "POST",
-    body: form,
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || !body.ok) {
-    throw new Error(`Telegram ${method} failed for ${chatId}: ${response.status} ${body.description || "unknown error"}`);
-  }
-  return body;
+  throw lastError || new Error(`Telegram ${method} failed for ${chatId}`);
 }
 
 function splitTelegramText(value, maxLength = 3900) {
